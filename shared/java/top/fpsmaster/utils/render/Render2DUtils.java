@@ -4,13 +4,14 @@ import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 import top.fpsmaster.utils.Utility;
-import top.fpsmaster.utils.awt.RoundUtil;
+import top.fpsmaster.utils.awt.AWTUtils;
 import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
 
 import java.awt.*;
@@ -32,24 +33,57 @@ public class Render2DUtils extends Utility {
     }
 
 
+
     public static void drawOptimizedRoundedRect(float x, float y, float width, float height, int radius, int color) {
+        drawOptimizedRoundedRect(x, y, width, height, radius, color, false);
+    }
+
+    public static void drawOptimizedRoundedRect(float x, float y, float width, float height, int radius, int color, boolean rawImage) {
         if (width < radius * 2 || radius < 1) {
-            Render2DUtils.drawRect(x, y, width, height, color);
+            drawRect(x, y, width, height, color);
             return;
         }
         radius = (int) Math.min(Math.min(height, width) / 2, radius);
-        RoundUtil.generateRound(radius);
-        drawImage(new ResourceLocation("fpsmaster/rounded/" + radius + "/lt.png"), x, y, radius, radius, color);
-        drawImage(new ResourceLocation("fpsmaster/rounded/" + radius + "/rt.png"), x + width - radius, y, radius, radius, color);
-        drawImage(new ResourceLocation("fpsmaster/rounded/" + radius + "/lb.png"), x, y + height - radius, radius, radius, color);
-        drawImage(new ResourceLocation("fpsmaster/rounded/" + radius + "/rb.png"), x + width - radius, y + height - radius, radius, radius, color);
+        ResourceLocation[] resourceLocations = AWTUtils.generateRound(radius);
+        if (resourceLocations == null || resourceLocations.length == 0) {
+            return;
+        }
         drawRect(x + radius, y, width - radius * 2, radius, color);
         drawRect(x + radius, y + height - radius, width - radius * 2, radius, color);
         drawRect(x, y + radius, radius, height - radius * 2, color);
         drawRect(x + width - radius, y + radius, radius, height - radius * 2, color);
         drawRect(x + radius, y + radius, width - radius * 2, height - radius * 2, color);
+        drawImage(resourceLocations[0], x, y, radius, radius, color, rawImage);
+        drawImage(resourceLocations[1], x + width - radius, y, radius, radius, color, rawImage);
+        drawImage(resourceLocations[2], x, y + height - radius, radius, radius, color, rawImage);
+        drawImage(resourceLocations[3], x + width - radius, y + height - radius, radius, radius, color, rawImage);
+
     }
 
+    public static void drawImage(ResourceLocation res, float x, float y, float width, float height, Color color) {
+        drawImage(res, x, y, width, height, color.getRGB(), false);
+    }
+
+    public static void drawImage(ResourceLocation res, float x, float y, float width, float height, int color) {
+        drawImage(res, x, y, width, height, color, false);
+    }
+
+    public static void drawImage(ResourceLocation res, float x, float y, float width, float height, int color, boolean rawImage) {
+        if (!rawImage) {
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glDepthMask(false);
+            GL14.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+            glColor(color);
+        }
+        mc.getTextureManager().bindTexture(res);
+        drawModalRectWithCustomSizedTexture(x, y, 0, 0, width, height, width, height);
+        if (!rawImage) {
+            glDepthMask(true);
+            glDisable(GL_BLEND);
+            glEnable(GL_DEPTH_TEST);
+        }
+    }
     public static void drawRect(float x, float y, float width, float height, Color color) {
         drawRect(x, y, width, height, color.getRGB());
     }
@@ -97,23 +131,6 @@ public class Render2DUtils extends Utility {
         int blue = color & 255;
         int alpha = color >> 24 & 255;
         GL11.glColor4f(red / 255.0F, green / 255.0F, blue / 255.0F, alpha / 255.0F);
-    }
-
-    public static void drawImage(ResourceLocation res, float x, float y, float width, float height, Color color) {
-        drawImage(res, x, y, width, height, color.getRGB());
-    }
-
-    public static void drawImage(ResourceLocation res, float x, float y, float width, float height, int color) {
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glDepthMask(false);
-        GL14.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-        glColor(color);
-        mc.getTextureManager().bindTexture(res);
-        drawModalRectWithCustomSizedTexture(x, y, 0, 0, width, height, width, height);
-        glDepthMask(true);
-        glDisable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
     }
 
     public static void drawModalRectWithCustomSizedTexture(float x, float y, float u, float v, float width, float height, float textureWidth, float textureHeight) {

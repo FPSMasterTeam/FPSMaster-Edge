@@ -19,13 +19,11 @@ object FileUtils {
     var music: File
     var artists: File
     var omaments: File
-    var round: File
     var background: File
     var hasBackground = false
 
     init {
         cache = file(ProviderManager.mcProvider.getGameDir(), ".cache")
-        round = file(cache, "round")
         dir = file(ProviderManager.mcProvider.getGameDir(), "FPSMaster " + Constants.VERSION)
         plugins = file(dir, "plugins")
         fpsmasterCache = file(cache, "FPSMasterClient")
