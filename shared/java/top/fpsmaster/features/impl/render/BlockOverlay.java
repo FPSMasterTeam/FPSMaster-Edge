@@ -3,6 +3,7 @@ package top.fpsmaster.features.impl.render;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockStairs;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.event.Subscribe;
@@ -47,14 +48,14 @@ public class BlockOverlay extends Module {
 
     @Subscribe
     public void onRender3D(EventRender3D e) {
-        if (Companion.getMc().objectMouseOver != null) {
+        if (Minecraft.getMinecraft().objectMouseOver != null) {
             if (ProviderManager.mcProvider.isHoveringOverBlock()) {
                 WrapperBlockPos pos = new WrapperBlockPos(Companion.getMc().objectMouseOver.getBlockPos());
                 IBlockState state = ProviderManager.worldClientProvider.getBlockState(pos);
                 Block block = ProviderManager.worldClientProvider.getBlock(pos);
-                double x = pos.getX() - Companion.getMc().getRenderManager().viewerPosX;
-                double y = pos.getY() - Companion.getMc().getRenderManager().viewerPosY;
-                double z = pos.getZ() - Companion.getMc().getRenderManager().viewerPosZ;
+                double x = pos.getX() - Minecraft.getMinecraft().getRenderManager().viewerPosX;
+                double y = pos.getY() - Minecraft.getMinecraft().getRenderManager().viewerPosY;
+                double z = pos.getZ() - Minecraft.getMinecraft().getRenderManager().viewerPosZ;
                 GL11.glPushMatrix();
                 GlStateManager.enableAlpha();
                 GlStateManager.enableBlend();

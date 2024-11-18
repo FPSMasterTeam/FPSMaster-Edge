@@ -3,7 +3,7 @@
     "modid": "${modid}",
     "name": "FPSMaster Mod",
     "description": "FPSMaster PVP Client.",
-    "version": "v3",
+    "version": "v4",
     "mcversion": "1.8.9",
 	"url": "https://fpsmaster.top",
 	"updateUrl": "",
