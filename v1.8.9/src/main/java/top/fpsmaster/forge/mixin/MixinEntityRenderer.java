@@ -24,6 +24,7 @@ import org.lwjgl.opengl.Display;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -32,6 +33,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.features.impl.optimizes.NoHurtCam;
+import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.optimizes.SmoothZoom;
 import top.fpsmaster.features.impl.render.FreeLook;
 import top.fpsmaster.features.impl.render.MinimizedBobbing;
@@ -147,6 +149,15 @@ public abstract class MixinEntityRenderer {
     private float thirdPersonDistance = 4.0F;
     @Shadow
     private float thirdPersonDistanceTemp = 4.0F;
+    @Unique
+    private float partialTicks;
+
+
+    @Redirect(method = "renderWorldDirections", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;getEyeHeight()F"))
+    public float modifyEyeHeight_renderWorldDirections(Entity entity) {
+        if (mc.getRenderViewEntity() != mc.thePlayer) return entity.getEyeHeight();
+        return OldAnimations.Companion.getClientEyeHeight(partialTicks);
+    }
 
     /**
      * @author SuperSkidder
@@ -155,7 +166,12 @@ public abstract class MixinEntityRenderer {
     @Overwrite
     private void orientCamera(float partialTicks) {
         Entity entity = mc.getRenderViewEntity();
+
+        this.partialTicks = partialTicks;
         float f = entity.getEyeHeight();
+        if (mc.getRenderViewEntity() == mc.thePlayer){
+            f = OldAnimations.Companion.getClientEyeHeight(partialTicks);
+        }
         double d0 = entity.prevPosX + (entity.posX - entity.prevPosX) * (double) partialTicks;
         double d1 = entity.prevPosY + (entity.posY - entity.prevPosY) * (double) partialTicks + (double) f;
         double d2 = entity.prevPosZ + (entity.posZ - entity.prevPosZ) * (double) partialTicks;
