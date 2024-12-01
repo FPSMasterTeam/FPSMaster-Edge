@@ -34,7 +34,6 @@ public class Render2DUtils extends Utility {
     }
 
 
-
     public static void drawOptimizedRoundedRect(float x, float y, float width, float height, int radius, int color) {
         drawOptimizedRoundedRect(x, y, width, height, radius, color, false);
     }
@@ -85,6 +84,7 @@ public class Render2DUtils extends Utility {
             glEnable(GL_DEPTH_TEST);
         }
     }
+
     public static void drawRect(float x, float y, float width, float height, Color color) {
         drawRect(x, y, width, height, color.getRGB());
     }
@@ -149,8 +149,16 @@ public class Render2DUtils extends Utility {
 
     public static void doGlScissor(float x, float y, float width, float height) {
         if (mc.currentScreen != null) {
-             ScaledResolution sr = new ScaledResolution(mc);
-            GL11.glScissor((int) (x), (int) (sr.getScaledHeight() / 2f - (y + height)), (int) (width), (int) (height));
+
+            ScaledResolution sr = new ScaledResolution(mc);
+            width *= 1f / sr.getScaleFactor() * 2;
+            height *= 1f / sr.getScaleFactor() * 2;
+            y *= 1f / sr.getScaleFactor() * 2;
+            x *= 1f / sr.getScaleFactor() * 2;
+            System.out.println(mc.displayWidth + " " + mc.currentScreen.width);
+
+            System.out.println("do scissor :x " + (int) (x * mc.displayWidth / mc.currentScreen.width) + " y " + y + " width " + width + " height " + height);
+            GL11.glScissor((int) (x * mc.displayWidth / mc.currentScreen.width), (int) (mc.displayHeight - (y + height) * mc.displayHeight / mc.currentScreen.height), (int) (width * mc.displayWidth / mc.currentScreen.width), (int) (height * mc.displayHeight / mc.currentScreen.height));
         }
     }
 
@@ -175,16 +183,6 @@ public class Render2DUtils extends Utility {
 
     public static boolean isHoveredWithoutScale(float x, float y, float width, float height, int mouseX, int mouseY) {
         ScaledResolution sr = new ScaledResolution(mc);
-//        var mouseX = mouseX * sr.scaleFactor
-//        var mouseY = mouseY * sr.scaleFactor
-//        val scaledWidth = sr.scaledWidth * sr.scaleFactor / 2
-//        val scaledHeight = sr.scaledHeight * sr.scaleFactor / 2
-//        mouseX *= sr.getScaleFactor() / 2;
-//        mouseY *= sr.getScaleFactor() / 2f;
-
-//        val scaledWidth = sr.scaledWidth * sr.scaleFactor / 2
-//        val scaledHeight = sr.scaledHeight * sr.scaleFactor / 2
-
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
 }

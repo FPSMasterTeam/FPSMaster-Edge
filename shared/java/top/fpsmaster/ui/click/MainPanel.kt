@@ -52,7 +52,6 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : GuiScreen() {
     private var logoColor = ColorAnimation(FPSMaster.theme.logo)
 
 
-
     private var close = false
 
     // module list animation
@@ -109,9 +108,9 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : GuiScreen() {
             scaleAnimation.start(scaleAnimation.value, 1.0, 0.2f, Type.EASE_OUT_BACK)
         }
         scaleAnimation.update()
-//        GlStateManager.translate(scaledWidth / 2.0, scaledHeight / 2.0, 0.0)
+        GlStateManager.translate(scaledWidth / 2.0, scaledHeight / 2.0, 0.0)
         GL11.glScaled(scaleAnimation.value / sr.scaleFactor * 2.0, scaleAnimation.value / sr.scaleFactor * 2.0, 1.0)
-//        GlStateManager.translate(-scaledWidth / 2.0, -scaledHeight / 2.0, 0.0)
+        GlStateManager.translate(-scaledWidth / 2.0, -scaledHeight / 2.0, 0.0)
 
         //绘制主窗体
         Render2DUtils.drawOptimizedRoundedRect(
@@ -145,7 +144,15 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : GuiScreen() {
             sizeDragBorder.start(sizeDragBorder.color, Color(255, 255, 255, 0), 0.2f, Type.EASE_IN_OUT_QUAD)
         }
         sizeDragBorder.update()
-        if (Render2DUtils.isHoveredWithoutScale(x + Companion.width - 10, y + Companion.height - 10, 10f, 10f, mouseX, mouseY)) {
+        if (Render2DUtils.isHoveredWithoutScale(
+                x + Companion.width - 10,
+                y + Companion.height - 10,
+                10f,
+                10f,
+                mouseX,
+                mouseY
+            )
+        ) {
             Render2DUtils.drawImage(
                 ResourceLocation("client/gui/settings/drag.png"),
                 x + Companion.width - 5,
@@ -238,7 +245,15 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : GuiScreen() {
             y + Companion.height - 20,
             FPSMaster.theme.categoryTextSelected.rgb
         )
-        if (Render2DUtils.isHoveredWithoutScale((x + 40).toFloat(), y + Companion.height - 22, 34f, 14f, mouseX, mouseY)) {
+        if (Render2DUtils.isHoveredWithoutScale(
+                (x + 40).toFloat(),
+                y + Companion.height - 22,
+                34f,
+                14f,
+                mouseX,
+                mouseY
+            )
+        ) {
             modeColor.base(FPSMaster.theme.primary)
         } else {
             modeColor.base(FPSMaster.theme.typeSelectionBackground)
@@ -246,8 +261,10 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : GuiScreen() {
 
         // 绘制功能列表
         GL11.glEnable(GL11.GL_SCISSOR_TEST)
-        Render2DUtils.doGlScissor(x.toFloat(), y.toFloat(), Companion.width,
-            (Companion.height - 4))
+        Render2DUtils.doGlScissor(
+            x.toFloat(), y.toFloat(), Companion.width,
+            (Companion.height - 4)
+        )
         moduleListAlpha = base(moduleListAlpha.toDouble(), 255.0, 0.1).toFloat()
         if (curType === Category.Music) {
             draw(x + leftWidth, y.toFloat(), Companion.width - leftWidth, Companion.height, mouseX, mouseY)
@@ -286,7 +303,12 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : GuiScreen() {
             )
         )
         GL11.glDisable(GL11.GL_SCISSOR_TEST)
-        FPSMaster.fontManager.s16.drawString("x: " + x + ", y: " + y + ", width: " + leftWidth + ", height: 34" + ", mouseX: " + mouseX/2 + ", mouseY: " + mouseY/2,10,10,-1)
+        FPSMaster.fontManager.s16.drawString(
+            "x: " + x + ", y: " + y + ", width: " + leftWidth + ", height: 34" + ", mouseX: " + mouseX / 2 + ", mouseY: " + mouseY / 2,
+            10,
+            10,
+            -1
+        )
 
         GL11.glPopMatrix()
     }
@@ -394,7 +416,15 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : GuiScreen() {
         }
 
 
-        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(x.toFloat(), y.toFloat(), leftWidth, 34f, mouseX, mouseY)) {
+        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
+                x.toFloat(),
+                y.toFloat(),
+                leftWidth,
+                34f,
+                mouseX,
+                mouseY
+            )
+        ) {
             drag = true
             dragX = (mouseX - x).toFloat()
             dragY = (mouseY - y).toFloat()
