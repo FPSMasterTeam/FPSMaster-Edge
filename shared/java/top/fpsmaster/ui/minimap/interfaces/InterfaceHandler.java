@@ -78,7 +78,7 @@ public class InterfaceHandler {
             }
 
             @Override
-            public void drawInterface(final int width, final int height, final int scale, final float partial) {
+            public void drawInterface(final int width, final int height, final float partial) {
 
                 if (Minimap.loadedFBO && !OpenGlHelper.isFramebufferEnabled()) {
                     Minimap.loadedFBO = false;
@@ -128,19 +128,14 @@ public class InterfaceHandler {
 
                 Component component = FPSMaster.componentsManager.getComponent(MiniMap.class);
                 InterfaceHandler.mc.ingameGUI.drawTexturedModalRect(((int) component.getRealPosition()[0]), ((int) component.getRealPosition()[1]), 0, 0, (int) ((minimapWidth / 2f + 1) / sizeFix), (int) ((minimapWidth / 2f + 1) / sizeFix));
-                super.drawInterface(width, height, scale, partial);
+                super.drawInterface(width, height, partial);
             }
         });
     }
 
-    public static void drawInterfaces(final float partial) {
-        ScaledResolution scaledresolution = new ScaledResolution(XaeroMinimap.mc);
-        int width = scaledresolution.getScaledWidth();
-        int height = scaledresolution.getScaledHeight();
-        int scale = scaledresolution.getScaleFactor();
-
+    public static void drawInterfaces(float width, float height,float partial) {
         for (final Interface l : InterfaceHandler.list) {
-            l.drawInterface(width, height, scale, partial);
+            l.drawInterface((int) width, (int) height, partial);
         }
     }
 

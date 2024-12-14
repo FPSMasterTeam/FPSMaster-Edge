@@ -92,7 +92,7 @@ public abstract class Interface
         return this.w * this.h;
     }
     
-    public void drawInterface(final int width, final int height, final int scale, final float partial) {
+    public void drawInterface(int width, int height, float partial) {
         if (this.fromRight) {
             this.x = width - this.x;
         }

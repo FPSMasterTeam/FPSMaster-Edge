@@ -760,7 +760,7 @@ public class Minimap
         GL11.glTexParameteri(3553, 10241, 9729);
         GlStateManager.translate(halfWView + 0.5f, 511.5f - halfWView, -2000.0f);
         GL11.glRotatef(angle, 0.0f, 0.0f, 1.0f);
-        GL11.glPushMatrix();
+//        GL11.glPushMatrix();
         GlStateManager.translate(-xInsidePixel * Minimap.zoom, -zInsidePixel * Minimap.zoom, 0.0);
         GlStateManager.disableBlend();
         GL11.glColor4f(1.0f, 1.0f, 1.0f, 100.0f);

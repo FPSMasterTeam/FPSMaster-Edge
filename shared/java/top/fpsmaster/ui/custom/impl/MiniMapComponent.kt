@@ -44,7 +44,7 @@ class MiniMapComponent : Component(MiniMap::class.java) {
         Minecraft.getMinecraft().entityRenderer.setupOverlayRendering()
         GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f)
 
-        InterfaceHandler.drawInterfaces(ProviderManager.timerProvider.getRenderPartialTicks())
+        InterfaceHandler.drawInterfaces(width, height, ProviderManager.timerProvider.getRenderPartialTicks())
         Render2DUtils.drawRect(x + width / 2 - 1, y + height / 2 - 1, 2f, 2f, -1)
         MinimapAnimation.tick()
     }

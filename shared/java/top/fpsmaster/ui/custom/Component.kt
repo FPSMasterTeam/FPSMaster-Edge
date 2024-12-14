@@ -7,6 +7,7 @@ import org.lwjgl.input.Mouse
 import top.fpsmaster.FPSMaster
 import top.fpsmaster.font.impl.UFontRenderer
 import top.fpsmaster.features.impl.InterfaceModule
+import top.fpsmaster.features.impl.interfaces.ClientSettings
 import top.fpsmaster.ui.click.MainPanel
 import top.fpsmaster.utils.Utility
 import top.fpsmaster.utils.math.animation.AnimationUtils.base
@@ -51,25 +52,33 @@ open class Component(clazz: Class<*>?) {
         var rY = 0f
         x = max(0f, min(1f, x))
         y = max(0f, min(1f, y))
+        var scaleFactor: Int = if (ClientSettings.Companion.fixedScale.value) {
+            sr.scaleFactor;
+        } else {
+            2;
+        }
+        val guiWidth = sr.scaledWidth / 2f * scaleFactor
+        val guiHeight = sr.scaledHeight / 2f * scaleFactor
+        
         when (position) {
             Position.LT -> {
-                rX = x * sr.scaledWidth / 2f
-                rY = y * sr.scaledHeight / 2f
+                rX = x * guiWidth / 2f
+                rY = y * guiHeight / 2f
             }
 
             Position.RT -> {
-                rX = sr.scaledWidth - (x * sr.scaledWidth / 2f + width)
-                rY = y * sr.scaledHeight / 2f
+                rX = guiWidth - (x * guiWidth / 2f + width)
+                rY = y * guiHeight / 2f
             }
 
             Position.LB -> {
-                rX = x * sr.scaledWidth / 2f
-                rY = sr.scaledHeight - (y * sr.scaledHeight / 2f + height)
+                rX = x * guiWidth / 2f
+                rY = guiHeight - (y * guiHeight / 2f + height)
             }
 
             Position.RB -> {
-                rX = sr.scaledWidth - (x * sr.scaledWidth / 2f + width)
-                rY = sr.scaledHeight - (y * sr.scaledHeight / 2f + height)
+                rX = guiWidth - (x * guiWidth / 2f + width)
+                rY = guiHeight - (y * guiHeight / 2f + height)
             }
 
             Position.CT -> {
@@ -126,13 +135,20 @@ open class Component(clazz: Class<*>?) {
 
     private fun move(x: Float, y: Float) {
         val sr = ScaledResolution(Utility.mc)
+        var scaleFactor: Int = if (ClientSettings.Companion.fixedScale.value) {
+            sr.scaleFactor;
+        } else {
+            2;
+        }
+        val guiWidth = sr.scaledWidth / 2f * scaleFactor
+        val guiHeight = sr.scaledHeight / 2f * scaleFactor
         var changeX = 0f
         var changeY = 0f
-        if (x > sr.scaledWidth / 2f) {
-            if (y >= sr.scaledHeight / 2f) position = Position.RB else if (y < sr.scaledHeight / 2f) position =
+        if (x > guiWidth / 2f) {
+            if (y >= guiHeight / 2f) position = Position.RB else if (y < guiHeight / 2f) position =
                 Position.RT
         } else {
-            if (y >= sr.scaledHeight / 2f) position = Position.LB else if (y < sr.scaledHeight / 2f) position =
+            if (y >= guiHeight / 2f) position = Position.LB else if (y < guiHeight / 2f) position =
                 Position.LT
         }
         when (position) {
@@ -142,26 +158,26 @@ open class Component(clazz: Class<*>?) {
             }
 
             Position.RT -> {
-                changeX = sr.scaledWidth - x - width + dragX
+                changeX = guiWidth - x - width + dragX
                 changeY = y - dragY
             }
 
             Position.LB -> {
                 changeX = x - dragX
-                changeY = sr.scaledHeight - y - height + dragY
+                changeY = guiHeight - y - height + dragY
             }
 
             Position.RB -> {
-                changeX = sr.scaledWidth - x - width + dragX
-                changeY = sr.scaledHeight - y - height + dragY
+                changeX = guiWidth - x - width + dragX
+                changeY = guiHeight - y - height + dragY
             }
 
             Position.CT -> {
 
             }
         }
-        this.x = changeX / sr.scaledWidth * 2f
-        this.y = changeY / sr.scaledHeight * 2f
+        this.x = changeX / guiWidth * 2f
+        this.y = changeY / guiHeight * 2f
     }
 
     fun drawRect(x: Float, y: Float, width: Float, height: Float, color: Color?) {
