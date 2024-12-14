@@ -164,7 +164,7 @@ object MusicPanel {
     }
 
     @JvmStatic
-    fun draw(x: Float, y: Float, width: Float, height: Float, mouseX: Int, mouseY: Int) {
+    fun draw(x: Float, y: Float, width: Float, height: Float, mouseX: Int, mouseY: Int, scaleFactor: Int) {
         if (isWaitingLogin) {
             FPSMaster.fontManager.s18.drawCenteredString(
                 "<",
@@ -220,7 +220,7 @@ object MusicPanel {
         }
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST)
-        Render2DUtils.doGlScissor(x, y + 30, width, height - 60)
+        Render2DUtils.doGlScissor(x, y + 30, width, height - 60, scaleFactor)
         if (searchThread == null || !searchThread!!.isAlive) {
             var dY = y + 50 + container.getScroll()
             var musicHeight = 0f

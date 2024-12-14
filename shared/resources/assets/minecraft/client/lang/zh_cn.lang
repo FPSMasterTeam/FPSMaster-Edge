@@ -236,6 +236,7 @@ oldanimations.z=Z
 oldanimations.blockx=格挡X
 oldanimations.blocky=格挡Y
 oldanimations.blockz=格挡Z
+oldanimations.animationsneak=潜行动画
 
 irc=客户端聊天
 irc.desc=与相同客户端的用户聊天
@@ -454,9 +455,10 @@ cheatersdetector.autohub=检测到作弊者自动退出
 cheatersdetector.autoreport=检测到作弊者自动举报
 cheatersdetector.cloud=使用所有用户共享的黑客列表
 
-clickgui=设置界面
-clickgui.desc=即你现在看到的界面
-clickgui.key=快捷键
+clientsettings=客户端设置
+clientsettings.desc=调整客户端各类设置
+clientsettings.clickguikey=设置界面快捷键
+clientsettings.fixedscale=固定界面缩放比例
 
 dragonwings=龙翅膀
 dragonwings.desc=在自己身上龙翅膀

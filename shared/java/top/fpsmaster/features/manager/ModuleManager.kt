@@ -2,7 +2,6 @@ package top.fpsmaster.features.manager
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiScreen
-import org.lwjgl.input.Keyboard
 import top.fpsmaster.event.EventDispatcher.registerListener
 import top.fpsmaster.event.Subscribe
 import top.fpsmaster.event.events.*
@@ -13,7 +12,6 @@ import top.fpsmaster.features.impl.render.*
 import top.fpsmaster.features.impl.utility.*
 import top.fpsmaster.interfaces.ProviderManager
 import top.fpsmaster.ui.click.MainPanel
-import top.fpsmaster.utils.Utility
 import java.util.*
 
 class ModuleManager {
@@ -31,7 +29,7 @@ class ModuleManager {
 
     @Subscribe
     fun onKey(e: EventKey) {
-        if (e.key == ClickGui.keyBind.value) if (Minecraft.getMinecraft().currentScreen == null) Minecraft.getMinecraft()
+        if (e.key == ClientSettings.keyBind.value) if (Minecraft.getMinecraft().currentScreen == null) Minecraft.getMinecraft()
             .displayGuiScreen(mainPanel)
         for (module in modules) {
             if (e.key == module.key) {
@@ -45,7 +43,7 @@ class ModuleManager {
         // register listener
         registerListener(this)
         // add mods
-        modules.add(ClickGui())
+        modules.add(ClientSettings())
         modules.add(BetterScreen())
         modules.add(Sprint())
         modules.add(Performance())

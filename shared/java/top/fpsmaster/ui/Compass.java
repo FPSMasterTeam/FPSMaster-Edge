@@ -65,7 +65,7 @@ public class Compass {
         float yaaahhrewindTime = (ProviderManager.mcProvider.getPlayer().rotationYaw % 360) * 2 + 360 * 3;
         GL11.glPushMatrix();
         GL11.glEnable(3089);
-        Render2DUtils.doGlScissor(sr.getScaledWidth() / 2f - 100, 25, 200, 25);
+        Render2DUtils.doGlScissor(sr.getScaledWidth() / 2f - 100, 25, 200, 25,2);
 
         try {
             for (Degree d : degrees) {

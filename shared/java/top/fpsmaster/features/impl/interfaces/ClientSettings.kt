@@ -4,10 +4,11 @@ import org.lwjgl.input.Keyboard
 import top.fpsmaster.features.impl.InterfaceModule
 import top.fpsmaster.features.manager.Category
 import top.fpsmaster.features.settings.impl.BindSetting
+import top.fpsmaster.features.settings.impl.BooleanSetting
 
-class ClickGui : InterfaceModule("ClickGui", Category.Interface) {
+class ClientSettings : InterfaceModule("ClientSettings", Category.Interface) {
     init {
-        addSettings(keyBind)
+        addSettings(keyBind, fixedScale)
     }
 
     override fun onEnable() {
@@ -17,6 +18,7 @@ class ClickGui : InterfaceModule("ClickGui", Category.Interface) {
 
 
     companion object {
-        var keyBind = BindSetting("Key", Keyboard.KEY_RSHIFT)
+        var keyBind = BindSetting("ClickGuiKey", Keyboard.KEY_RSHIFT)
+        var fixedScale = BooleanSetting("FixedScale", true)
     }
 }

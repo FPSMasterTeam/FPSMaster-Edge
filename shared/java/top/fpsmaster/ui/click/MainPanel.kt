@@ -256,11 +256,12 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : ScaledGuiScreen() {
         GL11.glEnable(GL11.GL_SCISSOR_TEST)
         Render2DUtils.doGlScissor(
             x.toFloat(), y.toFloat(), Companion.width,
-            (Companion.height - 4)
+            (Companion.height - 4),
+            scaleFactor
         )
         moduleListAlpha = base(moduleListAlpha.toDouble(), 255.0, 0.1).toFloat()
         if (curType === Category.Music) {
-            draw(x + leftWidth, y.toFloat(), Companion.width - leftWidth, Companion.height, mouseX, mouseY)
+            draw(x + leftWidth, y.toFloat(), Companion.width - leftWidth, Companion.height, mouseX, mouseY, scaleFactor)
         } else {
             var modsY = y + 10f
             modHeight = 20f
@@ -301,10 +302,10 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : ScaledGuiScreen() {
     override fun updateScreen() {
         super.updateScreen()
         val sr = ScaledResolution(mc)
-        if (x < 0){
+        if (x < 0) {
             x = 0
         }
-        if (y < 0){
+        if (y < 0) {
             y = 0
         }
         if (guiWidth < Companion.width) {

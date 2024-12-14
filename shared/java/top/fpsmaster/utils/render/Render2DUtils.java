@@ -147,14 +147,12 @@ public class Render2DUtils extends Utility {
         tessellator.draw();
     }
 
-    public static void doGlScissor(float x, float y, float width, float height) {
+    public static void doGlScissor(float x, float y, float width, float height, int scaleFactor) {
         if (mc.currentScreen != null) {
-
-            ScaledResolution sr = new ScaledResolution(mc);
-            width *= 1f / sr.getScaleFactor() * 2;
-            height *= 1f / sr.getScaleFactor() * 2;
-            y *= 1f / sr.getScaleFactor() * 2;
-            x *= 1f / sr.getScaleFactor() * 2;
+            width *= 1f / scaleFactor * 2;
+            height *= 1f / scaleFactor * 2;
+            y *= 1f / scaleFactor * 2;
+            x *= 1f / scaleFactor * 2;
             GL11.glScissor((int) (x * mc.displayWidth / mc.currentScreen.width), (int) (mc.displayHeight - (y + height) * mc.displayHeight / mc.currentScreen.height), (int) (width * mc.displayWidth / mc.currentScreen.width), (int) (height * mc.displayHeight / mc.currentScreen.height));
         }
     }
