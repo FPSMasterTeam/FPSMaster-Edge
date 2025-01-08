@@ -5,12 +5,12 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
+import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.awt.AWTUtils;
 import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
@@ -180,4 +180,25 @@ public class Render2DUtils extends Utility {
         ScaledResolution sr = new ScaledResolution(mc);
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
+
+    public static int fixScale() {
+        ScaledResolution sr = new ScaledResolution(mc);
+        int scaleFactor;
+        if (ClientSettings.Companion.getFixedScale().getValue()) {
+            scaleFactor = sr.getScaleFactor();
+        } else {
+            scaleFactor = 2;
+        }
+        GL11.glScaled((double) 1 / scaleFactor * 2.0, (double) 1 / scaleFactor * 2.0, 1.0);
+        return scaleFactor;
+    }
+
+    public static float[] getFixedBounds() {
+        ScaledResolution sr = new ScaledResolution(mc);
+        int scaleFactor = fixScale();
+        float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;
+        float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
+        return new float[]{guiWidth, guiHeight};
+    }
+
 }

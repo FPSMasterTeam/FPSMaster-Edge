@@ -1,12 +1,12 @@
 package top.fpsmaster.ui;
 
 import com.google.common.collect.Lists;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -60,13 +60,12 @@ public class Compass {
             return;
         preRender(sr);
         float center = sr.getScaledWidth() / 2f;
-
         int count = 0;
         float yaaahhrewindTime = (ProviderManager.mcProvider.getPlayer().rotationYaw % 360) * 2 + 360 * 3;
         GL11.glPushMatrix();
         GL11.glEnable(3089);
-        Render2DUtils.doGlScissor(sr.getScaledWidth() / 2f - 100, 25, 200, 25,2);
-
+        int scaleFactor = Render2DUtils.fixScale();
+        Render2DUtils.doGlScissor(sr.getScaledWidth() / 2f - 100, 25, 200, 25,scaleFactor);
         try {
             for (Degree d : degrees) {
                 float location = center + (count * 30) - yaaahhrewindTime;
