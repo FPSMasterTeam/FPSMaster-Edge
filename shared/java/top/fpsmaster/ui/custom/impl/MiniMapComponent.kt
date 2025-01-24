@@ -25,14 +25,7 @@ class MiniMapComponent : Component(MiniMap::class.java) {
 
     override fun draw(x: Float, y: Float) {
         super.draw(x, y)
-        if (!loadedMinimap) {
-            loadedMinimap = true
-            try {
-                minimap.load()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
+
         Render2DUtils.drawImage(
             ResourceLocation("client/gui/minimapbg.png"),
             x + width / 2 - 179 / 4f,
@@ -41,11 +34,24 @@ class MiniMapComponent : Component(MiniMap::class.java) {
             179f / 2f,
             -1
         )
-        Minecraft.getMinecraft().entityRenderer.setupOverlayRendering()
-        GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f)
 
+        GL11.glPushMatrix()
+        if (!loadedMinimap) {
+            loadedMinimap = true
+            try {
+                minimap.load()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+        GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f)
+        Minecraft.getMinecraft().entityRenderer.setupOverlayRendering()
         InterfaceHandler.drawInterfaces(width, height, ProviderManager.timerProvider.getRenderPartialTicks())
-        Render2DUtils.drawRect(x + width / 2 - 1, y + height / 2 - 1, 2f, 2f, -1)
         MinimapAnimation.tick()
+        GL11.glPopMatrix()
+        Render2DUtils.fixScale()
+
+        Render2DUtils.drawRect(x + width / 2 - 1, y + height / 2 - 1, 2f, 2f, -1)
+
     }
 }

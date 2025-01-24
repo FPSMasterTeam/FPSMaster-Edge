@@ -82,7 +82,7 @@ open class Module {
                             FPSMaster.i18n["notification.module.enable.desc"],
                             FPSMaster.i18n[this.name.lowercase(Locale.getDefault())]
                         ),
-                        1f
+                        2f
                     )
             } else {
                 onDisable()
@@ -93,7 +93,7 @@ open class Module {
                             FPSMaster.i18n["notification.module.disable.desc"],
                             FPSMaster.i18n[this.name.lowercase(Locale.getDefault())]
                         ),
-                        1f
+                        2f
                     )
             }
         } catch (e: Exception) {

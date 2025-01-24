@@ -30,6 +30,7 @@ import top.fpsmaster.ui.minimap.interfaces.Interface;
 import top.fpsmaster.ui.minimap.interfaces.InterfaceHandler;
 import top.fpsmaster.ui.minimap.minimap.DynamicTexture;
 import top.fpsmaster.ui.minimap.minimap.MinimapChunk;
+import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

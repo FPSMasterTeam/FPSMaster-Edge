@@ -5,7 +5,6 @@ import top.fpsmaster.features.impl.InterfaceModule
 import top.fpsmaster.features.manager.Category
 import top.fpsmaster.ui.notification.Notification
 import top.fpsmaster.ui.notification.NotificationManager
-import top.fpsmaster.ui.notification.Type
 import top.fpsmaster.utils.OptifineUtil
 import top.fpsmaster.utils.Utility
 
