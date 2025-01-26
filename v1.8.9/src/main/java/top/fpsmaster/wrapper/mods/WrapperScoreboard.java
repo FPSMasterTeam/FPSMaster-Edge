@@ -84,13 +84,13 @@ public class WrapperScoreboard {
                     String s3 = objective.getDisplayName();
                     scoreboardComponent.drawRect(l1, y, i, height1 + 1, mod.backgroundColor.getColor());
                     if (mod.betterFont.getValue()) {
-                        scoreboardComponent.drawString(s16, s3, (int) (l1 + 2 + (float) i / 2 - s16.getStringWidth(s3) / 2f), y, -1);
+                        scoreboardComponent.drawString(16, s3, (int) (l1 + 2 + (float) i / 2 - s16.getStringWidth(s3) / 2f), y, -1);
                     } else {
                         ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(s3, (int) (l1 + 2 + (float) i / 2 - ProviderManager.mcProvider.getFontRenderer().getStringWidth(s3) / 2f), y, -1);
                     }
                 }
                 if (mod.betterFont.getValue()) {
-                    scoreboardComponent.drawString(s16, s1, ((int) l1) + 2, (int) (y + h - k), -1);
+                    scoreboardComponent.drawString(16, s1, ((int) l1) + 2, (int) (y + h - k), -1);
                 } else {
                     ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(s1, ((int) l1) + 2, (int) (y + h - k), -1);
                 }
@@ -98,7 +98,7 @@ public class WrapperScoreboard {
                 if (Scoreboard.score.getValue()) {
                     String s2 = TextFormattingProvider.getRed() + String.valueOf(score1.getScorePoints());
                     if (mod.betterFont.getValue()) {
-                        scoreboardComponent.drawString(s16, s2, l1 + i - 2 - s16.getStringWidth(s2), y + k, -1);
+                        scoreboardComponent.drawString(16, s2, l1 + i - 2 - s16.getStringWidth(s2), y + k, -1);
                     } else {
                         ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(s2, l1 + i - 2 - ProviderManager.mcProvider.getFontRenderer().getStringWidth(s2), y + k, -1);
                     }

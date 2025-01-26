@@ -34,6 +34,7 @@ class ConfigManager {
                     addProperty("x", module.x)
                     addProperty("y", module.y)
                     addProperty("position", module.position.name)
+                    addProperty("scale", module.scale)
                 }
                 add(module.mod.name, component)
             }
@@ -47,9 +48,11 @@ class ConfigManager {
         val json = gson.fromJson(jsonStr, JsonObject::class.java)
         for (mod in FPSMaster.moduleManager.modules) {
             json.getAsJsonObject(mod.name)?.let { module ->
+
                 FPSMaster.componentsManager.components.find { it.mod.name == module["name"].asString }?.apply {
                     x = module["x"].asFloat
                     y = module["y"].asFloat
+                    scale = if (module["scale"].isJsonNull) 1f else module["scale"].asFloat
                     position = Position.valueOf(module["position"].asString)
                 }
             }

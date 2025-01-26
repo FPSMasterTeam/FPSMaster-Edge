@@ -12,6 +12,7 @@ import java.awt.Color
 class ModsListComponent : Component(ModsList::class.java) {
     init {
         this.x = 1f
+        this.allowScale = true
     }
     var modules: List<Module> = ArrayList()
     override fun draw(x: Float, y: Float) {
@@ -20,8 +21,8 @@ class ModsListComponent : Component(ModsList::class.java) {
         var modY = 0f
 
         if ((mod as ModsList).showLogo.value) {
-            FPSMaster.fontManager.s36.drawString("FPS V3", x + 0.5f, y + 0.5f, Color(0, 0, 0, 150).rgb)
-            FPSMaster.fontManager.s36.drawString("FPS V3", x, y, FPSMaster.theme.primary.rgb)
+            drawString(36,"FPS V3", x + 0.5f, y + 0.5f, Color(0, 0, 0, 150).rgb)
+            drawString(36,"FPS V3", x, y, FPSMaster.theme.primary.rgb)
             modY = 20f
         }
         var width2 = 40f

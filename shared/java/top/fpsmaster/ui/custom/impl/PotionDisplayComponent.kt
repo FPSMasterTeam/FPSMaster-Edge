@@ -22,10 +22,10 @@ class PotionDisplayComponent : Component(PotionDisplay::class.java) {
             val duration = (effect.duration / 20 / 60).toString() + "min" + effect.duration / 20 % 60 + "s"
             val s18 = FPSMaster.fontManager.s18
             val s16 = FPSMaster.fontManager.s16
-            val width = max(getStringWidth(s18, title), getStringWidth(s16, duration)) + 36
+            val width = max(getStringWidth(18, title), getStringWidth(16, duration)) + 36
             drawRect(x, dY, width + 10, 32f, mod.backgroundColor.color)
-            drawString(s18, title, x + 34, dY + 5, -1)
-            drawString(s16, duration, x + 34, dY + 18, Color(200, 200, 200).rgb)
+            drawString(18, title, x + 34, dY + 5, -1)
+            drawString(16, duration, x + 34, dY + 18, Color(200, 200, 200).rgb)
             // draw image
             val res = ResourceLocation("textures/gui/container/inventory.png")
             Utility.mc.textureManager.bindTexture(res)

@@ -68,9 +68,8 @@ class LyricsComponent : Component(LyricsDisplay::class.java) {
                 for (i in curLine - 2..curLine + 2) {
                     if (current.lyrics!!.lines.size > i && i >= 0) {
                         val line = current.lyrics!!.lines[i]
-                        val lfont = FPSMaster.fontManager.s20
                         val content = line.content
-                        val xOffset = x + (width - getStringWidth(lfont, content)) / 2
+                        val xOffset = x + (width - getStringWidth(20, content)) / 2
                         if (i == curLine) {
                             line.animation = base(line.animation.toDouble(), 0.0, 0.1).toFloat()
                             line.alpha = base(line.alpha.toDouble(), 1.0, 0.1).toFloat()
@@ -88,7 +87,7 @@ class LyricsComponent : Component(LyricsDisplay::class.java) {
                                 line,
                                 xOffset,
                                 y + line.animation * 20 + 20,
-                                FPSMaster.fontManager.s20,
+                                20,
                                 i == curLine
                             )
                         }
@@ -101,7 +100,7 @@ class LyricsComponent : Component(LyricsDisplay::class.java) {
 //        GL11.glPopMatrix();
     }
 
-    private fun drawLine(line: Line, xOffset: Float, y: Float, lfont: UFontRenderer, current: Boolean) {
+    private fun drawLine(line: Line, xOffset: Float, y: Float, lfont: Int, current: Boolean) {
         var xOffset = xOffset
         for (word in line.words) {
             xOffset += if (current) {

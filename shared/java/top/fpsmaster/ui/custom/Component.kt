@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiChat
 import net.minecraft.client.gui.ScaledResolution
 import org.lwjgl.input.Mouse
+import org.lwjgl.opengl.GL11
 import top.fpsmaster.FPSMaster
 import top.fpsmaster.font.impl.UFontRenderer
 import top.fpsmaster.features.impl.InterfaceModule
@@ -39,6 +40,12 @@ open class Component(clazz: Class<*>?) {
     @JvmField
     var height = 0f
 
+    @JvmField
+    var scale = 1f
+
+    var allowScale = false
+
+
     open fun draw(x: Float, y: Float) {}
     var alpha = 0f
 
@@ -59,7 +66,7 @@ open class Component(clazz: Class<*>?) {
         }
         val guiWidth = sr.scaledWidth / 2f * scaleFactor
         val guiHeight = sr.scaledHeight / 2f * scaleFactor
-        
+
         when (position) {
             Position.LT -> {
                 rX = x * guiWidth / 2f
@@ -92,15 +99,10 @@ open class Component(clazz: Class<*>?) {
         val rX = getRealPosition()[0]
         val rY = getRealPosition()[1]
         draw(rX.toInt().toFloat(), rY.toInt().toFloat())
-        if (Utility.mc.currentScreen !is GuiChat && !(Utility.mc.currentScreen is MainPanel && !Render2DUtils.isHovered(
-                MainPanel.x.toFloat(),
-                MainPanel.y.toFloat(),
-                MainPanel.width,
-                MainPanel.height,
-                mouseX,
-                mouseY
-            ))
+        if (Utility.mc.currentScreen !is GuiChat && Utility.mc.currentScreen !is MainPanel
         ) return
+        var width = width * scale
+        var height = height * scale
         val drag = FPSMaster.componentsManager.dragLock == mod.name
         alpha = if (Render2DUtils.isHovered(rX, rY, width, height, mouseX, mouseY) || drag) {
             if ((base(alpha.toDouble(), 50.0, 0.1).toFloat()).isNaN())
@@ -114,8 +116,16 @@ open class Component(clazz: Class<*>?) {
             FPSMaster.componentsManager.dragLock = ""
         }
         if (Render2DUtils.isHovered(rX, rY, width, height, mouseX, mouseY) || drag) {
+            if (allowScale) {
+                val dWheel = Mouse.getDWheel()
+                if (dWheel > 0) {
+                    this.scaleUp()
+                } else if (dWheel < 0) {
+                    this.scaleDown()
+                }
+            }
             FPSMaster.fontManager.s14.drawString(
-                FPSMaster.i18n[mod.name.lowercase()],
+                FPSMaster.i18n[mod.name.lowercase()] + " " + (scale * 10).toInt() / 10f + "x",
                 rX,
                 rY - 10,
                 -1
@@ -130,7 +140,20 @@ open class Component(clazz: Class<*>?) {
                 move(mouseX.toFloat(), mouseY.toFloat())
                 FPSMaster.componentsManager.dragLock = mod.name
             }
+
         }
+
+
+    }
+
+    fun scaleUp() {
+        if (scale < 2.5f)
+            scale += 0.1f
+    }
+
+    fun scaleDown() {
+        if (scale > 0.5f)
+            scale -= 0.1f
     }
 
     private fun move(x: Float, y: Float) {
@@ -181,6 +204,8 @@ open class Component(clazz: Class<*>?) {
     }
 
     fun drawRect(x: Float, y: Float, width: Float, height: Float, color: Color?) {
+        var width = width * scale
+        var height = height * scale
         BlurBuffer.blurArea(x, y, width, height, true)
         if (mod.bg.value)
             if (mod.rounded.value) {
@@ -190,7 +215,13 @@ open class Component(clazz: Class<*>?) {
             }
     }
 
-    fun drawString(font: UFontRenderer, text: String, x: Float, y: Float, color: Int) {
+    fun drawString(fontSize: Int, text: String, x: Float, y: Float, color: Int) {
+        drawString(fontSize, false, text, x, y, color)
+    }
+
+    fun drawString(fontSize: Int, bold: Boolean, text: String, x: Float, y: Float, color: Int) {
+        val fontSize = (fontSize * scale).toInt()
+        val font = FPSMaster.fontManager.getFont(fontSize)
         if (mod.betterFont.value) {
             if (mod.fontShadow.value) font.drawStringWithShadow(text, x, y, color) else font.drawString(
                 text,
@@ -199,12 +230,19 @@ open class Component(clazz: Class<*>?) {
                 color
             )
         } else {
+            GL11.glPushMatrix()
+            GL11.glTranslated(x.toDouble(), y.toDouble(), 0.0)
+            GL11.glScaled(scale.toDouble(), scale.toDouble(), 1.0)
             if (mod.fontShadow.value) ProviderManager.mcProvider.getFontRenderer()
-                .drawStringWithShadow(text, x, y, color) else ProviderManager.mcProvider.drawString(text, x, y, color)
+                .drawStringWithShadow(text, 0f, 0f, color) else ProviderManager.mcProvider.drawString(text, 0f, 0f, color)
+
+            GL11.glPopMatrix()
         }
     }
 
-    protected fun getStringWidth(font: UFontRenderer, name: String): Float {
+    protected fun getStringWidth(fontSize: Int, name: String): Float {
+        val font = FPSMaster.fontManager.getFont(fontSize)
+
         return if (mod.betterFont.value) {
             font.getStringWidth(name).toFloat()
         } else {

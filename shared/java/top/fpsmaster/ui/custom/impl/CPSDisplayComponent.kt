@@ -9,16 +9,17 @@ class CPSDisplayComponent : Component(CPSDisplay::class.java) {
     init {
         x = 0.05f
         y = 0.05f
+        allowScale = true
+
     }
 
     override fun draw(x: Float, y: Float) {
         super.draw(x, y)
-        val s16 = FPSMaster.fontManager.s16
         val text =
             "CPS: " + CPSDisplay.lcps + TextFormattingProvider.getGray() + " | " + TextFormattingProvider.getReset() + CPSDisplay.rcps
-        width = getStringWidth(s16, text) + 4
+        width = getStringWidth(16, text) + 4
         height = 14f
         drawRect(x - 2, y, width, height, mod.backgroundColor.color)
-        drawString(s16, text, x, y + 2, CPSDisplay.textColor.rGB)
+        drawString(16, text, x, y + 2, CPSDisplay.textColor.rGB)
     }
 }

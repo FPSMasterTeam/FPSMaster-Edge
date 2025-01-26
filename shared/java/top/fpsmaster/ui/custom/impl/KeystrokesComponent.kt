@@ -39,22 +39,22 @@ class KeystrokesComponent : Component(Keystrokes::class.java) {
                     pressed = Mouse.isButtonDown(0)
                     drawRect(x + xOffset, y + yOffset, 28f, 18f, this.color.color)
                     drawRect(x + xOffset, y + yOffset, 28f, 18f, this.color.color)
-                    drawString(s16b, name, x + xOffset + 7, y + yOffset + 4, -1)
+                    drawString(16, name, x + xOffset + 7, y + yOffset + 4, -1)
                 }
                 -2 -> {
                     pressed = Mouse.isButtonDown(1)
                     drawRect(x + xOffset - 10, y + yOffset, 28f, 18f, this.color.color)
                     drawRect(x + xOffset - 10, y + yOffset, 28f, 18f, this.color.color)
-                    drawString(s16b, name, x + xOffset - 4, y + yOffset + 4, -1)
+                    drawString(16, name, x + xOffset - 4, y + yOffset + 4, -1)
                 }
                 else -> {
                     pressed = Keyboard.isKeyDown(keyCode)
                     drawRect(x + xOffset, y + yOffset, 18f, 18f, this.color.color)
                     drawRect(x + xOffset, y + yOffset, 18f, 18f, this.color.color)
                     drawString(
-                        s16b,
+                        16,
                         name,
-                        x.toInt() + xOffset + 9 - getStringWidth(s16b, name) / 2f,
+                        x.toInt() + xOffset + 9 - getStringWidth(16, name) / 2f,
                         (y.toInt() + yOffset + 4).toFloat(),
                         -1
                     )

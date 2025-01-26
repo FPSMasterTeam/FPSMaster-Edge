@@ -17,6 +17,7 @@ class MusicComponent : Component(MusicOverlay::class.java) {
         x = 0.01f
         y = 0.01f
         position = Position.RT
+
     }
 
     private fun drawSong(x: Float, y: Float, width: Float, height: Float) {
@@ -34,17 +35,16 @@ class MusicComponent : Component(MusicOverlay::class.java) {
         )
         val s18 = FPSMaster.fontManager.s18
         val s16 = FPSMaster.fontManager.s16
-        drawString(s18, current.name, x + 40, y + 6, FPSMaster.theme.textColorTitle.rgb)
-        drawString(s16, current.author, x + 40, y + 18, FPSMaster.theme.textColorDescription.rgb)
+        drawString(18, current.name, x + 40, y + 6, FPSMaster.theme.textColorTitle.rgb)
+        drawString(16, current.author, x + 40, y + 18, FPSMaster.theme.textColorDescription.rgb)
     }
 
     override fun draw(x: Float, y: Float) {
         super.draw(x, y)
-        val s18 = FPSMaster.fontManager.s18
         if (!MusicPlayer.playList.musics.isEmpty()) {
             val width: Float = max(
-                getStringWidth(s18, MusicPlayer.playList.getCurrent()!!.name), s18.getStringWidth(
-                    MusicPlayer.playList.getCurrent()!!.author!!
+                getStringWidth(18, MusicPlayer.playList.getCurrent()!!.name), getStringWidth(18,
+                    MusicPlayer.playList.getCurrent()!!.author
                 ).toFloat()
             )
             drawSong(x, y, width + 60, 40f)

@@ -8,6 +8,10 @@ import top.fpsmaster.interfaces.ProviderManager
 import top.fpsmaster.wrapper.TextFormattingProvider
 
 class CoordsDisplayComponent : Component(CoordsDisplay::class.java) {
+    init {
+        allowScale = true
+
+    }
     override fun draw(x: Float, y: Float) {
         super.draw(x, y)
         val s18 = FPSMaster.fontManager.s18
@@ -30,9 +34,9 @@ class CoordsDisplayComponent : Component(CoordsDisplay::class.java) {
             s =
                 "X:${ProviderManager.mcProvider.getPlayer()!!.posX.toInt()} Y:${ProviderManager.mcProvider.getPlayer()!!.posY.toInt()}($yStr) Z:${ProviderManager.mcProvider.getPlayer()!!.posZ.toInt()}"
         }
-        width = getStringWidth(s18, s) + 4
+        width = getStringWidth(18, s) + 4
         height = 14f
         drawRect(x - 2, y, width, height, mod.backgroundColor.color)
-        drawString(s18, s, x, y + 2, FPSDisplay.textColor.rGB)
+        drawString(18, s, x, y + 2, FPSDisplay.textColor.rGB)
     }
 }
