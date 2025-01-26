@@ -1,5 +1,6 @@
 package top.fpsmaster.modules.lua.parser;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -171,6 +172,55 @@ class VariableExpression extends Expression {
         return "VariableExpression{" +
                 "name='" + name + '\'' +
                 '}';
+    }
+}
+
+class IfStatement extends Statement {
+    private final Expression condition;
+    private final List<Statement> ifStatements;
+    private final List<Statement> elseifStatements;
+    private final List<Expression> elseifConditions;
+    private final List<Statement> elseStatements;
+
+    public IfStatement(Expression condition, List<Statement> ifStatements,
+                       List<Statement> elseifStatements, List<Expression> elseifConditions,
+                       List<Statement> elseStatements) {
+        this.condition = condition;
+        this.ifStatements = ifStatements;
+        this.elseifStatements = elseifStatements;
+        this.elseifConditions = elseifConditions;
+        this.elseStatements = elseStatements;
+    }
+
+    public Expression getCondition() {
+        return condition;
+    }
+
+    public List<Statement> getIfStatements() {
+        return ifStatements;
+    }
+
+    public List<Statement> getElseifStatements() {
+        return elseifStatements;
+    }
+
+    public List<Expression> getElseifConditions() {
+        return elseifConditions;
+    }
+
+    public List<Statement> getElseStatements() {
+        return elseStatements;
+    }
+
+    @Override
+    public String toString() {
+        return "IfStatement{" +
+                "condition=" + condition.toString() +
+                "ifStatements=" + ifStatements.toString() +
+                "elseifStatements=" + elseifStatements.toString() +
+                "elseifConditions=" + elseifConditions.toString() +
+                "elseStatements=" + elseStatements.toString() +
+                "}";
     }
 }
 

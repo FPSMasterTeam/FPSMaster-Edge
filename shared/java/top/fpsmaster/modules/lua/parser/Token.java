@@ -41,22 +41,52 @@ class Lexer {
                 skipComment();
             } else if (Character.isLetter(current) || current == '_') {
                 String identifier = readWhile(c -> Character.isLetterOrDigit(c) || c == '_');
-                if (identifier.equals("local")) {
-                    tokens.add(new Token("KEYWORD", "local"));
-                } else if (identifier.equals("function")) {
-                    tokens.add(new Token("KEYWORD", "function"));
-                } else if (identifier.equals("end")) {
-                    tokens.add(new Token("KEYWORD", "end"));
-                } else if (identifier.equals("return")) {
-                    tokens.add(new Token("KEYWORD", "return"));
-                } else if (identifier.equals("true")) {
-                    tokens.add(new Token("BOOLEAN", "true"));
-                } else if (identifier.equals("false")) {
-                    tokens.add(new Token("BOOLEAN", "false"));
-                } else if (identifier.equals("nil")) {
-                    tokens.add(new Token("NIL", "nil"));
-                } else {
-                    tokens.add(new Token("IDENTIFIER", identifier));
+                switch (identifier) {
+                    case "local":
+                        tokens.add(new Token("KEYWORD", "local"));
+                        break;
+                    case "function":
+                        tokens.add(new Token("KEYWORD", "function"));
+                        break;
+                    case "end":
+                        tokens.add(new Token("KEYWORD", "end"));
+                        break;
+                    case "return":
+                        tokens.add(new Token("KEYWORD", "return"));
+                        break;
+                    case "true":
+                        tokens.add(new Token("BOOLEAN", "true"));
+                        break;
+                    case "false":
+                        tokens.add(new Token("BOOLEAN", "false"));
+                        break;
+                    case "nil":
+                        tokens.add(new Token("NIL", "nil"));
+                        break;
+                    case "if":
+                        tokens.add(new Token("KEYWORD", "if"));
+                        break;
+                    case "then":
+                        tokens.add(new Token("KEYWORD", "then"));
+                        break;
+                    case "elseif":
+                        tokens.add(new Token("KEYWORD", "elseif"));
+                        break;
+                    case "else":
+                        tokens.add(new Token("KEYWORD", "else"));
+                        break;
+                    case "until":
+                        tokens.add(new Token("KEYWORD", "else"));
+                        break;
+                    case "while":
+                        tokens.add(new Token("KEYWORD", "else"));
+                        break;
+                    case "for":
+                        tokens.add(new Token("KEYWORD", "else"));
+                        break;
+                    default:
+                        tokens.add(new Token("IDENTIFIER", identifier));
+                        break;
                 }
             } else if (Character.isDigit(current)) {
                 String number = readWhile(Character::isDigit); // 读取数字，直到遇到非数字为止
@@ -67,9 +97,23 @@ class Lexer {
             } else if (".:{}(),".indexOf(current) != -1) {
                 tokens.add(new Token("SYMBOL", String.valueOf(current)));
                 position++;
-            } else {
+            } else if (current == '=' && input.charAt(position + 1) == '=') {
+                tokens.add(new Token("OPERATOR", "=="));
+                position += 2;
+            } else if (current == '<' && input.charAt(position + 1) == '=') {
+                tokens.add(new Token("OPERATOR", "<="));
+                position += 2;
+            } else if (current == '>' && input.charAt(position + 1) == '=') {
+                tokens.add(new Token("OPERATOR", ">="));
+                position += 2;
+            } else if (current == '.' && input.charAt(position + 1) == '.') {
+                tokens.add(new Token("OPERATOR", ".."));
+                position += 2;
+            } else if (current == '+' || current == '-' || current == '*' || current == '/' || current == '%' || current == '^' || current == '#' || current == '&' || current == '|' || current == '~' || current == '>' || current == '<' || current == '=' || current == '.' || current == '?' || current == '!' || current == ':') {
                 tokens.add(new Token("OPERATOR", String.valueOf(current)));
                 position++;
+            } else {
+                throw new IllegalArgumentException("Unexpected character: " + current);
             }
         }
         return tokens;

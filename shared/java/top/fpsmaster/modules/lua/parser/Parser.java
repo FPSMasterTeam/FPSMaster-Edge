@@ -24,6 +24,8 @@ class Parser {
                 return parseLocalDeclaration();
             } else if ("return".equals(peek().value)) {
                 return parseReturnStatement();
+            } else if ("if".equals(peek().value)) {
+                return parseIfStatement();
             }
         } else if (match("IDENTIFIER")) {
             if (lookaheadIs("SYMBOL", "(")) {
@@ -248,6 +250,41 @@ class Parser {
         }
 
         return new ReturnStatement(returnValues);
+    }
+
+    // 解析 if 语句
+    private IfStatement parseIfStatement() {
+        consume("KEYWORD"); // 消费 "if"
+
+        Expression condition = parseExpression(); // 解析条件表达式
+        consume("KEYWORD"); // 消费 "then"
+
+        // 解析 if 部分的语句
+        List<Statement> ifStatements = parseBlock();
+
+        List<Statement> elseifStatements = new ArrayList<>();
+        List<Expression> elseifConditions = new ArrayList<>();
+
+        // 解析 elseif 部分（如果有的话）
+        while (match("KEYWORD") && "elseif".equals(peek().value)) {
+            consume("KEYWORD"); // 消费 "elseif"
+            Expression elseifCondition = parseExpression(); // 解析 elseif 条件
+            consume("KEYWORD"); // 消费 "then"
+            List<Statement> elseifBlock = parseBlock(); // 解析 elseif 语句块
+            elseifConditions.add(elseifCondition);
+            elseifStatements.addAll(elseifBlock);
+        }
+
+        // 解析 else 部分（如果有的话）
+        List<Statement> elseStatements = new ArrayList<>();
+        if (match("KEYWORD") && "else".equals(peek().value)) {
+            consume("KEYWORD"); // 消费 "else"
+            elseStatements.addAll(parseBlock()); // 解析 else 语句块
+        }
+
+        consume("KEYWORD"); // 消费 "end"
+
+        return new IfStatement(condition, ifStatements, elseifStatements, elseifConditions, elseStatements);
     }
 
     // 解析匿名函数
