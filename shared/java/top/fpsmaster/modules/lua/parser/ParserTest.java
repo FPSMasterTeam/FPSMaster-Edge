@@ -16,13 +16,14 @@ public class ParserTest {
                 "\n" +
                 "local module = registerModule(\"TestModule\", \"Optimize\", {\n" +
                 "    on_enable = function()\n" +
-                "        print(\"TestModule enabled.\")\n" +
                 "        -- 功能开启后执行\n" +
                 "    end,\n" +
                 "    on_disable = function()\n" +
                 "        -- 功能关闭后执行\n" +
                 "    end\n" +
-                "})\n";
+                "})\n" +
+                "\n" +
+                "module.toggle()\n";
 
         Lexer lexer = new Lexer(code);
         List<Token> tokens = lexer.tokenize();

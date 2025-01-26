@@ -56,7 +56,7 @@ class Lexer {
             } else if (current == '"') {
                 // 读取字符串
                 tokens.add(new Token("STRING", readString()));
-            } else if ("{}(),".indexOf(current) != -1) {
+            } else if (".:{}(),".indexOf(current) != -1) {
                 tokens.add(new Token("SYMBOL", String.valueOf(current)));
                 position++;
             } else {

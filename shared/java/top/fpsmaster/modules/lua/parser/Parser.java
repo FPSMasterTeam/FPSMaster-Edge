@@ -26,6 +26,8 @@ class Parser {
         } else if (match("IDENTIFIER")) {
             if (lookaheadIs("SYMBOL", "(")) {
                 return new ExpressionStatement(parseFunctionCall());
+            } else if (lookaheadIs("SYMBOL", ".")) {
+                return new ExpressionStatement(parseExpression());
             } else {
                 return parseAssignment();
             }
@@ -78,8 +80,7 @@ class Parser {
         return new FunctionDefinitionExpression(functionName.value, parameters, body);
     }
 
-
-    // 解析表达式
+    // 解析表达式语句
     private Expression parseExpression() {
         Expression left = parsePrimary(); // 解析左操作数（包括常量、变量、表等）
 
@@ -87,14 +88,22 @@ class Parser {
         while (match("SYMBOL") && peek().value.equals(".")) {
             consume("SYMBOL"); // 消费 "."
             Token identifier = consume("IDENTIFIER"); // 消费字段名
-            left = new MemberAccessExpression(left, identifier.value); // 生成成员访问表达式
+            if (match("SYMBOL") && peek().value.equals("(")) {
+                // 如果后面是 "(", 那么我们视为方法调用
+                List<Expression> arguments = parseArguments(); // 解析函数调用参数
+                left = new MethodCallExpression(left, identifier.value, arguments); // 生成方法调用
+            } else {
+                left = new MemberAccessExpression(left, identifier.value); // 否则是成员访问
+            }
+//            left = new MemberAccessExpression(left, identifier.value); // 生成成员访问表达式
         }
 
         // 处理冒号运算符 ":"
         while (match("SYMBOL") && peek().value.equals(":")) {
             consume("SYMBOL"); // 消费 ":"
             Token identifier = consume("IDENTIFIER"); // 消费方法名
-            left = new MethodCallExpression(left, identifier.value); // 生成方法调用表达式
+            List<Expression> arguments = parseArguments(); // 解析函数调用参数
+            left = new MethodCallExpression(left, identifier.value, arguments, true); // 自动传递对象本身作为第一个参数
         }
 
         // 处理二元操作符
@@ -107,7 +116,20 @@ class Parser {
         return left;
     }
 
-
+    private List<Expression> parseArguments() {
+        consume("SYMBOL"); // 消费 "("
+        List<Expression> arguments = new ArrayList<>();
+        while (!match("SYMBOL") || !peek().value.equals(")")) {
+            if (match("NUMBER") || match("STRING") || match("IDENTIFIER")) {
+                arguments.add(parsePrimary()); // 解析基本的参数
+            }
+            if (match("SYMBOL") && peek().value.equals(",")) {
+                consume("SYMBOL"); // 跳过 ","
+            }
+        }
+        consume("SYMBOL"); // 消费 ")"
+        return arguments;
+    }
 
     private FunctionCallExpression parseFunctionCall() {
         String functionName = consume("IDENTIFIER").value;
@@ -267,6 +289,7 @@ class Parser {
     private Token peek() {
         return peek(0);
     }
+
     // 查看当前位置的 offset 个 Token，不移动 position
     private Token peek(int offset) {
         int index = position + offset;

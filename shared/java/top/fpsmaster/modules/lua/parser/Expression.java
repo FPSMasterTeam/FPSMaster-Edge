@@ -222,17 +222,28 @@ class MemberAccessExpression extends Expression {
 
     @Override
     public String toString() {
-        return object + "." + member;
+        return "MemberAccessExpression{" +
+                "object=" + object +
+                ", member='" + member + '\'' +
+                '}';
     }
 }
 
 class MethodCallExpression extends Expression {
     private final Expression object;
     private final String method;
+    private final List<Expression> arguments;
+    private final boolean isColonCall;
 
-    public MethodCallExpression(Expression object, String method) {
+    public MethodCallExpression(Expression object, String method, List<Expression> arguments) {
+        this(object, method, arguments, false);
+    }
+
+    public MethodCallExpression(Expression object, String method, List<Expression> arguments, boolean isColonCall) {
         this.object = object;
         this.method = method;
+        this.arguments = arguments;
+        this.isColonCall = isColonCall;
     }
 
     public Expression getObject() {
@@ -243,12 +254,27 @@ class MethodCallExpression extends Expression {
         return method;
     }
 
+    public List<Expression> getArguments() {
+        return arguments;
+    }
+
     @Override
     public String toString() {
-        return object + ":" + method;
+        StringBuilder sb = new StringBuilder();
+        sb.append("MethodCallExpression{");
+        sb.append("object=").append(object);
+        sb.append(", method='").append(method).append('\'');
+        sb.append(", arguments=[");
+        for (int i = 0; i < arguments.size(); i++) {
+            sb.append(arguments.get(i));
+            if (i < arguments.size() - 1) sb.append(", ");
+        }
+        sb.append("]");
+        sb.append(", isColonCall=").append(isColonCall);
+        sb.append('}');
+        return sb.toString();
     }
 }
-
 
 
 
