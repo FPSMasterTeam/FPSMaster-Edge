@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
+import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.utils.Utility;
 
 import java.awt.*;
@@ -14,20 +15,24 @@ public class GradientUtils extends Utility {
     private static final ShaderUtil gradientShader = new ShaderUtil(Shaders.gradient);
 
     public static void drawGradient(float x, float y, float width, float height, float alpha, Color bottomLeft, Color topLeft, Color bottomRight, Color topRight) {
-        applyGradient(x, y, width, height, alpha, bottomLeft, topLeft, bottomRight, topRight, () -> ShaderUtil.drawQuads(x, y, width, height));
+        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        applyGradient(x, y, width, height, alpha, bottomLeft, topLeft, bottomRight, topRight,sr.getScaleFactor(), () -> ShaderUtil.drawQuads(x, y, width, height));
     }
 
 
-    public static void applyGradient(float x, float y, float width, float height, float alpha, Color bottomLeft, Color topLeft, Color bottomRight, Color topRight, Runnable content) {
+    public static void applyGradient(float x, float y, float width, float height, float alpha, Color bottomLeft, Color topLeft, Color bottomRight, Color topRight, int scale, Runnable content) {
         GlStateManager.color(1, 1, 1, 1);
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         gradientMaskShader.init();
+        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
 
-        ScaledResolution sr = new ScaledResolution(mc);
-
-        gradientMaskShader.setUniformf("location", x * sr.getScaleFactor(), (Minecraft.getMinecraft().displayHeight - (height * sr.getScaleFactor())) - (y * sr.getScaleFactor()));
-        gradientMaskShader.setUniformf("rectSize", width * sr.getScaleFactor(), height * sr.getScaleFactor());
+        int factor = sr.getScaleFactor();
+        if (ClientSettings.Companion.getFixedScale().getValue()) {
+            factor = 2;
+        }
+        gradientMaskShader.setUniformf("location", x * factor, (Minecraft.getMinecraft().displayHeight - (height * factor)) - (y * factor));
+        gradientMaskShader.setUniformf("rectSize", width * factor, height * factor);
         gradientMaskShader.setUniformf("alpha", alpha);
         gradientMaskShader.setUniformi("tex", 0);
         // Bottom Left

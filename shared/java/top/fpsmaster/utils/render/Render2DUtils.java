@@ -85,6 +85,11 @@ public class Render2DUtils extends Utility {
         }
     }
 
+    public static void drawRoundedRectImage(float x, float y, float width, float height, int radius, Color color) {
+        ResourceLocation res = AWTUtils.generateRoundImage((int) width, (int) height, radius);
+        Render2DUtils.drawImage(res, x, y, width, height, color);
+    }
+
     public static void drawRect(float x, float y, float width, float height, Color color) {
         drawRect(x, y, width, height, color.getRGB());
     }
@@ -182,6 +187,12 @@ public class Render2DUtils extends Utility {
     }
 
     public static int fixScale() {
+        int scaleFactor = getFixedScale();
+        GL11.glScaled(2.0 / scaleFactor, 2.0 / scaleFactor, 1.0);
+        return scaleFactor;
+    }
+
+    public static int getFixedScale() {
         ScaledResolution sr = new ScaledResolution(mc);
         int scaleFactor;
         if (ClientSettings.Companion.getFixedScale().getValue()) {
@@ -189,7 +200,6 @@ public class Render2DUtils extends Utility {
         } else {
             scaleFactor = 2;
         }
-        GL11.glScaled(2.0 / scaleFactor, 2.0 / scaleFactor, 1.0);
         return scaleFactor;
     }
 
@@ -205,5 +215,4 @@ public class Render2DUtils extends Utility {
         float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
         return new float[]{guiWidth, guiHeight};
     }
-
 }

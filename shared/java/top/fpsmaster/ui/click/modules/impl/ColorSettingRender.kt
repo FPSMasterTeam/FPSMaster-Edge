@@ -52,13 +52,15 @@ class ColorSettingRender(mod: Module, setting: ColorSetting) : SettingRender<Col
                 Color.getHSBColor(setting.value.hue, 0.0f, 0f),
                 Color.getHSBColor(setting.value.hue, 0f, 1f),
                 Color.getHSBColor(setting.value.hue, 1f, 0f),
-                Color.getHSBColor(setting.value.hue, 1f, 1f)
+                Color.getHSBColor(setting.value.hue, 1f, 1f),
+                Render2DUtils.getFixedScale()
             ) {
-                Render2DUtils.drawOptimizedRoundedRect(
+                Render2DUtils.drawRoundedRectImage(
                     x + tW + 26,
                     y + 16,
                     80f,
-                    aHeight,
+                    max(aHeight, 1f),
+                    3,
                     Color.getHSBColor(setting.value.hue, setting.value.saturation, setting.value.brightness)
                 )
             }

@@ -6,7 +6,7 @@ import top.fpsmaster.features.settings.impl.ModeSetting
 
 class ArmorDisplay : InterfaceModule("ArmorDisplay", Category.Interface) {
     init {
-        addSettings(rounded, backgroundColor, fontShadow, betterFont, mode, backgroundColor, bg, rounded , roundRadius)
+        addSettings(rounded, backgroundColor, fontShadow, betterFont, mode, bg, rounded , roundRadius)
     }
 
     companion object {
