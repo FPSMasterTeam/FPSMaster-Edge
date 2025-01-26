@@ -98,7 +98,7 @@ class AssignmentStatement extends Statement {
     }
 }
 
-class FunctionDefinitionExpression extends Statement {
+class FunctionDefinitionExpression extends Expression {
     String name;
     List<String> parameters;
     List<Statement> body;
@@ -175,6 +175,7 @@ class VariableExpression extends Expression {
     }
 }
 
+
 class IfStatement extends Statement {
     private final Expression condition;
     private final List<Statement> ifStatements;
@@ -223,6 +224,114 @@ class IfStatement extends Statement {
                 "}";
     }
 }
+
+
+class WhileStatement extends Statement {
+    private final Expression condition;
+    private final List<Statement> body;
+
+    public WhileStatement(Expression condition, List<Statement> body) {
+        this.condition = condition;
+        this.body = body;
+    }
+
+    public Expression getCondition() {
+        return condition;
+    }
+
+    public List<Statement> getBody() {
+        return body;
+    }
+
+    @Override
+    public String toString() {
+        return "WhileStatement{" +
+                "condition=" + condition +
+                ", body=" + body +
+                '}';
+    }
+}
+
+
+class RepeatStatement extends Statement {
+    private final List<Statement> body;
+    private final Expression condition;
+
+    public RepeatStatement(List<Statement> body, Expression condition) {
+        this.body = body;
+        this.condition = condition;
+    }
+
+    public List<Statement> getBody() {
+        return body;
+    }
+
+    public Expression getCondition() {
+        return condition;
+    }
+
+    @Override
+    public String toString() {
+        return "RepeatStatement{" +
+                "body=" + body +
+                ", condition=" + condition +
+                '}';
+    }
+}
+
+
+class ForStatement extends Statement {
+    private final String varName;
+    private final Expression start;
+    private final Expression end;
+    private final Expression step;
+    private final List<Statement> body;
+
+    public ForStatement(String varName, Expression start, Expression end, Expression step, List<Statement> body) {
+        this.varName = varName;
+        this.start = start;
+        this.end = end;
+        this.step = step;
+        this.body = body;
+    }
+
+    @Override
+    public String toString() {
+        return "ForStatement{" +
+                "varName='" + varName + '\'' +
+                ", start=" + start +
+                ", end=" + end +
+                ", step=" + step +
+                ", body=" + body.toString() +
+                '}';
+    }
+}
+
+
+class ForInStatement extends Statement {
+    private final String key;
+    private final String value;
+    private final Expression iterator;
+    private final List<Statement> body;
+
+    public ForInStatement(String key, String value, Expression iterator, List<Statement> body) {
+        this.key = key;
+        this.value = value;
+        this.iterator = iterator;
+        this.body = body;
+    }
+
+    @Override
+    public String toString() {
+        return "ForInStatement{" +
+                "key='" + key + '\'' +
+                ", value='" + value + '\'' +
+                ", iterator=" + iterator.toString() +
+                ", body=" + body.toString() +
+                '}';
+    }
+}
+
 
 class LocalDeclarationStatement extends Statement {
     final String variableName;

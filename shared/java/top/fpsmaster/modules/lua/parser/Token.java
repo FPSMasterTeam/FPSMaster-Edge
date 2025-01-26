@@ -76,13 +76,22 @@ class Lexer {
                         tokens.add(new Token("KEYWORD", "else"));
                         break;
                     case "until":
-                        tokens.add(new Token("KEYWORD", "else"));
+                        tokens.add(new Token("KEYWORD", "until"));
                         break;
                     case "while":
-                        tokens.add(new Token("KEYWORD", "else"));
+                        tokens.add(new Token("KEYWORD", "while"));
                         break;
                     case "for":
-                        tokens.add(new Token("KEYWORD", "else"));
+                        tokens.add(new Token("KEYWORD", "for"));
+                        break;
+                    case "in":
+                        tokens.add(new Token("KEYWORD", "in"));
+                        break;
+                    case "do":
+                        tokens.add(new Token("KEYWORD", "do"));
+                        break;
+                    case "repeat":
+                        tokens.add(new Token("KEYWORD", "repeat"));
                         break;
                     default:
                         tokens.add(new Token("IDENTIFIER", identifier));
@@ -94,9 +103,6 @@ class Lexer {
             } else if (current == '"') {
                 // 读取字符串
                 tokens.add(new Token("STRING", readString()));
-            } else if (".:{}(),".indexOf(current) != -1) {
-                tokens.add(new Token("SYMBOL", String.valueOf(current)));
-                position++;
             } else if (current == '=' && input.charAt(position + 1) == '=') {
                 tokens.add(new Token("OPERATOR", "=="));
                 position += 2;
@@ -111,6 +117,9 @@ class Lexer {
                 position += 2;
             } else if (current == '+' || current == '-' || current == '*' || current == '/' || current == '%' || current == '^' || current == '#' || current == '&' || current == '|' || current == '~' || current == '>' || current == '<' || current == '=' || current == '.' || current == '?' || current == '!' || current == ':') {
                 tokens.add(new Token("OPERATOR", String.valueOf(current)));
+                position++;
+            } else if (".:{}(),".indexOf(current) != -1) {
+                tokens.add(new Token("SYMBOL", String.valueOf(current)));
                 position++;
             } else {
                 throw new IllegalArgumentException("Unexpected character: " + current);
