@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 // 表达式
-abstract class Expression { }
+abstract class Expression {
+}
 
 class LiteralExpression extends Expression {
     String value;
@@ -18,6 +19,38 @@ class LiteralExpression extends Expression {
         return "LiteralExpression{" +
                 "value='" + value + '\'' +
                 '}';
+    }
+}
+
+// 表示布尔值的表达式
+class BooleanLiteralExpression extends Expression {
+    private final boolean value;
+
+    BooleanLiteralExpression(boolean value) {
+        this.value = value;
+    }
+
+    public boolean getValue() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return "BooleanLiteralExpression{" +
+                "value=" + value +
+                '}';
+    }
+}
+
+// 表示 nil 的表达式
+class NilLiteralExpression extends Expression {
+    NilLiteralExpression() {
+        // nil 本身没有值
+    }
+
+    @Override
+    public String toString() {
+        return "NilLiteralExpression{}";
     }
 }
 
@@ -61,7 +94,7 @@ class AssignmentStatement extends Statement {
                 "variable='" + variable + '\'' +
                 ", value=" + value +
                 '}';
-        }
+    }
 }
 
 class FunctionDefinitionExpression extends Statement {
@@ -276,6 +309,35 @@ class MethodCallExpression extends Expression {
     }
 }
 
+class UnSupportedExpression extends Expression {
+    private String expression;
 
+    public UnSupportedExpression(String expression) {
+        this.expression = expression;
+    }
 
+    public String getExpression() {
+        return expression;
+    }
+
+    @Override
+    public String toString() {
+        return "UnSupportedExpression{" +
+                "expression='" + expression + '\'' +
+                '}';
+    }
+}
+
+// 表示 return 语句的 AST 节点
+class ReturnStatement extends Statement {
+    private final List<Expression> returnValues;
+
+    ReturnStatement(List<Expression> returnValues) {
+        this.returnValues = returnValues;
+    }
+
+    public List<Expression> getReturnValues() {
+        return returnValues;
+    }
+}
 

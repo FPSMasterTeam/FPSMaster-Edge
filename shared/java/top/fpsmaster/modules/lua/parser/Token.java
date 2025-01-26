@@ -39,14 +39,22 @@ class Lexer {
             } else if (current == '-' && lookaheadIs('-')) {
                 // 跳过注释
                 skipComment();
-            } else if (Character.isLetter(current)) {
-                String identifier = readWhile(Character::isLetterOrDigit);
+            } else if (Character.isLetter(current) || current == '_') {
+                String identifier = readWhile(c -> Character.isLetterOrDigit(c) || c == '_');
                 if (identifier.equals("local")) {
                     tokens.add(new Token("KEYWORD", "local"));
-                }else if (identifier.equals("function")) {
+                } else if (identifier.equals("function")) {
                     tokens.add(new Token("KEYWORD", "function"));
-                }else if (identifier.equals("end")) {
+                } else if (identifier.equals("end")) {
                     tokens.add(new Token("KEYWORD", "end"));
+                } else if (identifier.equals("return")) {
+                    tokens.add(new Token("KEYWORD", "return"));
+                } else if (identifier.equals("true")) {
+                    tokens.add(new Token("BOOLEAN", "true"));
+                } else if (identifier.equals("false")) {
+                    tokens.add(new Token("BOOLEAN", "false"));
+                } else if (identifier.equals("nil")) {
+                    tokens.add(new Token("NIL", "nil"));
                 } else {
                     tokens.add(new Token("IDENTIFIER", identifier));
                 }
@@ -109,10 +117,18 @@ class Lexer {
                 }
                 char escaped = input.charAt(position);
                 switch (escaped) {
-                    case 'n': stringLiteral.append('\n'); break;
-                    case 't': stringLiteral.append('\t'); break;
-                    case '"': stringLiteral.append('"'); break;
-                    case '\\': stringLiteral.append('\\'); break;
+                    case 'n':
+                        stringLiteral.append('\n');
+                        break;
+                    case 't':
+                        stringLiteral.append('\t');
+                        break;
+                    case '"':
+                        stringLiteral.append('"');
+                        break;
+                    case '\\':
+                        stringLiteral.append('\\');
+                        break;
                     default:
                         throw new IllegalArgumentException("Unknown escape sequence: \\" + escaped);
                 }

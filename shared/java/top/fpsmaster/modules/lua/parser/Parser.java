@@ -22,19 +22,29 @@ class Parser {
                 return parseFunctionDefinition();
             } else if ("local".equals(peek().value)) {
                 return parseLocalDeclaration();
+            } else if ("return".equals(peek().value)) {
+                return parseReturnStatement();
             }
         } else if (match("IDENTIFIER")) {
             if (lookaheadIs("SYMBOL", "(")) {
                 return new ExpressionStatement(parseFunctionCall());
             } else if (lookaheadIs("SYMBOL", ".")) {
                 return new ExpressionStatement(parseExpression());
-            } else {
-                return parseAssignment();
+            } else if (lookaheadIs("SYMBOL", ":")) {
+                return new ExpressionStatement(parseExpression());
+            } else if (lookaheadIs("SYMBOL", "=")) {
+                return new ExpressionStatement(parseExpression());
             }
         }
-        throw new IllegalArgumentException("Unexpected token: " + peek().type);
-    }
 
+        StringBuilder context = new StringBuilder();
+        for (int i = Math.max(position - 3, 0); i < Math.min(tokens.size() - 1, position + 3); i++) {
+            context.append(tokens.get(i).value);
+            context.append(" ");
+        }
+
+        throw new IllegalArgumentException("Unexpected token: " + peek().type + " " + peek().value + " at position " + position + " -> " + context);
+    }
 
     public List<Statement> parseAll() {
         List<Statement> statements = new ArrayList<>();
@@ -95,7 +105,6 @@ class Parser {
             } else {
                 left = new MemberAccessExpression(left, identifier.value); // 否则是成员访问
             }
-//            left = new MemberAccessExpression(left, identifier.value); // 生成成员访问表达式
         }
 
         // 处理冒号运算符 ":"
@@ -120,8 +129,10 @@ class Parser {
         consume("SYMBOL"); // 消费 "("
         List<Expression> arguments = new ArrayList<>();
         while (!match("SYMBOL") || !peek().value.equals(")")) {
-            if (match("NUMBER") || match("STRING") || match("IDENTIFIER")) {
+            if ((match("NUMBER") || match("STRING") || match("IDENTIFIER")) && (lookaheadIs("SYMBOL", ",") || lookaheadIs("SYMBOL", ")"))) {
                 arguments.add(parsePrimary()); // 解析基本的参数
+            } else {
+                arguments.add(parseExpression()); // 解析表达式参数
             }
             if (match("SYMBOL") && peek().value.equals(",")) {
                 consume("SYMBOL"); // 跳过 ","
@@ -134,18 +145,8 @@ class Parser {
     private FunctionCallExpression parseFunctionCall() {
         String functionName = consume("IDENTIFIER").value;
 
-        consume("SYMBOL"); // 消费 "("
-
         // 解析参数列表
-        List<Expression> arguments = new ArrayList<>();
-        while (!match("SYMBOL") || !peek().value.equals(")")) {
-            arguments.add(parseExpression()); // 支持完整的表达式解析
-
-            if (match("SYMBOL") && peek().value.equals(",")) {
-                consume("SYMBOL"); // 跳过 ","
-            }
-        }
-        consume("SYMBOL"); // 消费 ")"
+        List<Expression> arguments = parseArguments();
 
         return new FunctionCallExpression(functionName, arguments);
     }
@@ -187,19 +188,34 @@ class Parser {
         } else if (match("NUMBER")) {
             Token token = consume("NUMBER");
             return new LiteralExpression(token.value); // 字面量
-        } else if (match("SYMBOL") && peek().value.equals("{")) {
-            return parseTable(); // 表
+        } else if (match("BOOLEAN")) {
+            Token token = consume("BOOLEAN");
+            return new BooleanLiteralExpression(token.value.equals("true")); // true 或 false
+        } else if (match("NIL")) {
+            Token token = consume("NIL");
+            return new NilLiteralExpression(); // nil
+        } else if (match("SYMBOL")) {
+            if (peek().value.equals("{"))
+                return parseTable(); // 表
         } else if (match("STRING")) {
             Token token = consume("STRING");
             return new LiteralExpression(token.value); // 字符串字面量表达式
         } else if (match("IDENTIFIER")) {
             if (lookaheadIs("SYMBOL", "(")) {
                 return parseFunctionCall(); // 函数调用
+            } else if (lookaheadIs("SYMBOL", ".")) {
+                return new VariableExpression(consume("IDENTIFIER").value); // 变量
             } else {
                 return new VariableExpression(consume("IDENTIFIER").value); // 变量
             }
         }
-        throw new IllegalArgumentException("Unexpected token: " + peek().type);
+        StringBuilder context = new StringBuilder();
+        for (int i = Math.max(position - 3, 0); i < Math.min(tokens.size() - 1, position + 3); i++) {
+            context.append(tokens.get(i).value);
+            context.append(" ");
+        }
+
+        throw new IllegalArgumentException("Unexpected token: " + peek().type + " " + peek().value + " at position " + position + " -> " + context);
     }
 
 
@@ -217,6 +233,22 @@ class Parser {
         return new LocalDeclarationStatement(identifier.value, initializer);
     }
 
+    // 解析 return 语句
+    private ReturnStatement parseReturnStatement() {
+        consume("KEYWORD"); // 消费 "return"
+
+        List<Expression> returnValues = new ArrayList<>();
+
+        // 如果有表达式
+        if (!match("SYMBOL") || !peek().value.equals(";")) {
+            // 解析一个或多个返回值
+            do {
+                returnValues.add(parseExpression());
+            } while (match("SYMBOL") && peek().value.equals(","));
+        }
+
+        return new ReturnStatement(returnValues);
+    }
 
     // 解析匿名函数
     private AnonymousFunctionExpression parseAnonymousFunction() {
@@ -261,7 +293,13 @@ class Parser {
     private Token consume(String type) {
         Token token = tokens.get(position++);
         if (!token.type.equals(type)) {
-            throw new IllegalArgumentException("Expected " + type + " but found " + token.type);
+            StringBuilder context = new StringBuilder();
+            for (int i = Math.max(position - 3, 0); i < Math.min(tokens.size() - 1, position + 3); i++) {
+                context.append(tokens.get(i).value);
+                context.append(" ");
+            }
+
+            throw new IllegalArgumentException("Expected " + type + " but found " + token.type + " " + token.value + " at position " + position + " -> " + context);
         }
         return token;
     }
