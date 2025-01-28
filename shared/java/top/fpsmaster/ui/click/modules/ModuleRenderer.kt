@@ -6,6 +6,7 @@ import top.fpsmaster.features.manager.Category
 import top.fpsmaster.features.manager.Module
 import top.fpsmaster.features.settings.Setting
 import top.fpsmaster.features.settings.impl.*
+import top.fpsmaster.modules.lua.LuaModule
 import top.fpsmaster.ui.click.MainPanel
 import top.fpsmaster.ui.click.modules.impl.*
 import top.fpsmaster.utils.Utility
@@ -101,6 +102,15 @@ class ModuleRenderer(override var mod: Module) : ValueRender() {
         if (mod.category === Category.Interface) {
             Render2DUtils.drawImage(
                 ResourceLocation("client/textures/modules/interface.png"),
+                x + 14,
+                y + 10,
+                14f,
+                14f,
+                content.color.rgb
+            )
+        } else if (mod is LuaModule) {
+            Render2DUtils.drawImage(
+                ResourceLocation("client/textures/modules/lua.png"),
                 x + 14,
                 y + 10,
                 14f,

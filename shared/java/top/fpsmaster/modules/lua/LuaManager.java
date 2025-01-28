@@ -6,6 +6,7 @@ import party.iroiro.luajava.value.LuaValue;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.modules.dev.DevMode;
+import top.fpsmaster.modules.i18n.Language;
 import top.fpsmaster.modules.lua.parser.LuaParser;
 import top.fpsmaster.modules.lua.parser.ParseError;
 import top.fpsmaster.utils.Utility;
@@ -20,16 +21,6 @@ import java.util.stream.Collectors;
 
 public class LuaManager {
     public static ArrayList<LuaScript> scripts = new ArrayList<>();
-
-    public static void main(String[] args) {
-        while (true) {
-            reload();
-            Scanner scanner = new Scanner(System.in);
-            System.out.print("Enter to reload");
-            scanner.nextLine();
-        }
-    }
-
 
     public void init() {
         try {
@@ -51,6 +42,14 @@ public class LuaManager {
             return 0; // 返回值数量
         });
         lua.setGlobal("notify");
+
+        lua.push(L -> {
+            String name = L.toString(1);
+            String content = L.toString(2);
+            FPSMaster.i18n.put(name, content);
+            return 0; // 返回值数量
+        });
+        lua.setGlobal("putI18n");
 
         lua.push(L -> {
             String name = L.toString(1);

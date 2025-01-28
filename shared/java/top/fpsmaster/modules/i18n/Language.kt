@@ -39,4 +39,8 @@ class Language {
     operator fun get(key: String): String {
         return prompts[key] ?: return key
     }
+
+    fun put(name: String, content: String) {
+        prompts[name] = content
+    }
 }
