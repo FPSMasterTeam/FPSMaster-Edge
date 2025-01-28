@@ -18,6 +18,11 @@ public class LocalDeclarationStatementComponent extends StatementComponent {
     @Override
     public void draw(int x, int y, int mouseX, int mouseY) {
         super.draw(x, y, mouseX, mouseY);
-        FPSMaster.fontManager.s16.drawString(variableName, x + 10, y + 10, -1);
+        FPSMaster.fontManager.s16.drawString("local " + variableName, x, y, -1);
+        height = 20;
+        if (initializer != null) {
+            initializer.draw(x + 10, y + height, mouseX, mouseY);
+            height += initializer.height;
+        }
     }
 }

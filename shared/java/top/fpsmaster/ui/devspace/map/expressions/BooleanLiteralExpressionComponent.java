@@ -8,4 +8,10 @@ public class BooleanLiteralExpressionComponent extends ExpressionComponent{
         super(expression);
         value = expression.getValue();
     }
+
+    @Override
+    public void draw(int x, int y, int mouseX, int mouseY) {
+        super.draw(x, y, mouseX, mouseY);
+
+    }
 }

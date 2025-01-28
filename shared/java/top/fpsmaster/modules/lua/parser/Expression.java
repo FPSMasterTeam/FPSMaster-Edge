@@ -8,7 +8,7 @@ public class Expression {
     public static class LiteralExpression extends Expression {
         public String value;
 
-        LiteralExpression(String value) {
+        public LiteralExpression(String value) {
             this.value = value;
         }
 

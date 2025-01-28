@@ -11,10 +11,8 @@ import top.fpsmaster.modules.lua.LuaScript;
 import top.fpsmaster.modules.lua.parser.Expression;
 import top.fpsmaster.modules.lua.parser.Statement;
 import top.fpsmaster.ui.click.component.ScrollContainer;
-import top.fpsmaster.ui.devspace.map.statements.AssignmentStatementComponent;
-import top.fpsmaster.ui.devspace.map.expressions.ExpressionComponent;
-import top.fpsmaster.ui.devspace.map.statements.ExpressionStatementComponent;
-import top.fpsmaster.ui.devspace.map.statements.StatementComponent;
+import top.fpsmaster.ui.devspace.map.expressions.*;
+import top.fpsmaster.ui.devspace.map.statements.*;
 import top.fpsmaster.utils.math.MathTimer;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
@@ -50,17 +48,17 @@ public class DevSpace extends ScaledGuiScreen {
     private final MathTimer keyPressTimer = new MathTimer();
     private int keyPressTime = 0;
 
-    public static List<StatementComponent> parseStatements(List<Statement> ifStatements) {
+    public static List<StatementComponent> parseStatements(List<Statement> statements) {
         List<StatementComponent> components = new ArrayList<>();
-        for (Statement statement : ifStatements) {
+        for (Statement statement : statements) {
             components.add(parseStatement(statement));
         }
         return components;
     }
 
-    public static List<ExpressionComponent> parseExpressions(List<Expression> elseifConditions) {
+    public static List<ExpressionComponent> parseExpressions(List<Expression> expressions) {
         List<ExpressionComponent> components = new ArrayList<>();
-        for (Expression expression : elseifConditions) {
+        for (Expression expression : expressions) {
             components.add(parseExpression(expression));
         }
         return components;
@@ -166,20 +164,46 @@ public class DevSpace extends ScaledGuiScreen {
     }
 
     public static StatementComponent parseStatement(Statement statement) {
-        if (statement instanceof Statement.ExpressionStatement) {
+        if (statement instanceof Statement.ExpressionStatement)
             return new ExpressionStatementComponent((Statement.ExpressionStatement) statement);
-        }
-        if (statement instanceof Statement.AssignmentStatement) {
+        if (statement instanceof Statement.AssignmentStatement)
             return new AssignmentStatementComponent((Statement.AssignmentStatement) statement);
-        }
-        return null;
+        if (statement instanceof Statement.IfStatement)
+            return new IfStatementComponent((Statement.IfStatement) statement);
+        if (statement instanceof Statement.ReturnStatement)
+            return new ReturnStatementComponent((Statement.ReturnStatement) statement);
+        if (statement instanceof Statement.LocalDeclarationStatement)
+            return new LocalDeclarationStatementComponent((Statement.LocalDeclarationStatement) statement);
+        return new ExpressionStatementComponent(new Statement.ExpressionStatement(new Expression.LiteralExpression(statement.getClass().getSimpleName())));
     }
 
     public static ExpressionComponent parseExpression(Expression expression) {
-        if (expression instanceof Expression.BinaryExpression) {
-//            return new ExpressionStatementComponent(expression);
-        }
-        return null;
+        if (expression instanceof Expression.BinaryExpression)
+            return new BinaryExpressionComponent((Expression.BinaryExpression) expression);
+        if (expression instanceof Expression.FunctionCallExpression)
+            return new FunctionCallExpressionComponent((Expression.FunctionCallExpression) expression);
+        if (expression instanceof Expression.LiteralExpression)
+            return new LiteralExpressionComponent((Expression.LiteralExpression) expression);
+        if (expression instanceof Expression.VariableExpression)
+            return new VariableExpressionComponent((Expression.VariableExpression) expression);
+        if (expression instanceof Expression.TableExpression)
+            return new TableExpressionComponent((Expression.TableExpression) expression);
+        if (expression instanceof Expression.UnaryExpression)
+            return new UnaryExpressionComponent((Expression.UnaryExpression) expression);
+        if (expression instanceof Expression.MethodCallExpression)
+            return new MethodCallExpressionComponent((Expression.MethodCallExpression) expression);
+        if (expression instanceof Expression.MemberAccessExpression)
+            return new MemberAccessExpressionComponent((Expression.MemberAccessExpression) expression);
+        if (expression instanceof Expression.FunctionDefinitionExpression)
+            return new FunctionDefinitionExpressionComponent((Expression.FunctionDefinitionExpression) expression);
+        if (expression instanceof Expression.AnonymousFunctionExpression)
+            return new AnonymousFunctionExpressionComponent((Expression.AnonymousFunctionExpression) expression);
+        if (expression instanceof Expression.BooleanLiteralExpression)
+            return new BooleanLiteralExpressionComponent((Expression.BooleanLiteralExpression) expression);
+        if (expression instanceof Expression.NilLiteralExpression)
+            return new NilLiteralExpressionComponent((Expression.NilLiteralExpression) expression);
+
+        return new LiteralExpressionComponent(new Expression.LiteralExpression(expression.getClass().getSimpleName()));
     }
 
 
@@ -231,7 +255,7 @@ public class DevSpace extends ScaledGuiScreen {
         int tabX = x + Math.max((int) (width * 0.2), 100) + 9;
         for (int i = 0; i < tabs.length; i++) {
             int tabWidth = FPSMaster.fontManager.s16.getStringWidth(tabs[i]);
-            if (Render2DUtils.isHovered(tabX, y + 18, tabWidth, 15, mouseX, mouseY) && mouseButton == 0) {
+            if (Render2DUtils.isHovered(tabX, y + 18, tabWidth + 18, 15, mouseX, mouseY) && mouseButton == 0) {
                 selectedTab = i;
             }
             tabX += 22 + tabWidth;

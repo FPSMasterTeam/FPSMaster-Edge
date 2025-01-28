@@ -1,5 +1,6 @@
 package top.fpsmaster.ui.devspace.map.statements;
 
+import top.fpsmaster.FPSMaster;
 import top.fpsmaster.modules.lua.parser.Statement;
 import top.fpsmaster.ui.devspace.DevSpace;
 import top.fpsmaster.ui.devspace.map.expressions.ExpressionComponent;
@@ -26,7 +27,9 @@ public class IfStatementComponent extends StatementComponent {
     @Override
     public void draw(int x, int y, int mouseX, int mouseY) {
         super.draw(x, y, mouseX, mouseY);
-        condition.draw(x, y, mouseX, mouseY);
+        FPSMaster.fontManager.s16.drawString("if", x, y, -1);
+        condition.draw(x + 10, y + 10, mouseX, mouseY);
+        height = condition.getHeight() + 20;
 //        ifStatements.forEach(stmt -> stmt.draw(x, y, mouseX, mouseY));
 //        elseifStatements.forEach(stmt -> stmt.draw(x, y, mouseX, mouseY));
 //        elseifConditions.forEach(stmt -> stmt.draw(x, y, mouseX, mouseY));

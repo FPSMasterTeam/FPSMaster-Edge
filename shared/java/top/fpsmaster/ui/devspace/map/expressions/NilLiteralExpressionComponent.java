@@ -3,18 +3,14 @@ package top.fpsmaster.ui.devspace.map.expressions;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.modules.lua.parser.Expression;
 
-public class LiteralExpressionComponent extends ExpressionComponent{
-
-    String value;
-    public LiteralExpressionComponent(Expression.LiteralExpression expression) {
+public class NilLiteralExpressionComponent extends ExpressionComponent{
+    public NilLiteralExpressionComponent(Expression expression) {
         super(expression);
-        value = expression.value;
     }
 
     @Override
     public void draw(int x, int y, int mouseX, int mouseY) {
         super.draw(x, y, mouseX, mouseY);
-        FPSMaster.fontManager.s16.drawString(value, x, y, -1);
-        height=20;
+        FPSMaster.fontManager.s16.drawString("nil", x, y, -1);
     }
 }
