@@ -8,7 +8,13 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.modules.lua.LuaManager;
 import top.fpsmaster.modules.lua.LuaScript;
+import top.fpsmaster.modules.lua.parser.Expression;
+import top.fpsmaster.modules.lua.parser.Statement;
 import top.fpsmaster.ui.click.component.ScrollContainer;
+import top.fpsmaster.ui.devspace.map.statements.AssignmentStatementComponent;
+import top.fpsmaster.ui.devspace.map.expressions.ExpressionComponent;
+import top.fpsmaster.ui.devspace.map.statements.ExpressionStatementComponent;
+import top.fpsmaster.ui.devspace.map.statements.StatementComponent;
 import top.fpsmaster.utils.math.MathTimer;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
@@ -17,7 +23,6 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class DevSpace extends ScaledGuiScreen {
 
@@ -45,6 +50,22 @@ public class DevSpace extends ScaledGuiScreen {
     private final MathTimer keyPressTimer = new MathTimer();
     private int keyPressTime = 0;
 
+    public static List<StatementComponent> parseStatements(List<Statement> ifStatements) {
+        List<StatementComponent> components = new ArrayList<>();
+        for (Statement statement : ifStatements) {
+            components.add(parseStatement(statement));
+        }
+        return components;
+    }
+
+    public static List<ExpressionComponent> parseExpressions(List<Expression> elseifConditions) {
+        List<ExpressionComponent> components = new ArrayList<>();
+        for (Expression expression : elseifConditions) {
+            components.add(parseExpression(expression));
+        }
+        return components;
+    }
+
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         super.render(mouseX, mouseY, partialTicks);
@@ -56,6 +77,8 @@ public class DevSpace extends ScaledGuiScreen {
 
         if (selectedTab == 0) {
             drawCodeEditorArea(mouseX, mouseY);
+        } else if (selectedTab == 1) {
+            drawMapEditorArea(mouseX, mouseY);
         }
 
         handleDragging(mouseX, mouseY);
@@ -130,6 +153,36 @@ public class DevSpace extends ScaledGuiScreen {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
+    private void drawMapEditorArea(int mouseX, int mouseY) {
+        if (selectedLua != -1 && selectedLua < LuaManager.scripts.size()) {
+            List<Statement> ast = LuaManager.scripts.get(selectedLua).ast;
+            int yPos = y + 36;
+            for (Statement statement : ast) {
+                StatementComponent component = parseStatement(statement);
+                component.draw(x + Math.max((int) (width * 0.2), 100) + 20, yPos, mouseX, mouseY);
+                yPos += component.getHeight();
+            }
+        }
+    }
+
+    public static StatementComponent parseStatement(Statement statement) {
+        if (statement instanceof Statement.ExpressionStatement) {
+            return new ExpressionStatementComponent((Statement.ExpressionStatement) statement);
+        }
+        if (statement instanceof Statement.AssignmentStatement) {
+            return new AssignmentStatementComponent((Statement.AssignmentStatement) statement);
+        }
+        return null;
+    }
+
+    public static ExpressionComponent parseExpression(Expression expression) {
+        if (expression instanceof Expression.BinaryExpression) {
+//            return new ExpressionStatementComponent(expression);
+        }
+        return null;
+    }
+
+
     private void handleDragging(int mouseX, int mouseY) {
         if (!Mouse.isButtonDown(0) && dragging) {
             dragging = false;
@@ -177,7 +230,7 @@ public class DevSpace extends ScaledGuiScreen {
     private void handleTabClick(int mouseX, int mouseY, int mouseButton) {
         int tabX = x + Math.max((int) (width * 0.2), 100) + 9;
         for (int i = 0; i < tabs.length; i++) {
-            int tabWidth = FPSMaster.fontManager.s16.getStringWidth(tabs[i]) + 18;
+            int tabWidth = FPSMaster.fontManager.s16.getStringWidth(tabs[i]);
             if (Render2DUtils.isHovered(tabX, y + 18, tabWidth, 15, mouseX, mouseY) && mouseButton == 0) {
                 selectedTab = i;
             }

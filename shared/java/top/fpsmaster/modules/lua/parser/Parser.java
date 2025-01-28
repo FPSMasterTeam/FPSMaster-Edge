@@ -38,7 +38,7 @@ public class Parser {
         Token peek = peek();
         if (match("KEYWORD")) {
             if ("function".equals(peek.value)) {
-                return new ExpressionStatement(parseFunctionDefinition());
+                return new Statement.ExpressionStatement(parseFunctionDefinition());
             } else if ("local".equals(peek.value)) {
                 return parseLocalDeclaration();
             } else if ("return".equals(peek.value)) {
@@ -54,13 +54,13 @@ public class Parser {
             }
         } else if (match("IDENTIFIER")) {
             if (lookaheadIs("SYMBOL", "(")) {
-                return new ExpressionStatement(parseFunctionCall());
+                return new Statement.ExpressionStatement(parseFunctionCall());
             } else if (lookaheadIs("OPERATOR", ".")) {
-                return new ExpressionStatement(parseExpression());
+                return new Statement.ExpressionStatement(parseExpression());
             } else if (lookaheadIs("SYMBOL", ":")) {
-                return new ExpressionStatement(parseExpression());
+                return new Statement.ExpressionStatement(parseExpression());
             } else if (lookaheadIs("OPERATOR", "..")) {
-                return new ExpressionStatement(parseExpression());
+                return new Statement.ExpressionStatement(parseExpression());
             } else if (lookaheadIs("OPERATOR", "=")) {
                 return parseAssignment();
             }
@@ -82,11 +82,11 @@ public class Parser {
         Token identifier = consume("IDENTIFIER");
         consume("OPERATOR"); // Expect '='
         Expression value = parseExpression();
-        return new AssignmentStatement(identifier.value, value);
+        return new Statement.AssignmentStatement(identifier.value, value);
     }
 
     // 解析函数定义
-    private FunctionDefinitionExpression parseFunctionDefinition() throws ParseError {
+    private Expression.FunctionDefinitionExpression parseFunctionDefinition() throws ParseError {
         consume("KEYWORD"); // 消费 "function"
         Token functionName = consume("IDENTIFIER"); // 函数名称
         consume("SYMBOL"); // 消费 "("
@@ -110,7 +110,7 @@ public class Parser {
         List<Statement> body = parseBlock();
         consume("KEYWORD"); // 消费 "end"
 
-        return new FunctionDefinitionExpression(functionName.value, parameters, body);
+        return new Expression.FunctionDefinitionExpression(functionName.value, parameters, body);
     }
 
     // 解析表达式语句
@@ -143,11 +143,11 @@ public class Parser {
         switch (token.type) {
             case "NUMBER":
             case "STRING":
-                return new LiteralExpression(token.value);
+                return new Expression.LiteralExpression(token.value);
             case "BOOLEAN":
-                return new BooleanLiteralExpression("true".equals(token.value));
+                return new Expression.BooleanLiteralExpression("true".equals(token.value));
             case "NIL":
-                return new NilLiteralExpression();
+                return new Expression.NilLiteralExpression();
             case "IDENTIFIER":
                 return parseIdentifierExpression(token.value);
             case "SYMBOL":
@@ -183,7 +183,7 @@ public class Parser {
     // 处理运算符前缀（一元运算符）
     private Expression handleOperatorPrefix(String operator) throws ParseError {
         if ("-".equals(operator)) {
-            return new UnaryExpression("-", parseExpression(getPrecedence("unm")));
+            return new Expression.UnaryExpression("-", parseExpression(getPrecedence("unm")));
         }
         throw new ParseError("Unsupported prefix operator: " + operator);
     }
@@ -195,7 +195,7 @@ public class Parser {
         // 处理右结合运算符（如指数）
         int nextPrecedence = ("^".equals(operator)) ? precedence - 1 : precedence;
 
-        return new BinaryExpression(
+        return new Expression.BinaryExpression(
                 left,
                 operator,
                 parseExpression(nextPrecedence)
@@ -204,7 +204,7 @@ public class Parser {
 
     // 处理标识符表达式（可能包含方法调用）
     private Expression parseIdentifierExpression(String name) throws ParseError {
-        Expression expr = new VariableExpression(name);
+        Expression expr = new Expression.VariableExpression(name);
 
         while (true) {
             Token nextToken = peek();
@@ -232,7 +232,7 @@ public class Parser {
             }
         }
         consume("SYMBOL", ")");
-        return new FunctionCallExpression(((VariableExpression) function).getName(), args);
+        return new Expression.FunctionCallExpression(((Expression.VariableExpression) function).getName(), args);
     }
 
     // 辅助方法
@@ -257,10 +257,10 @@ public class Parser {
             if (isMethod) {
                 args.add(0, obj); // 自动添加self参数
             }
-            return new MethodCallExpression(obj, member.value, args, isMethod);
+            return new Expression.MethodCallExpression(obj, member.value, args, isMethod);
         }
 
-        return new MemberAccessExpression(obj, member.value);
+        return new Expression.MemberAccessExpression(obj, member.value);
     }
 
     private List<Expression> parseArguments() throws ParseError {
@@ -281,16 +281,16 @@ public class Parser {
         return arguments;
     }
 
-    private FunctionCallExpression parseFunctionCall() throws ParseError {
+    private Expression.FunctionCallExpression parseFunctionCall() throws ParseError {
         String functionName = consume("IDENTIFIER").value;
 
         // 解析参数列表
         List<Expression> arguments = parseArguments();
 
-        return new FunctionCallExpression(functionName, arguments);
+        return new Expression.FunctionCallExpression(functionName, arguments);
     }
 
-    private TableExpression parseTable() throws ParseError {
+    private Expression.TableExpression parseTable() throws ParseError {
         consume("SYMBOL"); // 消费 "{"
 
         List<Expression> arrayElements = new ArrayList<>();
@@ -315,7 +315,7 @@ public class Parser {
         }
         consume("SYMBOL"); // 消费 "}"
 
-        return new TableExpression(arrayElements, tableEntries);
+        return new Expression.TableExpression(arrayElements, tableEntries);
     }
 
 
@@ -323,18 +323,18 @@ public class Parser {
     private Expression parsePrimary() throws ParseError {
         if (match("NUMBER")) {
             Token token = consume("NUMBER");
-            return new LiteralExpression(token.value); // 数字字面量
+            return new Expression.LiteralExpression(token.value); // 数字字面量
         } else if (match("BOOLEAN")) {
             Token token = consume("BOOLEAN");
-            return new BooleanLiteralExpression(token.value.equals("true")); // true 或 false
+            return new Expression.BooleanLiteralExpression(token.value.equals("true")); // true 或 false
         } else if (match("NIL")) {
             consume("NIL");
-            return new NilLiteralExpression(); // nil
+            return new Expression.NilLiteralExpression(); // nil
         } else if (match("SYMBOL") && peek().value.equals("{")) {
             return parseTable(); // 表构造器
         } else if (match("STRING")) {
             Token token = consume("STRING");
-            return new LiteralExpression(token.value); // 字符串字面量
+            return new Expression.LiteralExpression(token.value); // 字符串字面量
         } else if (match("SYMBOL") && peek().value.equals("(")) {
             // 处理括号表达式
             consume("SYMBOL"); // 消费 "("
@@ -347,7 +347,7 @@ public class Parser {
                 return parseFunctionCall();
             } else {
                 String identifier = consume("IDENTIFIER").value;
-                Expression base = new VariableExpression(identifier);
+                Expression base = new Expression.VariableExpression(identifier);
 
                 // 处理点运算符和冒号运算符
                 base = parseMemberOrMethod(base);
@@ -371,9 +371,9 @@ public class Parser {
             if (match("SYMBOL") && peek().value.equals("(")) {
                 // 如果后面是 "(", 那么我们视为方法调用
                 List<Expression> arguments = parseArguments(); // 解析函数调用参数
-                base = new MethodCallExpression(base, identifier.value, arguments); // 生成方法调用
+                base = new Expression.MethodCallExpression(base, identifier.value, arguments); // 生成方法调用
             } else {
-                base = new MemberAccessExpression(base, identifier.value); // 否则是成员访问
+                base = new Expression.MemberAccessExpression(base, identifier.value); // 否则是成员访问
             }
         }
 
@@ -384,7 +384,7 @@ public class Parser {
             List<Expression> arguments = parseArguments(); // 解析函数调用参数
             // 对于冒号调用，自动将 base 作为第一个参数传递
             arguments.add(0, base);
-            base = new MethodCallExpression(base, identifier.value, arguments, true); // 自动传递对象本身作为第一个参数
+            base = new Expression.MethodCallExpression(base, identifier.value, arguments, true); // 自动传递对象本身作为第一个参数
         }
 
         return base;
@@ -399,7 +399,7 @@ public class Parser {
             // 局部函数声明
             Token identifier = peek(1); // 变量名
             // 局部函数定义
-            return new LocalDeclarationStatement(identifier.value, parseFunctionDefinition());
+            return new Statement.LocalDeclarationStatement(identifier.value, parseFunctionDefinition());
         } else {
             Token identifier = consume("IDENTIFIER"); // 变量名
 
@@ -410,12 +410,12 @@ public class Parser {
                 initializer = parseExpression(); // 解析初始化表达式
             }
 
-            return new LocalDeclarationStatement(identifier.value, initializer);
+            return new Statement.LocalDeclarationStatement(identifier.value, initializer);
         }
     }
 
     // 解析 return 语句
-    private ReturnStatement parseReturnStatement() throws ParseError {
+    private Statement.ReturnStatement parseReturnStatement() throws ParseError {
         consume("KEYWORD"); // 消费 "return"
 
         List<Expression> returnValues = new ArrayList<>();
@@ -430,11 +430,11 @@ public class Parser {
             } while (match("SYMBOL") && peek().value.equals(","));
         }
 
-        return new ReturnStatement(returnValues);
+        return new Statement.ReturnStatement(returnValues);
     }
 
     // 解析 if 语句
-    private IfStatement parseIfStatement() throws ParseError {
+    private Statement.IfStatement parseIfStatement() throws ParseError {
         consume("KEYWORD"); // 消费 "if"
 
         Expression condition = parseExpression(); // 解析条件表达式
@@ -465,7 +465,7 @@ public class Parser {
 
         consume("KEYWORD"); // 消费 "end"
 
-        return new IfStatement(condition, ifStatements, elseifStatements, elseifConditions, elseStatements);
+        return new Statement.IfStatement(condition, ifStatements, elseifStatements, elseifConditions, elseStatements);
     }
 
     private Statement parseRepeatStatement() throws ParseError {
@@ -479,7 +479,7 @@ public class Parser {
         // 解析终止条件
         Expression condition = parseExpression();
 
-        return new RepeatStatement(body, condition);
+        return new Statement.RepeatStatement(body, condition);
     }
 
     private Statement parseWhileStatement() throws ParseError {
@@ -495,7 +495,7 @@ public class Parser {
 
         consume("KEYWORD", "end"); // 消费 "end"
 
-        return new WhileStatement(condition, body);
+        return new Statement.WhileStatement(condition, body);
     }
 
 
@@ -520,7 +520,7 @@ public class Parser {
                 consume("KEYWORD", "do"); // 消费 "do"
                 List<Statement> body = parseBlock(); // 解析循环体
                 consume("KEYWORD", "end"); // 消费 "end"
-                return new ForStatement(firstVariable, start, end, step, body);
+                return new Statement.ForStatement(firstVariable, start, end, step, body);
             }
 
             // 泛型 for 循环：for key, value in iterator do
@@ -532,7 +532,7 @@ public class Parser {
                 consume("KEYWORD", "do"); // 消费 "do"
                 List<Statement> body = parseBlock(); // 解析循环体
                 consume("KEYWORD", "end"); // 消费 "end"
-                return new ForInStatement(firstVariable, secondVariable, iterator, body);
+                return new Statement.ForInStatement(firstVariable, secondVariable, iterator, body);
             }
 
             // 支持单变量泛型 for：for key in iterator do
@@ -542,7 +542,7 @@ public class Parser {
                 consume("KEYWORD", "do"); // 消费 "do"
                 List<Statement> body = parseBlock(); // 解析循环体
                 consume("KEYWORD", "end"); // 消费 "end"
-                return new ForInStatement(firstVariable, null, iterator, body);
+                return new Statement.ForInStatement(firstVariable, null, iterator, body);
             }
         }
 
@@ -551,7 +551,7 @@ public class Parser {
 
 
     // 解析匿名函数
-    private AnonymousFunctionExpression parseAnonymousFunction() throws ParseError {
+    private Expression.AnonymousFunctionExpression parseAnonymousFunction() throws ParseError {
         consume("KEYWORD"); // 消费 "function"
         consume("SYMBOL"); // 消费 "("
 
@@ -571,7 +571,7 @@ public class Parser {
         List<Statement> body = parseBlock();
         consume("KEYWORD"); // 消费 "end"
 
-        return new AnonymousFunctionExpression(parameters, body);
+        return new Expression.AnonymousFunctionExpression(parameters, body);
     }
 
     private List<Statement> parseBlock() throws ParseError {
