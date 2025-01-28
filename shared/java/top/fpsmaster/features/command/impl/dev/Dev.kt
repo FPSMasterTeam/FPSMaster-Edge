@@ -3,6 +3,7 @@ package top.fpsmaster.features.command.impl.dev
 import top.fpsmaster.FPSMaster
 import top.fpsmaster.features.command.Command
 import top.fpsmaster.modules.dev.DevMode
+import top.fpsmaster.modules.lua.LuaManager
 import top.fpsmaster.utils.Utility
 
 class Dev : Command("dev") {
@@ -14,6 +15,14 @@ class Dev : Command("dev") {
             if (args[0] == "hotswap") {
                 DevMode.INSTACE.setHotswap(!DevMode.INSTACE.hotswap)
                 Utility.sendClientNotify("Hotswap is now ${if (DevMode.INSTACE.hotswap) "enabled" else "disabled"}")
+            } else if (args[0] == "reload") {
+                LuaManager.reload()
+                Utility.sendClientNotify(LuaManager.scripts.size.toString() + " scripts reloaded")
+            } else if (args[0] == "list") {
+                Utility.sendClientNotify("Scripts:")
+                LuaManager.scripts.forEach {
+                    Utility.sendClientNotify(it.rawLua.filename)
+                }
             }
         }
     }

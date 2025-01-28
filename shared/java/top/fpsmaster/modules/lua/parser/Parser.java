@@ -142,7 +142,6 @@ public class Parser {
         Token token = consumeCurrent();
         switch (token.type) {
             case "NUMBER":
-                return new LiteralExpression(token.value);
             case "STRING":
                 return new LiteralExpression(token.value);
             case "BOOLEAN":
@@ -155,8 +154,14 @@ public class Parser {
                 return handleSymbolPrefix(token.value);
             case "OPERATOR":
                 return handleOperatorPrefix(token.value);
+            case "KEYWORD":
+                if (token.value.equals("function")) {
+                    // 解析匿名函数
+                    position--; // 回退一个
+                    return parseAnonymousFunction();
+                }
             default:
-                throw new ParseError("Unexpected token type: " + token.type);
+                throw new ParseError("Unexpected token type: " + token.type + " " + token.value + " at position " + position + " -> " + context());
         }
     }
 
@@ -168,6 +173,7 @@ public class Parser {
                 consume("SYMBOL", ")");
                 return expr;
             case "{":
+                position--; // 回退一个
                 return parseTable();
             default:
                 throw new ParseError("Unexpected symbol: " + symbol);
@@ -202,20 +208,15 @@ public class Parser {
 
         while (true) {
             Token nextToken = peek();
-            switch (nextToken.type) {
-                case "SYMBOL":
-                    if ("(".equals(nextToken.value)) {
-                        expr = parseFunctionCall(expr);
-                    } else if (".".equals(nextToken.value)) {
-                        expr = parseMemberAccess(expr, false);
-                    } else if (":".equals(nextToken.value)) {
-                        expr = parseMemberAccess(expr, true);
-                    } else {
-                        return expr;
-                    }
-                    break;
-                default:
-                    return expr;
+            if (nextToken == null || !nextToken.type.equals("SYMBOL")) return expr;
+            if ("(".equals(nextToken.value)) {
+                expr = parseFunctionCall(expr);
+            } else if (".".equals(nextToken.value)) {
+                expr = parseMemberAccess(expr, false);
+            } else if (":".equals(nextToken.value)) {
+                expr = parseMemberAccess(expr, true);
+            } else {
+                return expr;
             }
         }
     }
@@ -320,10 +321,7 @@ public class Parser {
 
     // 解析基本表达式
     private Expression parsePrimary() throws ParseError {
-        if (match("KEYWORD", "function")) {
-            // 解析匿名函数
-            return parseAnonymousFunction();
-        } else if (match("NUMBER")) {
+        if (match("NUMBER")) {
             Token token = consume("NUMBER");
             return new LiteralExpression(token.value); // 数字字面量
         } else if (match("BOOLEAN")) {
@@ -593,6 +591,7 @@ public class Parser {
     private Token consumeCurrent() {
         return tokens.get(position++);
     }
+
     // 消费token
     private Token consume(String type) {
         Token token = tokens.get(position++);

@@ -57,9 +57,10 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : ScaledGuiScreen() {
 
     // module list animation
     private var moduleListAlpha = 0f
-    private val mods = LinkedList<ModuleRenderer>()
     private var modHeight = 0f
     private val modsContainer = ScrollContainer()
+
+    val mods = LinkedList<ModuleRenderer>()
 
 
     override fun doesGuiPauseGame(): Boolean {
@@ -319,11 +320,6 @@ class MainPanel(private val doesGuiPauseGame: Boolean) : ScaledGuiScreen() {
         categories.clear()
         for (c in Category.entries) {
             categories.add(CategoryComponent(c))
-        }
-        if (mods.isEmpty()) {
-            for (m in FPSMaster.moduleManager.modules) {
-                mods.add(ModuleRenderer(m))
-            }
         }
         selection = (y + 70).toFloat()
     }

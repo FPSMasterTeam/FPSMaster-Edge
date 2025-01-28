@@ -18,7 +18,7 @@ open class Utility {
         @JvmStatic
         fun sendClientNotify(msg: String?) {
             if (ProviderManager.mcProvider.getWorld() != null) {
-                ProviderManager.mcProvider.printChatMessage("§9[FPSMaster]§r " + ProviderManager.utilityProvider.makeChatComponent(msg))
+                ProviderManager.mcProvider.printChatMessage(ProviderManager.utilityProvider.makeChatComponent("§9[FPSMaster]§r $msg"))
             }
         }
     }

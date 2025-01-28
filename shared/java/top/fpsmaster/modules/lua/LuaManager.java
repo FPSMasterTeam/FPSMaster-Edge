@@ -16,10 +16,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class LuaManager {
     public static ArrayList<LuaScript> scripts = new ArrayList<>();
-    static ArrayList<RawLua> rawLuaList = new ArrayList<>();
 
     public static void main(String[] args) {
         while (true) {
@@ -32,7 +32,11 @@ public class LuaManager {
 
 
     public void init() {
-        reload();
+        try {
+            reload();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -40,13 +44,24 @@ public class LuaManager {
         Lua lua = new Lua53();
         LuaScript luaScript = new LuaScript(lua, rawLua);
         lua.run("System = java.import('java.lang.System')");
+
+        lua.push(L -> {
+            String msg = L.toString(1);
+            Utility.sendClientNotify(msg);
+            return 0; // 返回值数量
+        });
+        lua.setGlobal("notify");
+
         lua.push(L -> {
             String name = L.toString(1);
             String category = L.toString(2);
             Map<String, LuaValue> luaTable = (Map<String, LuaValue>) lua.toMap(3);
             LuaModule module = new LuaModule(luaScript, name, category, luaTable);
             // 返回 Java 对象给 Lua
-            FPSMaster.moduleManager.getModules().add(module);
+            FPSMaster.moduleManager.addModule(module);
+
+            if (DevMode.INSTACE.dev)
+                Utility.sendClientNotify("Lua module registered: " + name + " " + category);
             L.pushJavaObject(module);
             return 1; // 返回值数量
         });
@@ -71,19 +86,20 @@ public class LuaManager {
         // lua ast
         try {
             luaScript.ast = LuaParser.parse(rawLua.code);
-        } catch (ParseError e) {
-            if (DevMode.INSTACE.dev){
+        } catch (Exception e) {
+            if (DevMode.INSTACE.dev) {
+                e.printStackTrace();
                 Utility.sendClientNotify("Lua parse error: " + e.getMessage());
             }
         }
-
+        scripts.add(luaScript);
         return luaScript;
     }
 
     public static void unloadLua(LuaScript script) {
         ArrayList<Module> remove = new ArrayList<>();
         FPSMaster.moduleManager.getModules().forEach(m -> {
-            if (m instanceof LuaModule && ((LuaModule) m).script == script) {
+            if (m instanceof LuaModule && ((LuaModule) m).script.rawLua.filename.equals(script.rawLua.filename)) {
                 remove.add(m);
                 if (m.isEnabled())
                     m.toggle();
@@ -96,19 +112,28 @@ public class LuaManager {
         }
         script.lua.close();
         scripts.remove(script);
-        FPSMaster.moduleManager.getModules().removeAll(remove);
+        remove.forEach(FPSMaster.moduleManager::removeModule);
     }
 
     public static void reload() {
+        ArrayList<Module> remove = new ArrayList<>();
+        FPSMaster.moduleManager.getModules().forEach(m -> {
+            if (m instanceof LuaModule) {
+                remove.add(m);
+                if (m.isEnabled())
+                    m.toggle();
+            }
+        });
+        remove.forEach(FPSMaster.moduleManager::removeModule);
         File[] luas = FileUtils.INSTANCE.getPlugins().listFiles();
 
-        for (LuaScript script : scripts) {
+        for (LuaScript script : new ArrayList<>(scripts)) {
             unloadLua(script);
         }
 
         for (File luaFile : luas) {
             RawLua rawLua = new RawLua(luaFile.getName(), FileUtils.readAbsoluteFile(luaFile.getAbsolutePath()));
-            scripts.add(loadLua(rawLua));
+            loadLua(rawLua);
         }
     }
 
@@ -123,25 +148,33 @@ public class LuaManager {
             }
         }
 
-        scripts.removeIf(script -> {
+        ArrayList<LuaScript> remove = new ArrayList<>();
+        scripts.forEach(script -> {
             if (!newRawLuaList.contains(script.rawLua)) {
-                unloadLua(script);
-                if (DevMode.INSTACE.dev && DevMode.INSTACE.hotswap){
-                    Utility.sendClientNotify("Hotswap: unloaded old lua script §d" + script.rawLua.filename);
-                }
-                return true;
+                remove.add(script);
             }
-            return false;
         });
 
-        rawLuaList.stream()
-                .filter(element -> !rawLuaList.contains(element))
+        remove.forEach(it -> {
+            unloadLua(it);
+            if (DevMode.INSTACE.dev) {
+                Utility.sendClientNotify("Hotswap: unloaded lua script §d" + it.rawLua.filename);
+            }
+        });
+
+        newRawLuaList.stream()
+                .filter(element -> !scripts.stream().map(item -> item.rawLua).collect(Collectors.toList()).contains(element))
                 .forEach(element -> {
-                    loadLua(element);
-                    if (DevMode.INSTACE.dev && DevMode.INSTACE.hotswap){
+                    try {
+                        loadLua(element);
+                    } catch (Exception e) {
+                        if (DevMode.INSTACE.dev) {
+                            Utility.sendClientNotify("Hotswap: failed to load lua script §d" + element.filename + " §c " + e.getMessage());
+                        }
+                    }
+                    if (DevMode.INSTACE.dev && DevMode.INSTACE.hotswap) {
                         Utility.sendClientNotify("Hotswap: loaded new lua script §d" + element.filename);
                     }
-                    rawLuaList.add(element);
                 });
     }
 }

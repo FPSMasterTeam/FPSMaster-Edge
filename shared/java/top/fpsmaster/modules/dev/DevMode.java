@@ -23,12 +23,15 @@ public class DevMode {
     public void setHotswap(boolean value) {
         hotswap = value;
     }
+
     MathTimer timer = new MathTimer();
 
     @Subscribe
-    public void onUpdate(EventUpdate e){
-        if (timer.delay(1000)){
-            LuaManager.hotswap();
+    public void onUpdate(EventUpdate e) {
+        if (hotswap) {
+            if (timer.delay(1000)) {
+                LuaManager.hotswap();
+            }
         }
     }
 }

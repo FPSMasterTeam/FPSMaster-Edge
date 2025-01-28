@@ -4,7 +4,7 @@ public class RawLua {
     public String code;
     public String filename;
 
-    public RawLua(String code, String filename) {
+    public RawLua(String filename, String code) {
         this.filename = filename;
         this.code = code;
     }
@@ -22,7 +22,7 @@ public class RawLua {
             return false;
         }
 
-        if (this.filename.equals(((RawLua) obj).filename)) {
+        if (!this.filename.equals(((RawLua) obj).filename)) {
             return false;
         }
         return compare((RawLua) obj);
