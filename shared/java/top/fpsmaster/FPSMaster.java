@@ -160,7 +160,6 @@ public class FPSMaster {
     public static Language i18n = new Language();
     public static AsyncTask async = new AsyncTask(100);
     public static boolean development = false;
-    public static boolean debug = false;
     public static boolean isLatest = true;
     public static boolean updateFailed = false;
     public static String latest = "";

@@ -4,6 +4,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+// 语句
+public abstract class Statement {
+}
+
 // 表达式
 abstract class Expression {
 }
@@ -74,10 +78,6 @@ class BinaryExpression extends Expression {
                 ", right=" + right +
                 '}';
     }
-}
-
-// 语句
-abstract class Statement {
 }
 
 class AssignmentStatement extends Statement {

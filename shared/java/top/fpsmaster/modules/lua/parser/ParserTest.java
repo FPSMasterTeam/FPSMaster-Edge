@@ -30,18 +30,13 @@ public class ParserTest {
                 "that spans multiple lines.\n" +
                 "]]";
 
-        Lexer lexer = new Lexer(code);
-        List<Token> tokens = lexer.tokenize();
-        System.out.println("Tokens: " + tokens);
-
-        Parser parser = new Parser(tokens);
-        List<Statement> statements = null;
+        List<Statement> parse = null;
         try {
-            statements = parser.parseAll();
+            parse = LuaParser.parse(code);
         } catch (ParseError e) {
             throw new RuntimeException(e);
         }
-        for (Statement stmt : statements) {
+        for (Statement stmt : parse) {
             System.out.println(stmt.toString());
         }
     }

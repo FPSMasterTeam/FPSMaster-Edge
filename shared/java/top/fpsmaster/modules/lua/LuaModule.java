@@ -13,9 +13,11 @@ import java.util.Map;
 public class LuaModule extends top.fpsmaster.features.manager.Module {
 
     public Map<String, LuaValue> events = new HashMap<>();
+    public LuaScript script;
 
-    public LuaModule(String name,String category, Map<String, LuaValue> value) {
+    public LuaModule(LuaScript lua, String name, String category, Map<String, LuaValue> value) {
         super(name, Category.valueOf(category.toUpperCase()));
+        this.script = lua;
         events.putAll(value);
     }
 
@@ -45,7 +47,7 @@ public class LuaModule extends top.fpsmaster.features.manager.Module {
                 if (k.equals(name))
                     v.call(args);
             });
-        }catch (Exception e){
+        } catch (Exception e) {
             System.out.println("error when calling " + name);
         }
     }

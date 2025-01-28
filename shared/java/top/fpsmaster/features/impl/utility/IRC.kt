@@ -10,6 +10,7 @@ import top.fpsmaster.utils.Utility
 import top.fpsmaster.utils.math.MathTimer
 import top.fpsmaster.websocket.client.WsClient
 import top.fpsmaster.interfaces.ProviderManager
+import top.fpsmaster.modules.dev.DevMode
 
 class IRC : Module("IRC", Category.Utility) {
     init {
@@ -31,11 +32,11 @@ class IRC : Module("IRC", Category.Utility) {
             return
         if (FPSMaster.INSTANCE.wsClient == null) {
             FPSMaster.INSTANCE.wsClient = WsClient.start("wss://service.fpsmaster.top/")
-            if (FPSMaster.debug)
+            if (DevMode.INSTACE.dev)
                 Utility.sendClientMessage("尝试连接")
         }else if (FPSMaster.INSTANCE.wsClient!!.isClosed && !FPSMaster.INSTANCE.wsClient!!.isOpen){
             FPSMaster.INSTANCE.wsClient!!.connect()
-            if (FPSMaster.debug)
+            if (DevMode.INSTACE.dev)
                 Utility.sendClientMessage("尝试连接")
         }
     }

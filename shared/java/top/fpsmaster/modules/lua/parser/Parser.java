@@ -2,8 +2,7 @@ package top.fpsmaster.modules.lua.parser;
 
 import java.util.*;
 
-// 解析器类，用于解析Lua代码的抽象语法树
-class Parser {
+public class Parser {
     private final List<Token> tokens;
     private int position;
 

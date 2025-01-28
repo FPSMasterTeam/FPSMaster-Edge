@@ -6,6 +6,7 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.modules.dev.DevMode;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.websocket.data.message.Packet;
 import top.fpsmaster.websocket.data.message.client.*;
@@ -23,7 +24,7 @@ public class WsClient extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        if (FPSMaster.debug)
+        if (DevMode.INSTACE.dev)
             Utility.sendClientMessage("成功连接到irc服务器");
         if (ProviderManager.mcProvider.getPlayer() != null) {
             Utility.sendClientMessage(FPSMaster.i18n.get("irc.enable"));
@@ -71,14 +72,14 @@ public class WsClient extends WebSocketClient {
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        if (FPSMaster.debug)
+        if (DevMode.INSTACE.dev)
             Utility.sendClientMessage("连接关闭:" + reason);
         FPSMaster.INSTANCE.wsClient = null;
     }
 
     @Override
     public void onError(Exception ex) {
-        if (FPSMaster.debug)
+        if (DevMode.INSTACE.dev)
             Utility.sendClientMessage("聊天服务错误: " + ex.getMessage());
     }
 

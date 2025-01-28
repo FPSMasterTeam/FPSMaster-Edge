@@ -14,5 +14,12 @@ open class Utility {
                 ProviderManager.mcProvider.printChatMessage(ProviderManager.utilityProvider.makeChatComponent(msg))
             }
         }
+
+        @JvmStatic
+        fun sendClientNotify(msg: String?) {
+            if (ProviderManager.mcProvider.getWorld() != null) {
+                ProviderManager.mcProvider.printChatMessage("§9[FPSMaster]§r " + ProviderManager.utilityProvider.makeChatComponent(msg))
+            }
+        }
     }
 }
