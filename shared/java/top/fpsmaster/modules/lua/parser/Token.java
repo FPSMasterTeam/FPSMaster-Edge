@@ -17,6 +17,14 @@ class Token {
     public String toString() {
         return type + " " + value;
     }
+
+    public boolean match(String type) {
+        return this.type.equals(type);
+    }
+
+    public boolean match(String type, String value) {
+        return this.type.equals(type) && this.value.equals(value);
+    }
 }
 
 class Lexer {
@@ -98,9 +106,27 @@ class Lexer {
                         break;
                 }
             } else if (Character.isDigit(current)) {
-                String number = readWhile(Character::isDigit); // 读取数字，直到遇到非数字为止
+                String number = readWhile(t -> Character.isDigit(t) || t == '.' || t == 'e' || t == 'E' || t == '+' || t == '-'); // 读取数字，直到遇到非数字为止
+                // 合法性检查
+                if (number.contains(".") && number.endsWith(".")) {
+                    throw new IllegalArgumentException("Invalid number: " + number);
+                }
+                if (number.contains("e") || number.contains("E")) {
+                    if (number.endsWith("e") || number.endsWith("E")) {
+                        throw new IllegalArgumentException("Invalid number: " + number);
+                    }
+                    String[] parts = number.split("[eE]");
+                    if (parts.length != 2) {
+                        throw new IllegalArgumentException("Invalid number: " + number);
+                    }
+                    if (!parts[1].matches("[+-]?\\d+")) {
+                        throw new IllegalArgumentException("Invalid number: " + number);
+                    }
+                }
+
+
                 tokens.add(new Token("NUMBER", number));
-            } else if (current == '"') {
+            } else if (current == '"' || (current == '[' && lookaheadIs('['))) {
                 // 读取字符串
                 tokens.add(new Token("STRING", readString()));
             } else if (current == '=' && input.charAt(position + 1) == '=') {
@@ -115,14 +141,14 @@ class Lexer {
             } else if (current == '.' && input.charAt(position + 1) == '.') {
                 tokens.add(new Token("OPERATOR", ".."));
                 position += 2;
-            } else if (current == '+' || current == '-' || current == '*' || current == '/' || current == '%' || current == '^' || current == '#' || current == '&' || current == '|' || current == '~' || current == '>' || current == '<' || current == '=' || current == '.' || current == '?' || current == '!' || current == ':') {
+            } else if (current == '+' || current == '-' || current == '*' || current == '/' || current == '%' || current == '^' || current == '#' || current == '&' || current == '|' || current == '~' || current == '>' || current == '<' || current == '=' || current == '?' || current == '!') {
                 tokens.add(new Token("OPERATOR", String.valueOf(current)));
                 position++;
             } else if (".:{}(),".indexOf(current) != -1) {
                 tokens.add(new Token("SYMBOL", String.valueOf(current)));
                 position++;
             } else {
-                throw new IllegalArgumentException("Unexpected character: " + current);
+                throw new IllegalArgumentException("Unexpected character: " + current + position);
             }
         }
         return tokens;
@@ -140,12 +166,12 @@ class Lexer {
         position += 2; // 跳过 "--"
         if (lookaheadIs('[') && lookaheadIs('[', position + 1)) {
             // 多行注释
-            position += 2; // 跳过 "[["
+            position += 3; // 跳过 "[["
             while (position < input.length() && !(lookaheadIs(']') && lookaheadIs(']', position + 1))) {
                 position++;
             }
             if (position < input.length()) {
-                position += 2; // 跳过 "]]"
+                position += 3; // 跳过 "]]"
             } else {
                 throw new IllegalArgumentException("Unterminated multi-line comment");
             }
@@ -159,6 +185,10 @@ class Lexer {
 
     private String readString() {
         StringBuilder stringLiteral = new StringBuilder();
+        char marker = input.charAt(position);
+        if (marker == '[') {
+            position++;
+        }
         position++; // 跳过开头的双引号
         while (position < input.length()) {
             char current = input.charAt(position);
@@ -185,8 +215,10 @@ class Lexer {
                     default:
                         throw new IllegalArgumentException("Unknown escape sequence: \\" + escaped);
                 }
-            } else if (current == '"') {
+            } else if (current == '\"' || (marker == '[' && current == ']')) {
                 // 结束字符串
+                if (marker == '[')
+                    position++;
                 position++;
                 break;
             } else {

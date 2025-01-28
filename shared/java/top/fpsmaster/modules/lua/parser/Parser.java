@@ -1,14 +1,32 @@
 package top.fpsmaster.modules.lua.parser;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 // 解析器类，用于解析Lua代码的抽象语法树
 class Parser {
     private final List<Token> tokens;
     private int position;
+
+    private static final Map<String, Integer> PRECEDENCE = new HashMap<String, Integer>() {{
+        put("^", 8);
+        put("not", 7);
+        put("#", 7);
+        put("unm", 7);
+        put("*", 6);
+        put("/", 6);
+        put("%", 6);
+        put("+", 5);
+        put("-", 5);
+        put("..", 4);
+        put("<", 3);
+        put(">", 3);
+        put("<=", 3);
+        put(">=", 3);
+        put("~=", 3);
+        put("==", 3);
+        put("and", 2);
+        put("or", 1);
+    }};
 
     Parser(List<Token> tokens) {
         this.tokens = tokens;
@@ -16,21 +34,23 @@ class Parser {
     }
 
     // 解析主方法，支持多种语句
-    Statement parse() {
+    Statement parse() throws ParseError {
+
+        Token peek = peek();
         if (match("KEYWORD")) {
-            if ("function".equals(peek().value)) {
+            if ("function".equals(peek.value)) {
                 return new ExpressionStatement(parseFunctionDefinition());
-            } else if ("local".equals(peek().value)) {
+            } else if ("local".equals(peek.value)) {
                 return parseLocalDeclaration();
-            } else if ("return".equals(peek().value)) {
+            } else if ("return".equals(peek.value)) {
                 return parseReturnStatement();
-            } else if ("if".equals(peek().value)) {
+            } else if ("if".equals(peek.value)) {
                 return parseIfStatement();
-            } else if ("for".equals(peek().value)) {
+            } else if ("for".equals(peek.value)) {
                 return parseForStatement();
-            } else if ("while".equals(peek().value)) {
+            } else if ("while".equals(peek.value)) {
                 return parseWhileStatement();
-            } else if ("repeat".equals(peek().value)) {
+            } else if ("repeat".equals(peek.value)) {
                 return parseRepeatStatement();
             }
         } else if (match("IDENTIFIER")) {
@@ -47,10 +67,10 @@ class Parser {
             }
         }
 
-        throw new IllegalArgumentException("Unexpected token: " + peek().type + " " + peek().value + " at position " + position + " -> " + context());
+        throw new IllegalArgumentException("Unexpected token: " + peek.type + " " + peek.value + " at position " + position + " -> " + context());
     }
 
-    public List<Statement> parseAll() {
+    public List<Statement> parseAll() throws ParseError {
         List<Statement> statements = new ArrayList<>();
         while (position < tokens.size()) {
             statements.add(parse());
@@ -59,7 +79,7 @@ class Parser {
     }
 
     // 解析赋值语句
-    private Statement parseAssignment() {
+    private Statement parseAssignment() throws ParseError {
         Token identifier = consume("IDENTIFIER");
         consume("OPERATOR"); // Expect '='
         Expression value = parseExpression();
@@ -67,7 +87,7 @@ class Parser {
     }
 
     // 解析函数定义
-    private FunctionDefinitionExpression parseFunctionDefinition() {
+    private FunctionDefinitionExpression parseFunctionDefinition() throws ParseError {
         consume("KEYWORD"); // 消费 "function"
         Token functionName = consume("IDENTIFIER"); // 函数名称
         consume("SYMBOL"); // 消费 "("
@@ -95,69 +115,159 @@ class Parser {
     }
 
     // 解析表达式语句
-    private Expression parseExpression() {
-        return parseBinaryExpression(0); // 初始优先级为 0
+    private Expression parseExpression() throws ParseError {
+        return parseExpression(0); // 初始优先级为 0
     }
 
     // 解析二元表达式，基于优先级
-    private Expression parseBinaryExpression(int minPrecedence) {
-        Expression left = parsePrimary(); // 解析左操作数
+    private Expression parseExpression(int minPrecedence) throws ParseError {
+        Deque<Expression> exprStack = new ArrayDeque<>();
+        exprStack.push(parsePrefix());
 
         while (true) {
-            // 获取当前操作符和优先级
-            Token operatorToken = peek();
-            int precedence = getOperatorPrecedence(operatorToken);
+            Token opToken = peek();
+            if (opToken == null) break;
 
-            // 如果操作符优先级低于 minPrecedence，则停止解析
-            if (precedence < minPrecedence) {
-                break;
-            }
+            Integer currPrec = PRECEDENCE.get(getOperatorKey(opToken));
+            if (currPrec == null || currPrec < minPrecedence) break;
 
-            consume(operatorToken.type); // 消费操作符
-
-            // 根据优先级解析右操作数
-            Expression right = parseBinaryExpression(precedence + 1);
-
-            // 创建二元表达式
-            left = new BinaryExpression(left, operatorToken.value, right);
+            consumeCurrent();
+            exprStack.push(parseInfix(exprStack.pop(), opToken, currPrec));
         }
 
-        return left;
+        return exprStack.pop();
     }
 
-    // 获取操作符优先级
-    private int getOperatorPrecedence(Token token) {
-        if (token.type.equals("SYMBOL") || token.type.equals("OPERATOR")) {
-            switch (token.value) {
-                case ".":
-                case ":":
-                    return 1;
-                case "*":
-                case "/":
-                    return 2;
-                case "+":
-                case "-":
-                    return 3;
-                case "==":
-                case ">":
-                case "<":
-                case ">=":
-                case "<=":
-                    return 4;
-                case "..":
-                    return 5;
-                case "=":
-                    return 6;
+    // 解析前缀表达式
+    private Expression parsePrefix() throws ParseError {
+        Token token = consumeCurrent();
+        switch (token.type) {
+            case "NUMBER":
+                return new LiteralExpression(token.value);
+            case "STRING":
+                return new LiteralExpression(token.value);
+            case "BOOLEAN":
+                return new BooleanLiteralExpression("true".equals(token.value));
+            case "NIL":
+                return new NilLiteralExpression();
+            case "IDENTIFIER":
+                return parseIdentifierExpression(token.value);
+            case "SYMBOL":
+                return handleSymbolPrefix(token.value);
+            case "OPERATOR":
+                return handleOperatorPrefix(token.value);
+            default:
+                throw new ParseError("Unexpected token type: " + token.type);
+        }
+    }
+
+    // 处理符号前缀（括号/表）
+    private Expression handleSymbolPrefix(String symbol) throws ParseError {
+        switch (symbol) {
+            case "(":
+                Expression expr = parseExpression(0);
+                consume("SYMBOL", ")");
+                return expr;
+            case "{":
+                return parseTable();
+            default:
+                throw new ParseError("Unexpected symbol: " + symbol);
+        }
+    }
+
+    // 处理运算符前缀（一元运算符）
+    private Expression handleOperatorPrefix(String operator) throws ParseError {
+        if ("-".equals(operator)) {
+            return new UnaryExpression("-", parseExpression(getPrecedence("unm")));
+        }
+        throw new ParseError("Unsupported prefix operator: " + operator);
+    }
+
+    // 解析中缀表达式
+    private Expression parseInfix(Expression left, Token opToken, int precedence) throws ParseError {
+        String operator = getOperatorKey(opToken);
+
+        // 处理右结合运算符（如指数）
+        int nextPrecedence = ("^".equals(operator)) ? precedence - 1 : precedence;
+
+        return new BinaryExpression(
+                left,
+                operator,
+                parseExpression(nextPrecedence)
+        );
+    }
+
+    // 处理标识符表达式（可能包含方法调用）
+    private Expression parseIdentifierExpression(String name) throws ParseError {
+        Expression expr = new VariableExpression(name);
+
+        while (true) {
+            Token nextToken = peek();
+            switch (nextToken.type) {
+                case "SYMBOL":
+                    if ("(".equals(nextToken.value)) {
+                        expr = parseFunctionCall(expr);
+                    } else if (".".equals(nextToken.value)) {
+                        expr = parseMemberAccess(expr, false);
+                    } else if (":".equals(nextToken.value)) {
+                        expr = parseMemberAccess(expr, true);
+                    } else {
+                        return expr;
+                    }
+                    break;
+                default:
+                    return expr;
             }
         }
-        return -1; // 非操作符
     }
 
+    // 解析函数调用
+    private Expression parseFunctionCall(Expression function) throws ParseError {
+        consume("SYMBOL", "(");
+        List<Expression> args = new ArrayList<>();
+        while (!peek().value.equals(")")) {
+            args.add(parseExpression(0));
+            if (peek().value.equals(",")) {
+                consumeCurrent();
+            }
+        }
+        consume("SYMBOL", ")");
+        return new FunctionCallExpression(((VariableExpression) function).getName(), args);
+    }
 
-    private List<Expression> parseArguments() {
+    // 辅助方法
+    private String getOperatorKey(Token token) {
+        if ("KEYWORD".equals(token.type) && ("and".equals(token.value) || "or".equals(token.value))) {
+            return token.value;
+        }
+        return token.value;
+    }
+
+    private int getPrecedence(String operator) {
+        return PRECEDENCE.getOrDefault(operator, -1);
+    }
+
+    private Expression parseMemberAccess(Expression obj, boolean isMethod) throws ParseError {
+        consume("SYMBOL", isMethod ? ":" : ".");
+        Token member = consume("IDENTIFIER");
+
+        // 如果后面有参数列表则解析方法调用
+        if (match("SYMBOL", "(")) {
+            List<Expression> args = parseArguments();
+            if (isMethod) {
+                args.add(0, obj); // 自动添加self参数
+            }
+            return new MethodCallExpression(obj, member.value, args, isMethod);
+        }
+
+        return new MemberAccessExpression(obj, member.value);
+    }
+
+    private List<Expression> parseArguments() throws ParseError {
         consume("SYMBOL"); // 消费 "("
         List<Expression> arguments = new ArrayList<>();
         while (!match("SYMBOL") || !peek().value.equals(")")) {
+
             if ((match("NUMBER") || match("STRING") || match("IDENTIFIER")) && (lookaheadIs("SYMBOL", ",") || lookaheadIs("SYMBOL", ")"))) {
                 arguments.add(parsePrimary()); // 解析基本的参数
             } else {
@@ -171,7 +281,7 @@ class Parser {
         return arguments;
     }
 
-    private FunctionCallExpression parseFunctionCall() {
+    private FunctionCallExpression parseFunctionCall() throws ParseError {
         String functionName = consume("IDENTIFIER").value;
 
         // 解析参数列表
@@ -180,7 +290,7 @@ class Parser {
         return new FunctionCallExpression(functionName, arguments);
     }
 
-    private TableExpression parseTable() {
+    private TableExpression parseTable() throws ParseError {
         consume("SYMBOL"); // 消费 "{"
 
         List<Expression> arrayElements = new ArrayList<>();
@@ -210,7 +320,7 @@ class Parser {
 
 
     // 解析基本表达式
-    private Expression parsePrimary() {
+    private Expression parsePrimary() throws ParseError {
         if (match("KEYWORD", "function")) {
             // 解析匿名函数
             return parseAnonymousFunction();
@@ -255,7 +365,7 @@ class Parser {
     }
 
     // 解析成员访问和方法调用
-    private Expression parseMemberOrMethod(Expression base) {
+    private Expression parseMemberOrMethod(Expression base) throws ParseError {
         // 处理点运算符 "."
         while (match("SYMBOL") && peek().value.equals(".")) {
             consume("SYMBOL"); // 消费 "."
@@ -285,7 +395,7 @@ class Parser {
 
 
     // 解析局部声明语句
-    private Statement parseLocalDeclaration() {
+    private Statement parseLocalDeclaration() throws ParseError {
         consume("KEYWORD"); // 消费 "local"
 
         if (match("KEYWORD", "function")) {
@@ -308,7 +418,7 @@ class Parser {
     }
 
     // 解析 return 语句
-    private ReturnStatement parseReturnStatement() {
+    private ReturnStatement parseReturnStatement() throws ParseError {
         consume("KEYWORD"); // 消费 "return"
 
         List<Expression> returnValues = new ArrayList<>();
@@ -327,7 +437,7 @@ class Parser {
     }
 
     // 解析 if 语句
-    private IfStatement parseIfStatement() {
+    private IfStatement parseIfStatement() throws ParseError {
         consume("KEYWORD"); // 消费 "if"
 
         Expression condition = parseExpression(); // 解析条件表达式
@@ -361,7 +471,7 @@ class Parser {
         return new IfStatement(condition, ifStatements, elseifStatements, elseifConditions, elseStatements);
     }
 
-    private Statement parseRepeatStatement() {
+    private Statement parseRepeatStatement() throws ParseError {
         consume("KEYWORD", "repeat"); // 消费 "repeat"
 
         // 解析循环体
@@ -375,7 +485,7 @@ class Parser {
         return new RepeatStatement(body, condition);
     }
 
-    private Statement parseWhileStatement() {
+    private Statement parseWhileStatement() throws ParseError {
         consume("KEYWORD", "while"); // 消费 "while"
 
         // 解析条件表达式
@@ -392,7 +502,7 @@ class Parser {
     }
 
 
-    private Statement parseForStatement() {
+    private Statement parseForStatement() throws ParseError {
         consume("KEYWORD", "for"); // 消费 "for"
 
         // 判断是数值型还是泛型 for 循环
@@ -444,7 +554,7 @@ class Parser {
 
 
     // 解析匿名函数
-    private AnonymousFunctionExpression parseAnonymousFunction() {
+    private AnonymousFunctionExpression parseAnonymousFunction() throws ParseError {
         consume("KEYWORD"); // 消费 "function"
         consume("SYMBOL"); // 消费 "("
 
@@ -467,7 +577,7 @@ class Parser {
         return new AnonymousFunctionExpression(parameters, body);
     }
 
-    private List<Statement> parseBlock() {
+    private List<Statement> parseBlock() throws ParseError {
         List<Statement> statements = new ArrayList<>();
 
         while (!match("KEYWORD") ||
@@ -481,7 +591,9 @@ class Parser {
         return statements;
     }
 
-
+    private Token consumeCurrent() {
+        return tokens.get(position++);
+    }
     // 消费token
     private Token consume(String type) {
         Token token = tokens.get(position++);
@@ -498,10 +610,10 @@ class Parser {
     }
 
     // 消费token
-    private Token consume(String type, String value) {
+    private Token consume(String type, String value) throws ParseError {
         Token token = tokens.get(position++);
         if (!token.type.equals(type) || !token.value.equals(value)) {
-            throw new IllegalArgumentException("Expected " + type + " but found " + token.type + " " + token.value + " at position " + position + " -> " + context());
+            throw new ParseError("Expected " + type + " but found " + token.type + " " + token.value + " at position " + position + " -> " + context());
         }
         return token;
     }
@@ -526,15 +638,6 @@ class Parser {
     // 检查当前 token 和值是否匹配
     private boolean match(String type, String value) {
         return match(type) && tokens.get(position).value.equals(value);
-    }
-
-    // 匹配并消费 token
-    private boolean matchAndConsume(String type, String value) {
-        if (match(type, value)) {
-            position++;
-            return true;
-        }
-        return false;
     }
 
     // 查看下一个 token

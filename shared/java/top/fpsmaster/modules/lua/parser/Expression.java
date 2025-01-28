@@ -118,7 +118,14 @@ class FunctionDefinitionExpression extends Expression {
                 '}';
     }
 }
-
+class UnaryExpression extends Expression {
+    String operator;
+    Expression expression;
+    UnaryExpression(String operator, Expression expression) {
+        this.operator = operator;
+        this.expression = expression;
+    }
+}
 class FunctionCallExpression extends Expression {
     String name;
     List<Expression> arguments;
