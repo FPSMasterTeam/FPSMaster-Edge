@@ -47,24 +47,20 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 2. Link Gradle Script
 3. 将Idea的Gradle jdk版本设置为java17
 4. 导入各版本gradle配置文件
-5. 直接使用IDEA打开项目应该会自动识别到启动配置，如果没有，可以手动配置。
+5. 执行`gradle genIntelliJRuns`
+6. 执行`gradle runClient`（这一步会执行downloadAssets等任务，可能因为网络问题失败）
+7. 把生成的Minecraft Client启动配置的运行java版本改为java8（注意，不要改gradle的jdk版本配置）
 
-`注意：应该使用java8运行`
+可能遇到的问题：
+
+ - 运行`genIntelliJRuns`之后并没有出现启动项，此时需要把生成的`.idea/runConfiguration`复制到`v1.8.9/.idea/runConfiguration`
+
+ - 生成的`v1.8.9/.gradle/loom-cache/launch.cfg`中的目录路径错误，这时需要手动修复
+
+ - APPDATA/.gradle/caches/essential-loom/assets/ 目录中的资源不能正常下载，此时可以其他地方复制一份1.8的assets目录过来
 
 
-#### 手动配置：
 
-- 1.8.9:
-
-主类：`net.fabricmc.devlaunchinjector.Main`
-
-jvm参数：`-Dfabric.dli.config=/v1.8.9/.gradle/loom-cache/launch.cfg -Dfabric.dli.env=client -Dfabric.dli.main=net.minecraft.launchwrapper.Launch`
-
-- 1.12.2
-
-主类：`net.fabricmc.devlaunchinjector.Main`
-
-jvm参数：`-Dfabric.dli.config=/v1.12.2/.gradle/loom-cache/launch.cfg -Dfabric.dli.env=client -Dfabric.dli.main=net.minecraft.launchwrapper.Launch`
 
 ![Alt](https://repobeats.axiom.co/api/embed/e686f6313e4406de4286bf27e0db4a2bf5a31b7f.svg "Repobeats analytics image")
 
