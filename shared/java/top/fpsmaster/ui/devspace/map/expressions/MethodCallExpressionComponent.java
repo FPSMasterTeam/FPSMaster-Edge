@@ -24,7 +24,7 @@ public class MethodCallExpressionComponent extends ExpressionComponent {
     public void draw(int x, int y, int mouseX, int mouseY) {
         super.draw(x, y, mouseX, mouseY);
         object.draw(x, y, mouseX, mouseY);
-        FPSMaster.fontManager.s16.drawString(method, x, y + object.getHeight(), -1);
-        height = object.getHeight() + 20;
+        FPSMaster.fontManager.s16.drawString(method, x, y + object.height, -1);
+        height = object.height + 20;
     }
 }

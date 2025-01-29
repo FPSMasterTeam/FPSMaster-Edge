@@ -2,10 +2,14 @@ package top.fpsmaster.ui.devspace.map.expressions;
 
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.modules.lua.parser.Expression;
+import top.fpsmaster.utils.render.Render2DUtils;
 
-public class LiteralExpressionComponent extends ExpressionComponent{
+import java.awt.*;
+
+public class LiteralExpressionComponent extends ExpressionComponent {
 
     String value;
+
     public LiteralExpressionComponent(Expression.LiteralExpression expression) {
         super(expression);
         value = expression.value;
@@ -14,7 +18,9 @@ public class LiteralExpressionComponent extends ExpressionComponent{
     @Override
     public void draw(int x, int y, int mouseX, int mouseY) {
         super.draw(x, y, mouseX, mouseY);
-        FPSMaster.fontManager.s16.drawString(value, x, y, -1);
-        height=20;
+        this.width = FPSMaster.fontManager.s16.getStringWidth(value) + 10;
+        this.height = FPSMaster.fontManager.s16.getHeight() + 4;
+        Render2DUtils.drawOptimizedRoundedRect(x, y, width, height, 3, new Color(50, 50, 50).getRGB());
+        FPSMaster.fontManager.s16.drawString("\"" + value + "\"", x + 2, y + 2, new Color(197, 134, 192).getRGB());
     }
 }

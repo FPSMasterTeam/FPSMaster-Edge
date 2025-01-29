@@ -41,6 +41,7 @@ import static top.fpsmaster.FPSMaster.getClientTitle;
 
 @Mixin(Minecraft.class)
 @Implements(@Interface(iface = IMinecraft.class, prefix = "fpsmaster$"))
+@SuppressWarnings("all")
 public abstract class MixinMinecraft implements IMinecraft {
     @Final
     @Shadow

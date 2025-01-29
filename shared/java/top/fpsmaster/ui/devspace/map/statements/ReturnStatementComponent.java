@@ -22,7 +22,7 @@ public class ReturnStatementComponent extends StatementComponent {
         FPSMaster.fontManager.s16.drawString("return", x + 10, y, -1);
         for (ExpressionComponent returnValue : returnValues) {
             returnValue.draw(x + 20, y + height, mouseX, mouseY);
-            height += returnValue.getHeight();
+            height += returnValue.height;
         }
     }
 }

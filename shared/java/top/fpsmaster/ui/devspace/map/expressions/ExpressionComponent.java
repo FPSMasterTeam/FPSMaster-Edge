@@ -6,6 +6,7 @@ public class ExpressionComponent {
     public Expression expression;
     public String name;
     public int height = 0;
+    public int width = 0;
 
     public ExpressionComponent(Expression expression) {
         this.expression = expression;
@@ -13,9 +14,5 @@ public class ExpressionComponent {
 
 
     public void draw(int x, int y, int mouseX, int mouseY) {
-    }
-
-    public int getHeight() {
-        return height;
     }
 }

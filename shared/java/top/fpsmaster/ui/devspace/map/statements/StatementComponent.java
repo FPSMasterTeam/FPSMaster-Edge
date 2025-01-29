@@ -6,6 +6,7 @@ public class StatementComponent {
     public Statement statement;
     public String name;
     public int height;
+    public int width;
 
     public StatementComponent(Statement statement) {
         this.statement = statement;

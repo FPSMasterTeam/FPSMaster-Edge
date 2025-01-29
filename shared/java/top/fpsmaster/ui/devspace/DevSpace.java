@@ -151,16 +151,45 @@ public class DevSpace extends ScaledGuiScreen {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
+
+    private int mapX = 0, mapY = 0;
+    private int mapDragX = 0, mapDragY = 0;
+
+    private boolean isDraggingMap = false;
+    private boolean needReload = false;
+
+
+    List<StatementComponent> components = new ArrayList<>();
+
     private void drawMapEditorArea(int mouseX, int mouseY) {
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        int xPos = x + Math.max((int) (width * 0.2), 100);
+        int yPos = y + 36;
+        Render2DUtils.doGlScissor(xPos + 12, yPos, width - 15, height - 42, scaleFactor);
+        xPos += mapX;
+        yPos += mapY;
         if (selectedLua != -1 && selectedLua < LuaManager.scripts.size()) {
             List<Statement> ast = LuaManager.scripts.get(selectedLua).ast;
-            int yPos = y + 36;
-            for (Statement statement : ast) {
-                StatementComponent component = parseStatement(statement);
-                component.draw(x + Math.max((int) (width * 0.2), 100) + 20, yPos, mouseX, mouseY);
-                yPos += component.getHeight();
+            if (components.isEmpty() || needReload) {
+                for (Statement statement : ast) {
+                    components.add(parseStatement(statement));
+                }
+            }
+            int y1 = yPos;
+            for (StatementComponent component : components) {
+                component.draw(xPos, y1, mouseX, mouseY);
+                y1 += component.getHeight();
             }
         }
+        if (Mouse.isButtonDown(0)) {
+            if (isDraggingMap) {
+                mapX = mouseX - mapDragX;
+                mapY = mouseY - mapDragY;
+            }
+        } else {
+            isDraggingMap = false;
+        }
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
     public static StatementComponent parseStatement(Statement statement) {
@@ -248,6 +277,13 @@ public class DevSpace extends ScaledGuiScreen {
             dragging = true;
             dragX = mouseX - x;
             dragY = mouseY - y;
+        }
+        if (Render2DUtils.isHovered(x + width * 0.2f, y + 15, width - width * 0.2f, height - 20, mouseX, mouseY) && mouseButton == 0) {
+            if (!dragging && selectedLua != -1 && selectedLua < LuaManager.scripts.size() && selectedTab == 1) {
+                isDraggingMap = true;
+                mapDragX = mouseX - (x + mapX);
+                mapDragY = mouseY - (y + mapY);
+            }
         }
     }
 
