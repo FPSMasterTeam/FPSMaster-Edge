@@ -183,8 +183,8 @@ public class DevSpace extends ScaledGuiScreen {
         }
         if (Mouse.isButtonDown(0)) {
             if (isDraggingMap) {
-                mapX = mouseX - mapDragX;
-                mapY = mouseY - mapDragY;
+                mapX = mouseX - (x+mapDragX);
+                mapY = mouseY - (y+mapDragY);
             }
         } else {
             isDraggingMap = false;
