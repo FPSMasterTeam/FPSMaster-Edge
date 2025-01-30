@@ -50,7 +50,7 @@ public class FPSMaster {
         }
         MusicPlayer.setVolume(Float.parseFloat(configManager.configure.getOrCreate("volume", "1")));
         NeteaseApi.cookies = FileUtils.readTempValue("cookies");
-        MusicPanel.INSTANCE.setNickname(FileUtils.readTempValue("nickname"));
+        MusicPanel.nickname = FileUtils.readTempValue("nickname");
         accountManager.autoLogin();
     }
 

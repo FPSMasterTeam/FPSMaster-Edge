@@ -21,7 +21,7 @@ import java.util.List;
 
 public class ModuleManager {
     public List<Module> modules = new ArrayList<>();
-    public MainPanel mainPanel = new MainPanel(false);
+    public MainPanel mainPanel = new MainPanel();
 
     public Module getModule(Class<?> mod) {
         for (Module module : modules) {
@@ -54,12 +54,12 @@ public class ModuleManager {
 
     public void addModule(Module module) {
         modules.add(module);
-        mainPanel.getMods().add(new ModuleRenderer(module));
+        mainPanel.mods.add(new ModuleRenderer(module));
     }
 
     public void removeModule(Module module) {
         modules.remove(module);
-        mainPanel.getMods().removeIf(m -> m.getMod() == module);
+        mainPanel.mods.removeIf(m -> m.mod == module);
     }
 
     public void init() {
@@ -121,7 +121,7 @@ public class ModuleManager {
         }
 
         for (Module m : FPSMaster.moduleManager.modules) {
-            mainPanel.getMods().add(new ModuleRenderer(m));
+            mainPanel.mods.add(new ModuleRenderer(m));
         }
     }
 }

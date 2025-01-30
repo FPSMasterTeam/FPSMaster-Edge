@@ -6,8 +6,8 @@ import top.fpsmaster.ui.notification.NotificationManager;
 import java.util.LinkedList;
 
 public class PlayList {
-    private LinkedList<AbstractMusic> musics = new LinkedList<>();
-    private int current = 0;
+    public LinkedList<AbstractMusic> musics = new LinkedList<>();
+    public int current = 0;
     private boolean shuffled = false;
 
     public void add(AbstractMusic music) {

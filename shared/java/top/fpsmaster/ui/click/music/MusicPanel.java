@@ -1,0 +1,408 @@
+package top.fpsmaster.ui.click.music;
+
+import com.google.gson.JsonObject;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ThreadDownloadImageData;
+import net.minecraft.util.ResourceLocation;
+import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
+import top.fpsmaster.FPSMaster;
+import top.fpsmaster.modules.music.AbstractMusic;
+import top.fpsmaster.modules.music.JLayerHelper;
+import top.fpsmaster.modules.music.MusicPlayer;
+import top.fpsmaster.modules.music.PlayList;
+import top.fpsmaster.modules.music.netease.Music;
+import top.fpsmaster.modules.music.netease.NeteaseApi;
+import top.fpsmaster.modules.music.netease.deserialize.MusicWrapper;
+import top.fpsmaster.ui.click.component.ScrollContainer;
+import top.fpsmaster.utils.os.FileUtils;
+import top.fpsmaster.utils.render.Render2DUtils;
+
+import java.awt.Color;
+import java.io.File;
+import java.util.Base64;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
+public class MusicPanel {
+
+    private static PlayList displayList = new PlayList();
+    private static PlayList recommendList = new PlayList();
+    private static PlayList searchList = new PlayList();
+    private static Thread searchThread = null;
+
+    private static float playProgress = 0f;
+    private static SearchBox inputBox = new SearchBox(FPSMaster.i18n.get("music.search"), () -> {
+        searchThread = new Thread(MusicPanel::run);
+        searchThread.start();
+    });
+
+    private static String[] pages = {"music.name", "music.list", "music.daily"};
+    private static int curSearch = 0;
+    private static boolean isWaitingLogin = false;
+    private static String key = null;
+    private static Thread loginThread = null;
+    private static ScrollContainer container = new ScrollContainer();
+
+    public static int code = 801;
+    public static String nickname = "Unknown";
+    public static float x = 0f;
+    public static float y = 0f;
+    public static float width = 0f;
+    public static float height = 0f;
+
+    public static void mouseClicked(int mouseX, int mouseY, int btn) {
+        inputBox.mouseClicked(mouseX, mouseY, btn);
+        if (searchThread == null || !searchThread.isAlive()) {
+            float dY = y + 50 + container.getRealScroll();
+            for (AbstractMusic music : displayList.musics) {
+                if (Render2DUtils.isHovered(x, dY, width - 10f, 40f, mouseX, mouseY) && mouseY < y + height - 34 && mouseY > y + 34) {
+                    if (Mouse.isButtonDown(0)) {
+                        music.play();
+                        MusicPlayer.isPlaying = true;
+                        MusicPlayer.playList.current = MusicPlayer.playList.musics.indexOf(music);
+                    }
+                }
+                dY += 40f;
+            }
+        }
+
+        // 搜索
+        int xOffset = 0;
+        for (int i = 0; i < pages.length; i++) {
+            String page = pages[i];
+            int width = FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get(page)) + 10;
+            if (Render2DUtils.isHovered(x + 95 + xOffset, y + 8, width, 14f, mouseX, mouseY)) {
+                if (Mouse.isButtonDown(0)) {
+                    curSearch = i;
+                    if (curSearch == 2) {
+                        recommendList = MusicWrapper.getSongsFromDaily();
+                        displayList = recommendList;
+                        MusicPlayer.playList.pause();
+                        setMusicList();
+                    }
+                }
+            }
+            xOffset += width;
+        }
+
+        // 操作栏
+        AbstractMusic current = MusicPlayer.playList.current();
+        if (Render2DUtils.isHovered(x, y + height - 30, width, 4f, mouseX, mouseY)) {
+            if (Mouse.isButtonDown(0) && current != null) {
+                if (!MusicPlayer.isPlaying) {
+                    FPSMaster.async.runnable(() -> {
+                        MusicPlayer.playList.play();
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        current.seek((mouseX - x) / width);
+                    });
+                    MusicPlayer.isPlaying = true;
+                } else {
+                    current.seek((mouseX - x) / width);
+                }
+            }
+        }
+        if (Render2DUtils.isHovered(x + width / 2 - 35, y + height - 23, 16f, 16f, mouseX, mouseY) && btn == 0) {
+            MusicPlayer.playList.previous();
+        }
+        if (Render2DUtils.isHovered(x + width / 2 + 5, y + height - 23, 16f, 16f, mouseX, mouseY) && btn == 0) {
+            MusicPlayer.playList.next();
+        }
+        if (Render2DUtils.isHovered(x + width / 2 - 15, y + height - 23, 35 / 2f, 35 / 2f, mouseX, mouseY) && btn == 0) {
+            if (!MusicPlayer.playList.musics.isEmpty()) {
+                if (MusicPlayer.isPlaying) {
+                    playProgress = MusicPlayer.getPlayProgress();
+                    MusicPlayer.playList.pause();
+                    MusicPlayer.isPlaying = false;
+                } else {
+                    FPSMaster.async.runnable(() -> {
+                        MusicPlayer.playList.current().play();
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        MusicPlayer.playList.current().seek(playProgress);
+                    });
+                    MusicPlayer.isPlaying = true;
+                }
+            }
+        }
+        if (Render2DUtils.isHovered(x + width / 2 - 55, y + height - 21, 12f, 12f, mouseX, mouseY) && btn == 0) {
+            if (MusicPlayer.mode < 2) {
+                MusicPlayer.mode++;
+                MusicPlayer.playList.setMusicList(displayList.musics);
+            } else {
+                MusicPlayer.mode = 0;
+            }
+        }
+    }
+
+    public static void keyTyped(char c, int keyCode) {
+        inputBox.keyTyped(c, keyCode);
+    }
+
+    public static void draw(float x, float y, float width, float height, int mouseX, int mouseY, int scaleFactor) {
+        if (isWaitingLogin) {
+            FPSMaster.fontManager.s18.drawCenteredString("<", x + 20, y + 20, FPSMaster.theme.getTextColorTitle().getRGB());
+            if (Render2DUtils.isHovered(x + 20, y + 20, 20f, 20f, mouseX, mouseY) && Mouse.isButtonDown(0)) {
+                isWaitingLogin = false;
+            }
+            try {
+                ResourceLocation resourceLocation = new ResourceLocation("music/qr");
+                Render2DUtils.drawImage(resourceLocation, x + width / 2 - 45, y + height / 2 - 45, 90f, 90f, -1);
+            } catch (Exception e) {
+                // Handle exception
+            }
+            String scan = "";
+            switch (code) {
+                case 801:
+                    scan = "music.waitscan";
+                    break;
+                case 802:
+                    scan = "music.waitconfirmation";
+                    break;
+                case 800:
+                    reloadImg();
+                    code = 801;
+                    break;
+                case 803:
+                    isWaitingLogin = false;
+                    break;
+            }
+            FPSMaster.fontManager.s18.drawCenteredString(FPSMaster.i18n.get(scan), x + width / 2, y + height / 2 + 60, FPSMaster.theme.getTextColorTitle().getRGB());
+            return;
+        }
+        MusicPanel.x = x;
+        MusicPanel.y = y;
+        MusicPanel.width = width;
+        MusicPanel.height = height;
+        if (displayList.musics.isEmpty() && searchThread == null) {
+            searchThread = new Thread(() -> searchList = MusicWrapper.searchSongs("Minecraft"));
+            searchThread.start();
+        }
+
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        Render2DUtils.doGlScissor(x, y + 30, width, height - 60, scaleFactor);
+        if (searchThread == null || !searchThread.isAlive()) {
+            AtomicReference<Float> dY = new AtomicReference<>(y + 50 + container.getScroll());
+            AtomicReference<Float> musicHeight = new AtomicReference<>(0f);
+
+            Render2DUtils.drawRect(x, dY.get() - 6, width - 10, 0.5f, new Color(100, 100, 100, 50));
+            FPSMaster.fontManager.s16.drawString("#", x + 12, dY.get() - 20, FPSMaster.theme.getTextColorTitle().getRGB());
+            FPSMaster.fontManager.s16.drawString("标题", x + 30, dY.get() - 20, FPSMaster.theme.getTextColorTitle().getRGB());
+
+            // music list
+            container.draw(x, y + 50, width - 5, height - 80, mouseX, mouseY, () -> {
+                for (int i = 0; i < displayList.musics.size(); i++) {
+                    Music music = (Music) displayList.musics.get(i);
+                    if (Render2DUtils.isHovered(x, dY.get(), width - 10f, 40f, mouseX, mouseY) && mouseY > y + 50 && mouseY < y + height - 34) {
+                        Render2DUtils.drawOptimizedRoundedRect(x, dY.get(), width - 10, 40f, new Color(200, 200, 200, 50));
+                    }
+                    FPSMaster.fontManager.s16.drawCenteredString("" + i, x + 15, dY.get() + 15, FPSMaster.theme.getTextColorTitle().getRGB());
+                    if (dY.get() > y && dY.get() < y + height - 10) {
+                        if (music.isLoadedImage) {
+                            Render2DUtils.drawImage(new ResourceLocation("music/netease/" + music.id), x + 30, dY.get() + 10, 20f, 20f, -1);
+                        } else {
+                            Render2DUtils.drawOptimizedRoundedRect(x + 30, dY.get() + 10, 20f, 20f, FPSMaster.theme.getMusicBlank());
+                        }
+                    }
+                    if (MusicPlayer.playList.current == i) {
+                        FPSMaster.fontManager.s16.drawString(music.name + "  " + music.author, x + 60, dY.get() + 10, FPSMaster.theme.getTextColorTitle().getRGB());
+                        FPSMaster.fontManager.s16.drawString(music.author, x + 60, dY.get() + 20, FPSMaster.theme.getTextColorDescription().getRGB());
+                    } else {
+                        FPSMaster.fontManager.s16.drawString(music.name + "  " + music.author, x + 60, dY.get() + 10, FPSMaster.theme.getTextColorTitle().getRGB());
+                        FPSMaster.fontManager.s16.drawString(music.author, x + 60, dY.get() + 20, FPSMaster.theme.getTextColorDescription().getRGB());
+                    }
+                    dY.updateAndGet(v -> new Float((float) (v + 40f)));
+                    musicHeight.updateAndGet(v -> new Float((float) (v + 40f)));
+                }
+                container.setHeight(musicHeight.get());
+            });
+
+        } else {
+            FPSMaster.fontManager.s18.drawCenteredString("...", x + width / 2, y + 60, FPSMaster.theme.getTextColorTitle().getRGB());
+        }
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+
+        // 搜索
+        inputBox.render(x + 5, y + 6, 80f, 16f, mouseX, mouseY);
+
+        // 分页
+        int xOffset = 0;
+        int pagesWidth = 0;
+        for (String page : pages) {
+            pagesWidth += FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get(page)) + 10;
+        }
+        Render2DUtils.drawOptimizedRoundedRect(x + 90, y + 6, pagesWidth, 16f, FPSMaster.theme.getFrontBackground());
+        for (String page : pages) {
+            int stringWidth = FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get(page));
+            if (page.equals(pages[curSearch])) {
+                Render2DUtils.drawOptimizedRoundedRect(x + 90 + xOffset, y + 6, stringWidth + 10, 16f, FPSMaster.theme.getPrimary());
+                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 10, FPSMaster.theme.getTextColorTitle().getRGB());
+            } else {
+                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 10, FPSMaster.theme.getTextColorDescription().getRGB());
+            }
+            xOffset += stringWidth + 10;
+        }
+
+        // login
+        if (NeteaseApi.cookies.isEmpty()) {
+            if (!nickname.isEmpty()) {
+                nickname = "Unknown";
+            }
+            int stringWidth = FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get("music.notLoggedIn"));
+            if (Render2DUtils.isHovered(x + width - stringWidth - 5, y + 10, stringWidth, 16f, mouseX, mouseY)) {
+                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get("music.notloggedin"), x + width - stringWidth - 5, y + 10, FPSMaster.theme.getTextColorTitle().getRGB());
+                if (Mouse.isButtonDown(0)) {
+                    isWaitingLogin = true;
+                    reloadImg();
+                    code = 801;
+                }
+            } else {
+                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get("music.notloggedin"), x + width - stringWidth - 5, y + 10, FPSMaster.theme.getTextColorDescription().getRGB());
+            }
+        } else {
+            int stringWidth = FPSMaster.fontManager.s16.getStringWidth(nickname);
+            FPSMaster.fontManager.s16.drawString(nickname, x + width - stringWidth - 5, y + 10, FPSMaster.theme.getTextColorTitle().getRGB());
+            if (Render2DUtils.isHovered(x + width - stringWidth - 5, y + 10, stringWidth, 16f, mouseX, mouseY)) {
+                if (Mouse.isButtonDown(0)) {
+                    isWaitingLogin = true;
+                    reloadImg();
+                    code = 801;
+                }
+            }
+        }
+
+        // 操作栏
+        AbstractMusic current = MusicPlayer.playList.current();
+        Render2DUtils.drawRect(x, y + height - 30, width, 2f, FPSMaster.theme.getFrontBackground().getRGB());
+        Render2DUtils.drawRect(x, y + height - 30, width * MusicPlayer.getPlayProgress(), 2f, FPSMaster.theme.getPrimary().getRGB());
+        if (Render2DUtils.isHovered(x, y + height - 32, width, 4f, mouseX, mouseY)) {
+            Render2DUtils.drawRect(x, y + height - 31f, width * MusicPlayer.getPlayProgress(), 4f, FPSMaster.theme.getPrimary().getRGB());
+        }
+
+        // 音量
+        Render2DUtils.drawImage(new ResourceLocation("client/textures/ui/volume.png"), x + width - 50, y + height - 16, 7f, 7f, FPSMaster.theme.getTextColorTitle());
+        Render2DUtils.drawRect(x + width - 40, y + height - 14, 30f, 2f, FPSMaster.theme.getFrontBackground().getRGB());
+        Render2DUtils.drawRect(x + width - 40, y + height - 14, 30 * MusicPlayer.getVolume(), 2f, FPSMaster.theme.getPrimary().getRGB());
+        if (Render2DUtils.isHovered(x + width - 40, y + height - 14, 30f, 2f, mouseX, mouseY)) {
+            Render2DUtils.drawRect(x + width - 40, y + height - 14.5f, 30 * MusicPlayer.getVolume(), 3f, FPSMaster.theme.getPrimary().getRGB());
+            if (Mouse.isButtonDown(0)) {
+                float newVolume = (mouseX - x - width + 40) / 30f;
+                MusicPlayer.setVolume(newVolume);
+            }
+        }
+        int trimWidth = (int) (width / 2 - 100);
+        if (!MusicPlayer.playList.musics.isEmpty() && current != null) {
+            String name = FPSMaster.fontManager.s18.trimString(current.name + " - " + current.author, trimWidth, false);
+            FPSMaster.fontManager.s18.drawString(name, x + 30, y + height - 23, FPSMaster.theme.getTextColorTitle().getRGB());
+            String progress = "0:00/0:00";
+            if (JLayerHelper.clip != null) {
+                double duration = JLayerHelper.getDuration();
+                int minutes = (int) (duration * MusicPlayer.getPlayProgress());
+                int seconds = (int) ((duration * MusicPlayer.getPlayProgress() - minutes) * 60);
+                progress = minutes + ":" + seconds + "/" + (int) duration + ":" + (int) ((duration - (int) duration) * 60);
+            }
+            FPSMaster.fontManager.s16.drawString(progress, x + 30, y + height - 14, FPSMaster.theme.getTextColorDescription().getRGB());
+            if (MusicPlayer.playList.current() != null && ((Music) MusicPlayer.playList.current()).isLoadedImage) {
+                Render2DUtils.drawImage(new ResourceLocation("music/netease/" + ((Music) MusicPlayer.playList.current()).id), x + 5, y + height - 24, 20f, 20f, -1);
+            } else {
+                Render2DUtils.drawOptimizedRoundedRect(x + 5, y + height - 24, 20f, 20f, FPSMaster.theme.getMusicBlank());
+            }
+        }
+        ResourceLocation res = new ResourceLocation("client/gui/settings/music/loop.png");
+        switch (MusicPlayer.mode) {
+            case 0:
+                res = new ResourceLocation("client/gui/settings/music/shuffle.png");
+                break;
+            case 1:
+                res = new ResourceLocation("client/gui/settings/music/order.png");
+                break;
+            case 2:
+                res = new ResourceLocation("client/gui/settings/music/loop.png");
+                break;
+        }
+        Render2DUtils.drawImage(res, x + width / 2 - 55, y + height - 21, 12f, 12f, FPSMaster.theme.getTextColorTitle());
+        Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/music/previous.png"), x + width / 2 - 35, y + height - 23, 16f, 16f, FPSMaster.theme.getTextColorTitle());
+        Render2DUtils.drawImage(MusicPlayer.isPlaying ? new ResourceLocation("client/gui/settings/music/pause.png") : new ResourceLocation("client/gui/settings/music/play.png"), x + width / 2 - 15, y + height - 23, 35 / 2f, 35 / 2f, -1);
+        Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/music/next.png"), x + width / 2 + 5, y + height - 23, 16f, 16f, FPSMaster.theme.getTextColorTitle());
+    }
+
+    private static String extractMiddleContent(String input, String prefix, String suffix) {
+        int startIndex = input.indexOf(prefix);
+        if (startIndex != -1) {
+            int endIndex = input.indexOf(suffix, startIndex + prefix.length());
+            if (endIndex != -1) {
+                return input.substring(startIndex + prefix.length(), endIndex);
+            }
+        }
+        return "";
+    }
+
+    private static void reloadImg() {
+        loginThread = new Thread(() -> {
+            while (isWaitingLogin) {
+                try {
+                    JsonObject loginStatus = MusicWrapper.getLoginStatus(key);
+                    code = loginStatus.get("code").getAsInt();
+                    if (code == 802) {
+                        String element = loginStatus.get("nickname").getAsString();
+                        if (element != null) {
+                            nickname = element;
+                            FileUtils.saveTempValue("nickname", nickname);
+                        }
+                    }
+                    if (code == 803) {
+                        // parse cookie
+                        String asString = loginStatus.get("cookie").getAsString();
+                        String result = "MUSIC_U=" + extractMiddleContent(asString, "MUSIC_U=", ";") + "; " + "NMTID=" + extractMiddleContent(asString, "NMTID=", ";");
+                        NeteaseApi.cookies = result;
+
+                        FileUtils.saveTempValue("cookies", NeteaseApi.cookies);
+                        System.out.println("cookies: " + NeteaseApi.cookies);
+                    }
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        FPSMaster.async.runnable(() -> {
+            key = MusicWrapper.getQRKey();
+            if (key == null) return;
+            String base64 = MusicWrapper.getQRCodeImg(key);
+            // render base64 img data
+            net.minecraft.client.renderer.texture.TextureManager textureManager = Minecraft.getMinecraft().getTextureManager();
+            // base64 decode
+            byte[] bytes = Base64.getDecoder().decode(base64);
+            // create resource location
+            ResourceLocation resourceLocation = new ResourceLocation("music/qr");
+            File qr = new File(FileUtils.dir, "/music/qr.png");
+            File qrf = new File(FileUtils.dir, "/music");
+            qrf.mkdirs();
+            FileUtils.saveFileBytes("/music/qr.png", bytes);
+            ThreadDownloadImageData textureArt = new ThreadDownloadImageData(qr, null, null, null);
+            textureManager.loadTexture(resourceLocation, textureArt);
+            loginThread.start();
+        });
+    }
+
+    private static void setMusicList() {
+        MusicPlayer.playList.setMusicList(displayList.musics);
+    }
+
+    private static void run() {
+        if (!inputBox.getContent().isEmpty()) {
+            searchList = curSearch == 0 ? MusicWrapper.searchSongs(inputBox.getContent()) : MusicWrapper.searchList(inputBox.getContent());
+            displayList = searchList;
+            MusicPlayer.playList.pause();
+            setMusicList();
+            searchThread = null;
+        }
+    }
+}

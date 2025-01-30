@@ -66,11 +66,11 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
 
             if (Render2DUtils.isHovered(
                     x + tW + 26, y + 16, 80f, 80f, (int) mouseX, (int) mouseY
-            ) && Mouse.isButtonDown(0) || MainPanel.Companion.getDragLock().equals(mod.name + setting.name + 1)) {
-                if (MainPanel.Companion.getDragLock().equals("null") && Mouse.isButtonDown(0)) {
-                    MainPanel.Companion.setDragLock(mod.name + setting.name + 1);
+            ) && Mouse.isButtonDown(0) || MainPanel.dragLock.equals(mod.name + setting.name + 1)) {
+                if (MainPanel.dragLock.equals("null") && Mouse.isButtonDown(0)) {
+                    MainPanel.dragLock = mod.name + setting.name + 1;
                 }
-                if (MainPanel.Companion.getDragLock().equals(mod.name + setting.name + 1)) {
+                if (MainPanel.dragLock.equals(mod.name + setting.name + 1)) {
                     saturation = max(min((mouseX - (x + tW + 26)) / 80, 1f), 0f);
                     brightness = max(min(1 - (mouseY - (y + 15)) / 80, 1f), 0f);
                 }
@@ -95,11 +95,11 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
 
             if (Render2DUtils.isHovered(
                     x + tW + 110, y + 16, 10f, aHeight, (int) mouseX, (int) mouseY
-            ) && Mouse.isButtonDown(0) || MainPanel.Companion.getDragLock().equals(mod.name + setting.name + 2)) {
-                if (MainPanel.Companion.getDragLock().equals("null")) {
-                    MainPanel.Companion.setDragLock(mod.name + setting.name + 2);
+            ) && Mouse.isButtonDown(0) || MainPanel.dragLock.equals(mod.name + setting.name + 2)) {
+                if (MainPanel.dragLock.equals("null")) {
+                    MainPanel.dragLock = mod.name + setting.name + 2;
                 }
-                if (MainPanel.Companion.getDragLock().equals(mod.name + setting.name + 2)) {
+                if (MainPanel.dragLock.equals(mod.name + setting.name + 2)) {
                     hue = max(min((mouseY - (y + 15)) / aHeight, 1f), 0f);
                 }
             }
@@ -121,17 +121,17 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
 
             if (Render2DUtils.isHovered(
                     x + tW + 122, y + 16, 10f, aHeight, (int) mouseX, (int) mouseY
-            ) && Mouse.isButtonDown(0) || MainPanel.Companion.getDragLock().equals(mod.name + setting.name + 3)) {
-                if (MainPanel.Companion.getDragLock().equals("null")) {
-                    MainPanel.Companion.setBindLock(mod.name + setting.name + 3);
+            ) && Mouse.isButtonDown(0) || MainPanel.dragLock.equals(mod.name + setting.name + 3)) {
+                if (MainPanel.dragLock.equals("null")) {
+                    MainPanel.bindLock = mod.name + setting.name + 3;
                 }
-                if (MainPanel.Companion.getDragLock().equals(mod.name + setting.name + 3)) {
+                if (MainPanel.dragLock.equals(mod.name + setting.name + 3)) {
                     alpha = max(min(1 - (mouseY - (y + 15)) / aHeight, 1f), 0f);
                 }
             }
 
             if (!Mouse.isButtonDown(0)) {
-                MainPanel.Companion.setDragLock("null");
+                MainPanel.dragLock = "null";
             }
 
             // Apply the modified color

@@ -4,10 +4,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.gui.ScaledResolution
 import org.lwjgl.opengl.GL11
-import top.fpsmaster.ui.screens.oobe.impls.Done
-import top.fpsmaster.ui.screens.oobe.impls.First
 import top.fpsmaster.ui.screens.oobe.impls.Login
-import top.fpsmaster.ui.screens.oobe.impls.Welcome
 import top.fpsmaster.utils.math.animation.Animation
 import top.fpsmaster.utils.math.animation.Type
 import top.fpsmaster.utils.render.Render2DUtils
@@ -18,10 +15,7 @@ class OOBEScreen : GuiScreen() {
     override fun initGui() {
         super.initGui()
         if (scenes.isEmpty()) {
-            scenes.add(Welcome())
             scenes.add(Login(true))
-            scenes.add(First())
-            scenes.add(Done())
             currentScene = scenes[0]
             switchAnimation.start(0.0, 100.0, 0.3f, Type.EASE_IN_OUT_QUAD)
         }
