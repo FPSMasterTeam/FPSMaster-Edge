@@ -3,7 +3,7 @@ package top.fpsmaster.ui.screens.oobe.impls
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
 import top.fpsmaster.FPSMaster
-import top.fpsmaster.modules.account.AccountManager.Companion.login
+import top.fpsmaster.modules.account.AccountManager.login
 import top.fpsmaster.ui.common.TextField
 import top.fpsmaster.ui.screens.oobe.Scene
 import top.fpsmaster.ui.common.GuiButton

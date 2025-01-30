@@ -1,13 +1,13 @@
 package top.fpsmaster.features.impl.utility
 
 import top.fpsmaster.FPSMaster
-import top.fpsmaster.modules.account.AccountManager.Companion.skin
 import top.fpsmaster.event.Subscribe
 import top.fpsmaster.event.events.EventTick
 import top.fpsmaster.features.manager.Category
 import top.fpsmaster.features.manager.Module
 import top.fpsmaster.features.settings.impl.TextSetting
 import top.fpsmaster.interfaces.ProviderManager
+import top.fpsmaster.modules.account.AccountManager.skin
 
 class SkinChanger : Module("SkinChanger", Category.Utility) {
     private var skinName = TextSetting("Skin", "")

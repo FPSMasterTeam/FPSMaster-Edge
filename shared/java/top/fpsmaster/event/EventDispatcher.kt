@@ -14,8 +14,8 @@ object EventDispatcher {
                 val parameterType = method.parameterTypes[0]
                 if (Event::class.java.isAssignableFrom(parameterType)) {
                     val eventType = parameterType as Class<out Event>
-                    val listeners = eventListeners.computeIfAbsent(eventType) { _: Class<out Event>? -> CopyOnWriteArrayList() }
-//                    listeners.add(ReflectHandler(listener, method))
+                    val listeners =
+                        eventListeners.computeIfAbsent(eventType) { _: Class<out Event>? -> CopyOnWriteArrayList() }
                     listeners.add(ASMHandler.loadHandlerClass(listener, method))
                 }
             }

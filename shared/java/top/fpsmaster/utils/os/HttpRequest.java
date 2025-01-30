@@ -15,7 +15,7 @@ public class HttpRequest {
     private static final HttpClient client = HttpClients.createDefault();
     private static final int TIMEOUT = 15000;
 
-    public static String get(String url) throws IOException {
+    public static String get(String url) {
         return getWithCookie(url, "");
     }
 

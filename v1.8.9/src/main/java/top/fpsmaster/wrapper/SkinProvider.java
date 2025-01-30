@@ -29,11 +29,7 @@ public class SkinProvider implements ISkinProvider {
             }
 
             String json = null;
-            try {
-                json = HttpRequest.get("https://api.mojang.com/users/profiles/minecraft/" + skin);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            json = HttpRequest.get("https://api.mojang.com/users/profiles/minecraft/" + skin);
             Gson gson = new GsonBuilder().create();
             JsonObject jsonObject = gson.fromJson(json, JsonObject.class);
             if (jsonObject != null && jsonObject.has("id")) {
