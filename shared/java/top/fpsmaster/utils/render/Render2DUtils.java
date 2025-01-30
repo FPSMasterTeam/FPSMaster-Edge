@@ -195,7 +195,7 @@ public class Render2DUtils extends Utility {
     public static int getFixedScale() {
         ScaledResolution sr = new ScaledResolution(mc);
         int scaleFactor;
-        if (ClientSettings.Companion.getFixedScale().getValue()) {
+        if (ClientSettings.fixedScale.value) {
             scaleFactor = sr.getScaleFactor();
         } else {
             scaleFactor = 2;
@@ -206,7 +206,7 @@ public class Render2DUtils extends Utility {
     public static float[] getFixedBounds() {
         ScaledResolution sr = new ScaledResolution(mc);
         int scaleFactor;
-        if (ClientSettings.Companion.getFixedScale().getValue()) {
+        if (ClientSettings.fixedScale.value) {
             scaleFactor = sr.getScaleFactor();
         } else {
             scaleFactor = 2;

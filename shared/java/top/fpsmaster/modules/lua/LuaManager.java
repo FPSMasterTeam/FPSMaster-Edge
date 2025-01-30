@@ -143,7 +143,7 @@ public class LuaManager {
 
     public static void unloadLua(LuaScript script) {
         ArrayList<Module> remove = new ArrayList<>();
-        FPSMaster.moduleManager.getModules().forEach(m -> {
+        FPSMaster.moduleManager.modules.forEach(m -> {
             if (m instanceof LuaModule && ((LuaModule) m).script.rawLua.filename.equals(script.rawLua.filename)) {
                 remove.add(m);
                 if (m.isEnabled())
@@ -162,7 +162,7 @@ public class LuaManager {
 
     public static void reload() {
         ArrayList<Module> remove = new ArrayList<>();
-        FPSMaster.moduleManager.getModules().forEach(m -> {
+        FPSMaster.moduleManager.modules.forEach(m -> {
             if (m instanceof LuaModule) {
                 remove.add(m);
                 if (m.isEnabled())

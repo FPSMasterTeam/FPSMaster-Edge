@@ -15,8 +15,8 @@ import top.fpsmaster.modules.dev.DevMode;
 import java.net.URISyntaxException;
 
 public class IRC extends Module {
-    private static boolean using = false;
-    private static final BooleanSetting showMates = new BooleanSetting("showMates", true);
+    public static boolean using = false;
+    public static final BooleanSetting showMates = new BooleanSetting("showMates", true);
     private final MathTimer timer = new MathTimer();
 
     public IRC() {
@@ -54,13 +54,5 @@ public class IRC extends Module {
             FPSMaster.INSTANCE.wsClient.close();
         }
         using = false;
-    }
-
-    public static boolean isUsing() {
-        return using;
-    }
-
-    public static BooleanSetting getShowMates() {
-        return showMates;
     }
 }

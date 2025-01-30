@@ -49,7 +49,7 @@ public class ConfigManager {
         String jsonStr = FileUtils.readFile("components.json");
         if (jsonStr.isEmpty()) return;
         JsonObject json = gson.fromJson(jsonStr, JsonObject.class);
-        for (Module mod : FPSMaster.moduleManager.getModules()) {
+        for (Module mod : FPSMaster.moduleManager.modules) {
             JsonObject module = json.getAsJsonObject(mod.name);
             if (module != null) {
                 FPSMaster.componentsManager.components.stream()
@@ -73,7 +73,7 @@ public class ConfigManager {
         json.addProperty("theme", FPSMaster.themeSlot);
         json.addProperty("clientConfigure", gson.toJson(configure.configures));
 
-        for (Module module : FPSMaster.moduleManager.getModules()) {
+        for (Module module : FPSMaster.moduleManager.modules) {
             JsonObject moduleJson = new JsonObject();
             moduleJson.addProperty("enabled", module.isEnabled());
             moduleJson.addProperty("key", module.key);
@@ -107,7 +107,7 @@ public class ConfigManager {
             JsonObject json = gson.fromJson(jsonStr, JsonObject.class);
             FPSMaster.themeSlot = json.get("theme").getAsString();
 
-            for (Module module : FPSMaster.moduleManager.getModules()) {
+            for (Module module : FPSMaster.moduleManager.modules) {
                 JsonObject moduleJson = json.getAsJsonObject(module.name);
                 if (moduleJson != null) {
                     module.set(moduleJson.get("enabled").getAsBoolean());

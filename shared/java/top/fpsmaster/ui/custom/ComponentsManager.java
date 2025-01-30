@@ -52,9 +52,9 @@ public class ComponentsManager {
         GL11.glPushMatrix();
 
         // Adjust mouse coordinates if fixed scale is enabled
-        if (ClientSettings.Companion.getFixedScale().getValue()) {
+        if (ClientSettings.fixedScale.value) {
             ScaledResolution sr = new ScaledResolution(Utility.mc);
-            int scaleFactor = ClientSettings.Companion.getFixedScale().getValue() ? sr.getScaleFactor() : 2;
+            int scaleFactor = ClientSettings.fixedScale.value ? sr.getScaleFactor() : 2;
             float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;
             float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
 
