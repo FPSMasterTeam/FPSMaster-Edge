@@ -1,6 +1,8 @@
 package top.fpsmaster.ui.devspace;
 
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.util.ChatAllowedCharacters;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -14,13 +16,16 @@ import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.devspace.map.expressions.*;
 import top.fpsmaster.ui.devspace.map.statements.*;
 import top.fpsmaster.utils.math.MathTimer;
+import top.fpsmaster.utils.os.FileUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
 
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DevSpace extends ScaledGuiScreen {
 
@@ -113,7 +118,11 @@ public class DevSpace extends ScaledGuiScreen {
             if (selectedLua == counter) {
                 Render2DUtils.drawOptimizedRoundedRect(x + 6, yPos, 94, 15, 6, new Color(35, 35, 35).getRGB());
             }
-            FPSMaster.fontManager.s14.drawString(script.rawLua.filename, x + 10, yPos + 5, Color.WHITE.getRGB());
+            if (selectedLua >= 0 && selectedLua < LuaManager.scripts.size() && !codes.get(selectedLua).equals(script.rawLua.code)) {
+                FPSMaster.fontManager.s14.drawString(script.rawLua.filename + "*", x + 10, yPos + 5, Color.WHITE.getRGB());
+            } else {
+                FPSMaster.fontManager.s14.drawString(script.rawLua.filename, x + 10, yPos + 5, Color.WHITE.getRGB());
+            }
             counter++;
         }
         luaList.setHeight(20 + (counter * 15));
@@ -168,12 +177,14 @@ public class DevSpace extends ScaledGuiScreen {
         Render2DUtils.doGlScissor(xPos + 12, yPos, width - 15, height - 42, scaleFactor);
         xPos += mapX;
         yPos += mapY;
-        if (selectedLua != -1 && selectedLua < LuaManager.scripts.size()) {
+        if (selectedLua >= 0 && selectedLua < LuaManager.scripts.size()) {
             List<Statement> ast = LuaManager.scripts.get(selectedLua).ast;
             if (components.isEmpty() || needReload) {
+                components.clear();
                 for (Statement statement : ast) {
                     components.add(parseStatement(statement));
                 }
+                needReload = false;
             }
             int y1 = yPos;
             for (StatementComponent component : components) {
@@ -183,8 +194,8 @@ public class DevSpace extends ScaledGuiScreen {
         }
         if (Mouse.isButtonDown(1)) {
             if (isDraggingMap) {
-                mapX = mouseX - (x+mapDragX);
-                mapY = mouseY - (y+mapDragY);
+                mapX = mouseX - (x + mapDragX);
+                mapY = mouseY - (y + mapDragY);
             }
         } else {
             isDraggingMap = false;
@@ -251,6 +262,55 @@ public class DevSpace extends ScaledGuiScreen {
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
         super.keyTyped(typedChar, keyCode);
         handleArrowKeys(keyCode);
+        handleCodeInput(typedChar, keyCode);
+    }
+
+    private void handleCodeInput(char typedChar, int keyCode) {
+        if (selectedLua != -1 && selectedLua < LuaManager.scripts.size() && selectedTab == 0 && cursor > 0) {
+            String code = codes.get(selectedLua);
+            if (keyCode == Keyboard.KEY_BACK) {
+                if (selectBegin == selectEnd) {
+                    selectBegin = cursor;
+                    selectEnd = cursor;
+                    codes.set(selectedLua, code.substring(0, cursor - 1) + code.substring(cursor));
+                    cursor--;
+                } else {
+                    cursor = selectBegin;
+                    codes.set(selectedLua, code.substring(0, Math.min(selectBegin, selectEnd)) + code.substring(Math.max(selectBegin, selectEnd)));
+                    selectEnd = selectBegin;
+                }
+            } else if (keyCode == Keyboard.KEY_C && Keyboard.isKeyDown(Keyboard.KEY_LCONTROL)) {
+                String selectedText = code.substring(Math.min(selectBegin, selectEnd), Math.max(selectBegin, selectEnd));
+                GuiScreen.setClipboardString(selectedText);
+            } else if (keyCode == Keyboard.KEY_V && Keyboard.isKeyDown(Keyboard.KEY_LCONTROL)) {
+                String clipboardText = GuiScreen.getClipboardString();
+                if (selectBegin == selectEnd) {
+                    codes.set(selectedLua, code.substring(0, cursor) + clipboardText + code.substring(cursor));
+                    cursor += clipboardText.length();
+                } else {
+                    codes.set(selectedLua, code.substring(0, Math.min(selectBegin, selectEnd)) + clipboardText + code.substring(Math.max(selectBegin, selectEnd)));
+                    cursor = Math.min(selectBegin, selectEnd) + clipboardText.length();
+                }
+                selectBegin = cursor;
+                selectEnd = cursor;
+            } else if (keyCode == Keyboard.KEY_S && Keyboard.isKeyDown(Keyboard.KEY_LCONTROL)) {
+                FileUtils.saveFile("plugins/" + LuaManager.scripts.get(selectedLua).rawLua.filename, codes.get(selectedLua));
+                LuaManager.hotswap();
+                needReload = true;
+            } else if (keyCode == Keyboard.KEY_RETURN) {
+                codes.set(selectedLua, code.substring(0, cursor) + "\n" + code.substring(cursor));
+                cursor++;
+                selectBegin = cursor;
+                selectEnd = cursor;
+            } else {
+                if (ChatAllowedCharacters.isAllowedCharacter(typedChar)) {
+                    codes.set(selectedLua, code.substring(0, cursor) + typedChar + code.substring(cursor));
+                    cursor++;
+                    selectBegin = cursor;
+                    selectEnd = cursor;
+                }
+            }
+        }
     }
 
     @Override
@@ -311,14 +371,18 @@ public class DevSpace extends ScaledGuiScreen {
         }
     }
 
+    ArrayList<String> codes = new ArrayList<>();
 
     private void drawCodeEditor(int mouseX, int mouseY) {
         int left = Math.max((int) (width * 0.2), 100);
+        if (codes.isEmpty()) {
+            codes.addAll(LuaManager.scripts.stream().map(s -> s.rawLua.code).collect(Collectors.toList()));
+        }
         if (selectedLua != -1 && selectedLua < LuaManager.scripts.size()) {
             // handle keyboard
-            LuaScript luaScript = LuaManager.scripts.get(selectedLua);
-            String highlightedCode = HighlightLexer.highlight(luaScript.rawLua.code);
-            char[] originalCodeCharArray = luaScript.rawLua.code.toCharArray();
+            String s = codes.get(selectedLua);
+            String highlightedCode = HighlightLexer.highlight(s);
+            char[] originalCodeCharArray = s.toCharArray();
             char[] highlightedCodeCharArray = highlightedCode.toCharArray();
             int lineCounter = 1;
             int lineY = 0;

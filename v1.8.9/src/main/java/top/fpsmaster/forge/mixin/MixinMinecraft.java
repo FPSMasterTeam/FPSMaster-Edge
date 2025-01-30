@@ -218,15 +218,18 @@ public abstract class MixinMinecraft implements IMinecraft {
     public void cpsl(CallbackInfo ci) {
         EventDispatcher.dispatchEvent(new EventMouseClick(0));
     }
+
     @Inject(method = "rightClickMouse", at = @At("HEAD"))
     public void cpsr(CallbackInfo ci) {
         EventDispatcher.dispatchEvent(new EventMouseClick(1));
     }
+
     @Inject(method = "dispatchKeypresses", at = @At(value = "INVOKE", target = "Lorg/lwjgl/input/Keyboard;getEventKey()I", shift = At.Shift.AFTER))
     public void keyEvent(CallbackInfo ci) {
         EventKey key = new EventKey(Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey());
         EventDispatcher.dispatchEvent(key);
     }
+
     @Inject(method = "createDisplay", at = @At(value = "RETURN"))
     public void setTitle(CallbackInfo ci) {
         Display.setTitle(getClientTitle());
