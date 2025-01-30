@@ -36,7 +36,6 @@ import top.fpsmaster.event.events.EventMouseClick;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.features.impl.utility.PreventBanning;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import javax.annotation.Nullable;

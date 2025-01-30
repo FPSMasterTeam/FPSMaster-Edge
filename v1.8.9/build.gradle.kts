@@ -8,7 +8,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.gorylenko.gradle-git-properties") version "2.2.1"
 
-    kotlin("jvm") version "2.0.0-Beta4"
+//    kotlin("jvm") version "2.0.0-Beta4"
 }
 
 //Constants:
@@ -101,10 +101,11 @@ dependencies {
     shadowImpl("org.java-websocket:Java-WebSocket:1.5.4"){
         isTransitive = true
     }
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    shadowImpl("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0-Beta4"){
-        isTransitive = true
-    }
+    // get rid of kotlin
+//    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+//    shadowImpl("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0-Beta4"){
+//        isTransitive = true
+//    }
     shadowImpl("org.slf4j:slf4j-api:2.0.6"){
         isTransitive = false
     }

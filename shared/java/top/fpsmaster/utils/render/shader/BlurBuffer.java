@@ -184,7 +184,7 @@ public class BlurBuffer {
 	}
 
 	public static boolean blurEnabled() {
-		if (!Performance.Companion.getBlur().getValue())
+		if (!Performance.blur.getValue())
 			return false;
 		if (ProviderManager.mcProvider.getPlayer() == null)
 			return false;

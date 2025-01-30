@@ -28,7 +28,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.render.FireModifier;
-import top.fpsmaster.features.impl.utility.PreventBanning;
 
 import java.awt.*;
 import java.util.Objects;

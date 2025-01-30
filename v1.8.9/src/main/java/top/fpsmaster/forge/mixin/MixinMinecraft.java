@@ -29,7 +29,6 @@ import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventMouseClick;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.features.impl.utility.PreventBanning;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -196,12 +195,6 @@ public abstract class MixinMinecraft implements IMinecraft {
         }
     }
 
-
-    @Inject(method = "rightClickMouse", at = @At("HEAD"), cancellable = true)
-    public void preventBanning(CallbackInfo ci) {
-        if (PreventBanning.using && !PreventBanning.canBlock())
-            ci.cancel();
-    }
 
     @Shadow
     protected abstract void middleClickMouse();

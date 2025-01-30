@@ -1,9 +1,7 @@
 package top.fpsmaster.websocket.data.message;
 
 import com.google.gson.annotations.SerializedName;
-import top.fpsmaster.websocket.data.WsUtilKt;
-
-import static top.fpsmaster.websocket.data.WsUtilKt.parseJson;
+import top.fpsmaster.websocket.data.JsonUtils;
 
 
 public class Packet {
@@ -15,14 +13,14 @@ public class Packet {
     }
 
     public String toJson() {
-        return WsUtilKt.toJson(this);
+        return JsonUtils.toJson(this);
     }
 
     public Packet parse(String json) {
-        return (Packet) parseJson(json, this.getClass());
+        return (Packet) JsonUtils.parseJson(json, this.getClass());
     }
 
     public static Packet parsePacket(String json, Class packet) {
-        return (Packet) parseJson(json, packet);
+        return (Packet) JsonUtils.parseJson(json, packet);
     }
 }

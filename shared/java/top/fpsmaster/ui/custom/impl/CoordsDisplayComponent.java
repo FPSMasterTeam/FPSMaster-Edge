@@ -1,5 +1,6 @@
 package top.fpsmaster.ui.custom.impl;
 
+import org.jetbrains.annotations.NotNull;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.CoordsDisplay;
 import top.fpsmaster.features.impl.interfaces.FPSDisplay;
@@ -22,18 +23,8 @@ public class CoordsDisplayComponent extends Component {
                 (int) ProviderManager.mcProvider.getPlayer().posY,
                 (int) ProviderManager.mcProvider.getPlayer().posZ);
 
-        if (((CoordsDisplay) mod).getLimitDisplay().value) {
-            int restHeight = (int) ((CoordsDisplay) mod).getLimitDisplayY().value - (int) ProviderManager.mcProvider.getPlayer().posY;
-            String yStr = "";
-
-            // color
-            if (restHeight < 5) {
-                yStr = TextFormattingProvider.getRed() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
-            } else if (restHeight < 10) {
-                yStr = TextFormattingProvider.getYellow() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
-            } else {
-                yStr = TextFormattingProvider.getGreen() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
-            }
+        if (((CoordsDisplay) mod).limitDisplay.value) {
+            String yStr = getString();
 
             s = String.format("X:%d Y:%d(%s) Z:%d", 
                     (int) ProviderManager.mcProvider.getPlayer().posX, 
@@ -47,5 +38,20 @@ public class CoordsDisplayComponent extends Component {
 
         drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
         drawString(18, s, x, y + 2, FPSDisplay.textColor.getRGB());
+    }
+
+    private @NotNull String getString() {
+        int restHeight = (int) ((CoordsDisplay) mod).limitDisplayY.value - (int) ProviderManager.mcProvider.getPlayer().posY;
+        String yStr = "";
+
+        // color
+        if (restHeight < 5) {
+            yStr = TextFormattingProvider.getRed() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
+        } else if (restHeight < 10) {
+            yStr = TextFormattingProvider.getYellow() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
+        } else {
+            yStr = TextFormattingProvider.getGreen() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
+        }
+        return yStr;
     }
 }

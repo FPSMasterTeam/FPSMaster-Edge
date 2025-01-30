@@ -148,7 +148,7 @@ public abstract class MixinEntityRenderer {
     @Redirect(method = "renderWorldDirections", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;getEyeHeight()F"))
     public float modifyEyeHeight_renderWorldDirections(Entity entity) {
         if (mc.getRenderViewEntity() != mc.thePlayer || OldAnimations.using) return entity.getEyeHeight();
-        return OldAnimations.Companion.getClientEyeHeight(partialTicks);
+        return OldAnimations.getClientEyeHeight(partialTicks);
     }
 
     /**
@@ -162,7 +162,7 @@ public abstract class MixinEntityRenderer {
         this.partialTicks = partialTicks;
         float f = entity.getEyeHeight();
         if (mc.getRenderViewEntity() == mc.thePlayer && OldAnimations.using){
-            f = OldAnimations.Companion.getClientEyeHeight(partialTicks);
+            f = OldAnimations.getClientEyeHeight(partialTicks);
         }
         double d0 = entity.prevPosX + (entity.posX - entity.prevPosX) * (double) partialTicks;
         double d1 = entity.prevPosY + (entity.posY - entity.prevPosY) * (double) partialTicks + (double) f;
