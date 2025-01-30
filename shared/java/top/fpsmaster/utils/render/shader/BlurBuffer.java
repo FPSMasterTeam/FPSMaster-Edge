@@ -18,9 +18,10 @@ import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.MathTimer;
 import top.fpsmaster.utils.render.Render2DUtils;
 
+import static top.fpsmaster.utils.Utility.mc;
+
 public class BlurBuffer {
 	private static ShaderGroup blurShader;
-	private static final Minecraft mc = Minecraft.getMinecraft();
 	private static Framebuffer buffer;
 	private static float lastScale;
 	private static int lastScaleWidth;

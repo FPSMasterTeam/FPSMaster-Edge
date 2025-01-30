@@ -94,7 +94,7 @@ class GlobalSubmitter {
     @Subscribe
     fun onTick(e: EventTick) {
         if (musicSwitchTimer.delay(1000)) {
-            if (MusicPlayer.isPlaying && MusicPlayer.playProgress > 0.999) {
+            if (MusicPlayer.isPlaying && MusicPlayer.getPlayProgress() > 0.999) {
                 MusicPlayer.playList.next()
             }
         }

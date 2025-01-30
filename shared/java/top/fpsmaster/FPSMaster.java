@@ -48,7 +48,7 @@ public class FPSMaster {
         } else {
             theme = new LightTheme();
         }
-        MusicPlayer.INSTANCE.setVolume(Float.parseFloat(configManager.configure.getOrCreate("volume", "1")));
+        MusicPlayer.setVolume(Float.parseFloat(configManager.configure.getOrCreate("volume", "1")));
         NeteaseApi.cookies = FileUtils.readTempValue("cookies");
         MusicPanel.INSTANCE.setNickname(FileUtils.readTempValue("nickname"));
         accountManager.autoLogin();

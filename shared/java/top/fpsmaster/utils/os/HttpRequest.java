@@ -19,7 +19,7 @@ public class HttpRequest {
         return getWithCookie(url, "");
     }
 
-    public static String getWithCookie(String url, String cookie) throws IOException {
+    public static String getWithCookie(String url, String cookie) {
         if (url == null || url.isEmpty()) {
             throw new IllegalArgumentException("URL cannot be null or empty");
         }
@@ -41,8 +41,8 @@ public class HttpRequest {
             return builder.toString();
         } catch (IOException e) {
             ClientLogger.error("Error during HTTP GET request to " + url + ": " + e.getMessage());
-            throw e;
         }
+        return "";
     }
 
     public static void downloadFile(String url, String filepath) {

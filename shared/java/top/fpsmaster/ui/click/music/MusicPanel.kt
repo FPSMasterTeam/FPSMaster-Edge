@@ -82,7 +82,7 @@ object MusicPanel {
                 if (Mouse.isButtonDown(0)) {
                     curSearch = i
                     if (curSearch == 2) {
-                        recommendList = MusicWrapper.songsFromDaily
+                        recommendList = MusicWrapper.getSongsFromDaily()
                         displayList = recommendList
                         MusicPlayer.playList.pause()
                         setMusicList()
@@ -94,7 +94,7 @@ object MusicPanel {
 
 
         // 操作栏
-        val current = MusicPlayer.playList.getCurrent()
+        val current = MusicPlayer.playList.current()
         if (Render2DUtils.isHovered(x, y + height - 30, width, 4f, mouseX, mouseY)) {
             if (Mouse.isButtonDown(0) && current != null) {
                 if (!MusicPlayer.isPlaying) {
@@ -131,18 +131,18 @@ object MusicPanel {
         ) {
             if (!MusicPlayer.playList.musics.isEmpty()) {
                 if (MusicPlayer.isPlaying) {
-                    playProgress = MusicPlayer.playProgress
+                    playProgress = MusicPlayer.getPlayProgress()
                     MusicPlayer.playList.pause()
                     MusicPlayer.isPlaying = false
                 } else {
                     FPSMaster.async.runnable {
-                        MusicPlayer.playList.getCurrent()?.play()
+                        MusicPlayer.playList.current()?.play()
                         try {
                             Thread.sleep(50)
                         } catch (e: InterruptedException) {
                             throw RuntimeException(e)
                         }
-                        MusicPlayer.playList.getCurrent()?.seek(playProgress)
+                        MusicPlayer.playList.current()?.seek(playProgress)
                     }
                     MusicPlayer.isPlaying = true
                 }
@@ -422,12 +422,12 @@ object MusicPanel {
         }
 
         // 操作栏
-        val current = MusicPlayer.playList.getCurrent()
+        val current = MusicPlayer.playList.current()
         Render2DUtils.drawRect(x, y + height - 30, width, 2f, FPSMaster.theme.frontBackground.rgb)
         Render2DUtils.drawRect(
             x,
             y + height - 30,
-            width * MusicPlayer.playProgress,
+            width * MusicPlayer.getPlayProgress(),
             2f,
             FPSMaster.theme.primary.rgb
         )
@@ -435,7 +435,7 @@ object MusicPanel {
             Render2DUtils.drawRect(
                 x,
                 y + height - 31f,
-                width * MusicPlayer.playProgress,
+                width * MusicPlayer.getPlayProgress(),
                 4f,
                 FPSMaster.theme.primary.rgb
             )
@@ -487,15 +487,15 @@ object MusicPanel {
             )
             var progress = "0:00/0:00"
             if (JLayerHelper.clip != null) {
-                val duration = JLayerHelper.duration
-                val minutes = (duration * MusicPlayer.playProgress).toInt()
-                val seconds = ((duration * MusicPlayer.playProgress - minutes) * 60).toInt()
+                val duration = JLayerHelper.getDuration()
+                val minutes = (duration * MusicPlayer.getPlayProgress()).toInt()
+                val seconds = ((duration * MusicPlayer.getPlayProgress() - minutes) * 60).toInt()
                 progress =
                     minutes.toString() + ":" + seconds + "/" + duration.toInt() + ":" + ((duration - duration.toInt()) * 60).toInt()
             }
             s16b.drawString(progress, x + 30, y + height - 14, FPSMaster.theme.textColorDescription.rgb)
-            if (MusicPlayer.playList.getCurrent() !=null && (MusicPlayer.playList.getCurrent() as Music).isLoadedImage) Render2DUtils.drawImage(
-                ResourceLocation("music/netease/" + (MusicPlayer.playList.getCurrent() as Music).id),
+            if (MusicPlayer.playList.current() !=null && (MusicPlayer.playList.current() as Music).isLoadedImage) Render2DUtils.drawImage(
+                ResourceLocation("music/netease/" + (MusicPlayer.playList.current() as Music).id),
                 x + 5,
                 y + height - 24,
                 20f,
@@ -591,7 +591,7 @@ object MusicPanel {
             }
         }
         FPSMaster.async.runnable(Runnable {
-            key = MusicWrapper.qRKey
+            key = MusicWrapper.getQRKey()
             if (key == null) return@Runnable
             val base64 = MusicWrapper.getQRCodeImg(key)
             // render base64 img data
