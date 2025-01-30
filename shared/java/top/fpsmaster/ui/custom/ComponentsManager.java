@@ -42,9 +42,9 @@ public class ComponentsManager {
     // Get a component by its class type
     public Component getComponent(Class<? extends InterfaceModule> clazz) {
         return components.stream()
-            .filter(component -> component.mod.getClass() == clazz)
-        .findFirst()
-            .orElse(null);
+                .filter(component -> component.mod.getClass() == clazz)
+                .findFirst()
+                .orElse(null);
     }
 
     // Draw all components on the screen

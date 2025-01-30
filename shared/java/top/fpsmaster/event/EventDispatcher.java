@@ -38,6 +38,7 @@ public class EventDispatcher {
                     listener.invoke(event);
                 } catch (Throwable e) {
                     ClientLogger.warn("Failed to dispatch event " + event.getClass().getSimpleName() + " to listener " + listener.getLog());
+                    e.printStackTrace();
                 }
             }
         }

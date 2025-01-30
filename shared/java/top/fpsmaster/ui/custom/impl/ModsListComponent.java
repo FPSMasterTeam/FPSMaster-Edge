@@ -10,13 +10,14 @@ import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.interfaces.ProviderManager;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ModsListComponent extends Component {
 
-    private List<Module> modules;
+    List<Module> modules = new ArrayList<>();
 
     public ModsListComponent() {
         super(ModsList.class);
@@ -39,7 +40,7 @@ public class ModsListComponent extends Component {
         float width2 = 40f;
         x += this.width;
 
-        if (modules.isEmpty()) {
+        if (ProviderManager.mcProvider.getPlayer().ticksExisted % 20 == 0)
             modules = FPSMaster.moduleManager.modules.stream()
                     .sorted((m1, m2) -> {
                         float w1 = (mod).betterFont.value
@@ -50,7 +51,6 @@ public class ModsListComponent extends Component {
                                 : ProviderManager.mcProvider.getFontRenderer().getStringWidth(((ModsList) mod).getEnglish().value ? m2.name : FPSMaster.i18n.get(m2.name.toLowerCase())));
                         return Float.compare(w2, w1);
                     }).collect(Collectors.toList());
-        }
 
         int ls = 0;
         for (Module module : modules) {

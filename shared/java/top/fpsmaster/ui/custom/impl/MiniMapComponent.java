@@ -31,12 +31,12 @@ public class MiniMapComponent extends Component {
         super.draw(x, y);
 
         Render2DUtils.drawImage(
-            new ResourceLocation("client/gui/minimapbg.png"),
-            x + width / 2 - 179 / 4f,
-            y + width / 2 - 179 / 4f,
-            179f / 2f,
-            179f / 2f,
-            -1
+                new ResourceLocation("client/gui/minimapbg.png"),
+                x + width / 2 - 179 / 4f,
+                y + width / 2 - 179 / 4f,
+                179f / 2f,
+                178f / 2f,
+                -1
         );
 
         GL11.glPushMatrix();
@@ -54,7 +54,5 @@ public class MiniMapComponent extends Component {
         MinimapAnimation.tick();
         GL11.glPopMatrix();
         Render2DUtils.fixScale();
-
-        Render2DUtils.drawRect(x + width / 2 - 1, y + height / 2 - 1, 2f, 2f, -1);
     }
 }

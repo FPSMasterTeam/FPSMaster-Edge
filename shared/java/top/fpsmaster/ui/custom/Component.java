@@ -138,37 +138,57 @@ public class Component {
 
     private void move(int x, int y) {
         ScaledResolution sr = new ScaledResolution(Utility.mc);
-        int scaleFactor = ClientSettings.fixedScale.getValue() ? sr.getScaleFactor() : 2;
+        int scaleFactor = 2;
+        if (ClientSettings.fixedScale.value) {
+            scaleFactor = sr.getScaleFactor();
+        }
         float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;
         float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
-
-        Position newPos = x > guiWidth / 2f ?
-                (y >= guiHeight / 2f ? Position.RB : Position.RT) :
-                (y >= guiHeight / 2f ? Position.LB : Position.LT);
-
-        switch (newPos) {
-            case LT:
-                x -= (int) dragX;
-                y -= (int) dragY;
-                break;
-            case RT:
-                x = (int) (guiWidth - x - width + dragX);
-                y -= (int) dragY;
-                break;
-            case LB:
-                x -= (int) dragX;
-                y = (int) (guiHeight - y - height + dragY);
-                break;
-            case RB:
-                x = (int) (guiWidth - x - width + dragX);
-                y = (int) (guiHeight - y - height + dragY);
-                break;
-            case CT:
-                break;
+        float changeX = 0f;
+        float changeY = 0f;
+        if (x > guiWidth / 2f) {
+            if (y >= guiHeight / 2f)
+                position = Position.RB;
+            else if (y < guiHeight / 2f)
+                position = Position.RT;
+        } else {
+            if (y >= guiHeight / 2f)
+                position = Position.LB;
+            else if (y < guiHeight / 2f)
+                position = Position.LT;
         }
 
-        this.x = x / guiWidth * 2f;
-        this.y = y / guiHeight * 2f;
+        switch (position) {
+            case LT: {
+                changeX = x - dragX;
+                changeY = y - dragY;
+                break;
+            }
+            case RT: {
+                changeX = guiWidth - x - width + dragX;
+                changeY = y - dragY;
+                break;
+            }
+
+            case LB:{
+                changeX = x - dragX;
+                changeY = guiHeight - y - height + dragY;
+                break;
+            }
+
+            case RB:{
+                changeX = guiWidth - x - width + dragX;
+                changeY = guiHeight - y - height + dragY;
+                break;
+            }
+
+            case CT: {
+
+            }
+        }
+
+        this.x = changeX / guiWidth * 2f;
+        this.y = changeY / guiHeight * 2f;
     }
 
     public void drawRect(float x, float y, float width, float height, Color color) {
