@@ -15,7 +15,7 @@ public class AccountManager {
     public void autoLogin() {
         try {
             token = FileUtils.readTempValue("token").trim();
-            username = FPSMaster.configManager.configure.getOrCreate("username", "offline").trim();
+            username = FPSMaster.configManager.configure.getOrCreate("username", "").trim(); // Since we do the empty check, we should make it empty.
             if (!token.isEmpty() && !username.isEmpty()) {
                 if (attemptLogin(username, token)) {
                     ClientLogger.info("自动登录成功！  " + username);

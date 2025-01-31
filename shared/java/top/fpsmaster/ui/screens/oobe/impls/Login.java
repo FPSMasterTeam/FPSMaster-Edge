@@ -21,18 +21,21 @@ import java.net.URI;
 public class Login extends Scene {
     private String msg;
     private boolean msgbox = false;
-    private GuiButton btn;
-    private GuiButton btn2;
-    private TextField username;
-    private TextField password;
-    private ColorAnimation msgBoxAnimation;
+    private final GuiButton btn;
+    private final GuiButton btn2;
+    private final TextField username;
+    private final TextField password;
+    private final ColorAnimation msgBoxAnimation;
 
     public Login(boolean isOOBE) {
         username = new TextField(FPSMaster.fontManager.s18, false, FPSMaster.i18n.get("oobe.login.username"), -1, new Color(200, 200, 200).getRGB(), 32);
         password = new TextField(FPSMaster.fontManager.s18, true, FPSMaster.i18n.get("oobe.login.password"), -1, new Color(200, 200, 200).getRGB(), 32);
         msgBoxAnimation = new ColorAnimation(new Color(0, 0, 0, 0));
 
-        username.setText(FPSMaster.configManager.configure.getOrCreate("username", ""));
+        String defaultText = FPSMaster.configManager.configure.getOrCreate("username", "");
+        if (!defaultText.isEmpty()) { // If there's a value "offline", strange bug happens.
+            username.setText(defaultText);
+        }
         
         btn = new GuiButton(FPSMaster.i18n.get("oobe.login.login"), () -> {
             try {
@@ -66,7 +69,7 @@ public class Login extends Scene {
             } else {
                 Minecraft.getMinecraft().displayGuiScreen(new MainMenu());
             }
-            FPSMaster.configManager.configure.set("username", "offline");
+            FPSMaster.configManager.configure.set("username", "");
         });
     }
 

@@ -6,7 +6,7 @@ plugins {
     id("gg.essential.loom") version "0.10.0.+"
     id("dev.architectury.architectury-pack200") version "0.1.3"
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("com.gorylenko.gradle-git-properties") version "2.2.1"
+    id("com.gorylenko.gradle-git-properties") version "2.3.2"
 
 //    kotlin("jvm") version "2.0.0-Beta4"
 }
