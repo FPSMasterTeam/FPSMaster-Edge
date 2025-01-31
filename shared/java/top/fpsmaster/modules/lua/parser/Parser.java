@@ -142,10 +142,11 @@ public class Parser {
         Token token = consumeCurrent();
         switch (token.type) {
             case "NUMBER":
+                return new Expression.LiteralExpression("NUMBER", token.value);
             case "STRING":
-                return new Expression.LiteralExpression(token.value);
+                return new Expression.LiteralExpression("STRING", token.value);
             case "BOOLEAN":
-                return new Expression.BooleanLiteralExpression("true".equals(token.value));
+                return new Expression.LiteralExpression("BOOLEAN", token.value);
             case "NIL":
                 return new Expression.NilLiteralExpression();
             case "IDENTIFIER":
@@ -323,10 +324,10 @@ public class Parser {
     private Expression parsePrimary() throws ParseError {
         if (match("NUMBER")) {
             Token token = consume("NUMBER");
-            return new Expression.LiteralExpression(token.value); // 数字字面量
+            return new Expression.LiteralExpression("NUMBER", token.value); // 数字字面量
         } else if (match("BOOLEAN")) {
             Token token = consume("BOOLEAN");
-            return new Expression.BooleanLiteralExpression(token.value.equals("true")); // true 或 false
+            return new Expression.LiteralExpression("BOOLEAN", token.value); // true 或 false
         } else if (match("NIL")) {
             consume("NIL");
             return new Expression.NilLiteralExpression(); // nil
@@ -334,7 +335,7 @@ public class Parser {
             return parseTable(); // 表构造器
         } else if (match("STRING")) {
             Token token = consume("STRING");
-            return new Expression.LiteralExpression(token.value); // 字符串字面量
+            return new Expression.LiteralExpression("STRING", token.value); // 字符串字面量
         } else if (match("SYMBOL") && peek().value.equals("(")) {
             // 处理括号表达式
             consume("SYMBOL"); // 消费 "("

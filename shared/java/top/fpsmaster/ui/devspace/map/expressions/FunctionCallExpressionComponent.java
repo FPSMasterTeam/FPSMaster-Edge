@@ -32,7 +32,7 @@ public class FunctionCallExpressionComponent extends ExpressionComponent {
         int argumentX = lableWidth + 5;
         for (ExpressionComponent arg : arguments) {
             if (arg.height <= 14) {
-                arg.draw(x + 5 + argumentX, y + 2, mouseX, mouseY);
+                arg.draw(x + 5 + argumentX, y, mouseX, mouseY);
                 argumentX += arg.width + 5;
                 if (arguments.indexOf(arg) == arguments.size() - 1) {
                     FPSMaster.fontManager.s16.drawString(")", x + 2 + argumentX, y + 2, -1);

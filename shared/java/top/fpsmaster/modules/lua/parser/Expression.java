@@ -6,15 +6,18 @@ import java.util.Map;
 public class Expression {
 
     public static class LiteralExpression extends Expression {
+        public String type;
         public String value;
 
-        public LiteralExpression(String value) {
+        public LiteralExpression(String type, String value) {
+            this.type = type;
             this.value = value;
         }
 
         @Override
         public String toString() {
             return "LiteralExpression{" +
+                    "type='" + type + '\'' +
                     "value='" + value + '\'' +
                     '}';
         }

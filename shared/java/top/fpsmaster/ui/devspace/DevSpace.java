@@ -184,9 +184,9 @@ public class DevSpace extends ScaledGuiScreen {
     private void drawMapEditorArea(int leftPanelWidth, int mouseX, int mouseY) {
         Render2DUtils.drawOptimizedRoundedRect(x + leftPanelWidth + 6, y + 15, width - leftPanelWidth - 9, height - 18, 6, new Color(25, 25, 25).getRGB());
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        int xPos = x + Math.max((int) (width * 0.2), 100);
+        int xPos = x + leftPanelWidth + 10;
         int yPos = y + 36;
-        Render2DUtils.doGlScissor(xPos + 12, yPos, width * 0.8f - 15, height - 42, scaleFactor);
+        Render2DUtils.doGlScissor(xPos, yPos, width * 0.8f - 15, height - 42, scaleFactor);
         xPos += mapX;
         yPos += mapY;
         if (getCurrentScript() != null) {
@@ -233,7 +233,7 @@ public class DevSpace extends ScaledGuiScreen {
             return new ReturnStatementComponent((Statement.ReturnStatement) statement);
         if (statement instanceof Statement.LocalDeclarationStatement)
             return new LocalDeclarationStatementComponent((Statement.LocalDeclarationStatement) statement);
-        return new ExpressionStatementComponent(new Statement.ExpressionStatement(new Expression.LiteralExpression(statement.getClass().getSimpleName())));
+        return new ExpressionStatementComponent(new Statement.ExpressionStatement(new Expression.LiteralExpression("UNKNOWN", statement.getClass().getSimpleName())));
     }
 
     public static ExpressionComponent parseExpression(Expression expression) {
@@ -257,12 +257,10 @@ public class DevSpace extends ScaledGuiScreen {
             return new FunctionDefinitionExpressionComponent((Expression.FunctionDefinitionExpression) expression);
         if (expression instanceof Expression.AnonymousFunctionExpression)
             return new AnonymousFunctionExpressionComponent((Expression.AnonymousFunctionExpression) expression);
-        if (expression instanceof Expression.BooleanLiteralExpression)
-            return new BooleanLiteralExpressionComponent((Expression.BooleanLiteralExpression) expression);
         if (expression instanceof Expression.NilLiteralExpression)
             return new NilLiteralExpressionComponent((Expression.NilLiteralExpression) expression);
 
-        return new LiteralExpressionComponent(new Expression.LiteralExpression(expression.getClass().getSimpleName()));
+        return new LiteralExpressionComponent(new Expression.LiteralExpression("UNKNOWN", expression.getClass().getSimpleName()));
     }
 
 

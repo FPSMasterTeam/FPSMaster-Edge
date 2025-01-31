@@ -19,6 +19,11 @@ public class BinaryExpressionComponent extends ExpressionComponent {
     @Override
     public void draw(int x, int y, int mouseX, int mouseY) {
         super.draw(x, y, mouseX, mouseY);
-        FPSMaster.fontManager.s16.drawString(operator, x + 10, y + 10, -1);
+        int operatorWidth = FPSMaster.fontManager.s16.getStringWidth(operator);
+        left.draw(x, y, mouseX, mouseY);
+        FPSMaster.fontManager.s16.drawString(operator, x + left.width + 2, y + 2, -1);
+        right.draw(x + left.width + operatorWidth + 2, y, mouseX, mouseY);
+        width = left.width + right.width + operatorWidth + 4;
+        height = 10;
     }
 }

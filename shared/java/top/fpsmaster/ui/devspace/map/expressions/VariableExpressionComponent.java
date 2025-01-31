@@ -14,7 +14,7 @@ public class VariableExpressionComponent extends ExpressionComponent {
     @Override
     public void draw(int x, int y, int mouseX, int mouseY) {
         super.draw(x, y, mouseX, mouseY);
-        FPSMaster.fontManager.s16.drawString(name, x, y, -1);
+        FPSMaster.fontManager.s16.drawString(name, x, y + 2, -1);
         height = 10;
         width = FPSMaster.fontManager.s16.getStringWidth(name);
     }
