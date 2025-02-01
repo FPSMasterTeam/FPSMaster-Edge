@@ -58,14 +58,20 @@ public class FPSMaster {
         ClientLogger.info("Checking music cache...");
         long dirSize = FileUtils.getDirSize(FileUtils.artists);
         if (dirSize > 1024) {
-            FileUtils.artists.delete();
-            ClientLogger.info("Cleared img cache");
+            if(FileUtils.artists.delete()) {
+                ClientLogger.info("Cleared img cache");
+            }else {
+                ClientLogger.error("Clear img cache failed");
+            }
         }
         ClientLogger.info("Found image: " + dirSize + "mb");
         long dirSize1 = FileUtils.getDirSize(FileUtils.music);
         if (dirSize1 > 2048) {
-            FileUtils.music.delete();
-            ClientLogger.warn("Cleared music cache");
+            if (FileUtils.music.delete()) {
+                ClientLogger.warn("Cleared music cache");
+            }else{
+                ClientLogger.error("Clear music cache failed");
+            }
         }
         ClientLogger.info("Found music: " + dirSize1 + "mb");
     }
