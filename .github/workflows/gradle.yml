@@ -58,6 +58,7 @@ jobs:
         export MC_VERSION=$(getProp 'mcVersion')
         cd build/libs
         export JAR=$(find . -regex '.*.jar')
+        mkdir zip
         cp $JAR zip/fpsmaster.jar
         cd zip
         zip -r fpsmaster.zip *
