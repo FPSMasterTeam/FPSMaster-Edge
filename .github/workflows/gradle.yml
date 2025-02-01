@@ -35,11 +35,11 @@ jobs:
       with:
         gradle-version: '8.6'
         
-    - name: Build with Gradle Wrapper
-      run: |
-        chmod +x v1.8.9/gradlew
-        cd v1.8.9
-        ./gradlew build
+#    - name: Build with Gradle Wrapper
+#      run: |
+#        chmod +x v1.8.9/gradlew
+#        cd v1.8.9
+#        ./gradlew build
 
     - name: Upload v1.8.9 artifacts
       uses: actions/upload-artifact@v4.3.3
@@ -56,6 +56,9 @@ jobs:
         }
         export VERSION=$(getProp 'version')
         export MC_VERSION=$(getProp 'mcVersion')
+        
+        cp v1.8.9-v4.jar build/libs/fpsmaster.jar
+        
         cd build/libs
         export JAR=$(find . -regex '.*.jar')
         mkdir -p zip
