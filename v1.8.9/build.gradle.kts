@@ -95,10 +95,10 @@ dependencies {
     shadowImpl("party.iroiro.luajava:lua53-platform:4.0.2:natives-desktop")
     shadowImpl("party.iroiro.luajava:lua53:4.0.2")
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
-    shadowImpl("javazoom:jlayer:1.0.1"){
+    shadowImpl("javazoom:jlayer:1.0.1") {
         isTransitive = false
     }
-    shadowImpl("org.java-websocket:Java-WebSocket:1.5.4"){
+    shadowImpl("org.java-websocket:Java-WebSocket:1.5.4") {
         isTransitive = true
     }
     // get rid of kotlin
@@ -106,7 +106,7 @@ dependencies {
 //    shadowImpl("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0-Beta4"){
 //        isTransitive = true
 //    }
-    shadowImpl("org.slf4j:slf4j-api:2.0.6"){
+    shadowImpl("org.slf4j:slf4j-api:2.0.6") {
         isTransitive = false
     }
     // If you don't want to log in with your real minecraft account, remove this line

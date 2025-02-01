@@ -47,6 +47,40 @@ jobs:
         name: v1.8.9
         path: v1.8.9/build/libs/
 
+    # reference：https://github.com/CCBlueX/LiquidBounce/blob/nextgen/.github/workflows/build.yml
+    - name: Upload artifact
+      run: |
+        cd v1.8.9
+        function getProp {
+            grep "^${1}=" gradle.properties | cut -d'=' -f2
+        }
+        export VERSION=$(getProp 'version')
+        export MC_VERSION=$(getProp 'mcVersion')
+        cd build/libs
+        export JAR=$(find . -regex '.*.jar')
+        cp $JAR zip/fpsmaster.jar
+        cd zip
+        zip -r fpsmaster.zip *
+        
+        RESPONSE=$(curl --location --request POST 'https://api.kstore.space/api/v1/file/create' \
+        --header 'X-GitHub-Event: workflow_run' \
+        --header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
+        --form 'access_token="${{ secrets.OSS }}"' \
+        --form 'fileId="0"' \
+        --form 'name="action-${{ github.event.head_commit.id }}"')
+        
+        FILE_ID=$(echo "$RESPONSE" | jq -r '.data.id')
+        echo "DirectoryId: $FILE_ID"
+        UPLOAD_RESPONSE=$(curl https://upload.kstore.space/upload/$FILE_ID?access_token=${{ secrets.OSS }} -F "file=@fpsmaster.zip")
+        
+        DOWNLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.downloadUrl')
+        echo "Download URL: $DOWNLOAD_URL"
+        
+        curl --location --request GET 'https://service.fpsmaster.top/pushVersion?key=\
+        ${{ secrets.API_KEY }}&commit=${{ github.sha }}\
+        &branch=${{ github.ref }}&version=$VERSION\
+        &date=$(date -u +%Y-%m-%dT%H:%M:%SZ)&link=$DOWNLOAD_URL&release=false'
+
 #    - name: Build with Gradle Wrapper
 #      run: |
 #        chmod +x v1.12.2/gradlew
