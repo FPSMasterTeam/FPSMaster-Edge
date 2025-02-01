@@ -86,16 +86,10 @@ jobs:
         
         # URL 编码
         ENCODED_URL=$(echo "$DOWNLOAD_URL" | jq -sRr @uri)
+        ENCODED_KEY=$(echo "${{ secrets.API_KEY }}" | jq -sRr @uri)
         
         # 发送版本信息
-        curl --location --request GET "https://service.fpsmaster.top/pushVersion" \
-        --data-urlencode "key=${{ secrets.API_KEY }}" \
-        --data-urlencode "commit=${{ github.sha }}" \
-        --data-urlencode "branch=${{ github.ref }}" \
-        --data-urlencode "version=$VERSION" \
-        --data-urlencode "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --data-urlencode "link=$ENCODED_URL" \
-        --data-urlencode "release=false"
+        curl --location --request GET "https://service.fpsmaster.top/pushVersion?key=$ENCODED_KEY&commit=${{ github.sha }}&branch=${{ github.ref }}&version=$VERSION&date=$(date -u +%Y-%m-%dT%H:%M:%SZ)&link=$ENCODED_URL&release=false" \
 
 #    - name: Build with Gradle Wrapper
 #      run: |
