@@ -20,7 +20,7 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 
 
 ### todo:
-- [ ] 完全迁移到Java
+- [x] 完全迁移到Java
 - [ ] 优化代码结构
 - [x] 添加固定界面尺寸选项
 - [x] 组件尺寸自定义
@@ -35,6 +35,7 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 - [ ] 多语言界面
 - [ ] 重写IRC模块
 - [ ] 优化配置文件模块
+- [ ] FPSMaster Intelligence
 
 
 ## 开源许可证
@@ -53,11 +54,10 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 
 可能遇到的问题：
 
- - 运行`genIntelliJRuns`之后并没有出现启动项，此时需要把生成的`.idea/runConfiguration`复制到`v1.8.9/.idea/runConfiguration`
-
- - 生成的`v1.8.9/.gradle/loom-cache/launch.cfg`中的目录路径错误，这时需要手动修复
-
- - APPDATA/.gradle/caches/essential-loom/assets/ 目录中的资源不能正常下载，此时可以其他地方复制一份1.8的assets目录过来
+- 运行`genIntelliJRuns`之后并没有出现启动配置，此时需要把生成的`.idea/runConfiguration`复制到`v1.8.9/.idea/runConfiguration`
+- 生成的启动配置的vmargs参数中`v1.8.9/.gradle/loom-cache/launch.cfg`中的目录路径可能无法启动，需要手动改成绝对路径
+- 生成的`v1.8.9/.gradle/loom-cache/launch.cfg`中的目录路径错误，这时需要手动修复
+- APPDATA/.gradle/caches/essential-loom/assets/ 目录中的资源无法正常下载，此时可以其他地方复制一份1.8的assets目录过来
 
 
 

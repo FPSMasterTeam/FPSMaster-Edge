@@ -3,4 +3,4 @@
 run/
 build/
 .gradle/
-
+./v1.8.9/src/main/resources/git.properties
