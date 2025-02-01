@@ -70,17 +70,25 @@ jobs:
         --form 'fileId="0"' \
         --form 'name="action-${{ github.event.head_commit.id }}"')
         
-        FILE_ID=$(echo "$RESPONSE" | jq -r '.data.id')
+        DIR_ID=$(echo "$RESPONSE" | jq -r '.data.id')
         echo "DirectoryId: $FILE_ID"
-        UPLOAD_RESPONSE=$(curl https://upload.kstore.space/upload/$FILE_ID?access_token=${{ secrets.OSS }} -F "file=@fpsmaster.zip")
+        UPLOAD_RESPONSE=$(curl https://upload.kstore.space/upload/$DIR_ID?access_token=${{ secrets.OSS }} -F "file=@fpsmaster.zip")
         
         DOWNLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.downloadUrl')
+        FILE_ID=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.id')
+        
+        ENABLE_DIRECT_LINK_RESPONSE=$(curl --location --request POST 'https://api.kstore.cc/api/v2/file/direct' \
+        --form 'fileId="$FILE_ID"' \
+        --form 'direct="1"'
+        
         echo "Download URL: $DOWNLOAD_URL"
+        
+        ENCODED_URL=$(echo "$DOWNLOAD_URL" | jq -sRr @uri)
         
         curl --location --request GET 'https://service.fpsmaster.top/pushVersion?key=\
         ${{ secrets.API_KEY }}&commit=${{ github.sha }}\
         &branch=${{ github.ref }}&version=$VERSION\
-        &date=$(date -u +%Y-%m-%dT%H:%M:%SZ)&link=$DOWNLOAD_URL&release=false'
+        &date=$(date -u +%Y-%m-%dT%H:%M:%SZ)&link=$ENCODED_URL&release=false'
 
 #    - name: Build with Gradle Wrapper
 #      run: |
