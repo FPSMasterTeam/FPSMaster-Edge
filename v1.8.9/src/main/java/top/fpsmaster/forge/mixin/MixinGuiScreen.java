@@ -2,6 +2,7 @@ package top.fpsmaster.forge.mixin;
 
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.input.Keyboard;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -66,6 +67,10 @@ public abstract class MixinGuiScreen extends Gui {
                         arch$alpha = 170;
                     }
                     this.drawGradientRect(0, 0, this.width, this.height, Render2DUtils.reAlpha(Render2DUtils.intToColor(-1072689136), ((int) arch$alpha)).getRGB(), Render2DUtils.reAlpha(Render2DUtils.intToColor(-804253680), ((int) arch$alpha)).getRGB());
+                }else{
+                    GlStateManager.disableBlend();
+                    GlStateManager.enableAlpha();
+                    GlStateManager.enableTexture2D();
                 }
             } else {
                 this.drawGradientRect(0, 0, this.width, this.height, -1072689136, -804253680);
