@@ -82,7 +82,10 @@ jobs:
           echo "FileId: $FILE_ID"
           API_KEY="${{ secrets.API_KEY }}"
           export API_KEY
-          curl --location --request POST "https://api.kstore.cc/api/v2/file/direct?fileId=$FILE_ID&direct=1&access_token=$API_KEY"
+          RESPONSE=$(curl --location --request POST 'https://api.kstore.cc/api/v2/file/direct' \
+          --form 'access_token="${{ secrets.OSS }}"' \
+          --form 'fileId="$FILE_ID"' \
+          --form 'direct=1')
 
           ENCODED_KEY=$(echo "$API_KEY" | sed 's/&/%26/g' | sed 's/?/%3F/g')
 
