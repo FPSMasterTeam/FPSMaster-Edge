@@ -35,12 +35,6 @@ jobs:
         with:
           gradle-version: '8.6'
 
-      - name: test
-        run: |
-          API_KEY="${{ secrets.API_KEY }}"
-          echo $API_KEY
-          
-
       - name: Build with Gradle Wrapper
         run: |
           chmod +x v1.8.9/gradlew
@@ -54,43 +48,44 @@ jobs:
           path: v1.8.9/build/libs/
 
       # reference：https://github.com/CCBlueX/LiquidBounce/blob/nextgen/.github/workflows/build.yml
-#      - name: Upload artifact
-#        run: |
-#          cd v1.8.9
-#          function gradleprop {
-#              grep "^${1}=" gradle.properties | cut -d'=' -f2
-#          }
-#          version=$(grep -oP '^version\s*=\s*\K.*' "gradle.properties")
-#
-#          mkdir -p build/libs
-#
-#          cd build/libs
-#          export JAR=$(find . -regex '.*.jar')
-#          mkdir -p zip
-#          cp $JAR zip/fpsmaster.jar
-#          cd zip
-#          zip -r fpsmaster.zip *
-#
-#          RESPONSE=$(curl --location --request POST 'https://api.kstore.space/api/v1/file/create' \
-#          --header 'X-GitHub-Event: workflow_run' \
-#          --header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
-#          --form 'access_token="${{ secrets.OSS }}"' \
-#          --form 'fileId="0"' \
-#          --form 'name="action-${{ github.event.head_commit.id }}"')
-#
-#          DIR_ID=$(echo "$RESPONSE" | jq -r '.data.id')
-#          echo "DirectoryId: $DIR_ID"
-#          UPLOAD_RESPONSE=$(curl https://upload.kstore.space/upload/$DIR_ID?access_token=${{ secrets.OSS }} -F "file=@fpsmaster.zip")
-#
-#          DOWNLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.downloadUrl')
-#          FILE_ID=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.id')
-#
-#          echo "FileId: $FILE_ID"
-#          API_KEY="${{ secrets.API_KEY }}"
-#          curl --location --request POST "https://api.kstore.cc/api/v2/file/direct?fileId=$FILE_ID&direct=1&access_token=$API_KEY"
-#
-#          ENCODED_KEY=$(echo "$API_KEY" | sed 's/&/%26/g' | sed 's/?/%3F/g')
-#
-#          ENCODED_URL=$DOWNLOAD_URL
-#          ENCODED_URL=$(echo "$ENCODED_URL" | sed 's/&/%26/g' | sed 's/?/%3F/g')
-#          curl --location --request GET "https://service.fpsmaster.top/pushVersion?key=$ENCODED_KEY&commit="${{ github.sha }}"&branch="${{ github.ref }}"&version=$version&date=$(date -u +%Y-%m-%dT%H:%M:%SZ)&link=$ENCODED_URL&release=false"
+      - name: Upload artifact
+        run: |
+          cd v1.8.9
+          function gradleprop {
+              grep "^${1}=" gradle.properties | cut -d'=' -f2
+          }
+          version=$(grep -oP '^version\s*=\s*\K.*' "gradle.properties")
+
+          mkdir -p build/libs
+
+          cd build/libs
+          export JAR=$(find . -regex '.*.jar')
+          mkdir -p zip
+          cp $JAR zip/fpsmaster.jar
+          cd zip
+          zip -r fpsmaster.zip *
+
+          RESPONSE=$(curl --location --request POST 'https://api.kstore.space/api/v1/file/create' \
+          --header 'X-GitHub-Event: workflow_run' \
+          --header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
+          --form 'access_token="${{ secrets.OSS }}"' \
+          --form 'fileId="0"' \
+          --form 'name="action-${{ github.event.head_commit.id }}"')
+
+          DIR_ID=$(echo "$RESPONSE" | jq -r '.data.id')
+          echo "DirectoryId: $DIR_ID"
+          UPLOAD_RESPONSE=$(curl https://upload.kstore.space/upload/$DIR_ID?access_token=${{ secrets.OSS }} -F "file=@fpsmaster.zip")
+
+          DOWNLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.downloadUrl')
+          FILE_ID=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.id')
+
+          echo "FileId: $FILE_ID"
+          API_KEY="${{ secrets.API_KEY }}"
+          export API_KEY
+          curl --location --request POST "https://api.kstore.cc/api/v2/file/direct?fileId=$FILE_ID&direct=1&access_token=$API_KEY"
+
+          ENCODED_KEY=$(echo "$API_KEY" | sed 's/&/%26/g' | sed 's/?/%3F/g')
+
+          ENCODED_URL=$DOWNLOAD_URL
+          ENCODED_URL=$(echo "$ENCODED_URL" | sed 's/&/%26/g' | sed 's/?/%3F/g')
+          curl --location --request GET "https://service.fpsmaster.top/pushVersion?key=$ENCODED_KEY&commit="${{ github.sha }}"&branch="${{ github.ref }}"&version=$version&date=$(date -u +%Y-%m-%dT%H:%M:%SZ)&link=$ENCODED_URL&release=false"
