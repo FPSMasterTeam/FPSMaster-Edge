@@ -39,29 +39,9 @@ public abstract class MixinRender {
     @Inject(method = "renderLivingLabel", at = @At("HEAD"), cancellable = true)
     protected void renderLivingLabel(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci) {
         if (LevelTag.using && LevelTag.health.getValue()) {
-            double d = entityIn.getDistanceSqToEntity(this.renderManager.livingPlayer);
-            if (d < 100) {
-                float f = 1.6F;
-                float g = 0.016666668F * f;
-                GlStateManager.pushMatrix();
-                GlStateManager.translate((float) x + 0.0F, (float) y + entityIn.height + 0.5F, (float) z);
-                GL11.glNormal3f(0.0F, 1.0F, 0.0F);
-                GlStateManager.rotate(-this.renderManager.playerViewY, 0.0F, 1.0F, 0.0F);
-                GlStateManager.rotate(this.renderManager.playerViewX, 1.0F, 0.0F, 0.0F);
-                GlStateManager.scale(-g, -g, g);
-                GlStateManager.disableLighting();
-                GlStateManager.depthMask(false);
-                GlStateManager.disableDepth();
-                GlStateManager.enableBlend();
-                GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-                ProviderManager.guiIngameProvider.drawHealth(entityIn);
-                GlStateManager.disableTexture2D();
-                GlStateManager.enableTexture2D();
-                GlStateManager.enableLighting();
-                GlStateManager.disableBlend();
-                GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-                GlStateManager.popMatrix();
-            }
+            LevelTag.renderHealth(entityIn, str, x, y, z, maxDistance);
+            LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
+            ci.cancel();
         }
     }
 
