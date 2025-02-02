@@ -81,7 +81,7 @@ jobs:
         
         echo "FileId: $FILE_ID"
         ENABLE_DIRECT_LINK_RESPONSE=$(curl --location --request POST 'https://api.kstore.cc/api/v2/file/direct' \
-        --header "Authorization:${{ secrets.OSS }}" \
+        --form 'access_token="${{ secrets.OSS }}"' \
         --form "fileId=$FILE_ID" \
         --form "direct=1")
         echo "enabled direct link"
