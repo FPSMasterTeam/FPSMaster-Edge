@@ -38,7 +38,7 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
         );
         Render2DUtils.drawOptimizedRoundedRect(x + tW + 26, y + 1, 80f, 14f, FPSMaster.theme.getBackground());
 
-        CustomColor customColor = (CustomColor) setting.getValue();
+        CustomColor customColor = setting.getValue();
         Render2DUtils.drawOptimizedRoundedRect(x + tW + 27, y + 2, 12f, 12f, customColor.getRGB());
 
         FPSMaster.fontManager.s16.drawString(
@@ -57,7 +57,7 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                     Render2DUtils.getFixedScale(),
                     () -> Render2DUtils.drawRoundedRectImage(
                             x + tW + 26, y + 16, 80f, max(aHeight, 1f), 4,
-                            Color.getHSBColor(customColor.hue, customColor.saturation, customColor.brightness)
+                            new Color(255,255,255)
                     )
             );
 
