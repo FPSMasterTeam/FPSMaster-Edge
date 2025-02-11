@@ -96,16 +96,18 @@ public class MainPanel extends ScaledGuiScreen {
         y = (int) Math.max(0, Math.min(guiHeight - (int) height, y));
 
         if (close) {
-            if (scaleAnimation.value <= 0.5) {
+            if (scaleAnimation.value >= 1.1) {
                 mc.displayGuiScreen(null);
                 if (mc.currentScreen == null) {
                     mc.setIngameFocus();
                 }
             }
-        } else {
-            scaleAnimation.start(0.9, 1.0, 0.2f, Type.EASE_OUT_BACK);
         }
         scaleAnimation.update();
+
+        GlStateManager.translate(guiWidth / 2.0, height / 2.0, 0.0);
+        GL11.glScaled(scaleAnimation.value, scaleAnimation.value, 0.0);
+        GlStateManager.translate(-guiWidth / 2.0, -height / 2.0, 0.0);
 
         Render2DUtils.drawOptimizedRoundedRect(
                 (x - 1),
@@ -135,7 +137,7 @@ public class MainPanel extends ScaledGuiScreen {
         );
 
         if (drag || sizeDrag) {
-            sizeDragBorder.start(new Color(255, 255, 255, 100), new Color(255, 255, 255), 0.15f, Type.EASE_IN_OUT_QUAD);
+            sizeDragBorder.start(sizeDragBorder.getColor(), new Color(255, 255, 255), 0.15f, Type.EASE_IN_OUT_QUAD);
         } else {
             sizeDragBorder.start(sizeDragBorder.getColor(), new Color(255, 255, 255, 0), 0.2f, Type.EASE_IN_OUT_QUAD);
         }
@@ -321,7 +323,7 @@ public class MainPanel extends ScaledGuiScreen {
         ScaledResolution sr = new ScaledResolution(mc);
         int scaledWidth = sr.getScaledWidth();
         int scaledHeight = sr.getScaledHeight();
-        scaleAnimation.value = 0.9;
+        scaleAnimation.fstart(0.8, 1.0, 0.2f, Type.EASE_OUT_BACK);
         close = false;
 
         if (width == 0f || height == 0f) {
@@ -353,7 +355,7 @@ public class MainPanel extends ScaledGuiScreen {
         if (keyCode == 1) {
             if (scaleAnimation.end != 0.1) {
                 close = true;
-                scaleAnimation.fstart(scaleAnimation.value, 0.1, 0.2f, Type.EASE_IN_BACK);
+                scaleAnimation.fstart(scaleAnimation.value, 1.1, 0.2f, Type.EASE_IN_BACK);
             }
             return;
         }

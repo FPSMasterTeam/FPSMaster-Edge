@@ -159,13 +159,13 @@ public class DevSpace extends ScaledGuiScreen {
             Render2DUtils.drawOptimizedRoundedRect(x + leftPanelWidth + 6, y + height - 12, width - leftPanelWidth - 9, 12, 6, new Color(25, 25, 25).getRGB());
             FPSMaster.fontManager.s14.drawString(getCurrentScript().failedReason, x + leftPanelWidth + 6, y + height - 10, new Color(255, 100, 100).getRGB());
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
-            Render2DUtils.doGlScissor(x + Math.max((int) (width * 0.2), 100) + 12, y + 36, width - 15, height - 52, scaleFactor);
+            Render2DUtils.doGlScissor(x + Math.max((int) (width * 0.2), 100) + 12, y + 36, (width-leftPanelWidth) - 15, height - 52, scaleFactor);
         } else {
             Render2DUtils.drawOptimizedRoundedRect(x + leftPanelWidth + 6, y + 15, width - leftPanelWidth - 9, height - 18, 6, new Color(25, 25, 25).getRGB());
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
-            Render2DUtils.doGlScissor(x + Math.max((int) (width * 0.2), 100) + 12, y + 36, width - 15, height - 42, scaleFactor);
+            Render2DUtils.doGlScissor(x + Math.max((int) (width * 0.2), 100) + 12, y + 36, (width-leftPanelWidth) - 15, height - 42, scaleFactor);
         }
-        codeEditor.draw(x + Math.max((int) (width * 0.2), 100) + 12, y + 36, width - 15, height - 42, mouseX, mouseY, () -> {
+        codeEditor.draw(x + Math.max((int) (width * 0.2), 100) + 12, y + 36, (width-leftPanelWidth) - 17, height - 42, mouseX, mouseY, () -> {
             drawCodeEditor(mouseX, mouseY);
         });
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
