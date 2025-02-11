@@ -15,43 +15,37 @@ public class AWTUtils {
     private static HashMap<Integer, ResourceLocation> generatedFull = new HashMap<>();
 
     public static ResourceLocation generateRoundImage(int width, int height, int radius) {
-        if (generatedFull.get(radius) != null) {
-            return generatedFull.get(radius);
+        ResourceLocation location = generatedFull.get(radius);
+        if (location != null) {
+            return location;
         }
-        width = width * 2;
-        height = height * 2;
+
+        width *= 2;
+        height *= 2;
 
         try {
             BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
             java.awt.Graphics2D graphics2D = bufferedImage.createGraphics();
+
             graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            graphics2D.setColor(Color.decode("#00000000"));
-            graphics2D.fillRect(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight());
-
-            RoundRectangle2D roundRectangle;
-
-
-            ResourceLocation location;
-            graphics2D.setComposite(AlphaComposite.Clear);
+            graphics2D.setColor(new Color(0, 0, 0, 0)); // 透明背景
             graphics2D.fillRect(0, 0, width, height);
-            graphics2D.setComposite(AlphaComposite.SrcOver);
-            graphics2D.setColor(Color.WHITE);
-            roundRectangle = new RoundRectangle2D.Float(
-                    0,
-                    0,
-                    width,
-                    height,
-                    radius * 2,
-                    radius * 2
-            );
-            graphics2D.fill(roundRectangle);
-            location = Minecraft.getMinecraft().getTextureManager().getDynamicTextureLocation(radius + "_full", new DynamicTexture(bufferedImage));
 
-            graphics2D.dispose();
+            graphics2D.setComposite(AlphaComposite.SrcOver);
+            graphics2D.setColor(Color.WHITE); // 白色圆角矩形
+            RoundRectangle2D roundRectangle = new RoundRectangle2D.Float(0, 0, width, height, 0,0);
+            graphics2D.fill(roundRectangle);
+
+            location = Minecraft.getMinecraft().getTextureManager()
+                    .getDynamicTextureLocation(radius + "_full", new DynamicTexture(bufferedImage));
+
             generatedFull.put(radius, location);
-        } catch (Exception exception) {
-            exception.printStackTrace();
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        // 返回生成的纹理
         return generatedFull.get(radius);
     }
 
