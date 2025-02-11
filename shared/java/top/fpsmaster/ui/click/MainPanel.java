@@ -76,15 +76,15 @@ public class MainPanel extends ScaledGuiScreen {
         }
 
         if (drag) {
-            x = (int) (mouseX - dragX);
             mouseY -= (int) dragY;
+            x = (int) (mouseX - dragX);
             y = mouseY;
         }
 
-        float w = mouseX + sizeDragX - x;
-        float h = mouseY + sizeDragY - y;
 
         if (sizeDrag) {
+            float w = mouseX + sizeDragX - x;
+            float h = mouseY + sizeDragY - y;
             width = w;
             height = h;
         }
@@ -369,7 +369,7 @@ public class MainPanel extends ScaledGuiScreen {
     }
 
     @Override
-    public void mouseClicked(int mouseX, int mouseY, int mouseButton) {
+    public void onClick(int mouseX, int mouseY, int mouseButton) {
         if (!Render2DUtils.isHoveredWithoutScale(x, y, width, height, mouseX, mouseY)) return;
 
         if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(

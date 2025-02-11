@@ -33,6 +33,7 @@ public class ScaledGuiScreen extends GuiScreen {
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         super.mouseClicked(mouseX, mouseY, mouseButton);
         ScaledResolution sr = new ScaledResolution(mc);
+
         int realMouseX = mouseX * scaleFactor / 2;
         int realMouseY = mouseY * scaleFactor / 2;
         onClick(realMouseX, realMouseY, mouseButton);
