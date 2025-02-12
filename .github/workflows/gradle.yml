@@ -82,12 +82,5 @@ jobs:
           echo "$RESPONSE"
 
           # 版本推送
-          curl --get \
-            --data-urlencode "key=${{ secrets.API_KEY }}" \
-            --data-urlencode "commit=${{ github.sha }}" \
-            --data-urlencode "branch=${{ github.ref }}" \
-            --data-urlencode "version=$version" \
-            --data-urlencode "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --data-urlencode "link=$DOWNLOAD_URL" \
-            --data-urlencode "release=false" \
-            "https://service.fpsmaster.top/pushVersion"
+          curl --location --get \
+          "https://service.fpsmaster.top/pushVersion?key=${{ secrets.API_KEY }}&commit=${{ github.sha }}&branch=${{ github.ref }}&version=$version&date=$(date -u +%Y-%m-%dT%H:%M:%SZ)&link=$DOWNLOAD_URL&release=false"
