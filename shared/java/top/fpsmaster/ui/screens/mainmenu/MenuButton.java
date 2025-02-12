@@ -7,7 +7,7 @@ import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
-public class GuiButton {
+public class MenuButton {
     private String text;
     private Runnable runnable;
     private float x;
@@ -16,7 +16,7 @@ public class GuiButton {
     private float height;
     private double alpha;
 
-    public GuiButton(String text, Runnable runnable) {
+    public MenuButton(String text, Runnable runnable) {
         this.text = text;
         this.runnable = runnable;
         this.x = 0f;

@@ -1,23 +1,29 @@
 package top.fpsmaster.utils.render;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.ThreadDownloadImageData;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
+import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.awt.AWTUtils;
+import top.fpsmaster.utils.os.FileUtils;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
 import top.fpsmaster.utils.render.shader.RoundedUtil;
 import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
 
 import java.awt.*;
+import java.io.File;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -233,5 +239,23 @@ public class Render2DUtils extends Utility {
         StencilUtil.readStencilBuffer(1);
         KawaseBlur.renderBlur(3, 3);
         StencilUtil.uninitStencilBuffer();
+    }
+
+    public static void drawBackground(int guiWidth, int guiHeight, int mouseX, int mouseY, float partialTicks, int zLevel) {
+        ResourceLocation textureLocation = null;
+        if (FileUtils.hasBackground) {
+            if (textureLocation == null) {
+                textureLocation = new ResourceLocation("fpsmaster/gui/background.png");
+                File file = FileUtils.background;
+                TextureManager textureManager = Minecraft.getMinecraft().getTextureManager();
+                ThreadDownloadImageData textureArt = new ThreadDownloadImageData(file, null, null, null);
+                textureManager.loadTexture(textureLocation, textureArt);
+            }
+            Render2DUtils.drawImage(textureLocation, 0f, 0f, guiWidth, guiHeight, -1);
+            Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(22, 22, 22, 50));
+        } else {
+            ProviderManager.mainmenuProvider.renderSkybox(mouseX, mouseY, partialTicks, guiWidth, guiHeight, zLevel);
+            Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(26, 59, 109, 60));
+        }
     }
 }

@@ -14,12 +14,22 @@ public class GuiButton {
     private float y = 0f;
     private float width = 0f;
     private float height = 0f;
+    Color color;
+    Color hoverColor;
     private ColorAnimation btnColor = new ColorAnimation(new Color(113, 127, 254));
 
-    public GuiButton(String text, Runnable runnable) {
+
+    public GuiButton(String text, Runnable runnable, Color color, Color hoverColor) {
         this.text = text;
         this.runnable = runnable;
+        this.color = color;
+        this.hoverColor = hoverColor;
     }
+
+    public GuiButton(String text, Runnable runnable) {
+        this(text, runnable, new Color(113, 127, 254), new Color(135, 147, 255));
+    }
+
 
     public void render(float x, float y, float width, float height, float mouseX, float mouseY) {
         this.x = x;
@@ -28,17 +38,17 @@ public class GuiButton {
         this.height = height;
 
         if (Render2DUtils.isHovered(x, y, width, height, (int) mouseX, (int) mouseY)) {
-            btnColor.base(new Color(135, 147, 255));
+            btnColor.base(hoverColor);
         } else {
-            btnColor.base(new Color(113, 127, 254));
+            btnColor.base(color);
         }
 
         Render2DUtils.drawOptimizedRoundedRect(x, y, width, height, btnColor.getColor());
         FPSMaster.fontManager.s18.drawCenteredString(
-            FPSMaster.i18n.get(text),
-            x + width / 2,
-            y + height / 2 - 4,
-            FPSMaster.theme.getButtonText().getRGB()
+                FPSMaster.i18n.get(text),
+                x + width / 2,
+                y + height / 2 - 4,
+                FPSMaster.theme.getButtonText().getRGB()
         );
     }
 

@@ -33,6 +33,7 @@
     "MixinRenderEntityItem",
     "MixinRenderLivingBase",
     "MixinRenderManager",
-    "MixinRenderTNTPrimed"
+    "MixinRenderTNTPrimed",
+    "MixinServerSelectionList"
   ]
 }

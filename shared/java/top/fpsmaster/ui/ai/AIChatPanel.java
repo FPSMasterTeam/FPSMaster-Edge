@@ -96,7 +96,6 @@ public class AIChatPanel {
 
     public void keyTyped(char typedChar, int keyCode) {
         if (keyCode == Keyboard.KEY_RETURN) {
-
             messages.add(new OpenAIClient.Message("user", input.getText()));
             OpenAIClient.Message msg = new OpenAIClient.Message("assistant", "");
             messages.add(msg);

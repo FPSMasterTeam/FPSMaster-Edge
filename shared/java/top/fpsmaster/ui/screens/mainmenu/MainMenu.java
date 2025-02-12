@@ -1,54 +1,47 @@
 package top.fpsmaster.ui.screens.mainmenu;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiOptions;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.renderer.ThreadDownloadImageData;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.music.MusicPlayer;
+import top.fpsmaster.ui.mc.GuiMultiplayer;
 import top.fpsmaster.ui.screens.account.GuiWaiting;
 import top.fpsmaster.ui.screens.oobe.GuiLogin;
-import top.fpsmaster.utils.os.FileUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
 import top.fpsmaster.wrapper.TextFormattingProvider;
 
 import java.awt.Color;
 import java.awt.Desktop;
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 
 public class MainMenu extends ScaledGuiScreen {
 
     // Buttons for the main menu
-    private final GuiButton singlePlayer;
-    private final GuiButton multiPlayer;
-    private final GuiButton options;
-    private final GuiButton exit;
+    private final MenuButton singlePlayer;
+    private final MenuButton multiPlayer;
+    private final MenuButton options;
+    private final MenuButton exit;
 
     private String info = "Failed to get version update";
     private String welcome = "Failed to get version update";
     private boolean needUpdate = false;
 
-    private ResourceLocation textureLocation = null;
 
     public MainMenu() {
-        singlePlayer = new GuiButton("mainmenu.single", () -> {
-        ProviderManager.mainmenuProvider.showSinglePlayer(this);
-    });
-        multiPlayer = new GuiButton("mainmenu.multi", () -> {
-        mc.displayGuiScreen(new GuiMultiplayer(this));
-    });
-        options = new GuiButton("mainmenu.settings", () -> {
-        mc.displayGuiScreen(new GuiOptions(this, mc.gameSettings));
-    });
-        exit = new GuiButton("X", () -> mc.shutdown());
+        singlePlayer = new MenuButton("mainmenu.single", () -> {
+            ProviderManager.mainmenuProvider.showSinglePlayer(this);
+        });
+        multiPlayer = new MenuButton("mainmenu.multi", () -> {
+            mc.displayGuiScreen(new GuiMultiplayer());
+        });
+        options = new MenuButton("mainmenu.settings", () -> {
+            mc.displayGuiScreen(new GuiOptions(this, mc.gameSettings));
+        });
+        exit = new MenuButton("X", () -> mc.shutdown());
     }
 
     @Override
@@ -63,21 +56,7 @@ public class MainMenu extends ScaledGuiScreen {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        // Check for background file and render it if available
-        if (FileUtils.hasBackground) {
-            if (textureLocation == null) {
-                textureLocation = new ResourceLocation("fpsmaster/gui/background.png");
-                File file = FileUtils.background;
-                TextureManager textureManager = Minecraft.getMinecraft().getTextureManager();
-                ThreadDownloadImageData textureArt = new ThreadDownloadImageData(file, null, null, null);
-                textureManager.loadTexture(textureLocation, textureArt);
-            }
-            Render2DUtils.drawImage(textureLocation, 0f, 0f, this.guiWidth, this.guiHeight, -1);
-            Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(22, 22, 22, 50));
-        } else {
-            ProviderManager.mainmenuProvider.renderSkybox(mouseX, mouseY, partialTicks, (int) this.guiWidth, (int) this.guiHeight, this.zLevel);
-            Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(26, 59, 109, 60));
-        }
+        Render2DUtils.drawBackground((int) guiWidth, (int) guiHeight, mouseX, mouseY, partialTicks, (int) zLevel);
 
         // Display user info and avatar
         float stringWidth = FPSMaster.fontManager.s16.getStringWidth(mc.getSession().getUsername());
