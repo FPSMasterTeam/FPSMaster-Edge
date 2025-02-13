@@ -20,9 +20,10 @@ public class ComboDisplayComponent extends Component {
         }
         
         width = getStringWidth(16, text) + 4;
-        height = 16f;
+        height = 16;
         
         drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
         drawString(16, text, x, y + 4, ComboDisplay.textColor.getRGB());
+
     }
 }

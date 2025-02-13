@@ -1,11 +1,17 @@
 package top.fpsmaster.features.impl.optimizes;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.wrapper.mods.WrapperPerformance;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Performance extends Module {
 
@@ -22,6 +28,16 @@ public class Performance extends Module {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, entitiesOptimize, fastLoad, entityLimit, fpsLimit, particlesLimit);
     }
+
+
+    static ArrayList<Integer> culledEntities = new ArrayList<>();
+
+    public static void addCulledEntity(Entity entity) {
+        if (!culledEntities.contains(entity.hashCode())) {
+            culledEntities.add(entity.hashCode());
+        }
+    }
+
 
     @Override
     public void onEnable() {
@@ -48,9 +64,9 @@ public class Performance extends Module {
     }
 
     public static boolean isVisible(
-            World world, 
-            double minX, double minY, double minZ, 
-            double maxX, double maxY, double maxZ, 
+            World world,
+            double minX, double minY, double minZ,
+            double maxX, double maxY, double maxZ,
             double cameraX, double cameraY, double cameraZ) {
         return WrapperPerformance.isVisible(world, minX, minY, minZ, maxX, maxY, maxZ, cameraX, cameraY, cameraZ);
     }

@@ -24,6 +24,7 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 }
 
+val accessTransformerName = "patcher_at.cfg"
 // Minecraft configuration:
 loom {
     log4jConfigs.from(file("log4j2.xml"))
@@ -45,6 +46,7 @@ loom {
         remove(getByName("server"))
     }
     forge {
+        accessTransformer(rootProject.file("src/main/resources/$accessTransformerName"))
         pack200Provider.set(dev.architectury.pack200.java.Pack200Adapter())
         // If you don't want mixins, remove this lines
         mixinConfig("mixins.$modid.json")

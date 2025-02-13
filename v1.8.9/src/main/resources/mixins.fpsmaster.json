@@ -34,6 +34,8 @@
     "MixinRenderLivingBase",
     "MixinRenderManager",
     "MixinRenderTNTPrimed",
-    "MixinServerSelectionList"
+    "MixinServerSelectionList",
+    "accessor.FontRendererAccessor",
+    "accessor.GlStateManagerAccessor"
   ]
 }

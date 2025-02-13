@@ -168,13 +168,13 @@ public class Component {
                 break;
             }
 
-            case LB:{
+            case LB: {
                 changeX = x - dragX;
                 changeY = guiHeight - y - height + dragY;
                 break;
             }
 
-            case RB:{
+            case RB: {
                 changeX = guiWidth - x - width + dragX;
                 changeY = guiHeight - y - height + dragY;
                 break;
@@ -207,6 +207,7 @@ public class Component {
     }
 
     public void drawString(int fontSize, boolean bold, String text, float x, float y, int color) {
+        double scaled = (int) (scale * 100) / 100.0;
         fontSize = (int) (fontSize * scale);
         UFontRenderer font = FPSMaster.fontManager.getFont(fontSize);
         if (mod.betterFont.getValue()) {
@@ -215,7 +216,7 @@ public class Component {
         } else {
             GL11.glPushMatrix();
             GL11.glTranslated(x, y, 0.0);
-            GL11.glScaled(scale, scale, 1.0);
+            GL11.glScaled(scaled, scaled, 1.0);
             if (mod.fontShadow.getValue())
                 ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(text, 0f, 0f, color);
             else ProviderManager.mcProvider.drawString(text, 0f, 0f, color);

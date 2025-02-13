@@ -217,7 +217,6 @@ public abstract class MixinMinecraft implements IMinecraft {
         EventDispatcher.dispatchEvent(new EventMouseClick(1));
     }
 
-
     @Inject(method = "dispatchKeypresses", at = @At(value = "INVOKE", target = "Lorg/lwjgl/input/Keyboard;getEventKey()I", shift = At.Shift.AFTER))
     public void keyEvent(CallbackInfo ci) {
         EventKey key = new EventKey(Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey());

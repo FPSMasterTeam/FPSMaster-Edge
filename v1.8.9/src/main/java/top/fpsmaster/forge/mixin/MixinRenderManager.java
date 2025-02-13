@@ -18,8 +18,9 @@ import top.fpsmaster.features.impl.render.FreeLook;
 import top.fpsmaster.forge.api.IRenderManager;
 import top.fpsmaster.features.impl.optimizes.CheckEntity;
 import top.fpsmaster.features.impl.optimizes.Performance;
+import top.fpsmaster.modules.dev.DevMode;
 
-@Mixin(value = RenderManager.class,priority = 999)
+@Mixin(value = RenderManager.class, priority = 999)
 @Implements(@Interface(iface = IRenderManager.class, prefix = "fpsmaster$"))
 public class MixinRenderManager implements IRenderManager {
 
@@ -45,16 +46,21 @@ public class MixinRenderManager implements IRenderManager {
         return renderPosZ;
     }
 
-    @Inject(method = "doRenderEntity", at = @At("HEAD"),cancellable = true)
-    public void preRender(Entity entity, double x, double y, double z, float entityYaw, float partialTicks, boolean p_147939_10_, CallbackInfoReturnable<Boolean> cir){
+    @Inject(method = "doRenderEntity", at = @At("HEAD"), cancellable = true)
+    public void preRender(Entity entity, double x, double y, double z, float entityYaw, float partialTicks, boolean p_147939_10_, CallbackInfoReturnable<Boolean> cir) {
         if (Performance.using && entity != Minecraft.getMinecraft().thePlayer) {
             if (Performance.entitiesOptimize.getValue()) {
-                if (!Performance.isVisible(new CheckEntity(entity))) {
+                if (Performance.isVisible(new CheckEntity(entity))) {
+                    if (DevMode.INSTACE.dev) {
+                        Performance.addCulledEntity(entity);
+                    }
+                } else {
                     cir.setReturnValue(false);
                 }
             }
         }
     }
+
     @Shadow
     public float playerViewY;
     @Shadow
@@ -88,12 +94,12 @@ public class MixinRenderManager implements IRenderManager {
         this.livingPlayer = livingPlayerIn;
         this.pointedEntity = pointedEntityIn;
         this.textRenderer = textRendererIn;
-        if (livingPlayerIn instanceof EntityLivingBase && ((EntityLivingBase)livingPlayerIn).isPlayerSleeping()) {
+        if (livingPlayerIn instanceof EntityLivingBase && ((EntityLivingBase) livingPlayerIn).isPlayerSleeping()) {
             IBlockState iblockstate = worldIn.getBlockState(new BlockPos(livingPlayerIn));
             Block block = iblockstate.getBlock();
             if (block.isBed(worldIn, new BlockPos(livingPlayerIn), livingPlayerIn)) {
                 int i = block.getBedDirection(worldIn, new BlockPos(livingPlayerIn)).getHorizontalIndex();
-                this.playerViewY = (float)(i * 90 + 180);
+                this.playerViewY = (float) (i * 90 + 180);
                 this.playerViewX = 0.0F;
             }
         } else {
@@ -110,9 +116,9 @@ public class MixinRenderManager implements IRenderManager {
             this.playerViewY += 180.0F;
         }
 
-        this.viewerPosX = livingPlayerIn.lastTickPosX + (livingPlayerIn.posX - livingPlayerIn.lastTickPosX) * (double)partialTicks;
-        this.viewerPosY = livingPlayerIn.lastTickPosY + (livingPlayerIn.posY - livingPlayerIn.lastTickPosY) * (double)partialTicks;
-        this.viewerPosZ = livingPlayerIn.lastTickPosZ + (livingPlayerIn.posZ - livingPlayerIn.lastTickPosZ) * (double)partialTicks;
+        this.viewerPosX = livingPlayerIn.lastTickPosX + (livingPlayerIn.posX - livingPlayerIn.lastTickPosX) * (double) partialTicks;
+        this.viewerPosY = livingPlayerIn.lastTickPosY + (livingPlayerIn.posY - livingPlayerIn.lastTickPosY) * (double) partialTicks;
+        this.viewerPosZ = livingPlayerIn.lastTickPosZ + (livingPlayerIn.posZ - livingPlayerIn.lastTickPosZ) * (double) partialTicks;
     }
 
 }
