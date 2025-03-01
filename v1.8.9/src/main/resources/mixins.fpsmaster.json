@@ -4,6 +4,7 @@
   "minVersion": "0.7",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "MixinEntity",
     "MixinEntityLivingBase",
     "MixinEntityPlayer",
     "MixinNetworkManager",

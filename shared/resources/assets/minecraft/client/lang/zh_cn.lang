@@ -470,6 +470,8 @@ dragonwings.chroma=彩色
 
 directiondisplay=方向显示
 directiondisplay.desc=显示一个指南针
+damageindicator=伤害指示器
+damageindicator.desc=在生物受到伤害时显示伤害数字
 
 # 类别
 category.optimize=优化
