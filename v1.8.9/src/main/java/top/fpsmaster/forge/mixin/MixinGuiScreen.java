@@ -57,4 +57,25 @@ public abstract class MixinGuiScreen extends Gui {
     private void onMouseReleased(int mouseX, int mouseY, int state, CallbackInfo ci) {
         doubleClicked = false;
     }
+
+    @Inject(method = "drawScreen", at = @At("HEAD"))
+    private void drawBlockIndicator(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        if (top.fpsmaster.forge.Mod.blockIndicatorEnabled) {
+            ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+            int scaledWidth = sr.getScaledWidth();
+            int scaledHeight = sr.getScaledHeight();
+
+            // 绘制方块指示器
+            GlStateManager.pushMatrix();
+            Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/block_indicator.png"), 
+                top.fpsmaster.forge.Mod.blockIndicatorX, top.fpsmaster.forge.Mod.blockIndicatorY, top.fpsmaster.forge.Mod.blockIndicatorSize, top.fpsmaster.forge.Mod.blockIndicatorSize, -1);
+            GlStateManager.popMatrix();
+
+            // 绘制方块信息
+            String blockName = "Block Name";
+            String version = "Minecraft";
+            Minecraft.getMinecraft().fontRendererObj.drawString(blockName, top.fpsmaster.forge.Mod.blockIndicatorX + top.fpsmaster.forge.Mod.blockIndicatorSize + 5, top.fpsmaster.forge.Mod.blockIndicatorY, 0xFFFFFF);
+            Minecraft.getMinecraft().fontRendererObj.drawString(version, top.fpsmaster.forge.Mod.blockIndicatorX + top.fpsmaster.forge.Mod.blockIndicatorSize + 5, top.fpsmaster.forge.Mod.blockIndicatorY + 10, 0xFFFFFF);
+        }
+    }
 }

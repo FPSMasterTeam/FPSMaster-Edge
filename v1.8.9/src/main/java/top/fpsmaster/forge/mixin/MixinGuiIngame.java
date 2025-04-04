@@ -31,4 +31,21 @@ public class MixinGuiIngame {
         if (Scoreboard.using)
             ci.cancel();
     }
+
+    @Inject(method = "renderBlockIndicator", at = @At("HEAD"))
+    private void renderBlockIndicator(ScaledResolution sr, CallbackInfo ci) {
+        if (top.fpsmaster.forge.Mod.blockIndicatorEnabled) {
+            RayTraceResult result = Minecraft.getMinecraft().objectMouseOver;
+            if (result != null && result.typeOfHit == RayTraceResult.Type.BLOCK) {
+                BlockPos pos = result.getBlockPos();
+                IBlockState state = Minecraft.getMinecraft().theWorld.getBlockState(pos);
+                Block block = state.getBlock();
+
+                // 绘制方块指示器
+                GlStateManager.pushMatrix();
+                RenderGlobal.drawSelectionBoundingBox(pos, 1.0F, 0.0F, 0.0F, 0.5F);
+                GlStateManager.popMatrix();
+            }
+        }
+    }
 }

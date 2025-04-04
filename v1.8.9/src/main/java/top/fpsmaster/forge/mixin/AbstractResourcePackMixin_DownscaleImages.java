@@ -21,9 +21,6 @@ public abstract class AbstractResourcePackMixin_DownscaleImages {
 
     @Inject(method = "getPackImage", at = @At("HEAD"), cancellable = true)
     private void patcher$downscalePackImage(CallbackInfoReturnable<BufferedImage> cir) throws IOException {
-        // 这个影响不明显，暂时先不加额外的选项了，默认开启
-//        if (!Performance.downscalePackImages.value) return;
-
         BufferedImage image = TextureUtil.readBufferedImage(this.getInputStreamByName("pack.png"));
         if (image == null) {
             cir.setReturnValue(null);
@@ -35,10 +32,14 @@ public abstract class AbstractResourcePackMixin_DownscaleImages {
             return;
         }
 
-        BufferedImage downscaledIcon = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
-        Graphics graphics = downscaledIcon.getGraphics();
-        graphics.drawImage(image, 0, 0, 64, 64, null);
-        graphics.dispose();
-        cir.setReturnValue(downscaledIcon);
+        if (!image.getName().contains("enchanted")) { // 避免缩放附魔装备的材质
+            BufferedImage downscaledIcon = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
+            Graphics graphics = downscaledIcon.getGraphics();
+            graphics.drawImage(image, 0, 0, 64, 64, null);
+            graphics.dispose();
+            cir.setReturnValue(downscaledIcon);
+        } else {
+            cir.setReturnValue(image);
+        }
     }
 }
