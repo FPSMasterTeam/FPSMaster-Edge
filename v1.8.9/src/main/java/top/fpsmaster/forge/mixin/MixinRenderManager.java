@@ -82,7 +82,6 @@ public class MixinRenderManager implements IRenderManager {
     @Shadow
     public Entity livingPlayer;
 
-
     /**
      * @author SuperSkidder
      * @reason Free Look
@@ -120,5 +119,4 @@ public class MixinRenderManager implements IRenderManager {
         this.viewerPosY = livingPlayerIn.lastTickPosY + (livingPlayerIn.posY - livingPlayerIn.lastTickPosY) * (double) partialTicks;
         this.viewerPosZ = livingPlayerIn.lastTickPosZ + (livingPlayerIn.posZ - livingPlayerIn.lastTickPosZ) * (double) partialTicks;
     }
-
 }
