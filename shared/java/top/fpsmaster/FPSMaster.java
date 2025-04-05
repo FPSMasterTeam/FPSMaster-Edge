@@ -38,7 +38,7 @@ public class FPSMaster {
     public static final String SERVICE_API = "https://service.fpsmaster.top";
 
     public static final String EDITION = Constants.EDITION;
-    public static final String COPYRIGHT = "Copyright ©2020-2024  FPSMaster Team  All Rights Reserved.";
+    public static final String COPYRIGHT = "Copyright ©2020-2025  FPSMaster Team  All Rights Reserved.";
 
     public static FPSMaster INSTANCE = new FPSMaster();
 

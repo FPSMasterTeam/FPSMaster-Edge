@@ -76,7 +76,7 @@ public class MainPanel extends ScaledGuiScreen {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        aiChatPanel.render(mouseX, mouseY, scaleFactor);
+        //aiChatPanel.render(mouseX, mouseY, scaleFactor);
 
         if (!Mouse.isButtonDown(0)) {
             dragLock = "null";
