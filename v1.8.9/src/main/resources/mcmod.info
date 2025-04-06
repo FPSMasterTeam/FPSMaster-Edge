@@ -1,7 +1,7 @@
 [
   {
     "modid": "fpsmaster",
-    "name": "FPSMaster Mod",
+    "name": "FPSMaster Mod V4",
     "description": "FPSMaster PVP Client.",
     "version": "v4",
     "mcversion": "1.8.9",
@@ -9,7 +9,7 @@
     "updateUrl": "",
     "authorList": ["SuperSkidder"],
     "credits": "",
-    "logoFile": "assets/fpsmaster/textures/icon.png",
+    "logoFile": "fpsmaster:textures/icon.png"
     "screenshots": [],
     "dependencies": []
   }
