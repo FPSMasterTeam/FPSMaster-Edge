@@ -41,4 +41,9 @@ public abstract class MixinEntityLivingBase extends MixinEntity {
         DamageIndicator.addIndicator(position.getX(), position.getY(), position.getZ(), -healAmount);
     }
 
+    @Inject(method = "render", at = @At("HEAD"))
+    public void render(float partialTicks, CallbackInfo ci) {
+        GlStateManager.enableLighting();
+        GlStateManager.setLighting(0.8f, 0.8f, 0.8f); // 设置光照强度
+    }
 }
