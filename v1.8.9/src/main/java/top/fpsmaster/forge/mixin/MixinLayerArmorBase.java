@@ -1,3 +1,4 @@
+
 package top.fpsmaster.forge.mixin;
 
 import net.minecraft.client.renderer.entity.layers.LayerArmorBase;
