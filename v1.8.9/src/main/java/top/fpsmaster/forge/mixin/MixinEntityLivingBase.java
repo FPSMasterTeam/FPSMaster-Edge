@@ -49,6 +49,7 @@ public abstract class MixinEntityLivingBase extends MixinEntity {
         // 启用光照
         GL11.glEnable(GL11.GL_LIGHTING);
         // 设置光照强度
-        GL11.glLightModeli(GL11.GL_LIGHT_MODEL_TWO_SIDE, 1);
+        GL11.glLightModeli(GL11.GL_LIGHT_MODEL_AMBIENT, 0x00000000); // 设置环境光
+        GL11.glLightModeli(GL11.GL_LIGHT_MODEL_TWO_SIDE, 0); // 禁用双面光照
     }
 }
