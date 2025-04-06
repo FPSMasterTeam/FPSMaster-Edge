@@ -13,6 +13,6 @@ public class MixinLayerArmorBase {
      */
     @Overwrite
     public boolean shouldCombineTextures() {
-        return true;
+        return OldAnimations.using && OldAnimations.oldDamage.getValue();
     }
 }
