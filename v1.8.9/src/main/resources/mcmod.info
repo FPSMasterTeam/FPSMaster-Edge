@@ -5,18 +5,18 @@
     "description": "FPSMaster PVP Client.",
     "version": "v4",
     "mcversion": "1.8.9",
-	"url": "https://fpsmaster.top",
-	"updateUrl": "https://fpsmaster.top/download",
-	"authorList": [
-	  "SuperSkidder"
-	  "shazi_awa"
-	  "cnbrand"
-	  "Kizurer"
-	  "vlouboos"
-	],
-	"credits": "",
-	"logoFile": "assets/fpsmaster/textures/icon.png",
-	"screenshots": [],
-	"dependencies": []
+    "url": "https://fpsmaster.top",
+    "updateUrl": "https://fpsmaster.top/download",
+    "authorList": [
+      "SuperSkidder",
+      "shazi_awa",
+      "cnbrand",
+      "Kizurer",
+      "vlouboos"
+    ],
+    "credits": "",
+    "logoFile": "assets/fpsmaster/textures/icon.png",
+    "screenshots": [],
+    "dependencies": []
   }
 ]
