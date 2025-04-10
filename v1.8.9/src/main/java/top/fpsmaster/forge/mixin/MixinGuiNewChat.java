@@ -34,7 +34,6 @@ public abstract class MixinGuiNewChat {
     @Shadow
     private List<ChatLine> drawnChatLines = Lists.newArrayList();
 
-
     @Shadow
     public abstract boolean getChatOpen();
 
@@ -50,10 +49,6 @@ public abstract class MixinGuiNewChat {
     @Shadow
     private boolean isScrolled;
 
-    /**
-     * @author SuperSkidder
-     * @reason betterchat
-     */
     @Overwrite
     public void drawChat(int updateCounter) {
         if (mc.gameSettings.chatVisibility != EntityPlayer.EnumChatVisibility.HIDDEN) {
@@ -95,6 +90,11 @@ public abstract class MixinGuiNewChat {
                                     int q = -m * 9;
                                     Gui.drawRect(-2, q - 9, k + 4, q, o / 2 << 24);
                                     String string = chatLine.getChatComponent().getFormattedText();
+                                    // 替换提示信息中的 # 为当前命令前缀
+                                    if (string.startsWith("#IRC聊天")) {
+                                        string = string.replace("#", FPSMaster.getCommandPrefix());
+                                        chatLine.getChatComponent().setFormattedText(string);
+                                    }
                                     GlStateManager.enableBlend();
                                     mc.fontRendererObj.drawStringWithShadow(string, 0.0F, (float) (q - 8), 16777215 + (o << 24));
                                     GlStateManager.disableAlpha();
@@ -168,6 +168,11 @@ public abstract class MixinGuiNewChat {
                                     int alpha1 = (int) ((alpha / 255f) * module.backgroundColor.getColor().getAlpha());
                                     Gui.drawRect(-2, q - 9, k + 4, q, Render2DUtils.reAlpha(module.backgroundColor.getColor(), alpha1).getRGB());
                                     String string = chatLine.getChatComponent().getFormattedText();
+                                    // 替换提示信息中的 # 为当前命令前缀
+                                    if (string.startsWith("#IRC聊天")) {
+                                        string = string.replace("#", FPSMaster.getCommandPrefix());
+                                        chatLine.getChatComponent().setFormattedText(string);
+                                    }
                                     GlStateManager.enableBlend();
                                     if (module.betterFont.getValue()) {
                                         FPSMaster.fontManager.s16.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Render2DUtils.reAlpha(new Color(16777215), alpha).getRGB());
@@ -202,10 +207,6 @@ public abstract class MixinGuiNewChat {
         }
     }
 
-    /**
-     * @author SuperSkidder
-     * @reason handle click
-     */
     @Overwrite
     public IChatComponent getChatComponent(int mouseX, int mouseY) {
         if (!this.getChatOpen()) {

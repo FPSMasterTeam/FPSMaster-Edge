@@ -53,6 +53,7 @@ public abstract class MixinRenderLivingBase {
             } else if (!flag && !combineTextures) {
                 cir.setReturnValue(false);
             } else {
+                // 修复装备显示黑色的问题
                 GlStateManager.setActiveTexture(OpenGlHelper.defaultTexUnit);
                 GlStateManager.enableTexture2D();
                 GL11.glTexEnvi(8960, 8704, OpenGlHelper.GL_COMBINE);
