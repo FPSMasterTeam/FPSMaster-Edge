@@ -27,16 +27,16 @@ public class JLayerHelper {
     public static void playWAV(String wavFile) throws IOException, LineUnavailableException {
         File soundFile = new File(wavFile);
         try {
+            AudioInputStream aud = AudioSystem.getAudioInputStream(soundFile);
             audIn = AudioSystem.getAudioInputStream(soundFile);
+            audioBytes = readAudioData(audIn);
+            clip = AudioSystem.getClip();
+            if (clip == null) return;
+            clip.open(aud);
+            clip.start();
         } catch (UnsupportedAudioFileException e) {
             e.printStackTrace();
-            return;
         }
-        audioBytes = readAudioData(audIn);
-        clip = AudioSystem.getClip();
-        if (clip == null) return;
-        clip.open(audIn);
-        clip.start();
     }
 
     public static void seek(float progress) {
@@ -50,7 +50,6 @@ public class JLayerHelper {
 
         AudioFormat format = audIn.getFormat();
         if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED || format.getSampleSizeInBits() != 16) {
-            System.out.println("Unsupported format: " + format);
             return;
         }
 
@@ -165,6 +164,6 @@ public class JLayerHelper {
     }
 
     public static double getDuration() {
-        return (clip.getMicrosecondLength() / 1_000_000.0 / 60.0);
+        return clip.getMicrosecondLength() / 1000000.0 / 60.0;
     }
 }

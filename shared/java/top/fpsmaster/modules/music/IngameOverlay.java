@@ -15,47 +15,44 @@ import java.awt.Color;
 
 public class IngameOverlay {
     private static float songProgress = 0f;
-    private static Double[] smoothCurve = new Double[0];
+    private static double[] smoothCurve = new double[0];
 
     public static void onRender() {
         if (MusicPlayer.playList.getCurrent() != -1) {
             ScaledResolution sr = new ScaledResolution(Utility.mc);
-            if (MusicPlayer.getCurve().length !=0) {
-                float width = Math.max((sr.getScaledWidth() / 2f - 100) / MusicPlayer.getCurve().length, 1f);
-                float x = 0f;
-
-                if (smoothCurve.length != MusicPlayer.getCurve().length) {
-                    smoothCurve = new Double[MusicPlayer.getCurve().length];
+            double[] curve = MusicPlayer.getCurve();
+            if (curve.length != 0) {
+                int numBars = 60;           // 你希望显示的频谱柱条数
+                if (smoothCurve.length != numBars) {
+                    smoothCurve = new double[numBars];
                 }
 
-                for (int i = 0; i < MusicPlayer.getCurve().length; i++) {
-                    smoothCurve[i] = AnimationUtils.base(smoothCurve[i], MusicPlayer.getCurve()[i], 0.15);
-                }
-
-                double[] curve = MusicPlayer.getCurve();
-                int fftSize = 1024;
-                double sampleRate = 44100.0;
-                double[] frequencies = new double[fftSize / 2];
-                for (int i = 0; i < frequencies.length; i++) {
-                    frequencies[i] = i * sampleRate / fftSize;
-                }
+                float width = (float) sr.getScaledWidth() / numBars;
 
                 float screenWidth = sr.getScaledWidth();
                 float screenHeight = sr.getScaledHeight();
 
-                for (int i = 0; i < curve.length; i++) {
-                    double freq = frequencies[i];
-                    double magnitude = Math.min(Math.max(curve[i], 0.0), 1.0);
+                int binsPerBar = curve.length / numBars;
 
-                    float xPos = (float) (freq / 22050.0 * screenWidth);
-                    float height = (float) (magnitude * 100f * MusicOverlay.amplitude.value.floatValue());
+                for (int bar = 0; bar < numBars; bar++) {
+                    double sum = 0.0;
+                    for (int j = 0; j < binsPerBar; j++) {
+                        int idx = bar * binsPerBar + j;
+                        sum += Math.max(curve[idx], 0.0);
+                    }
+                    double averageMagnitude = sum / binsPerBar;
+                    averageMagnitude = Math.min(averageMagnitude, 1.0);
+                    averageMagnitude = Math.sqrt(averageMagnitude);
+                    smoothCurve[bar] = AnimationUtils.base(smoothCurve[bar], averageMagnitude, 0.1);
+                    float xPos = (float) bar / numBars * screenWidth;
+                    float height = (float) (smoothCurve[bar] * 100f * MusicOverlay.amplitude.value.floatValue());
 
                     Render2DUtils.drawRect(
                             xPos,
                             screenHeight - height,
-                            2f,
+                            width,
                             height,
-                            MusicOverlay.color.getRGB()
+                            MusicOverlay.color.getColor()
                     );
                 }
             }

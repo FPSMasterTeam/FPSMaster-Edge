@@ -21,12 +21,12 @@ public class MusicOverlay extends InterfaceModule {
 
     public MusicOverlay() {
         super("MusicDisplay", Category.Interface);
-        addSettings(amplitude, progressColor, color);
+        addSettings(amplitude, progressColor, color, betterFont, fontShadow);
     }
 
     @Subscribe
     public void onRender(EventRender2D e) {
-        if (timer.delay(100)) {
+        if (timer.delay(50)) {
             JLayerHelper.updateLoudness();
         }
         IngameOverlay.onRender();
