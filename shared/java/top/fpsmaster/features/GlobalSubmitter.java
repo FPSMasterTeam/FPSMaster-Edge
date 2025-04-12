@@ -41,6 +41,7 @@ public class GlobalSubmitter {
     public void onTick(EventTick e) {
         if (musicSwitchTimer.delay(1000)) {
             if (MusicPlayer.isPlaying && MusicPlayer.getPlayProgress() > 0.999) {
+                MusicPlayer.curPlayProgress = 0f;
                 MusicPlayer.playList.next();
             }
         }

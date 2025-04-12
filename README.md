@@ -26,11 +26,11 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 - [x] 组件尺寸自定义
 - [ ] 重构MusicPlayer界面
 - [ ] 支持播放无损/VIP音乐
-- [ ] 修复音乐可视化
-- [ ] 添加脚本插件系统
+- [x] 修复音乐可视化
+- [x] 添加脚本插件系统
 - [ ] 添加界面自动对齐
 - [ ] 添加翻译功能
-- [ ] 迁移优化代码
+- [x] 迁移优化代码
 - [ ] 自动更新
 - [ ] 多语言界面
 - [ ] 重写IRC模块
@@ -64,7 +64,7 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 
 
 
-![Alt](https://repobeats.axiom.co/api/embed/e686f6313e4406de4286bf27e0db4a2bf5a31b7f.svg "Repobeats analytics image")
+![Alt](https://repobeats.axiom.co/api/embed/7d755c063aa9a34d74edb7045541e8bfe6e09b89.svg "Repobeats analytics image")
 
 ## 引用的开源项目：
 [eventbus](https://github.com/therealbush/eventbus)

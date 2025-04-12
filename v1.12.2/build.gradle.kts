@@ -92,6 +92,9 @@ dependencies {
     // If you don't want to log in with your real minecraft account, remove this line
 //    runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.1.2")
     implementation("javazoom:jlayer:1.0.1")
+// https://mvnrepository.com/artifact/net.sourceforge.jtransforms/jtransforms
+    implementation("net.sourceforge.jtransforms:jtransforms:2.4.0")
+
     implementation(kotlin("stdlib-jdk8"))
 }
 

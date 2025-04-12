@@ -102,8 +102,11 @@ public class LyricsComponent extends Component {
             drawString(20, word.content, xOffset, y + 7 - Math.min(animation2, 1f) * 3,
                     Render2DUtils.reAlpha(LyricsDisplay.textColor.getColor(), (int) Math.min(animation * 255, 255)).getRGB());
             return getStringWidth(20, word.content);
+        }else{
+            drawString(20, word.content, xOffset, y + 7,
+                    Render2DUtils.reAlpha(LyricsDisplay.textColor.getColor(), (int) Math.min(line.alpha * 120, 255)).getRGB());
+            return getStringWidth(20, word.content);
         }
-        return 0;
     }
 
     private float drawWordBG(Word word, float xOffset, float y, Line line) {

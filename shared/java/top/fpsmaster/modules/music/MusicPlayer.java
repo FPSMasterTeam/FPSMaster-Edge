@@ -2,10 +2,13 @@ package top.fpsmaster.modules.music;
 
 import top.fpsmaster.FPSMaster;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.io.File;
+import java.io.IOException;
+
+import static java.lang.Math.min;
 
 public class MusicPlayer {
-
     public static PlayList playList = new PlayList();
     public static int mode = 0;
     public static long startTime = 0;
@@ -17,13 +20,17 @@ public class MusicPlayer {
         if (isPlaying && JLayerHelper.clip != null) {
             curPlayProgress = JLayerHelper.getProgress();
         }
-        return Math.min(curPlayProgress, 1f);
+        return min(curPlayProgress, 1f);
     }
 
     public static void play() {
         isPlaying = true;
         if (JLayerHelper.clip == null) return;
         JLayerHelper.start();
+    }
+
+    public static double[] getCurve() {
+        return JLayerHelper.loudnessCurve;
     }
 
     public static void pause() {
@@ -46,10 +53,15 @@ public class MusicPlayer {
                 JLayerHelper.clip.stop();
                 JLayerHelper.clip.close();
             }
-            final String filePath = path.replace(".mp3", ".wav");
-            final float v = Float.parseFloat(FPSMaster.configManager.configure.getOrCreate("volume", "1"));
+            float v = Float.parseFloat(FPSMaster.configManager.configure.getOrCreate("volume", "1"));
             FPSMaster.async.runnable(() -> {
-                JLayerHelper.playWAV(filePath);
+                try {
+                    JLayerHelper.playWAV(path.replace(".mp3", ".wav"));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (LineUnavailableException e) {
+                    throw new RuntimeException(e);
+                }
                 setVolume(v);
             });
         }
