@@ -25,6 +25,7 @@
     "MixinGuiContainer",
     "MixinGuiIngame",
     "MixinGuiIngameForge",
+    "MixinGuiMultiplayer",
     "MixinGuiNewChat",
     "MixinGuiPlayerOverlay",
     "MixinGuiScreen",
