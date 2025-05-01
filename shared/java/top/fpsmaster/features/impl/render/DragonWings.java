@@ -36,10 +36,12 @@ public class DragonWings extends Module {
         if (renderWings == null) {
             renderWings = new RenderWings();
         }
+        EventDispatcher.registerListener(renderWings);
     }
 
     @Override
     public void onDisable() {
+        EventDispatcher.unregisterListener(renderWings);
     }
 
     public float[] getColors() {
