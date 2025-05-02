@@ -56,6 +56,8 @@ public class Animation {
             case EASE_OUT_BACK:
                 result = AnimationUtils.easeOutBack(elapsedTime, start, end - start, (double) duration);
                 break;
+            case EASE_OUT_QUINT:
+                result = AnimationUtils.easeOutQuint(elapsedTime, start, end - start, (double) duration);
             default:
                 break;
         }

@@ -115,4 +115,9 @@ public class AnimationUtils extends Utility {
         t = t / d - 1;
         return c * (t * t * ((s + 1) * t + s) + 1) + b;
     }
+
+    public static double easeOutQuint(long elapsedTime, double start, double rest, double duration) {
+        double percent = 1.0 - Math.pow(1.0 - elapsedTime / duration, 5);
+        return start + (rest * percent);
+    }
 }

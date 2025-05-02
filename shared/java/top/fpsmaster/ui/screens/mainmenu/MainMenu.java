@@ -35,7 +35,8 @@ public class MainMenu extends ScaledGuiScreen {
     private String welcome = "Failed to get version update";
     private boolean needUpdate = false;
 
-    private static Animation startAnimation = new Animation();
+    private static final Animation startAnimation = new Animation();
+    private static final Animation backgroundAnimation = new Animation();
 
 
     public MainMenu() {
@@ -64,8 +65,12 @@ public class MainMenu extends ScaledGuiScreen {
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         Render2DUtils.drawBackground((int) guiWidth, (int) guiHeight, mouseX, mouseY, partialTicks, (int) zLevel);
-        startAnimation.start(0, 1.5, 2f, Type.EASE_IN_OUT_QUAD);
+        startAnimation.start(0, 1.1, 1.5f, Type.EASE_OUT_QUINT);
         startAnimation.update();
+        if (startAnimation.value >= 0.5) {
+            backgroundAnimation.start(0, 1.5, 2.0f, Type.LINEAR);
+            backgroundAnimation.update();
+        }
 
 
         // Display user info and avatar
@@ -114,8 +119,8 @@ public class MainMenu extends ScaledGuiScreen {
         Render2DUtils.drawRect(0f, 0f, 0f, 0f, -1);
         FPSMaster.fontManager.s16.drawString(FPSMaster.COPYRIGHT, 4, guiHeight - 14, Color.WHITE.getRGB());
         FPSMaster.fontManager.s16.drawString(FPSMaster.CLIENT_NAME + " Client " + FPSMaster.CLIENT_VERSION + " (Minecraft " + FPSMaster.EDITION + ")", 4, guiHeight - 28, Color.WHITE.getRGB());
-        Render2DUtils.drawRect(0, 0, width, height, new Color(20, 20, 20, (int) (255 - 255 * Math.max(0, (float) startAnimation.value - 0.5f))));
-        Render2DUtils.drawImage(new ResourceLocation("client/gui/logo.png"), guiWidth / 2f - 153 / 4f, guiHeight / 2f - 30 - 70 * ((float)Math.min(startAnimation.value, 1)), 153 / 2f, 67f, -1);
+        Render2DUtils.drawRect(0, 0, width, height, new Color(20, 20, 20, (int) (255 - 255 * Math.max(0, (float) backgroundAnimation.value - 0.5f))));
+        Render2DUtils.drawImage(new ResourceLocation("client/gui/logo.png"), guiWidth / 2f - 153 / 4f, guiHeight / 2f - 30 - 70 * ((float) Math.min(startAnimation.value, 1)), 153 / 2f, 67f, -1);
 
     }
 

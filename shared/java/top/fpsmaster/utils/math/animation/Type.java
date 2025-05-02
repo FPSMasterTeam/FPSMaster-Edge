@@ -9,5 +9,6 @@ public enum Type {
     EASE_OUT_ELASTIC,
     EASE_IN_OUT_ELASTIC,
     EASE_IN_BACK,
-    EASE_OUT_BACK
+    EASE_OUT_BACK,
+    EASE_OUT_QUINT
 }
