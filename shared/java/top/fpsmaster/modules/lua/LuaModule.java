@@ -48,7 +48,7 @@ public class LuaModule extends top.fpsmaster.features.manager.Module {
                     v.call(args);
             });
         } catch (Exception e) {
-            System.out.println("error when calling " + name);
+            System.out.println("error when calling " + name + " " + e.getMessage());
         }
     }
 

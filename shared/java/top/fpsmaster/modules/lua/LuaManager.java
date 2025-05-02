@@ -1,10 +1,13 @@
 package top.fpsmaster.modules.lua;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.BlockPos;
 import party.iroiro.luajava.Lua;
 import party.iroiro.luajava.lua53.Lua53;
 import party.iroiro.luajava.value.LuaValue;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.dev.DevMode;
 import top.fpsmaster.modules.i18n.Language;
 import top.fpsmaster.modules.lua.parser.LuaParser;
@@ -12,6 +15,7 @@ import top.fpsmaster.modules.lua.parser.ParseError;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.os.FileUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.wrapper.blockpos.WrapperBlockPos;
 
 import java.awt.*;
 import java.io.File;
@@ -86,6 +90,35 @@ public class LuaManager {
             });
             lua.setGlobal("drawRect");
 
+
+            lua.push(L -> {
+                boolean sneak = L.toBoolean(1);
+                ProviderManager.gameSettings.setKeyPress(Utility.mc.gameSettings.keyBindSneak, sneak);
+                return 0; // 返回值数量
+            });
+            lua.setGlobal("sneak");
+
+            lua.push(L -> {
+                double posX = ProviderManager.mcProvider.getPlayer().posX;
+                double posY = ProviderManager.mcProvider.getPlayer().posY;
+                double posZ = ProviderManager.mcProvider.getPlayer().posZ;
+                lua.push(posX);
+                lua.push(posY);
+                lua.push(posZ);
+                return 3;
+            });
+            lua.setGlobal("getPlayerPosition");
+
+            lua.push(L -> {
+                double x = L.toNumber(1);
+                double y = L.toNumber(2);
+                double z = L.toNumber(3);
+
+                lua.push(Minecraft.getMinecraft().theWorld.getBlockState(new BlockPos(x, y, z)).getBlock().getUnlocalizedName());
+                return 1; // 返回值数量
+            });
+            lua.setGlobal("getBlockNameByPos");
+
             // 获取颜色
             lua.push(L -> {
                 int r = (int) L.toInteger(1);
@@ -121,6 +154,7 @@ public class LuaManager {
             // Module object
             lua.pushJavaObject(FPSMaster.moduleManager);
             lua.setGlobal("moduleManager");
+
             lua.pushJavaClass(LuaModule.class);
             lua.setGlobal("module");
 
