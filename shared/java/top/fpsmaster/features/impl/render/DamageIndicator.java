@@ -54,7 +54,7 @@ public class DamageIndicator extends Module {
     public void doRender(Damage indicator) {
         Minecraft mc = Minecraft.getMinecraft();
         DecimalFormat df = new DecimalFormat("0.00");
-        String damage = df.format(indicator.damage);
+        String damage = df.format(-indicator.damage);
         GL11.glPushMatrix();
         GL11.glEnable(3042);
         GL11.glDisable(2929);
@@ -75,24 +75,23 @@ public class DamageIndicator extends Module {
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
         GlStateManager.disableLighting();
-        Color color = new Color(50, 255, 50, (int) (255 - indicator.animation * 255));
+        int alpha = (int) (255 - indicator.animation * 255);
+        alpha = Math.max(0, Math.min(255, alpha));
+
+        Color color = new Color(50, 255, 50, alpha);
         if (indicator.damage > 0) {
-            color = new Color(224, 41, 41, (int) (255 - indicator.animation * 255));
+            color = new Color(224, 41, 41, alpha);
         }
         GL11.glEnable(3553);
         GL11.glDisable(3042);
         GL11.glDisable(2848);
-        GL11.glEnable(GL11.GL_ALPHA);
         GlStateManager.enableBlend();
         ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(damage, -width + 5, indicator.animation * 10, color.getRGB());
         GlStateManager.enableLighting();
-        GlStateManager.enableBlend();
         GlStateManager.enableDepth();
         GlStateManager.disableBlend();
-        GL11.glDisable(GL11.GL_ALPHA);
         GL11.glEnable(3553);
         GL11.glEnable(2929);
-        GlStateManager.disableBlend();
         GL11.glDisable(3042);
         GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
         GL11.glNormal3f(1.0f, 1.0f, 1.0f);
