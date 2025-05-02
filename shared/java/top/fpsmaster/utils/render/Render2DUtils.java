@@ -251,8 +251,8 @@ public class Render2DUtils extends Utility {
     static {
         try {
             shader = new GLSLSandboxShader("bg1.frag");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            OSUtil.supportShader = false;
         }
     }
 

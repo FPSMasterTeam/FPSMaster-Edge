@@ -260,19 +260,17 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         }
 
         int y = 80;
-        int index = 0;
         for (ServerListEntry server : serverListDisplay) {
             if (server.getServerData() == null) {
                 return;
             }
             if (Render2DUtils.isHovered((width - 340) / 2f, y, 340, 54, mouseX, mouseY)) {
-                if (selectedServer != servers.get(index)) {
-                    selectedServer = servers.get(index);
+                if (selectedServer != server.getServerData()) {
+                    selectedServer = server.getServerData();
                 } else {
                     selectedServer = null;
                 }
             }
-            index++;
             y += 54;
         }
 

@@ -14,7 +14,7 @@ public class GLSLSandboxShader {
     private final int resolutionUniform;
     private final int animationUniform;
 
-    public GLSLSandboxShader(String fragmentShaderLocation) throws IOException {
+    public GLSLSandboxShader(String fragmentShaderLocation) throws Exception {
         int program = glCreateProgram();
 
         glAttachShader(program, createShader(GLSLSandboxShader.class.getResourceAsStream("/assets/minecraft/client/shaders/passthrough.glsl"), GL_VERTEX_SHADER));
