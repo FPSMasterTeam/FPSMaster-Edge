@@ -8,6 +8,7 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
+import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.interfaces.ProviderManager;
 
@@ -16,16 +17,17 @@ public class OldAnimations extends Module {
     public static BooleanSetting noShield = new BooleanSetting("NoShield", true);
     public static BooleanSetting animationSneak = new BooleanSetting("AnimationSneak", true);
     public static BooleanSetting oldBlock = new BooleanSetting("OldBlock", true);
+    public static ModeSetting animationMode = new ModeSetting("AnimationMode", 0, () -> oldBlock.getValue(), "1.7", "Swang", "Sigma", "Swank", "Swong", "Debug", "Luna", "Jigsaw", "Jello", "Push");
     public static BooleanSetting oldRod = new BooleanSetting("OldRod", true);
     public static BooleanSetting oldBow = new BooleanSetting("OldBow", true);
     public static BooleanSetting oldSwing = new BooleanSetting("OldSwing", true);
     public static BooleanSetting oldUsing = new BooleanSetting("OldUsing", true);
     public static BooleanSetting blockSwing = new BooleanSetting("BlockSwing", true);
     public static BooleanSetting oldDamage = new BooleanSetting("OldDamage", true);
-    public static BooleanSetting blockHit = new BooleanSetting("BlockHit", true);
     public static NumberSetting x = new NumberSetting("X", 0, -1, 1, 0.01);
     public static NumberSetting y = new NumberSetting("Y", 0, -1, 1, 0.01);
     public static NumberSetting z = new NumberSetting("Z", 0, -1, 1, 0.01);
+    public static NumberSetting scale = new NumberSetting("Scale", 1, 0, 3, 0.01);
 
     public static boolean using = false;
 
@@ -36,7 +38,7 @@ public class OldAnimations extends Module {
 
     public OldAnimations() {
         super("OldAnimations", Category.OPTIMIZE);
-        addSettings(noShield, animationSneak, oldRod, oldBow, oldSwing, blockSwing, oldDamage, oldUsing, blockHit, oldBlock, x, y, z);
+        addSettings(noShield, animationSneak, oldRod, oldBow, oldSwing, blockSwing, oldDamage, oldUsing, oldBlock, animationMode, x, y, z);
     }
 
     @Override

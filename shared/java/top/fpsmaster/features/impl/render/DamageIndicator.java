@@ -35,18 +35,19 @@ public class DamageIndicator extends Module {
     @Subscribe
     public void onRender(EventRender3D event) {
         ArrayList<Damage> indicatorsRemove = new ArrayList<>();
-        for (int i = 0; i < indicators.size(); i++) {
-            Damage indicator = indicators.get(i);
+        for (Damage indicator : indicators) {
             doRender(indicator);
-            if (timer.delay(50)) {
-                indicator.animation += 0.1f;
-            }
-            if (indicator.animation > 1) {
-                indicatorsRemove.add(indicator);
-            }
         }
-        if (!indicatorsRemove.isEmpty()) {
-            indicators.removeAll(indicatorsRemove);
+        if (timer.delay(20)) {
+            for (Damage indicator : indicators) {
+                indicator.animation += 0.05f;
+                if (indicator.animation > 1) {
+                    indicatorsRemove.add(indicator);
+                }
+            }
+            if (!indicatorsRemove.isEmpty()) {
+                indicators.removeAll(indicatorsRemove);
+            }
         }
     }
 
@@ -63,7 +64,7 @@ public class DamageIndicator extends Module {
         GL11.glDisable(3553);
         float partialTicks = ProviderManager.timerProvider.getRenderPartialTicks();
         double x = indicator.x + 1 - ProviderManager.renderManagerProvider.renderPosX();
-        double y = indicator.y - ProviderManager.renderManagerProvider.renderPosY();
+        double y = indicator.y - ProviderManager.renderManagerProvider.renderPosY() + 1;
         double z = indicator.z + 1 - ProviderManager.renderManagerProvider.renderPosZ();
         float scale = 0.065f;
         GlStateManager.translate(x, y + 1 + 0.5f - 1 / 2.0f, z);
@@ -74,17 +75,21 @@ public class DamageIndicator extends Module {
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
         GlStateManager.disableLighting();
-        Color color = new Color(20, 255, 20);
+        Color color = new Color(50, 255, 50, (int) (255 - indicator.animation * 255));
         if (indicator.damage > 0) {
-            color = new Color(255, 20, 20);
+            color = new Color(224, 41, 41, (int) (255 - indicator.animation * 255));
         }
         GL11.glEnable(3553);
         GL11.glDisable(3042);
         GL11.glDisable(2848);
+        GL11.glEnable(GL11.GL_ALPHA);
+        GlStateManager.enableBlend();
         ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(damage, -width + 5, indicator.animation * 10, color.getRGB());
         GlStateManager.enableLighting();
         GlStateManager.enableBlend();
         GlStateManager.enableDepth();
+        GlStateManager.disableBlend();
+        GL11.glDisable(GL11.GL_ALPHA);
         GL11.glEnable(3553);
         GL11.glEnable(2929);
         GlStateManager.disableBlend();

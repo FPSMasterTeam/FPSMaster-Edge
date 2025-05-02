@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.*;
+import net.minecraft.util.MathHelper;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -119,6 +120,99 @@ public abstract class MixinItemRenderer {
     }
 
 
+    private void drawBlocking(float swingProgress, float equippedProgress) {
+        GL11.glTranslated(OldAnimations.x.getValue().floatValue(), OldAnimations.y.getValue().floatValue(), OldAnimations.z.getValue().floatValue());
+//        GL11.glScaled(OldAnimations.scale.getValue().floatValue(), OldAnimations.scale.getValue().floatValue(), 0);
+        if (OldAnimations.animationMode.isMode("Sigma")) {
+            this.transformFirstPersonItem(equippedProgress, 0.0f);
+            float swong = MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI));
+            GlStateManager.rotate(-swong * 55 / 2.0F, -8.0F, -0.0F, 9.0F);
+            GlStateManager.rotate(-swong * 45, 1.0F, swong / 2, -0.0F);
+            this.doBlockTransformations();
+            GL11.glTranslated(1.2, 0.3, 0.5);
+            GL11.glTranslatef(-1, mc.thePlayer.isSneaking() ? -0.1F : -0.2F, 0.2F);
+        } else if (OldAnimations.animationMode.isMode("Debug")) {
+            this.transformFirstPersonItem(0.2f, equippedProgress);
+            this.doBlockTransformations();
+            GlStateManager.translate(-0.5, 0.2, 0.0);
+        } else if (OldAnimations.animationMode.isMode("Luna")) {
+            this.transformFirstPersonItem(swingProgress, 0.0F);
+            this.doBlockTransformations();
+            final float sin2 = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
+            GlStateManager.scale(1.0f, 1.0f, 1.0f);
+            GlStateManager.translate(-0.2f, 0.45f, 0.25f);
+            GlStateManager.rotate(-sin2 * 20.0f, -5.0f, -5.0f, 9.0f);
+        } else if (OldAnimations.animationMode.isMode("1.7")) {
+            this.transformFirstPersonItem(swingProgress - 0.3F, equippedProgress);
+            this.doBlockTransformations();
+        } else if (OldAnimations.animationMode.isMode("Swang")) {
+            this.transformFirstPersonItem(swingProgress / 2.0F, equippedProgress);
+            float var15;
+            var15 = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
+            GlStateManager.rotate(var15 * 30.0F / 2.0F, -var15, -0.0F, 9.0F);
+            GlStateManager.rotate(var15 * 40.0F, 1.0F, -var15 / 2.0F, -0.0F);
+
+            this.doBlockTransformations();
+        } else if (OldAnimations.animationMode.isMode("Swank")) {
+            this.transformFirstPersonItem(swingProgress / 2.0F, equippedProgress);
+            float var15;
+            var15 = MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI));
+            GlStateManager.rotate(var15 * 30.0F, -var15, -0.0F, 9.0F);
+            GlStateManager.rotate(var15 * 40.0F, 1.0F, -var15, -0.0F);
+
+            this.doBlockTransformations();
+        } else if (OldAnimations.animationMode.isMode("Swong")) {
+            this.transformFirstPersonItem(swingProgress / 2.0F, 0.0F);
+            float var151 = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
+            GlStateManager.rotate(-var151 * 40.0F / 2.0F, var151 / 2.0F, -0.0F, 9.0F);
+            GlStateManager.rotate(-var151 * 30.0F, 1.0F, var151 / 2.0F, -0.0F);
+
+            this.doBlockTransformations();
+        } else if (OldAnimations.animationMode.isMode("Jigsaw")) {
+            this.transformFirstPersonItem(0.1f, equippedProgress);
+            this.doBlockTransformations();
+            GlStateManager.translate(-0.5, 0, 0);
+        } else if (OldAnimations.animationMode.isMode("Jello")) {
+            GlStateManager.translate(0.56F, -0.52F, -0.71999997F);
+            GlStateManager.translate(0.0F, 0 * -0.6F, 0.0F);
+            GlStateManager.rotate(45.0F, 0.0F, 1.0F, 0.0F);
+            float var3 = MathHelper.sin((float) (0.0F * 0.0F * Math.PI));
+            float var4 = MathHelper.sin((float) (MathHelper.sqrt_float(0.0F) * Math.PI));
+            GlStateManager.rotate(var3 * -20.0F, 0.0F, 1.0F, 0.0F);
+            GlStateManager.rotate(var4 * -20.0F, 0.0F, 0.0F, 1.0F);
+            GlStateManager.rotate(var4 * -80.0F, 1.0F, 0.0F, 0.0F);
+            GlStateManager.scale(0.4F, 0.4F, 0.4F);
+
+            GlStateManager.translate(-0.5F, 0.2F, 0.0F);
+            GlStateManager.rotate(30.0F, 0.0F, 1.0F, 0.0F);
+            GlStateManager.rotate(-80.0F, 1.0F, 0.0F, 0.0F);
+            GlStateManager.rotate(60.0F, 0.0F, 1.0F, 0.0F);
+            int alpha = (int) Math.min(255,
+                    ((System.currentTimeMillis() % 255) > 255 / 2
+                            ? (Math.abs(Math.abs(System.currentTimeMillis()) % 255 - 255))
+                            : System.currentTimeMillis() % 255) * 2);
+            GlStateManager.translate(0.3f, -0.0f, 0.40f);
+            GlStateManager.rotate(0.0f, 0.0f, 0.0f, 1.0f);
+            GlStateManager.translate(0, 0.5f, 0);
+
+            GlStateManager.rotate(90, 1.0f, 0.0f, -1.0f);
+            GlStateManager.translate(0.6f, 0.5f, 0);
+            GlStateManager.rotate(-90, 1.0f, 0.0f, -1.0f);
+
+            GlStateManager.rotate(-10, 1.0f, 0.0f, -1.0f);
+            GlStateManager.rotate(mc.thePlayer.isSwingInProgress ? -alpha / 5f : 1, 1.0f, -0.0f, 1.0f);
+        } else if (OldAnimations.animationMode.isMode("Push")) {
+            this.transformFirstPersonItem(swingProgress, 0.0F);
+            this.doBlockTransformations();
+            GlStateManager.rotate(-MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI)) * 35.0F, -8.0F, -0.0F, 9.0F);
+            GlStateManager.rotate(-MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI)) * 10.0F, 1.0F, -0.4F, -0.5F);
+        }else{
+            this.transformFirstPersonItem(swingProgress - 0.3F, equippedProgress);
+            this.doBlockTransformations();
+        }
+    }
+
+
     /**
      * @author SuperSkidder
      * @reason animation
@@ -173,13 +267,12 @@ public abstract class MixinItemRenderer {
                         EventAnimation block = new EventAnimation(EventAnimation.Type.USE, f, f1);
                         EventDispatcher.dispatchEvent(block);
                         if (!block.isCanceled()) {
-                            if (OldAnimations.blockHit.getValue()) {
-                                GL11.glTranslated(OldAnimations.x.getValue().floatValue(), OldAnimations.y.getValue().floatValue(), OldAnimations.z.getValue().floatValue());
-                                this.transformFirstPersonItem(f, f1);
+                            if (OldAnimations.oldBlock.getValue()) {
+                                this.drawBlocking(f, f1);
                             } else {
                                 this.transformFirstPersonItem(f, 0.0F);
+                                this.doBlockTransformations();
                             }
-                            this.doBlockTransformations();
                         }
                         break;
 

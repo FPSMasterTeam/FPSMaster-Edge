@@ -239,10 +239,23 @@ oldanimations.blockhit=格挡挥手
 oldanimations.x=X
 oldanimations.y=Y
 oldanimations.z=Z
+oldanimations.scale=缩放
 oldanimations.blockx=格挡X
 oldanimations.blocky=格挡Y
 oldanimations.blockz=格挡Z
+oldanimations.animationmode=格挡动画
 oldanimations.animationsneak=潜行动画
+oldanimations.animationmode.1.7=1.7
+oldanimations.animationmode.swang=Swang
+oldanimations.animationmode.sigma=Sigma
+oldanimations.animationmode.swank=Swank
+oldanimations.animationmode.swong=Swong
+oldanimations.animationmode.debug=Debug
+oldanimations.animationmode.luna=Luna
+oldanimations.animationmode.jigsaw=Jigsaw
+oldanimations.animationmode.jello=Jello
+oldanimations.animationmode.push=Push
+
 
 irc=客户端聊天
 irc.desc=与相同客户端的用户聊天
