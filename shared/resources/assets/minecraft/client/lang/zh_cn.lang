@@ -178,7 +178,7 @@ performance.blur=界面高斯模糊
 performance.fontoptimize=字体优化
 performance.staticparticlecolor=静态粒子颜色
 performance.limitchunks=限制区块加载
-performance..chunkupdatelimit=区块更新限制
+performance.chunkupdatelimit=区块更新限制
 
 
 fullbright=保持亮度
@@ -223,6 +223,7 @@ musicdisplay.visual=音频可视化颜色
 musicdisplay.amplitude=可视化幅度
 musicdisplay.roundradius=圆角半径
 musicdisplay.round=圆角
+musicdisplay.betterfont=更好的字体
 musicdisplay.background=背景
 
 oldanimations=旧动画
@@ -319,6 +320,7 @@ timechanger.time=时间
 
 tnttimer=TNT时间显示
 tnttimer.desc=显示TNT爆炸的时间
+tnttimer.duration=TNT爆炸时间
 
 hitboxes=碰撞箱
 hitboxes.desc=显示碰撞箱

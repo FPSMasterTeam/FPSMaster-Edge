@@ -182,7 +182,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         scrollContainer.draw((width - 400) / 2f, 60, 396, height - 120, mouseX, mouseY, () -> {
             float y = 70 + scrollContainer.getScroll();
             Render2DUtils.drawOptimizedRoundedRect((width - 400) / 2f, y - 10, 400, height - y, 5, new Color(0, 0, 0, 100).getRGB());
-            int index = 0;
             for (ServerListEntry server : serverListDisplay) {
                 if (server.getServerData() == null) {
                     return;
@@ -191,11 +190,10 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                 if (Render2DUtils.isHovered((width - 340) / 2f, y, 340, 54, mouseX, mouseY)) {
                     Render2DUtils.drawOptimizedRoundedRect((width - 340) / 2f, y, 340, 54, new Color(0, 0, 0, 50));
                 }
-                if (selectedServer != null && servers.indexOf(selectedServer) == index) {
+                if (selectedServer != null && selectedServer == server.getServerData()) {
                     Render2DUtils.drawOptimizedRoundedRect((width - 340) / 2f, y, 340, 54, new Color(255, 255, 255, 50));
                 }
                 server.drawEntry(0, (width - 340) / 2, (int) y, 340, 54, mouseX, mouseY, false);
-                index++;
                 y += 58;
             }
             scrollContainer.setHeight(y - 50 - scrollContainer.getScroll());

@@ -1,6 +1,5 @@
 package top.fpsmaster.features.impl.utility;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
@@ -11,7 +10,6 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
-import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.interfaces.ProviderManager;
 
 import static top.fpsmaster.utils.Utility.mc;
@@ -21,11 +19,10 @@ public class LevelTag extends Module {
     public static boolean using = false;
     public static final BooleanSetting showSelf = new BooleanSetting("ShowSelf", true);
     public static final BooleanSetting health = new BooleanSetting("Health", true);
-    public static final ModeSetting levelMode = new ModeSetting("RankMode", 0, "None", "Bedwars", "Bedwars-xp", "Skywars", "Kit");
 
     public LevelTag() {
         super("Nametags", Category.Utility);
-        addSettings(showSelf, health, levelMode);
+        addSettings(showSelf, health);
     }
 
     public static void renderHealth(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
