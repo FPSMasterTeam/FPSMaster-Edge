@@ -22,6 +22,7 @@ import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.awt.AWTUtils;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.os.FileUtils;
+import top.fpsmaster.utils.os.OSUtil;
 import top.fpsmaster.utils.render.shader.GLSLSandboxShader;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
 import top.fpsmaster.utils.render.shader.RoundedUtil;
@@ -272,29 +273,31 @@ public class Render2DUtils extends Utility {
             Render2DUtils.drawImage(textureLocation, 0f, 0f, guiWidth, guiHeight, -1);
             Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(22, 22, 22, 50));
         } else {
-            if (mc.currentScreen instanceof MainMenu) {
-                animation = (float) AnimationUtils.base(animation, 1.0f, 0.05f);
+            if (OSUtil.supportShader()) {
+                if (mc.currentScreen instanceof MainMenu) {
+                    animation = (float) AnimationUtils.base(animation, 1.0f, 0.05f);
+                } else {
+                    animation = (float) AnimationUtils.base(animation, 0.0f, 0.05f);
+                }
+                GlStateManager.disableCull();
+                shader.useShader(guiWidth, guiHeight, mouseX, mouseY, (System.currentTimeMillis() - initTime) / 1000f, animation);
+                GL11.glBegin(GL11.GL_QUADS);
+
+                GL11.glVertex2f(-1f, -1f);
+                GL11.glVertex2f(-1f, 1f);
+                GL11.glVertex2f(1f, 1f);
+                GL11.glVertex2f(1f, -1f);
+
+                GL11.glEnd();
+
+                GL20.glUseProgram(0);
+
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+                GL11.glEnable(GL11.GL_ALPHA_TEST);
+                Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(26, 59, 109, 60));
             } else {
-                animation = (float) AnimationUtils.base(animation, 0.0f, 0.05f);
+                ProviderManager.mainmenuProvider.renderSkybox(mouseX, mouseY, partialTicks, guiWidth, guiHeight, zLevel);
             }
-            GlStateManager.disableCull();
-            shader.useShader(guiWidth, guiHeight, mouseX, mouseY, (System.currentTimeMillis() - initTime) / 1000f, animation);
-            GL11.glBegin(GL11.GL_QUADS);
-
-            GL11.glVertex2f(-1f, -1f);
-            GL11.glVertex2f(-1f, 1f);
-            GL11.glVertex2f(1f, 1f);
-            GL11.glVertex2f(1f, -1f);
-
-            GL11.glEnd();
-
-            GL20.glUseProgram(0);
-
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
-            GL11.glEnable(GL11.GL_ALPHA_TEST);
-            //ProviderManager.mainmenuProvider.renderSkybox(mouseX, mouseY, partialTicks, guiWidth, guiHeight, zLevel);
-
-            Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(26, 59, 109, 60));
         }
     }
 }

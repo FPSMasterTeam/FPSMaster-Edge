@@ -9,6 +9,7 @@ import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.ui.click.modules.SettingRender;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
+import top.fpsmaster.utils.os.OSUtil;
 import top.fpsmaster.utils.render.shader.GradientUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -47,19 +48,20 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
         );
 
         if (aHeight > 1) {
-            // Saturation and brightness adjustment
-            GradientUtils.applyGradient(
-                    x + tW + 26, y + 15, 80f, aHeight, 1f,
-                    Color.getHSBColor(customColor.hue, 0.0f, 0f),
-                    Color.getHSBColor(customColor.hue, 0f, 1f),
-                    Color.getHSBColor(customColor.hue, 1f, 0f),
-                    Color.getHSBColor(customColor.hue, 1f, 1f),
-                    Render2DUtils.getFixedScale(),
-                    () -> Render2DUtils.drawRoundedRectImage(
-                            x + tW + 26, y + 16, 80f, max(aHeight, 1f), 4,
-                            new Color(255,255,255)
-                    )
-            );
+            if (OSUtil.supportShader()) {
+                GradientUtils.applyGradient(
+                        x + tW + 26, y + 15, 80f, aHeight, 1f,
+                        Color.getHSBColor(customColor.hue, 0.0f, 0f),
+                        Color.getHSBColor(customColor.hue, 0f, 1f),
+                        Color.getHSBColor(customColor.hue, 1f, 0f),
+                        Color.getHSBColor(customColor.hue, 1f, 1f),
+                        Render2DUtils.getFixedScale(),
+                        () -> Render2DUtils.drawRoundedRectImage(
+                                x + tW + 26, y + 16, 80f, max(aHeight, 1f), 4,
+                                new Color(255, 255, 255)
+                        )
+                );
+            }
 
             float saturation = customColor.saturation;
             float brightness = customColor.brightness;
@@ -110,9 +112,11 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                     new ResourceLocation("client/gui/settings/values/alpha.png"),
                     x + tW + 122, y + 16, 10f, aHeight, -1
             );
-            GradientUtils.drawGradientVertical(
-                    x + tW + 122, y + 16, 10f, aHeight, new Color(255, 255, 255), new Color(255, 255, 255, 0)
-            );
+            if (OSUtil.supportShader()) {
+                GradientUtils.drawGradientVertical(
+                        x + tW + 122, y + 16, 10f, aHeight, new Color(255, 255, 255), new Color(255, 255, 255, 0)
+                );
+            }
 
             Render2DUtils.drawImage(
                     new ResourceLocation("client/gui/settings/values/color.png"),
