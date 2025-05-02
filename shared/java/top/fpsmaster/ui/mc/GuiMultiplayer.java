@@ -107,7 +107,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                 System.out.println(s);
                 JsonObject jsonObject = gson.fromJson(s, JsonObject.class);
                 jsonObject.get("data").getAsJsonArray().forEach(e -> {
-                    this.serverListRecommended.add(new ServerListEntry(this, new ServerData(e.getAsJsonObject().get("name").getAsString() + " - 推荐服务器", e.getAsJsonObject().get("address").getAsString(), false)));
+                    this.serverListRecommended.add(new ServerListEntry(this, new ServerData(e.getAsJsonObject().get("name").getAsString() + " - " + e.getAsJsonObject().get("description").getAsString(), e.getAsJsonObject().get("address").getAsString(), false)));
                 });
             });
         }
