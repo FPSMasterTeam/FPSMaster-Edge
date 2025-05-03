@@ -15,7 +15,7 @@ public class MathTimer {
         return false;
     }
 
-    private void reset() {
+    public void reset() {
         start = System.currentTimeMillis();
     }
 }

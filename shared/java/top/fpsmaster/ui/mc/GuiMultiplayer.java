@@ -25,6 +25,7 @@ import top.fpsmaster.modules.client.AsyncTask;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.common.GuiButton;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
+import top.fpsmaster.utils.math.MathTimer;
 import top.fpsmaster.utils.os.HttpRequest;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
@@ -48,6 +49,8 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     private Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     String action = "";
+
+    MathTimer timer = new MathTimer();
 
     GuiButton join = new GuiButton("加入服务器", () -> {
         if (selectedServer == null)
@@ -190,6 +193,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                 if (Render2DUtils.isHovered((width - 340) / 2f, y, 340, 54, mouseX, mouseY)) {
                     Render2DUtils.drawOptimizedRoundedRect((width - 340) / 2f, y, 340, 54, new Color(0, 0, 0, 50));
                 }
+
                 if (selectedServer != null && selectedServer == server.getServerData()) {
                     Render2DUtils.drawOptimizedRoundedRect((width - 340) / 2f, y, 340, 54, new Color(255, 255, 255, 50));
                 }
@@ -265,8 +269,13 @@ public class GuiMultiplayer extends ScaledGuiScreen {
             if (Render2DUtils.isHovered((width - 340) / 2f, y, 340, 54, mouseX, mouseY)) {
                 if (selectedServer != server.getServerData()) {
                     selectedServer = server.getServerData();
+                    timer.reset();
                 } else {
-                    selectedServer = null;
+                    if (timer.delay(200)) {
+                        selectedServer = null;
+                    }else{
+                        FMLClientHandler.instance().connectToServer(this, selectedServer);
+                    }
                 }
             }
             y += 54;
