@@ -80,7 +80,6 @@ public abstract class MixinItemRenderer {
             GlStateManager.depthMask(false);
             GlStateManager.enableBlend();
             GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-            float f = 1.0F;
 
             for (int i = 0; i < 2; ++i) {
                 GlStateManager.pushMatrix();
@@ -90,11 +89,6 @@ public abstract class MixinItemRenderer {
                 float f2 = textureatlassprite.getMaxU();
                 float f3 = textureatlassprite.getMinV();
                 float f4 = textureatlassprite.getMaxV();
-                float f5 = -0.5F;
-                float f6 = 0.5F;
-                float f7 = -0.5F;
-                float f8 = 0.5F;
-                float f9 = -0.5F;
                 GlStateManager.translate(0, FireModifier.using ? -FireModifier.height.getValue().floatValue() : 0, 0);
                 if (FireModifier.using && FireModifier.customColor.getValue()) {
                     Color color = FireModifier.colorSetting.getColor();
@@ -120,56 +114,56 @@ public abstract class MixinItemRenderer {
     }
 
 
-    private void drawBlocking(float swingProgress, float equippedProgress) {
+    private void drawBlocking(float equippedProgress, float swingProgress) {
         GL11.glTranslated(OldAnimations.x.getValue().floatValue(), OldAnimations.y.getValue().floatValue(), OldAnimations.z.getValue().floatValue());
 //        GL11.glScaled(OldAnimations.scale.getValue().floatValue(), OldAnimations.scale.getValue().floatValue(), 0);
         if (OldAnimations.animationMode.isMode("Sigma")) {
-            this.transformFirstPersonItem(equippedProgress, 0.0f);
-            float swong = MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI));
+            this.transformFirstPersonItem(swingProgress, 0.0f);
+            float swong = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
             GlStateManager.rotate(-swong * 55 / 2.0F, -8.0F, -0.0F, 9.0F);
             GlStateManager.rotate(-swong * 45, 1.0F, swong / 2, -0.0F);
             this.doBlockTransformations();
             GL11.glTranslated(1.2, 0.3, 0.5);
             GL11.glTranslatef(-1, mc.thePlayer.isSneaking() ? -0.1F : -0.2F, 0.2F);
         } else if (OldAnimations.animationMode.isMode("Debug")) {
-            this.transformFirstPersonItem(0.2f, equippedProgress);
+            this.transformFirstPersonItem(0.2f, swingProgress);
             this.doBlockTransformations();
             GlStateManager.translate(-0.5, 0.2, 0.0);
         } else if (OldAnimations.animationMode.isMode("Luna")) {
-            this.transformFirstPersonItem(swingProgress, 0.0F);
+            this.transformFirstPersonItem(equippedProgress, 0.0F);
             this.doBlockTransformations();
-            final float sin2 = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
+            final float sin2 = MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI));
             GlStateManager.scale(1.0f, 1.0f, 1.0f);
             GlStateManager.translate(-0.2f, 0.45f, 0.25f);
             GlStateManager.rotate(-sin2 * 20.0f, -5.0f, -5.0f, 9.0f);
         } else if (OldAnimations.animationMode.isMode("1.7")) {
-            this.transformFirstPersonItem(swingProgress - 0.3F, equippedProgress);
+            this.transformFirstPersonItem(equippedProgress, swingProgress);
             this.doBlockTransformations();
         } else if (OldAnimations.animationMode.isMode("Swang")) {
-            this.transformFirstPersonItem(swingProgress / 2.0F, equippedProgress);
+            this.transformFirstPersonItem(equippedProgress / 2.0F, swingProgress);
             float var15;
-            var15 = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
+            var15 = MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI));
             GlStateManager.rotate(var15 * 30.0F / 2.0F, -var15, -0.0F, 9.0F);
             GlStateManager.rotate(var15 * 40.0F, 1.0F, -var15 / 2.0F, -0.0F);
 
             this.doBlockTransformations();
         } else if (OldAnimations.animationMode.isMode("Swank")) {
-            this.transformFirstPersonItem(swingProgress / 2.0F, equippedProgress);
+            this.transformFirstPersonItem(equippedProgress / 2.0F, swingProgress);
             float var15;
-            var15 = MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI));
+            var15 = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
             GlStateManager.rotate(var15 * 30.0F, -var15, -0.0F, 9.0F);
             GlStateManager.rotate(var15 * 40.0F, 1.0F, -var15, -0.0F);
 
             this.doBlockTransformations();
         } else if (OldAnimations.animationMode.isMode("Swong")) {
-            this.transformFirstPersonItem(swingProgress / 2.0F, 0.0F);
-            float var151 = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
+            this.transformFirstPersonItem(equippedProgress / 2.0F, 0.0F);
+            float var151 = MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI));
             GlStateManager.rotate(-var151 * 40.0F / 2.0F, var151 / 2.0F, -0.0F, 9.0F);
             GlStateManager.rotate(-var151 * 30.0F, 1.0F, var151 / 2.0F, -0.0F);
 
             this.doBlockTransformations();
         } else if (OldAnimations.animationMode.isMode("Jigsaw")) {
-            this.transformFirstPersonItem(0.1f, equippedProgress);
+            this.transformFirstPersonItem(0.1f, swingProgress);
             this.doBlockTransformations();
             GlStateManager.translate(-0.5, 0, 0);
         } else if (OldAnimations.animationMode.isMode("Jello")) {
@@ -202,12 +196,12 @@ public abstract class MixinItemRenderer {
             GlStateManager.rotate(-10, 1.0f, 0.0f, -1.0f);
             GlStateManager.rotate(mc.thePlayer.isSwingInProgress ? -alpha / 5f : 1, 1.0f, -0.0f, 1.0f);
         } else if (OldAnimations.animationMode.isMode("Push")) {
-            this.transformFirstPersonItem(swingProgress, 0.0F);
+            this.transformFirstPersonItem(equippedProgress, 0.0F);
             this.doBlockTransformations();
-            GlStateManager.rotate(-MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI)) * 35.0F, -8.0F, -0.0F, 9.0F);
-            GlStateManager.rotate(-MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI)) * 10.0F, 1.0F, -0.4F, -0.5F);
+            GlStateManager.rotate(-MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI)) * 35.0F, -8.0F, -0.0F, 9.0F);
+            GlStateManager.rotate(-MathHelper.sin((float) (MathHelper.sqrt_float(swingProgress) * Math.PI)) * 10.0F, 1.0F, -0.4F, -0.5F);
         }else{
-            this.transformFirstPersonItem(swingProgress - 0.3F, equippedProgress);
+            this.transformFirstPersonItem(equippedProgress - 0.3F, swingProgress);
             this.doBlockTransformations();
         }
     }
