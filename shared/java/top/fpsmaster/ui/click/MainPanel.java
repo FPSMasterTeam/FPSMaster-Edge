@@ -1,6 +1,5 @@
 package top.fpsmaster.ui.click;
 
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
@@ -21,14 +20,11 @@ import top.fpsmaster.utils.math.animation.ColorAnimation;
 import top.fpsmaster.utils.math.animation.Type;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
-import top.fpsmaster.utils.render.StencilUtil;
-import top.fpsmaster.utils.render.shader.KawaseBloom;
-import top.fpsmaster.utils.render.shader.KawaseBlur;
-import top.fpsmaster.utils.render.shader.RoundedUtil;
 
 import java.awt.Color;
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Locale;
 
 public class MainPanel extends ScaledGuiScreen {
     boolean drag = false;
@@ -36,7 +32,7 @@ public class MainPanel extends ScaledGuiScreen {
     float dragY = 0f;
     Category curType = Category.OPTIMIZE;
     LinkedList<CategoryComponent> categories = new LinkedList<>();
-    final float leftWidth = 110f;
+    final float leftWidth = 50f;
     float modsWheel = 0f;
     float wheelTemp = 0f;
     boolean sizeDrag = false;
@@ -48,9 +44,11 @@ public class MainPanel extends ScaledGuiScreen {
     float selection = 0f;
 
     ColorAnimation sizeDragBorder = new ColorAnimation(255, 255, 255, 0);
-    ColorAnimation backgroundColor = new ColorAnimation(FPSMaster.theme.getBackground());
-    ColorAnimation modeColor = new ColorAnimation(FPSMaster.theme.getTypeSelectionBackground());
-    ColorAnimation logoColor = new ColorAnimation(FPSMaster.theme.getLogo());
+    ColorAnimation backgroundColor = new ColorAnimation(39, 39, 39, 120);
+    ColorAnimation modeColor = new ColorAnimation(70, 70, 70, 200);
+    ColorAnimation logoColor = new ColorAnimation(255, 255, 255, 255);
+
+    float categoryAnimation = 30;
 
     boolean close = false;
 
@@ -118,40 +116,34 @@ public class MainPanel extends ScaledGuiScreen {
         GL11.glScaled(scaleAnimation.value, scaleAnimation.value, 0.0);
         GlStateManager.translate(-guiWidth / 2.0, -height / 2.0, 0.0);
 
-        Render2DUtils.drawOptimizedRoundedRect(
-                (x - 1),
-                (y - 1),
-                width + 2,
-                height + 2,
-                sizeDragBorder.getColor()
-        );
 
-        backgroundColor.base(FPSMaster.theme.getBackground());
+        backgroundColor.base(new Color(10, 10, 10, 180));
+        Render2DUtils.drawBlurArea((int) (x + leftWidth), y, (int) (width - leftWidth), (int) height, 3, backgroundColor.getColor());
         Render2DUtils.drawOptimizedRoundedRect(
-                x,
+                x + leftWidth,
                 y,
-                width,
+                width - leftWidth,
                 height,
                 backgroundColor.getColor()
         );
 
-        logoColor.base(FPSMaster.theme.getLogo());
-        Render2DUtils.drawImage(
-                new ResourceLocation("client/gui/settings/logo.png"),
-                x + leftWidth / 2 - 40 - 5,
-                y + 15f,
-                81.5f,
-                64 / 2f,
-                logoColor.getColor()
-        );
+//        logoColor.base(new Color(255, 255, 255));
+//        Render2DUtils.drawImage(
+//                new ResourceLocation("client/gui/settings/logo.png"),
+//                x + leftWidth / 2 - 40 - 5,
+//                y + 15f,
+//                81.5f,
+//                64 / 2f,
+//                logoColor.getColor()
+//        );
 
-        if (drag || sizeDrag) {
-            sizeDragBorder.start(sizeDragBorder.getColor(), new Color(255, 255, 255), 0.15f, Type.EASE_IN_OUT_QUAD);
-        } else {
-            sizeDragBorder.start(sizeDragBorder.getColor(), new Color(255, 255, 255, 0), 0.2f, Type.EASE_IN_OUT_QUAD);
-        }
+//        if (drag || sizeDrag) {
+//            sizeDragBorder.start(sizeDragBorder.getColor(), new Color(255, 255, 255), 0.15f, Type.EASE_IN_OUT_QUAD);
+//        } else {
+//            sizeDragBorder.start(sizeDragBorder.getColor(), new Color(255, 255, 255, 0), 0.2f, Type.EASE_IN_OUT_QUAD);
+//        }
 
-        sizeDragBorder.update();
+//        sizeDragBorder.update();
 
         if (Render2DUtils.isHoveredWithoutScale(
                 x + width - 10,
@@ -167,7 +159,7 @@ public class MainPanel extends ScaledGuiScreen {
                     y + height - 5,
                     5f,
                     5f,
-                    FPSMaster.theme.getDragHovered()
+                    new Color(255, 255, 255)
             );
         } else {
             Render2DUtils.drawImage(
@@ -176,105 +168,16 @@ public class MainPanel extends ScaledGuiScreen {
                     y + height - 5,
                     5f,
                     5f,
-                    FPSMaster.theme.getDrag()
+                    new Color(200, 200, 200)
             );
         }
 
-        float my = (y + 60);
-        for (CategoryComponent m : categories) {
-            Render2DUtils.drawOptimizedRoundedRect(
-                    x + 5,
-                    my - 6,
-                    leftWidth - 10,
-                    20f,
-                    m.categorySelectionColor.getColor()
-            );
-            my += 24f;
-        }
-
-        my = (y + 60);
-        Render2DUtils.drawOptimizedRoundedRect(
-                x + 5,
-                selection - 6,
-                leftWidth - 10,
-                20f,
-                FPSMaster.theme.getPrimary()
-        );
-
-        for (CategoryComponent m : categories) {
-            if (Render2DUtils.isHoveredWithoutScale(x, my - 6, leftWidth - 10, 20f, mouseX, mouseY)) {
-                m.categorySelectionColor.base(FPSMaster.theme.getTypeSelectionBackground());
-            } else {
-                m.categorySelectionColor.base(Render2DUtils.reAlpha(FPSMaster.theme.getTypeSelectionBackground(), 0));
-            }
-
-            if (m.category == curType) {
-                selection = (sizeDrag || drag)
-                        ? my
-                        : (float) AnimationUtils.base(selection, my, 0.2);
-            }
-
-            m.render(
-                    x + 5,
-                    my,
-                    leftWidth - 10,
-                    20f,
-                    mouseX,
-                    mouseY,
-                    curType == m.category
-            );
-            my += 24f;
-        }
-
-        Render2DUtils.drawOptimizedRoundedRect(
-                x + 40,
-                y + height - 22,
-                34f,
-                14f,
-                10,
-                modeColor.getColor().getRGB()
-        );
-
-        Render2DUtils.drawImage(
-                new ResourceLocation("client/textures/ui/" + FPSMaster.themeSlot + ".png"),
-                x + 43,
-                y + height - 19,
-                8f,
-                8f,
-                -1
-        );
-
-        FPSMaster.fontManager.s16.drawString(
-                FPSMaster.i18n.get("theme.title"),
-                x + 20,
-                y + height - 20,
-                FPSMaster.theme.getCategoryText().getRGB()
-        );
-
-        FPSMaster.fontManager.s16.drawString(
-                FPSMaster.i18n.get("theme." + FPSMaster.themeSlot),
-                x + 52,
-                y + height - 20,
-                FPSMaster.theme.getCategoryTextSelected().getRGB()
-        );
-
-        if (Render2DUtils.isHoveredWithoutScale(
-                x + 40,
-                y + height - 22,
-                34f,
-                14f,
-                mouseX,
-                mouseY
-        )) {
-            modeColor.base(FPSMaster.theme.getPrimary());
-        } else {
-            modeColor.base(FPSMaster.theme.getTypeSelectionBackground());
-        }
+        FPSMaster.fontManager.s24.drawStringWithShadow(FPSMaster.i18n.get("category." + curType.name().toLowerCase(Locale.getDefault())), x + leftWidth + 10, y + 10, -1);
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         Render2DUtils.doGlScissor(
-                x, y, width,
-                (height - 4),
+                x, y + 25, width,
+                (height - 30),
                 scaleFactor
         );
 
@@ -284,40 +187,101 @@ public class MainPanel extends ScaledGuiScreen {
             MusicPanel.draw(x + leftWidth, y, width - leftWidth, height, mouseX, mouseY, scaleFactor);
         } else {
             modHeight = 20f;
-            float containerWidth = width - leftWidth - 2;
+            float containerWidth = width - leftWidth - 10;
             int finalMouseY = mouseY;
-            modsContainer.draw(x + leftWidth, y + 10f, containerWidth, height - 20f, mouseX, mouseY, () -> {
-                float modsY = y + 10f;
+            modsContainer.draw(x + leftWidth, y + 25f, containerWidth, height - 20f, mouseX, mouseY, () -> {
+                float modsY = y + 22f;
 
                 for (ModuleRenderer m : mods) {
                     if (m.mod.category == curType) {
                         float moduleY = modsY + modsContainer.getScroll();
                         if (moduleY + 40 + m.height > y && moduleY < y + height) {
                             m.render(
-                                    x + leftWidth,
+                                    x + leftWidth + 10,
                                     moduleY,
-                                    containerWidth,
+                                    containerWidth - 10,
                                     40f,
                                     mouseX,
                                     finalMouseY,
                                     curModule == m.mod
                             );
                         }
-                        modsY += 40 + m.height;
-                        modHeight += 40 + m.height;
+                        modsY += 45 + m.height;
+                        modHeight += 45 + m.height;
                     }
                 }
                 modsContainer.setHeight(modHeight);
             });
         }
 
+//        Render2DUtils.drawRect(
+//                x + leftWidth, y,
+//                width - leftWidth, height,
+//                Render2DUtils.reAlpha(new Color(39, 39, 39), Render2DUtils.limit(255 - moduleListAlpha))
+//        );
+
         GL11.glEnable(GL11.GL_BLEND);
-        Render2DUtils.drawRect(
-                x + leftWidth, y,
-                width - leftWidth, height,
-                Render2DUtils.reAlpha(FPSMaster.theme.getBackground(), Render2DUtils.limit(255 - moduleListAlpha))
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+
+
+        if (Render2DUtils.isHoveredWithoutScale(x, (int) (y + height / 2 - 70), categoryAnimation, 140, mouseX, mouseY)) {
+            categoryAnimation = (float) AnimationUtils.base(categoryAnimation, 100f, 0.15f);
+        } else {
+            categoryAnimation = (float) AnimationUtils.base(categoryAnimation, 30f, 0.15f);
+        }
+
+        Render2DUtils.drawBlurArea(x, (int) (y + height / 2 - 70), (int) categoryAnimation, 140, 10, backgroundColor.getColor());
+        Render2DUtils.drawOptimizedRoundedRect(
+                x,
+                y + height / 2 - 70,
+                categoryAnimation,
+                140,
+                10,
+                backgroundColor.getColor().getRGB()
         );
 
+        float my = y + 60;
+        Render2DUtils.drawOptimizedRoundedRect(
+                x + 5,
+                selection - 6,
+                categoryAnimation - 8,
+                22f,
+                11,
+                new Color(255, 255, 255).getRGB()
+        );
+
+
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        Render2DUtils.doGlScissor(
+                x, y, categoryAnimation,
+                (height - 4),
+                scaleFactor
+        );
+
+        for (CategoryComponent m : categories) {
+            if (Render2DUtils.isHoveredWithoutScale(x, my - 6, leftWidth - 10, 20f, mouseX, mouseY)) {
+                m.categorySelectionColor.base(new Color(70, 70, 70));
+            } else {
+                m.categorySelectionColor.base(Render2DUtils.reAlpha(new Color(70, 70, 70), 0));
+            }
+
+            if (m.category == curType) {
+                selection = (sizeDrag || drag)
+                        ? my
+                        : (float) AnimationUtils.base(selection, my, 0.2);
+            }
+
+            m.render(
+                    x,
+                    my,
+                    leftWidth - 10,
+                    20f,
+                    mouseX,
+                    mouseY,
+                    curType == m.category
+            );
+            my += 27f;
+        }
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
@@ -388,18 +352,6 @@ public class MainPanel extends ScaledGuiScreen {
         if (!Render2DUtils.isHoveredWithoutScale(x, y, width, height, mouseX, mouseY)) return;
 
         if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
-                x + 40, y + height - 22, 34f, 14f, mouseX, mouseY
-        )) {
-            if ("dark".equals(FPSMaster.themeSlot)) {
-                FPSMaster.themeSlot = "light";
-                FPSMaster.theme = new LightTheme();
-            } else {
-                FPSMaster.themeSlot = "dark";
-                FPSMaster.theme = new DarkTheme();
-            }
-        }
-
-        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
                 x, y, leftWidth, 34f, mouseX, mouseY
         )) {
             drag = true;
@@ -426,13 +378,13 @@ public class MainPanel extends ScaledGuiScreen {
                 }
                 curType = c;
             }
-            my += 24f;
+            my += 27f;
         }
 
         if (curType == Category.Music) {
             MusicPanel.mouseClicked(mouseX, mouseY, mouseButton);
         } else {
-            float modsY = y + 10 + modsContainer.getRealScroll();
+            float modsY = y + 22f + modsContainer.getRealScroll();
             for (ModuleRenderer m : mods) {
                 if (m.mod.category == curType) {
                     m.mouseClick(
@@ -444,7 +396,7 @@ public class MainPanel extends ScaledGuiScreen {
                             mouseY,
                             mouseButton
                     );
-                    modsY += 40 + m.height;
+                    modsY += 45 + m.height;
                 }
             }
         }

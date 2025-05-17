@@ -15,6 +15,7 @@ import top.fpsmaster.utils.math.animation.ColorAnimation;
 import top.fpsmaster.utils.math.animation.Type;
 import top.fpsmaster.utils.render.Render2DUtils;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -67,23 +68,18 @@ public class ModuleRenderer extends ValueRender {
         }
 
         Render2DUtils.drawOptimizedRoundedRect(
-                x + 4.5f,
-                y - 0.5f,
-                width - 9,
-                settingHeight + 38f,
-                FPSMaster.theme.getModuleEnabled()
-        );
-        Render2DUtils.drawOptimizedRoundedRect(
                 x + 5,
                 y,
                 width - 10,
                 settingHeight + 37f,
-                FPSMaster.theme.getModuleDisabled().getRGB()
+                10,
+                new Color(100, 100, 100, 60).getRGB()
         );
-        Render2DUtils.drawOptimizedRoundedBorderRect(
-                x + 5, y, width - 10, 37f, 0.5f, background.getColor(), Render2DUtils.reAlpha(
-                        FPSMaster.theme.getModuleBorder(), (int) border)
-        );
+
+//        Render2DUtils.drawOptimizedRoundedBorderRect(
+//                x + 5, y, width - 10, 37f, 0.5f, background.getColor(), Render2DUtils.reAlpha(
+//                        FPSMaster.theme.getModuleBorder(), (int) border)
+//        );
 
         if (mod.category == Category.Interface) {
             Render2DUtils.drawImage(

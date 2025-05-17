@@ -7,6 +7,7 @@ import top.fpsmaster.utils.math.animation.ColorAnimation;
 import top.fpsmaster.utils.math.animation.Type;
 import top.fpsmaster.utils.render.Render2DUtils;
 
+import java.awt.*;
 import java.util.Locale;
 
 public class CategoryComponent {
@@ -22,7 +23,7 @@ public class CategoryComponent {
     public void render(float x, float y, float width, float height, float mouseX, float mouseY, boolean selected) {
         animationName.start(
             animationName.getColor(),
-            selected ? FPSMaster.theme.getCategoryTextSelected() : FPSMaster.theme.getCategoryText(),
+            selected ? new Color(0,0,0) : new Color(255,255,255),
             0.2f,
             Type.EASE_IN_OUT_QUAD
         );
@@ -30,8 +31,8 @@ public class CategoryComponent {
 
         Render2DUtils.drawImage(
             new ResourceLocation("client/gui/settings/icons/" + category.name().toLowerCase() + ".png"),
-            x + 12,
-            y - 2,
+            x + 10,
+            y,
             12f,
             12f,
             animationName.getColor()
