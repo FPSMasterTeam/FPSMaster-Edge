@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -44,10 +45,9 @@ public abstract class MixinEntityRenderer {
         EventDispatcher.dispatchEvent(new EventRender3D(partialTicks));
     }
 
-    @Inject(method = "setupViewBobbing", at = @At("HEAD"), cancellable = true)
-    public void bobbing(float partialTicks, CallbackInfo ci) {
-        if (MinimizedBobbing.using)
-            ci.cancel();
+    @Redirect(method = "setupCameraTransform", at = @At(value = "FIELD", target = "Lnet/minecraft/client/settings/GameSettings;viewBobbing:Z"))
+    public boolean bobbing(GameSettings instance) {
+        return mc.gameSettings.viewBobbing && !MinimizedBobbing.using;
     }
 
     @Inject(method = "hurtCameraEffect", at = @At("HEAD"), cancellable = true)

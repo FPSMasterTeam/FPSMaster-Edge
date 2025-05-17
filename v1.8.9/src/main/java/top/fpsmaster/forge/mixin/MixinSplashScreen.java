@@ -14,7 +14,7 @@ import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
-@Mixin(value = SplashProgress.class, remap = false)
+@Mixin(value = SplashProgress.class)
 @SuppressWarnings("all")
 public class MixinSplashScreen {
 

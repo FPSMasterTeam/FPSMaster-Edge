@@ -2,7 +2,6 @@ package top.fpsmaster.ui.screens.mainmenu;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiOptions;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
@@ -11,9 +10,7 @@ import top.fpsmaster.modules.music.MusicPlayer;
 import top.fpsmaster.ui.mc.GuiMultiplayer;
 import top.fpsmaster.ui.screens.account.GuiWaiting;
 import top.fpsmaster.ui.screens.oobe.GuiLogin;
-import top.fpsmaster.utils.math.MathUtils;
 import top.fpsmaster.utils.math.animation.Animation;
-import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.math.animation.Type;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
@@ -32,7 +29,6 @@ public class MainMenu extends ScaledGuiScreen {
     private final MenuButton exit;
 
     private String info = "Failed to get version update";
-    private String welcome = "Failed to get version update";
     private boolean needUpdate = false;
 
     private static final Animation startAnimation = new Animation();
@@ -99,7 +95,7 @@ public class MainMenu extends ScaledGuiScreen {
         FPSMaster.fontManager.s16.drawString("Copyright Mojang AB. Do not distribute!", guiWidth - w - 4, guiHeight - 14, Color.WHITE.getRGB());
 
         // Display welcome message
-        welcome = FPSMaster.INSTANCE.loggedIn ? TextFormattingProvider.getGreen() + String.format(FPSMaster.i18n.get("mainmenu.welcome"), FPSMaster.configManager.configure.getOrCreate("username", "")) : TextFormattingProvider.getRed().toString() + TextFormattingProvider.getBold().toString() + FPSMaster.i18n.get("mainmenu.notlogin");
+        String welcome = FPSMaster.INSTANCE.loggedIn ? TextFormattingProvider.getGreen() + String.format(FPSMaster.i18n.get("mainmenu.welcome"), FPSMaster.configManager.configure.getOrCreate("username", "")) : TextFormattingProvider.getRed().toString() + TextFormattingProvider.getBold().toString() + FPSMaster.i18n.get("mainmenu.notlogin");
         FPSMaster.fontManager.s16.drawString(welcome, 4, guiHeight - 52, Color.WHITE.getRGB());
 
         // Version info
@@ -141,7 +137,7 @@ public class MainMenu extends ScaledGuiScreen {
 
             if (Render2DUtils.isHovered(4f, guiHeight - 40, uw, 14f, mouseX, mouseY) && needUpdate) {
                 try {
-                    Desktop.getDesktop().browse(new URI("https://fpsmaster.top/download"));
+                    Desktop.getDesktop().browse(new URI("https://www.fpsmaster.top/download"));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
