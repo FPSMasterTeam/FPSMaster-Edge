@@ -2,7 +2,7 @@ package top.fpsmaster.utils.os;
 
 public class OSUtil {
 
-    public static boolean supportShader;
+    public static boolean supportShader = true;
 
     public static boolean isMac() {
         return System.getProperty("os.name").toLowerCase().contains("mac");
