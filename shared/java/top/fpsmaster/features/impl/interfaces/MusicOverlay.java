@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.interfaces;
 
+import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventRender2D;
 import top.fpsmaster.features.impl.InterfaceModule;
@@ -27,7 +28,7 @@ public class MusicOverlay extends InterfaceModule {
     @Subscribe
     public void onRender(EventRender2D e) {
         if (timer.delay(50)) {
-            JLayerHelper.updateLoudness();
+            FPSMaster.async.runnable(JLayerHelper::updateLoudness);
         }
         IngameOverlay.onRender();
     }
