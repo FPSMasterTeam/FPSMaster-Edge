@@ -17,7 +17,7 @@ public class GuiWaiting extends GuiScreen {
     @Override
     public void initGui() {
         super.initGui();
-        MicrosoftLogin.login();
+        FPSMaster.async.runnable(MicrosoftLogin::loginViaBrowser);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class GuiWaiting extends GuiScreen {
 
         // Draw text
         FPSMaster.fontManager.s24.drawCenteredString(
-            FPSMaster.i18n.get("microsoft.login.desc"),
+            MicrosoftLogin.loginProgressMessage,
             sr.getScaledWidth() / 2f,
             sr.getScaledHeight() / 2f - 30,
             FPSMaster.theme.getTextColorDescription().getRGB()

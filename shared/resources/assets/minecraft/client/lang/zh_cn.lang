@@ -47,7 +47,6 @@ oobe.done.desc=欢迎使用
 oobe.done.start=开始
 
 microsoft.login.title=正在登录微软账号
-microsoft.login.desc=请前往浏览器继续操作
 
 # 功能
 armordisplay=护甲显示
