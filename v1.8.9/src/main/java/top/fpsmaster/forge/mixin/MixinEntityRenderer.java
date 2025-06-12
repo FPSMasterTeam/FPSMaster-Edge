@@ -39,6 +39,7 @@ import static top.fpsmaster.utils.Utility.mc;
 @Mixin(EntityRenderer.class)
 public abstract class MixinEntityRenderer {
     private float screenScale = -1;
+    private float screenScale2 = -1;
 
     @Inject(method = "renderWorldPass", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/EntityRenderer;renderHand:Z", shift = At.Shift.BEFORE))
     private void renderWorldPass(int pass, float partialTicks, long finishTimeNano, CallbackInfo callbackInfo) {
@@ -77,27 +78,59 @@ public abstract class MixinEntityRenderer {
                     f *= this.fovModifierHandPrev + (this.fovModifierHand - this.fovModifierHandPrev) * partialTicks;
                 }
 
-                if (entity instanceof EntityLivingBase && ((EntityLivingBase) entity).getHealth() <= 0.0F) {
-                    float f1 = (float) ((EntityLivingBase) entity).deathTime + partialTicks;
-                    f /= (1.0F - 500.0F / (f1 + 500.0F)) * 2.0F + 1.0F;
-                }
-
-                Block block = ActiveRenderInfo.getBlockAtEntityViewpoint(mc.theWorld, entity, partialTicks);
-                if (block.getMaterial() == Material.water) {
-                    f = f * 60.0F / 70.0F;
-                }
-
-                if (screenScale == -1)
-                    screenScale = f;
-
-                if (SmoothZoom.using && SmoothZoom.zoom) {
-                    if (SmoothZoom.smoothCamera.getValue()) {
-                        screenScale = MathUtils.decreasedSpeed(screenScale, f, f / 4.0F, SmoothZoom.speed.getValue().floatValue() / (float) Minecraft.getDebugFPS() * 150.0f);
-                    } else {
-                        screenScale = f / 4.0F;
+                if (useFOVSetting) {
+                    if (screenScale == -1 || Double.isNaN(screenScale)) {
+                        screenScale = f;
                     }
                 } else {
-                    screenScale = f;
+                    if (screenScale2 == -1 || Double.isNaN(screenScale2)) {
+                        screenScale2 = f;
+                    }
+                }
+                if (SmoothZoom.zoom) {
+                    if (useFOVSetting) {
+                        if (SmoothZoom.smoothCamera.getValue()) {
+                            screenScale = MathUtils.decreasedSpeed(screenScale, f, f / 4.0F, SmoothZoom.speed.getValue().floatValue() / (float) Minecraft.getDebugFPS() * 150.0f);
+                        } else {
+                            screenScale = f / 4.0F;
+                        }
+                    } else {
+                        if (SmoothZoom.smoothCamera.getValue()) {
+                            screenScale2 = MathUtils.decreasedSpeed(screenScale2, f, f / 4.0F, SmoothZoom.speed.getValue().floatValue() / (float) Minecraft.getDebugFPS() * 150.0f);
+                        } else {
+                            screenScale2 = f / 4.0F;
+                        }
+                    }
+                }
+
+                if (!SmoothZoom.zoom) {
+                    if (useFOVSetting) {
+                        if (SmoothZoom.smoothCamera.getValue()) {
+                            screenScale = MathUtils.decreasedSpeed(screenScale, f / 4.0F, f, SmoothZoom.speed.getValue().floatValue() / (float) Minecraft.getDebugFPS() * 150.0f);
+                        } else {
+                            screenScale = f;
+                        }
+                    } else {
+                        if (SmoothZoom.smoothCamera.getValue()) {
+                            screenScale2 = MathUtils.decreasedSpeed(screenScale2, f / 4.0F, f, SmoothZoom.speed.getValue().floatValue() / (float) Minecraft.getDebugFPS() * 150.0f);
+                        } else {
+                            screenScale2 = f;
+                        }
+                    }
+                }
+
+                float screenScale = useFOVSetting ? this.screenScale : this.screenScale2;
+
+                if (entity instanceof EntityLivingBase && ((EntityLivingBase) entity).getHealth() <= 0.0F) {
+                    float f1 = (float) ((EntityLivingBase) entity).deathTime + partialTicks;
+                    screenScale /= (1.0F - 500.0F / (f1 + 500.0F)) * 2.0F + 1.0F;
+                }
+
+                assert entity != null;
+                Block block = ActiveRenderInfo.getBlockAtEntityViewpoint(mc.theWorld, entity, partialTicks);
+
+                if (block.getMaterial() == Material.water) {
+                    screenScale = screenScale * 60.0F / 70.0F;
                 }
 
                 cir.setReturnValue(ForgeHooksClient.getFOVModifier((EntityRenderer) (Object) this, entity, block, partialTicks, screenScale));
@@ -161,7 +194,7 @@ public abstract class MixinEntityRenderer {
 
         this.partialTicks = partialTicks;
         float f = entity.getEyeHeight();
-        if (mc.getRenderViewEntity() == mc.thePlayer && OldAnimations.using){
+        if (mc.getRenderViewEntity() == mc.thePlayer && OldAnimations.using) {
             f = OldAnimations.getClientEyeHeight(partialTicks);
         }
         double d0 = entity.prevPosX + (entity.posX - entity.prevPosX) * (double) partialTicks;
