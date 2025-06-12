@@ -347,12 +347,12 @@ public class SearchBox extends Gui {
         if (this.visible) {
             if (Render2DUtils.isHovered(x, y, width, height, mouseX, mouseY)) {
                 if (isFocused) {
-                    btnColor.base(FPSMaster.theme.getTextboxFocus());
+                    btnColor.base(new Color(255, 255, 255, 50));
                 } else {
-                    btnColor.base(FPSMaster.theme.getTextboxHover());
+                    btnColor.base(new Color(255, 255, 255, 20));
                 }
             } else {
-                btnColor.base(enabledColor);
+                btnColor.base(new Color(255, 255, 255, 20));
             }
             Render2DUtils.drawOptimizedRoundedRect(xPosition, yPosition, width, height, btnColor.getColor());
 

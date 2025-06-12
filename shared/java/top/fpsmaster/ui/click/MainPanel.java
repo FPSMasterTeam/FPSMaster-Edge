@@ -145,34 +145,33 @@ public class MainPanel extends ScaledGuiScreen {
 
 //        sizeDragBorder.update();
 
-        if (Render2DUtils.isHoveredWithoutScale(
-                x + width - 10,
-                y + height - 10,
-                10f,
-                10f,
-                mouseX,
-                mouseY
-        )) {
-            Render2DUtils.drawImage(
-                    new ResourceLocation("client/gui/settings/drag.png"),
-                    x + width - 5,
-                    y + height - 5,
-                    5f,
-                    5f,
-                    new Color(255, 255, 255)
-            );
-        } else {
-            Render2DUtils.drawImage(
-                    new ResourceLocation("client/gui/settings/drag.png"),
-                    x + width - 5,
-                    y + height - 5,
-                    5f,
-                    5f,
-                    new Color(200, 200, 200)
-            );
-        }
+//        if (Render2DUtils.isHoveredWithoutScale(
+//                x + width - 10,
+//                y + height - 10,
+//                10f,
+//                10f,
+//                mouseX,
+//                mouseY
+//        )) {
+//            Render2DUtils.drawImage(
+//                    new ResourceLocation("client/gui/settings/drag.png"),
+//                    x + width - 5,
+//                    y + height - 5,
+//                    5f,
+//                    5f,
+//                    new Color(255, 255, 255)
+//            );
+//        } else {
+//            Render2DUtils.drawImage(
+//                    new ResourceLocation("client/gui/settings/drag.png"),
+//                    x + width - 5,
+//                    y + height - 5,
+//                    5f,
+//                    5f,
+//                    new Color(200, 200, 200)
+//            );
+//        }
 
-        FPSMaster.fontManager.s24.drawStringWithShadow(FPSMaster.i18n.get("category." + curType.name().toLowerCase(Locale.getDefault())), x + leftWidth + 10, y + 5, -1);
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         Render2DUtils.doGlScissor(
@@ -186,12 +185,13 @@ public class MainPanel extends ScaledGuiScreen {
         if (curType == Category.Music) {
             MusicPanel.draw(x + leftWidth, y, width - leftWidth, height, mouseX, mouseY, scaleFactor);
         } else {
+            FPSMaster.fontManager.s24.drawStringWithShadow(FPSMaster.i18n.get("category." + curType.name().toLowerCase(Locale.getDefault())), x + leftWidth + 10, y + 5, -1);
+
             modHeight = 20f;
             float containerWidth = width - leftWidth - 10;
             int finalMouseY = mouseY;
             modsContainer.draw(x + leftWidth, y + 25f, containerWidth, height - 20f, mouseX, mouseY, () -> {
                 float modsY = y + 22f;
-
                 for (ModuleRenderer m : mods) {
                     if (m.mod.category == curType) {
                         float moduleY = modsY + modsContainer.getScroll();
@@ -352,21 +352,21 @@ public class MainPanel extends ScaledGuiScreen {
         if (!Render2DUtils.isHoveredWithoutScale(x, y, width, height, mouseX, mouseY)) return;
 
         if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
-                x, y, leftWidth, 34f, mouseX, mouseY
+                x + leftWidth, y, width - leftWidth, 20f, mouseX, mouseY
         )) {
             drag = true;
             dragX = mouseX - x;
             dragY = mouseY - y;
         }
 
-        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
-                x + width - 20, y + height - 20, 20f, 20f, mouseX, mouseY
-        ) && "null".equals(dragLock)) {
-            sizeDrag = true;
-            dragLock = "sizeDrag";
-            sizeDragX = x + width - mouseX;
-            sizeDragY = y + height - mouseY;
-        }
+//        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
+//                x + width - 20, y + height - 20, 20f, 20f, mouseX, mouseY
+//        ) && "null".equals(dragLock)) {
+//            sizeDrag = true;
+//            dragLock = "sizeDrag";
+//            sizeDragX = x + width - mouseX;
+//            sizeDragY = y + height - mouseY;
+//        }
 
         float my = y + 60f;
         for (Category c : Category.values()) {

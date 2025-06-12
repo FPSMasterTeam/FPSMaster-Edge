@@ -238,14 +238,14 @@ public class MusicPanel {
         for (String page : pages) {
             pagesWidth += FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get(page)) + 10;
         }
-        Render2DUtils.drawOptimizedRoundedRect(x + 90, y + 6, pagesWidth, 16f, FPSMaster.theme.getFrontBackground());
+        Render2DUtils.drawOptimizedRoundedRect(x + 90, y + 6, pagesWidth, 16f, new Color(50, 50, 50,100).getRGB());
         for (String page : pages) {
             int stringWidth = FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get(page));
             if (page.equals(pages[curSearch])) {
-                Render2DUtils.drawOptimizedRoundedRect(x + 90 + xOffset, y + 6, stringWidth + 10, 16f, FPSMaster.theme.getPrimary());
-                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 10, FPSMaster.theme.getTextColorTitle().getRGB());
+                Render2DUtils.drawOptimizedRoundedRect(x + 90 + xOffset, y + 6, stringWidth + 10, 16f, -1);
+                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 10, new Color(50, 50, 50).getRGB());
             } else {
-                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 10, FPSMaster.theme.getTextColorDescription().getRGB());
+                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 10, -1);
             }
             xOffset += stringWidth + 10;
         }
@@ -268,7 +268,7 @@ public class MusicPanel {
             }
         } else {
             int stringWidth = FPSMaster.fontManager.s16.getStringWidth(nickname);
-            FPSMaster.fontManager.s16.drawString(nickname, x + width - stringWidth - 5, y + 10, FPSMaster.theme.getTextColorTitle().getRGB());
+            FPSMaster.fontManager.s16.drawString(nickname, x + width - stringWidth - 5, y + 10, -1);
             if (Render2DUtils.isHovered(x + width - stringWidth - 5, y + 10, stringWidth, 16f, mouseX, mouseY)) {
                 if (Mouse.isButtonDown(0)) {
                     isWaitingLogin = true;
@@ -281,17 +281,17 @@ public class MusicPanel {
         // 操作栏
         AbstractMusic current = MusicPlayer.playList.current();
         Render2DUtils.drawRect(x, y + height - 30, width, 2f, FPSMaster.theme.getFrontBackground().getRGB());
-        Render2DUtils.drawRect(x, y + height - 30, width * MusicPlayer.getPlayProgress(), 2f, FPSMaster.theme.getPrimary().getRGB());
+        Render2DUtils.drawRect(x, y + height - 30, width * MusicPlayer.getPlayProgress(), 2f, -1);
         if (Render2DUtils.isHovered(x, y + height - 32, width, 4f, mouseX, mouseY)) {
-            Render2DUtils.drawRect(x, y + height - 31f, width * MusicPlayer.getPlayProgress(), 4f, FPSMaster.theme.getPrimary().getRGB());
+            Render2DUtils.drawRect(x, y + height - 31f, width * MusicPlayer.getPlayProgress(), 4f, -1);
         }
 
         // 音量
-        Render2DUtils.drawImage(new ResourceLocation("client/textures/ui/volume.png"), x + width - 50, y + height - 16, 7f, 7f, FPSMaster.theme.getTextColorTitle());
+        Render2DUtils.drawImage(new ResourceLocation("client/textures/ui/volume.png"), x + width - 50, y + height - 16, 7f, 7f, -1);
         Render2DUtils.drawRect(x + width - 40, y + height - 14, 30f, 2f, FPSMaster.theme.getFrontBackground().getRGB());
-        Render2DUtils.drawRect(x + width - 40, y + height - 14, 30 * MusicPlayer.getVolume(), 2f, FPSMaster.theme.getPrimary().getRGB());
+        Render2DUtils.drawRect(x + width - 40, y + height - 14, 30 * MusicPlayer.getVolume(), 2f, -1);
         if (Render2DUtils.isHovered(x + width - 40, y + height - 14, 30f, 2f, mouseX, mouseY)) {
-            Render2DUtils.drawRect(x + width - 40, y + height - 14.5f, 30 * MusicPlayer.getVolume(), 3f, FPSMaster.theme.getPrimary().getRGB());
+            Render2DUtils.drawRect(x + width - 40, y + height - 14.5f, 30 * MusicPlayer.getVolume(), 3f, -1);
             if (Mouse.isButtonDown(0)) {
                 float newVolume = (mouseX - x - width + 40) / 30f;
                 MusicPlayer.setVolume(newVolume);
