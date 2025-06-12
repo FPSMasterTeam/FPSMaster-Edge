@@ -34,7 +34,6 @@ import top.fpsmaster.utils.render.Render2DUtils;
 
 import javax.annotation.Nullable;
 import java.awt.*;
-import java.util.Iterator;
 
 import static top.fpsmaster.FPSMaster.getClientTitle;
 
@@ -158,6 +157,29 @@ public abstract class MixinMinecraft implements IMinecraft {
     @Inject(method = "runTick", at = @At("HEAD"))
     public void onTick(CallbackInfo ci) {
         EventDispatcher.dispatchEvent(new EventTick());
+    }
+
+    // Ugly code
+    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/settings/KeyBinding;isPressed()Z", ordinal = 3))
+    public void chatVis(CallbackInfo ci) {
+        if (this.gameSettings.keyBindTogglePerspective.isPressed()) {
+            ++this.gameSettings.thirdPersonView;
+            if (this.gameSettings.thirdPersonView > 2) {
+                this.gameSettings.thirdPersonView = 0;
+            }
+
+            if (this.gameSettings.thirdPersonView == 0) {
+                this.entityRenderer.loadEntityShader(this.getRenderViewEntity());
+            } else if (this.gameSettings.thirdPersonView == 1) {
+                this.entityRenderer.loadEntityShader((Entity)null);
+            }
+
+            this.renderGlobal.setDisplayListEntitiesDirty();
+        }
+
+        if (this.gameSettings.keyBindSmoothCamera.isPressed()) {
+            this.gameSettings.smoothCamera = !this.gameSettings.smoothCamera;
+        }
     }
 
     @Shadow

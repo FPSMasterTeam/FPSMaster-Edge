@@ -35,8 +35,7 @@ public class Dev extends Command {
                     LuaManager.scripts.forEach(script -> Utility.sendClientNotify(script.rawLua.filename));
                     break;
                 case "ide":
-                    Minecraft.getMinecraft().displayGuiScreen(null);
-                    Minecraft.getMinecraft().displayGuiScreen(new DevSpace());
+                    Minecraft.getMinecraft().addScheduledTask(() -> Minecraft.getMinecraft().displayGuiScreen(new DevSpace()));
                     break;
                 default:
                     Utility.sendClientNotify("Unknown command: " + args[0]);
