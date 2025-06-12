@@ -15,6 +15,7 @@ import top.fpsmaster.utils.math.animation.ColorAnimation;
 import top.fpsmaster.utils.math.animation.Type;
 import top.fpsmaster.utils.render.Render2DUtils;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -60,30 +61,34 @@ public class ModuleRenderer extends ValueRender {
 
         if (mod.isEnabled()) {
             content.start(content.getColor(), FPSMaster.theme.getModuleTextEnabled(), 0.2f, Type.EASE_IN_OUT_QUAD);
-            background.start(background.getColor(), FPSMaster.theme.getModuleEnabled(), 0.2f, Type.EASE_IN_OUT_QUAD);
+            background.start(background.getColor(), new Color(150,150,150,60), 0.2f, Type.EASE_IN_OUT_QUAD);
         } else {
             content.start(content.getColor(), FPSMaster.theme.getModuleTextDisabled(), 0.2f, Type.EASE_IN_OUT_QUAD);
-            background.start(background.getColor(), FPSMaster.theme.getModuleDisabled(), 0.2f, Type.EASE_IN_OUT_QUAD);
+            background.start(background.getColor(), new Color(100,100,100,60), 0.2f, Type.EASE_IN_OUT_QUAD);
         }
 
-        Render2DUtils.drawOptimizedRoundedRect(
-                x + 4.5f,
-                y - 0.5f,
-                width - 9,
-                settingHeight + 38f,
-                FPSMaster.theme.getModuleEnabled()
-        );
         Render2DUtils.drawOptimizedRoundedRect(
                 x + 5,
                 y,
                 width - 10,
                 settingHeight + 37f,
-                FPSMaster.theme.getModuleDisabled().getRGB()
+                10,
+                new Color(100,100,100,60).getRGB()
         );
-        Render2DUtils.drawOptimizedRoundedBorderRect(
-                x + 5, y, width - 10, 37f, 0.5f, background.getColor(), Render2DUtils.reAlpha(
-                        FPSMaster.theme.getModuleBorder(), (int) border)
+
+        Render2DUtils.drawOptimizedRoundedRect(
+                x + 5,
+                y,
+                width - 10,
+                37f,
+                10,
+                background.getColor().getRGB()
         );
+
+//        Render2DUtils.drawOptimizedRoundedBorderRect(
+//                x + 5, y, width - 10, 37f, 0.5f, background.getColor(), Render2DUtils.reAlpha(
+//                        FPSMaster.theme.getModuleBorder(), (int) border)
+//        );
 
         if (mod.category == Category.Interface) {
             Render2DUtils.drawImage(

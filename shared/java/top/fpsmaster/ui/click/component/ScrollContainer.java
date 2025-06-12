@@ -27,12 +27,13 @@ public class ScrollContainer {
             float scrollPercent = (getScroll() / (this.height - height));
             float sY = y - scrollPercent * (height - sHeight);
             float sX = x + width + 1 - (float) scrollExpand;
-            Render2DUtils.drawRect(
+            Render2DUtils.drawOptimizedRoundedRect(
                 sX,
                 sY,
                 1f + (float) scrollExpand,
                 sHeight,
-                new Color(255, 255, 255, 200)
+                1,
+                new Color(255, 255, 255, 100).getRGB()
             );
             if (Render2DUtils.isHovered(
                     sX - 1,

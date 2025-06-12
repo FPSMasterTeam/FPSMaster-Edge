@@ -174,10 +174,10 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         UFontRenderer font = FPSMaster.fontManager.s18;
         title.drawCenteredString("多人游戏", width / 2f, 16, -1);
 
-        Render2DUtils.drawOptimizedRoundedRect((width - 180) / 2f, 30, 180, 24, 3, new Color(255, 255, 255, 80).getRGB());
-        Render2DUtils.drawOptimizedRoundedRect((width - 176) / 2f + 90 * tab, 32, 86, 20, 3, new Color(113, 127, 254).getRGB());
-        FPSMaster.fontManager.s16.drawCenteredString("服务器列表", (width - 90) / 2f, 36, -1);
-        FPSMaster.fontManager.s16.drawCenteredString("推荐服务器", (width + 90) / 2f, 36, -1);
+        Render2DUtils.drawOptimizedRoundedRect((width - 180) / 2f, 30, 180, 24, 3, new Color(0, 0, 0, 80).getRGB());
+        Render2DUtils.drawOptimizedRoundedRect((width - 176) / 2f + 90 * tab, 32, 86, 20, 3, -1);
+        FPSMaster.fontManager.s16.drawCenteredString("服务器列表", (width - 90) / 2f, 36, tab == 0 ? new Color(50, 50, 50).getRGB() : -1);
+        FPSMaster.fontManager.s16.drawCenteredString("推荐服务器", (width + 90) / 2f, 36, tab == 1 ? new Color(50, 50, 50).getRGB() : -1);
 
         GL11.glPushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
@@ -274,7 +274,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                 } else {
                     if (timer.delay(200)) {
                         selectedServer = null;
-                    }else{
+                    } else {
                         FMLClientHandler.instance().connectToServer(this, selectedServer);
                     }
                 }

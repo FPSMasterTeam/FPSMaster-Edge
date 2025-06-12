@@ -95,7 +95,7 @@ public class MainMenu extends ScaledGuiScreen {
         FPSMaster.fontManager.s16.drawString("Copyright Mojang AB. Do not distribute!", guiWidth - w - 4, guiHeight - 14, Color.WHITE.getRGB());
 
         // Display welcome message
-        String welcome = FPSMaster.INSTANCE.loggedIn ? TextFormattingProvider.getGreen() + String.format(FPSMaster.i18n.get("mainmenu.welcome"), FPSMaster.configManager.configure.getOrCreate("username", "")) : TextFormattingProvider.getRed().toString() + TextFormattingProvider.getBold().toString() + FPSMaster.i18n.get("mainmenu.notlogin");
+        String welcome = FPSMaster.INSTANCE.loggedIn ? TextFormattingProvider.getGreen() + String.format(FPSMaster.i18n.get("mainmenu.welcome"), FPSMaster.accountManager.getUsername()) : TextFormattingProvider.getRed().toString() + TextFormattingProvider.getBold().toString() + FPSMaster.i18n.get("mainmenu.notlogin");
         FPSMaster.fontManager.s16.drawString(welcome, 4, guiHeight - 52, Color.WHITE.getRGB());
 
         // Version info

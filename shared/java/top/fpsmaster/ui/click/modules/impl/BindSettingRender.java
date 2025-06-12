@@ -11,6 +11,7 @@ import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.animation.ColorAnimation;
 import top.fpsmaster.utils.render.Render2DUtils;
 
+import java.awt.*;
 import java.util.Locale;
 
 public class BindSettingRender extends SettingRender<BindSetting> {
@@ -36,15 +37,15 @@ public class BindSettingRender extends SettingRender<BindSetting> {
                 y - 0.5f,
                 width1 + 1,
                 13f,
-                FPSMaster.theme.getModeBoxBorder()
+                new Color(0,0,0,80)
             );
         }
         Render2DUtils.drawOptimizedRoundedRect(x + 15 + fw, y, width1, 12f, colorAnimation.getColor());
         s16b.drawString(keyName, x + 18 + fw, y + 2, FPSMaster.theme.getTextColorTitle().getRGB());
         if (MainPanel.bindLock.equals(setting.name)) {
-            colorAnimation.base(FPSMaster.theme.getModeBoxBorder());
+            colorAnimation.base(new Color(255,255,255,80));
         } else {
-            colorAnimation.base(FPSMaster.theme.getModeBox());
+            colorAnimation.base(new Color(0,0,0,80));
         }
         this.height = 16f;
     }
@@ -57,7 +58,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
         String keyName = Keyboard.getKeyName(setting.value);
         UFontRenderer s16b = FPSMaster.fontManager.s16;
         if (Render2DUtils.isHovered(
-                x + 12 + fw,
+                x + 25 + fw,
                 y,
                 10f + s16b.getStringWidth(keyName),
                 12f,

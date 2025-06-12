@@ -69,6 +69,7 @@ public class Login extends Scene {
             } else {
                 Minecraft.getMinecraft().displayGuiScreen(new MainMenu());
             }
+            FPSMaster.INSTANCE.loggedIn = false;
             FPSMaster.configManager.configure.set("username", "");
         });
     }
