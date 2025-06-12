@@ -237,6 +237,10 @@ public class Render2DUtils extends Utility {
     }
 
     public static void drawBlurArea(int x, int y, int width, int height, int radius, Color color) {
+        drawBlurArea((float) x, y, width, height, radius, color);
+    }
+
+    public static void drawBlurArea(float x, float y, float width, float height, int radius, Color color) {
         StencilUtil.initStencilToWrite();
         RoundedUtil.drawRound(x, y, width, height, radius, true, color);
         StencilUtil.readStencilBuffer(1);

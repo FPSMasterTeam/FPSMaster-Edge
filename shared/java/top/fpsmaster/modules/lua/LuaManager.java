@@ -15,6 +15,7 @@ import top.fpsmaster.modules.lua.parser.ParseError;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.os.FileUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.wrapper.MinecraftProvider;
 import top.fpsmaster.wrapper.blockpos.WrapperBlockPos;
 
 import java.awt.*;
@@ -102,10 +103,13 @@ public class LuaManager {
                 double posX = ProviderManager.mcProvider.getPlayer().posX;
                 double posY = ProviderManager.mcProvider.getPlayer().posY;
                 double posZ = ProviderManager.mcProvider.getPlayer().posZ;
+                boolean onGround = ProviderManager.mcProvider.getPlayer().onGround;
+
                 lua.push(posX);
                 lua.push(posY);
                 lua.push(posZ);
-                return 3;
+                lua.push(onGround);
+                return 4;
             });
             lua.setGlobal("getPlayerPosition");
 

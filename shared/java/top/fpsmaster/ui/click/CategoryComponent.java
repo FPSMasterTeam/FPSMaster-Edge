@@ -31,7 +31,7 @@ public class CategoryComponent {
 
         Render2DUtils.drawImage(
             new ResourceLocation("client/gui/settings/icons/" + category.name().toLowerCase() + ".png"),
-            x + 10,
+            x + 9,
             y,
             12f,
             12f,

@@ -61,10 +61,10 @@ public class ModuleRenderer extends ValueRender {
 
         if (mod.isEnabled()) {
             content.start(content.getColor(), FPSMaster.theme.getModuleTextEnabled(), 0.2f, Type.EASE_IN_OUT_QUAD);
-            background.start(background.getColor(), FPSMaster.theme.getModuleEnabled(), 0.2f, Type.EASE_IN_OUT_QUAD);
+            background.start(background.getColor(), new Color(150,150,150,60), 0.2f, Type.EASE_IN_OUT_QUAD);
         } else {
             content.start(content.getColor(), FPSMaster.theme.getModuleTextDisabled(), 0.2f, Type.EASE_IN_OUT_QUAD);
-            background.start(background.getColor(), FPSMaster.theme.getModuleDisabled(), 0.2f, Type.EASE_IN_OUT_QUAD);
+            background.start(background.getColor(), new Color(100,100,100,60), 0.2f, Type.EASE_IN_OUT_QUAD);
         }
 
         Render2DUtils.drawOptimizedRoundedRect(
@@ -73,7 +73,16 @@ public class ModuleRenderer extends ValueRender {
                 width - 10,
                 settingHeight + 37f,
                 10,
-                new Color(100, 100, 100, 60).getRGB()
+                new Color(100,100,100,60).getRGB()
+        );
+
+        Render2DUtils.drawOptimizedRoundedRect(
+                x + 5,
+                y,
+                width - 10,
+                37f,
+                10,
+                background.getColor().getRGB()
         );
 
 //        Render2DUtils.drawOptimizedRoundedBorderRect(

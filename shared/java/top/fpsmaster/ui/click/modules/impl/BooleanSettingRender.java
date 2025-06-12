@@ -25,9 +25,9 @@ public class BooleanSettingRender extends SettingRender<BooleanSetting> {
     public void render(float x, float y, float width, float height, float mouseX, float mouseY, boolean custom) {
         box.update();
         if (setting.getValue()) {
-            box.start(box.getColor(), FPSMaster.theme.getPrimary(), 0.2f, Type.EASE_IN_OUT_QUAD);
+            box.start(box.getColor(), new Color(255, 255, 255), 0.2f, Type.EASE_IN_OUT_QUAD);
         } else {
-            box.start(box.getColor(), FPSMaster.theme.getCheckboxBox(), 0.2f, Type.EASE_IN_OUT_QUAD);
+            box.start(box.getColor(), new Color(129, 129, 129), 0.2f, Type.EASE_IN_OUT_QUAD);
         }
         Render2DUtils.drawOptimizedRoundedRect(x + 14, y + 3, 6f, 6f, 3, box.getColor().getRGB());
         FPSMaster.fontManager.s16.drawString(
