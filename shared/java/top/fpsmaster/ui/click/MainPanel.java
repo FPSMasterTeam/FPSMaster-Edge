@@ -60,8 +60,8 @@ public class MainPanel extends ScaledGuiScreen {
 
     static int x = -1;
     static int y = -1;
-    static float width = 0f;
-    static float height = 0f;
+    static float width = 400f;
+    static float height = 240f;
     public static String bindLock = "";
     public static Module curModule = null;
     public static String dragLock = "null";
@@ -89,15 +89,15 @@ public class MainPanel extends ScaledGuiScreen {
         }
 
 
-        if (sizeDrag) {
-            float w = mouseX + sizeDragX - x;
-            float h = mouseY + sizeDragY - y;
-            width = w;
-            height = h;
-        }
+//        if (sizeDrag) {
+//            float w = mouseX + sizeDragX - x;
+//            float h = mouseY + sizeDragY - y;
+//            width = w;
+//            height = h;
+//        }
 
-        width = Math.min(Math.max(400f, width), guiWidth);
-        height = Math.min(Math.max(240f, height), guiHeight);
+//        width = Math.min(Math.max(400f, width), guiWidth);
+//        height = Math.min(Math.max(240f, height), guiHeight);
 
         x = (int) Math.max(0, Math.min(guiWidth - (int) width, x));
         y = (int) Math.max(0, Math.min(guiHeight - (int) height, y));
@@ -300,10 +300,10 @@ public class MainPanel extends ScaledGuiScreen {
         scaleAnimation.fstart(0.8, 1.0, 0.2f, Type.EASE_OUT_BACK);
         close = false;
 
-        if (width == 0f || height == 0f) {
-            width = scaledWidth / 2f;
-            height = scaledHeight / 2f;
-        }
+//        if (width == 0f || height == 0f) {
+//            width = scaledWidth / 2f;
+//            height = scaledHeight / 2f;
+//        }
 
         if (x == -1 || y == -1) {
             x = (int) ((scaledWidth - width) / 2);
