@@ -68,7 +68,7 @@ public class FPSMaster {
         try {
             Class.forName("net.fabricmc.devlaunchinjector.Main");
             development = true;
-        } catch (Throwable e) {
+        } catch (Throwable ignored) {
         }
     }
 
