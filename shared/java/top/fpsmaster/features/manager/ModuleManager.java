@@ -15,6 +15,7 @@ import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.ui.click.modules.ModuleRenderer;
 import top.fpsmaster.ui.devspace.DevSpace;
+import top.fpsmaster.utils.Utility;
 
 import java.util.ArrayList;
 import java.util.List;

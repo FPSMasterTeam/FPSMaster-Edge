@@ -213,6 +213,8 @@ motionblur.fastrender=注意！动态模糊功能与快速渲染并不兼容，�
 
 sprint=强制疾跑
 sprint.desc=保持疾跑
+sprint.togglesprint=保持疾跑
+sprint.betterfont=更好的字体
 
 musicdisplay=音乐显示
 musicdisplay.desc=显示你正在播放的音乐

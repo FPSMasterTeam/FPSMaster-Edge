@@ -14,7 +14,7 @@ public class ClientSettings extends InterfaceModule {
     public static final TextSetting prefix = new TextSetting("prefix", "#");
 
     public ClientSettings() {
-        super("ClientSettings", Category.Interface);
+        super("ClientSettings", Category.Utility);
         addSettings(prefix, keyBind, fixedScale, blur);
     }
 
