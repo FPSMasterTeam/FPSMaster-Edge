@@ -1,6 +1,5 @@
 package top.fpsmaster.forge.mixin;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -8,16 +7,13 @@ import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.init.Items;
 import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventCapeLoading;
-import top.fpsmaster.features.impl.optimizes.SmoothZoom;
 import top.fpsmaster.features.impl.utility.CustomFOV;
-import top.fpsmaster.utils.math.MathUtils;
 
 @Mixin(AbstractClientPlayer.class)
 public abstract class MixinAbstractClientPlayer extends MixinEntityPlayer {
@@ -65,23 +61,11 @@ public abstract class MixinAbstractClientPlayer extends MixinEntityPlayer {
     private NetworkPlayerInfo playerInfo;
 
 
-    /**
-     * @author SuperSkidder
-     * @reason CapeLoading
-     */
-    @Overwrite
-    public ResourceLocation getLocationCape() {
+    @Inject(method = "getLocationCape", at = @At("HEAD"), cancellable = true)
+    public void getLocationCape(CallbackInfoReturnable<ResourceLocation> cir) {
         EventCapeLoading event = new EventCapeLoading(playerInfo.getGameProfile().getName(), (AbstractClientPlayer) (Object) this);
         EventDispatcher.dispatchEvent(event);
         fpsmasterCape = event.cape;
-
-        if (fpsmasterCape != null) {
-            return fpsmasterCape;
-        }
-
-
-        NetworkPlayerInfo networkplayerinfo = this.getPlayerInfo();
-        return networkplayerinfo == null ? null : networkplayerinfo.getLocationCape();
-
+        cir.setReturnValue(fpsmasterCape);
     }
 }
