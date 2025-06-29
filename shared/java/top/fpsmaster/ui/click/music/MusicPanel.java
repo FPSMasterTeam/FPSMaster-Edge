@@ -50,6 +50,7 @@ public class MusicPanel {
     public static float y = 0f;
     public static float width = 0f;
     public static float height = 0f;
+    private static Thread playThread;
 
     public static void mouseClicked(int mouseX, int mouseY, int btn) {
         inputBox.mouseClicked(mouseX, mouseY, btn);
@@ -91,15 +92,20 @@ public class MusicPanel {
         if (Render2DUtils.isHovered(x, y + height - 30, width, 4f, mouseX, mouseY)) {
             if (Mouse.isButtonDown(0) && current != null) {
                 if (!MusicPlayer.isPlaying) {
-                    FPSMaster.async.runnable(() -> {
-                        MusicPlayer.playList.play();
-                        try {
-                            Thread.sleep(50);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                        current.seek((mouseX - x) / width);
-                    });
+                    if (playThread != null && playThread.isAlive()) {
+                        playThread.interrupt();
+                    }
+                    playThread = new Thread(
+                            () -> {
+                                MusicPlayer.playList.play();
+                                try {
+                                    Thread.sleep(50);
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                current.seek((mouseX - x) / width);
+                            }
+                    );
                     MusicPlayer.isPlaying = true;
                 } else {
                     current.seek((mouseX - x) / width);
