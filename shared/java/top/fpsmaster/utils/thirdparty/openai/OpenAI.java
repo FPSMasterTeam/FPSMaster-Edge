@@ -37,15 +37,14 @@ public class OpenAI {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
         body.add("messages", messages);
-        String json = body.toString();
 
         Map<String, String> hashMap = new HashMap<>();
         hashMap.put("Content-Type", "application/json");
         hashMap.put("Authorization", "Bearer " + openAiKey);
 
-        String[] text;
+        String text;
         try {
-            text = HttpRequest.sendPostRequest(baseUrl + "/chat/completions", json, hashMap);
+            text = HttpRequest.postJson(baseUrl + "/chat/completions", body, hashMap);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -69,15 +68,14 @@ public class OpenAI {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
         body.add("messages", messages);
-        String json = body.toString();
 
         Map<String, String> hashMap = new HashMap<>();
         hashMap.put("Content-Type", "application/json");
         hashMap.put("Authorization", "Bearer " + openAiKey);
 
-        String[] text;
+        String text;
         try {
-            text = HttpRequest.sendPostRequest(baseUrl + "/chat/completions", json, hashMap);
+            text = HttpRequest.postJson(baseUrl + "/chat/completions", body, hashMap);
         } catch (Exception e) {
             ClientLogger.error("Translator", e.toString());
             return "";
@@ -86,27 +84,21 @@ public class OpenAI {
         return getString(text);
     }
 
-    private String getString(String[] response) {
-        if (response.length != 2) return "failed";
+    private String getString(String response) {
+        JsonObject responseJson = new JsonParser().parse(response).getAsJsonObject();
+        return responseJson.getAsJsonArray("choices")
+                .get(0).getAsJsonObject()
+                .getAsJsonObject("message")
+                .getAsJsonObject("content")
+                .getAsString();
 
-        JsonObject responseJson = new JsonParser().parse(response[1]).getAsJsonObject();
-        if ("200".equals(response[0])) {
-            return responseJson.getAsJsonArray("choices")
-                    .get(0).getAsJsonObject()
-                    .getAsJsonObject("message")
-                    .getAsJsonObject("content")
-                    .getAsString();
-        } else {
-            JsonObject errorJson = responseJson.getAsJsonObject("error");
-            throw new RuntimeException("OpenAI returned an error: " + errorJson.getAsJsonPrimitive("message").getAsString());
-        }
     }
 
     public static String[] requestClientAI(String prompt, String model, JsonArray messages) {
         try {
-            String sendPostRequest = HttpRequest.sendPostRequest(
+            String sendPostRequest = HttpRequest.postJson(
                     FPSMaster.SERVICE_API + "/chat?timestamp=" + System.currentTimeMillis(),
-                    new Gson().toJson(messages),
+                    messages.getAsJsonObject(),
                     new HashMap<String, String>() {{
                         put("Content-Type", "application/json");
                         put("username", FPSMaster.accountManager.getUsername());
@@ -114,7 +106,7 @@ public class OpenAI {
                         put("model", model);
                         put("prompt", prompt);
                     }}
-            )[1];
+            );
 
             if (!sendPostRequest.isEmpty()) {
                 JsonObject json = new JsonParser().parse(sendPostRequest).getAsJsonObject();

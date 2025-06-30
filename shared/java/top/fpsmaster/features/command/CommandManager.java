@@ -13,6 +13,8 @@ import top.fpsmaster.utils.Utility;
 import java.util.ArrayList;
 import java.util.List;
 
+import static top.fpsmaster.utils.Utility.mc;
+
 public class CommandManager {
 
     private final List<Command> commands = new ArrayList<>();
@@ -30,6 +32,7 @@ public class CommandManager {
         if (e.msg.startsWith(ClientSettings.prefix.getValue())) {
             e.cancel();
             try {
+                mc.ingameGUI.getChatGUI().addToSentMessages(e.msg);
                 runCommand(e.msg.substring(1));
             } catch (Exception ex) {
                 ex.printStackTrace();

@@ -80,7 +80,7 @@ public class MicrosoftLogin {
                         tokenRequestParams.put("grant_type", "authorization_code");
                         tokenRequestParams.put("redirect_uri", REDIRECT_URI);
 
-                        String oauthResponse = HttpRequest.postMAP("https://login.live.com/oauth20_token.srf", tokenRequestParams);
+                        String oauthResponse = HttpRequest.postForm("https://login.live.com/oauth20_token.srf", tokenRequestParams);
                         logDebug("OAuth Response: " + oauthResponse);
                         JsonObject oauthJson = HttpRequest.gson().fromJson(oauthResponse, JsonObject.class);
                         String accessToken = getJsonString(oauthJson, "access_token", "OAuth access token");
@@ -179,7 +179,7 @@ public class MicrosoftLogin {
         xboxAuthPayload.addProperty("RelyingParty", "http://auth.xboxlive.com");
         xboxAuthPayload.addProperty("TokenType", "JWT");
 
-        String xboxAuthResponse = HttpRequest.postJSON("https://user.auth.xboxlive.com/user/authenticate", xboxAuthPayload);
+        String xboxAuthResponse = HttpRequest.postJson("https://user.auth.xboxlive.com/user/authenticate", xboxAuthPayload);
         logDebug("Xbox Auth Response: " + xboxAuthResponse);
         JsonObject xboxAuthJson = HttpRequest.gson().fromJson(xboxAuthResponse, JsonObject.class);
         String xblToken = getJsonString(xboxAuthJson, "Token", "XBL Token");
@@ -199,7 +199,7 @@ public class MicrosoftLogin {
         xstsPayload.addProperty("RelyingParty", "rp://api.minecraftservices.com/");
         xstsPayload.addProperty("TokenType", "JWT");
 
-        String xstsResponse = HttpRequest.postJSON("https://xsts.auth.xboxlive.com/xsts/authorize", xstsPayload);
+        String xstsResponse = HttpRequest.postJson("https://xsts.auth.xboxlive.com/xsts/authorize", xstsPayload);
         logDebug("XSTS Response: " + xstsResponse);
         JsonObject xstsJson = HttpRequest.gson().fromJson(xstsResponse, JsonObject.class);
 
@@ -226,7 +226,7 @@ public class MicrosoftLogin {
         JsonObject minecraftAuthPayload = new JsonObject();
         minecraftAuthPayload.addProperty("identityToken", "XBL3.0 x=" + xstsUserhash + ";" + xstsToken);
 
-        String minecraftAuthResponse = HttpRequest.postJSON("https://api.minecraftservices.com/authentication/login_with_xbox", minecraftAuthPayload);
+        String minecraftAuthResponse = HttpRequest.postJson("https://api.minecraftservices.com/authentication/login_with_xbox", minecraftAuthPayload);
         logDebug("Minecraft Auth Response: " + minecraftAuthResponse);
         JsonObject minecraftAuthJson = HttpRequest.gson().fromJson(minecraftAuthResponse, JsonObject.class);
         String mcAccessToken = getJsonString(minecraftAuthJson, "access_token", "Minecraft access token");
