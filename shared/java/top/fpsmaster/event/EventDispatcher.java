@@ -1,5 +1,6 @@
 package top.fpsmaster.event;
 
+import top.fpsmaster.exception.ExceptionHandler;
 import top.fpsmaster.modules.logger.ClientLogger;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -38,7 +39,13 @@ public class EventDispatcher {
                     listener.invoke(event);
                 } catch (Throwable e) {
                     ClientLogger.warn("Failed to dispatch event " + event.getClass().getSimpleName() + " to listener " + listener.getLog());
-                    e.printStackTrace();
+                    if (e instanceof Exception) {
+                        ExceptionHandler.handleModuleException((Exception) e, "Failed to dispatch event " + event.getClass().getSimpleName());
+                    } else {
+                        // For non-Exception Throwables, we still need to log them
+                        top.fpsmaster.modules.logger.ClientLogger.error("Non-Exception Throwable: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         }

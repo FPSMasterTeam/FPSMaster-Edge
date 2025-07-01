@@ -4,6 +4,9 @@ import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.exception.ExceptionHandler;
+import top.fpsmaster.exception.FileException;
+import top.fpsmaster.exception.NetworkException;
 import top.fpsmaster.modules.account.AccountManager;
 import top.fpsmaster.ui.common.TextField;
 import top.fpsmaster.ui.screens.oobe.Scene;
@@ -36,7 +39,7 @@ public class Login extends Scene {
         if (!defaultText.isEmpty()) { // If there's a value "offline", strange bug happens.
             username.setText(defaultText);
         }
-        
+
         btn = new GuiButton(FPSMaster.i18n.get("oobe.login.login"), () -> {
             try {
                 JsonObject login = AccountManager.login(username.getText(), password.getText());
@@ -45,7 +48,11 @@ public class Login extends Scene {
                         FPSMaster.accountManager.setUsername(username.getText());
                         FPSMaster.accountManager.setToken(login.get("msg").getAsString());
                     }
-                    FileUtils.saveTempValue("token", FPSMaster.accountManager.getToken());
+                    try {
+                        FileUtils.saveTempValue("token", FPSMaster.accountManager.getToken());
+                    } catch (FileException e) {
+                        ExceptionHandler.handleFileException(e, "无法保存登录令牌");
+                    }
                     FPSMaster.INSTANCE.loggedIn = true;
                     if (isOOBE) {
                         FPSMaster.oobeScreen.nextScene();
@@ -56,8 +63,12 @@ public class Login extends Scene {
                     msg = login.get("msg").getAsString();
                     msgbox = true;
                 }
+            } catch (NetworkException e) {
+                ExceptionHandler.handleNetworkException(e, "登录失败");
+                msg = "网络错误: " + e.getMessage();
+                msgbox = true;
             } catch (Exception e) {
-                e.printStackTrace();
+                ExceptionHandler.handle(e, "登录失败");
                 msg = "未知错误: " + e.getMessage();
                 msgbox = true;
             }
@@ -78,7 +89,7 @@ public class Login extends Scene {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         super.drawScreen(mouseX, mouseY, partialTicks);
         ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
-        
+
         Render2DUtils.drawRect(0f, 0f, sr.getScaledWidth(), sr.getScaledHeight(), new Color(235, 242, 255).getRGB());
 
         FPSMaster.fontManager.s24.drawCenteredString(FPSMaster.i18n.get("oobe.login.desc"), sr.getScaledWidth() / 2f, sr.getScaledHeight() / 2f - 90, FPSMaster.theme.getTextColorDescription().getRGB());
@@ -121,7 +132,7 @@ public class Login extends Scene {
                 try {
                     desktop.browse(new URI(url));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    ExceptionHandler.handle(e, "无法打开网页");
                 }
             }
         }

@@ -7,6 +7,8 @@ import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.exception.ExceptionHandler;
+import top.fpsmaster.exception.FileException;
 import top.fpsmaster.modules.music.AbstractMusic;
 import top.fpsmaster.modules.music.JLayerHelper;
 import top.fpsmaster.modules.music.MusicPlayer;
@@ -360,7 +362,11 @@ public class MusicPanel {
                         String element = loginStatus.get("nickname").getAsString();
                         if (element != null) {
                             nickname = element;
-                            FileUtils.saveTempValue("nickname", nickname);
+                            try {
+                                FileUtils.saveTempValue("nickname", nickname);
+                            } catch (FileException e) {
+                                ExceptionHandler.handleFileException(e, "无法保存昵称");
+                            }
                         }
                     }
                     if (code == 803) {
@@ -369,8 +375,12 @@ public class MusicPanel {
                         String result = "MUSIC_U=" + extractMiddleContent(asString, "MUSIC_U=", ";") + "; " + "NMTID=" + extractMiddleContent(asString, "NMTID=", ";");
                         NeteaseApi.cookies = result;
 
-                        FileUtils.saveTempValue("cookies", NeteaseApi.cookies);
-                        System.out.println("cookies: " + NeteaseApi.cookies);
+                        try {
+                            FileUtils.saveTempValue("cookies", NeteaseApi.cookies);
+                            System.out.println("cookies: " + NeteaseApi.cookies);
+                        } catch (FileException e) {
+                            ExceptionHandler.handleFileException(e, "无法保存cookies");
+                        }
                     }
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -391,10 +401,14 @@ public class MusicPanel {
             File qr = new File(FileUtils.dir, "/music/qr.png");
             File qrf = new File(FileUtils.dir, "/music");
             qrf.mkdirs();
-            FileUtils.saveFileBytes("/music/qr.png", bytes);
-            ThreadDownloadImageData textureArt = new ThreadDownloadImageData(qr, null, null, null);
-            textureManager.loadTexture(resourceLocation, textureArt);
-            loginThread.start();
+            try {
+                FileUtils.saveFileBytes("/music/qr.png", bytes);
+                ThreadDownloadImageData textureArt = new ThreadDownloadImageData(qr, null, null, null);
+                textureManager.loadTexture(resourceLocation, textureArt);
+                loginThread.start();
+            } catch (FileException e) {
+                ExceptionHandler.handleFileException(e, "无法保存二维码图片");
+            }
         });
     }
 

@@ -1,5 +1,6 @@
 package top.fpsmaster.utils.os;
 
+import top.fpsmaster.exception.FileException;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.wrapper.Constants;
@@ -53,55 +54,60 @@ public class FileUtils {
         return file;
     }
 
-    public static void saveFileBytes(String s, byte[] bytes) {
+    public static void saveFileBytes(String s, byte[] bytes) throws FileException {
         File file = new File(dir, s);
         try {
             if (!file.exists()) {
-                file.createNewFile();
+                if (!file.createNewFile()) {
+                    throw new FileException("Failed to create file: " + s);
+                }
             }
             try (FileOutputStream fOut = new FileOutputStream(file)) {
                 fOut.write(bytes);
                 fOut.flush();
             }
-            } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            throw new FileException("Failed to save file bytes: " + s, e);
         }
     }
 
-    public static void saveFile(String name, String content) {
+    public static void saveFile(String name, String content) throws FileException {
         File file = new File(dir, name);
         saveAbsoluteFile(file.getAbsolutePath(), content);
     }
 
-    private static void saveAbsoluteFile(String name, String content) {
+    private static void saveAbsoluteFile(String name, String content) throws FileException {
         File file = new File(name);
         try {
             if (!file.exists()) {
                 if (!file.createNewFile()) {
                     ClientLogger.error("FileUtils", "failed to create " + name);
+                    throw new FileException("Failed to create file: " + name);
                 }
             }
             try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
                 bw.write(content);
                 bw.flush();
             }
-            } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            throw new FileException("Failed to save file: " + name, e);
         }
     }
 
-    public static void saveTempValue(String name, String value) {
+    public static void saveTempValue(String name, String value) throws FileException {
         File dir = new File(fpsmasterCache, name + ".tmp");
         saveAbsoluteFile(dir.getAbsolutePath(), value);
     }
 
-    public static String readTempValue(String name) {
-        try {
-            File dir = new File(fpsmasterCache, name + ".tmp");
-            return !dir.exists() ? "" : readAbsoluteFile(dir.getAbsolutePath());
-        } catch (Exception e) {
-            e.printStackTrace();
+    public static String readTempValue(String name) throws FileException {
+        File dir = new File(fpsmasterCache, name + ".tmp");
+        if (!dir.exists()) {
             return "";
+        }
+        try {
+            return readAbsoluteFile(dir.getAbsolutePath());
+        } catch (Exception e) {
+            throw new FileException("Failed to read temp value: " + name, e);
         }
     }
 
@@ -121,10 +127,15 @@ public class FileUtils {
                     while ((line = reader.readLine()) != null) {
                         sb.append(line).append("\n");
                     }
-                    saveFile(file + ".lang", sb.toString());
+                    try {
+                        saveFile(file + ".lang", sb.toString());
+                    } catch (FileException e) {
+                        ClientLogger.error("Failed to save language file: " + file + ".lang");
+                        throw new IOException("Failed to save language file", e);
+                    }
                 }
-                }
-            } catch (IOException e) {
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -139,17 +150,19 @@ public class FileUtils {
         return (int) (size / 1024 / 1024);
     }
 
-    public static String readFile(String name) {
+    public static String readFile(String name) throws FileException {
         File file = new File(dir, name);
         return readAbsoluteFile(file.getAbsolutePath());
     }
 
-    public static String readAbsoluteFile(String name) {
+    public static String readAbsoluteFile(String name) throws FileException {
         File file = new File(name);
         StringBuilder result = new StringBuilder();
         try {
             if (!file.exists()) {
-                file.createNewFile();
+                if (!file.createNewFile()) {
+                    throw new FileException("Failed to create file: " + name);
+                }
             }
             try (FileInputStream fIn = new FileInputStream(file);
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fIn, StandardCharsets.UTF_8))) {
@@ -158,8 +171,8 @@ public class FileUtils {
                         result.append(str).append(System.lineSeparator());
                     }
                 }
-            } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            throw new FileException("Failed to read file: " + name, e);
         }
         return result.toString();
     }
