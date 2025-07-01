@@ -114,11 +114,27 @@ public abstract class MixinItemRenderer {
     }
 
 
+    private void transformFirstPersonItemLunar(float equipProgress, float swingProgress) {
+        GlStateManager.translate(0.07F, -0.14F, -0.11F);
+        GlStateManager.translate(0.56F, -0.52F, -0.71999997F);
+        GlStateManager.rotate(45.0F, 0.0F, 1.0F, 0.0F);
+        float f = MathHelper.sin(swingProgress * swingProgress * (float)Math.PI);
+        float f1 = MathHelper.sin(MathHelper.sqrt_float(swingProgress) * (float)Math.PI);
+        GlStateManager.rotate(f * -20.0F, 0.0F, 1.0F, 0.0F);
+        GlStateManager.rotate(f1 * -20.0F, 0.0F, 0.0F, 1.0F);
+        GlStateManager.rotate(f1 * -80.0F, 1.0F, 0.0F, 0.0F);
+        GlStateManager.scale(0.4F, 0.4F, 0.4F);
+    }
+
     private void drawBlocking(float equippedProgress, float swingProgress) {
         GL11.glTranslated(OldAnimations.x.getValue().floatValue(), OldAnimations.y.getValue().floatValue(), OldAnimations.z.getValue().floatValue());
 //        GL11.glScaled(OldAnimations.scale.getValue().floatValue(), OldAnimations.scale.getValue().floatValue(), 0);
-        if (OldAnimations.animationMode.isMode("Sigma")) {
-            this.transformFirstPersonItem(swingProgress, 0.0f);
+        if(OldAnimations.animationMode.isMode("Lunar")){
+            this.transformFirstPersonItemLunar(0.2f, swingProgress);
+            this.doBlockTransformations();
+            GlStateManager.translate(-0.5, 0.2, 0.0);
+        } else if (OldAnimations.animationMode.isMode("Sigma")) {
+            this.transformFirstPersonItem(equippedProgress, swingProgress);
             float swong = MathHelper.sin((float) (MathHelper.sqrt_float(equippedProgress) * Math.PI));
             GlStateManager.rotate(-swong * 55 / 2.0F, -8.0F, -0.0F, 9.0F);
             GlStateManager.rotate(-swong * 45, 1.0F, swong / 2, -0.0F);

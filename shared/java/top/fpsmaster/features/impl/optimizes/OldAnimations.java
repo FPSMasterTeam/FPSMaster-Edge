@@ -17,7 +17,7 @@ public class OldAnimations extends Module {
     public static BooleanSetting noShield = new BooleanSetting("NoShield", true);
     public static BooleanSetting animationSneak = new BooleanSetting("AnimationSneak", true);
     public static BooleanSetting oldBlock = new BooleanSetting("OldBlock", true);
-    public static ModeSetting animationMode = new ModeSetting("AnimationMode", 0, () -> oldBlock.getValue(), "1.7", "Swang", "Sigma", "Swank", "Swong", "Debug", "Luna", "Jigsaw", "Jello", "Push");
+    public static ModeSetting animationMode = new ModeSetting("AnimationMode", 0, () -> oldBlock.getValue(), "Lunar", "1.7", "Swang", "Sigma", "Swank", "Swong", "Debug", "Luna", "Jigsaw", "Jello", "Push");
     public static BooleanSetting oldRod = new BooleanSetting("OldRod", true);
     public static BooleanSetting oldBow = new BooleanSetting("OldBow", true);
     public static BooleanSetting oldSwing = new BooleanSetting("OldSwing", true);
