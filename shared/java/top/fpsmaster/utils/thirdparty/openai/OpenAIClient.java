@@ -6,6 +6,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.entity.StringEntity;
 import com.google.gson.*;
+import top.fpsmaster.exception.FileException;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -144,7 +145,7 @@ public class OpenAIClient {
 
         void onError(Exception e);  // 当发生错误时调用
 
-        void onFinish(String string);
+        void onFinish(String string) throws FileException;
     }
 
     public static class Message {

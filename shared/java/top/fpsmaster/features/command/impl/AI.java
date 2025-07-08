@@ -2,6 +2,7 @@ package top.fpsmaster.features.command.impl;
 
 import com.google.gson.JsonArray;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.command.Command;
 import top.fpsmaster.modules.client.AsyncTask;
 import top.fpsmaster.modules.lua.LuaManager;
@@ -64,7 +65,7 @@ public class AI extends Command {
     }
 
     @Override
-    public void execute(String[] args) {
+    public void execute(String[] args) throws FileException {
         StringBuilder sb = new StringBuilder();
         if (args.length > 0) {
             if (args[0].equals("lua")) {
@@ -95,7 +96,7 @@ public class AI extends Command {
                     }
 
                     @Override
-                    public void onFinish(String string) {
+                    public void onFinish(String string) throws FileException {
                         FileUtils.saveFile("plugins/" + fileName + ".lua", luaScript.rawLua.code);
                         luaScript.failedReason = "";
                         LuaManager.hotswap();

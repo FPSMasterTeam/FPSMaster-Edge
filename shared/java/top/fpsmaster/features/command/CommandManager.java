@@ -4,6 +4,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventSendChatMessage;
+import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.command.impl.AI;
 import top.fpsmaster.features.command.impl.Dev;
 import top.fpsmaster.features.command.impl.IRCChat;
@@ -28,19 +29,16 @@ public class CommandManager {
     }
 
     @Subscribe
-    public void onChat(EventSendChatMessage e) {
+    public void onChat(EventSendChatMessage e) throws FileException {
         if (e.msg.startsWith(ClientSettings.prefix.getValue())) {
             e.cancel();
-            try {
-                mc.ingameGUI.getChatGUI().addToSentMessages(e.msg);
-                runCommand(e.msg.substring(1));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            mc.ingameGUI.getChatGUI().addToSentMessages(e.msg);
+            runCommand(e.msg.substring(1));
+
         }
     }
 
-    private void runCommand(String command) {
+    private void runCommand(String command) throws FileException {
         String[] args = command.split(" ");
         String cmd = args[0];
         if (args.length == 1) {
