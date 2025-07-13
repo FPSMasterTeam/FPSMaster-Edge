@@ -90,4 +90,4 @@ jobs:
           --data-urlencode "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           --data-urlencode "link=$DOWNLOAD_URL" \
           --data-urlencode "release=false" \
-          "https://service.fpsmaster.top/pushVersion"
+          "https://service.fpsmaster.top/api/github/push"
