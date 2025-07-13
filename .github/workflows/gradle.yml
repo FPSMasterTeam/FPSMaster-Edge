@@ -40,8 +40,10 @@ jobs:
         run: |
           cd v1.8.9
 
-          version=$(awk -F'=' '/^version[[:space:]]*=/ {print $2}' gradle.properties | tr -d '[:space:]')
-
+          plain_version=$(awk -F'=' '/^version[[:space:]]*=/ {print $2}' gradle.properties | tr -d '[:space:]')
+          sha=$(git rev-parse --short=6 HEAD)
+          version="${plain_version}-${sha}"
+          
           mkdir -p build/libs
           cd build/libs
 
