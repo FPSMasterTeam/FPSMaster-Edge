@@ -1,6 +1,8 @@
 package top.fpsmaster.features.impl.render;
 
 import net.minecraft.client.Minecraft;
+import top.fpsmaster.event.Subscribe;
+import top.fpsmaster.event.events.EventUpdate;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 
@@ -15,6 +17,11 @@ public class FullBright extends Module {
         oldGamma = Minecraft.getMinecraft().gameSettings.gammaSetting;
         Minecraft.getMinecraft().gameSettings.gammaSetting = 100f;
         super.onEnable();
+    }
+
+    @Subscribe
+    public void onUpdate(EventUpdate e){
+        Minecraft.getMinecraft().gameSettings.gammaSetting = 100f;
     }
 
     @Override

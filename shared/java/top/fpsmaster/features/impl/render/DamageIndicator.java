@@ -3,10 +3,13 @@ package top.fpsmaster.features.impl.render;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityTNTPrimed;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.event.Subscribe;
+import top.fpsmaster.event.events.EventAttack;
 import top.fpsmaster.event.events.EventRender3D;
+import top.fpsmaster.event.events.EventUpdate;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.interfaces.ProviderManager;
@@ -19,6 +22,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class DamageIndicator extends Module {
+    private EntityLivingBase lastAttack;
+
     public DamageIndicator() {
         super("DamageIndicator", Category.RENDER);
     }
@@ -30,7 +35,23 @@ public class DamageIndicator extends Module {
     }
 
     MathTimer timer = new MathTimer();
+    float health = 0;
 
+    @Subscribe
+    public void onAttack(EventAttack e) {
+        if (e.target instanceof EntityLivingBase) {
+            lastAttack = (EntityLivingBase) e.target;
+            health = lastAttack.getHealth();
+        }
+    }
+
+    @Subscribe
+    public void onUpdate(EventUpdate e) {
+        if (health - lastAttack.getHealth() != 0){
+            addIndicator((float) (lastAttack.posX), (float) (lastAttack.posY - 1), (float) (lastAttack.posZ), health - lastAttack.getHealth());
+            health = lastAttack.getHealth();
+        }
+    }
 
     @Subscribe
     public void onRender(EventRender3D event) {
@@ -71,7 +92,7 @@ public class DamageIndicator extends Module {
         GL11.glNormal3f(0.0f, 1.0f, 0.0f);
         GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0f, 1.0f, 0.0f);
         GL11.glScalef(-scale / 2, -scale, -scale);
-        float width = ProviderManager.mcProvider.getFontRenderer().getStringWidth(damage) / 2.0f + 6.0f;
+        float width = ProviderManager.mcProvider.getFontRenderer().getStringWidth(damage) / 2.0f;
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
         GlStateManager.disableLighting();

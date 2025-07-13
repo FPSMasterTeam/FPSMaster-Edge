@@ -17,28 +17,4 @@ import top.fpsmaster.features.impl.render.DamageIndicator;
 public abstract class MixinEntityLivingBase extends MixinEntity {
     @Shadow
     public abstract IAttributeInstance getEntityAttribute(IAttribute attribute);
-
-    @Shadow
-    public abstract float getHealth();
-
-    @Inject(method = "damageEntity", at = @At(value = "INVOKE",target = "Lnet/minecraft/entity/EntityLivingBase;setHealth(F)V", shift = At.Shift.BEFORE))
-    protected void damageEntity(DamageSource damageSrc, float damageAmount, CallbackInfo ci) {
-        EntityLivingBase entity = (EntityLivingBase) ((Object) this);
-        BlockPos position = entity.getPosition();
-        if (damageAmount > entity.getHealth()){
-            damageAmount = entity.getHealth();
-        }
-        DamageIndicator.addIndicator(position.getX(), position.getY(), position.getZ(), damageAmount);
-    }
-
-    @Inject(method = "heal", at = @At(value = "INVOKE",target = "Lnet/minecraft/entity/EntityLivingBase;setHealth(F)V", shift = At.Shift.BEFORE))
-    public void heal(float healAmount, CallbackInfo ci) {
-        EntityLivingBase entity = (EntityLivingBase) ((Object) this);
-        BlockPos position = entity.getPosition();
-        if (healAmount > entity.getMaxHealth() - entity.getHealth()) {
-            healAmount = entity.getMaxHealth() - entity.getHealth();
-        }
-        DamageIndicator.addIndicator(position.getX(), position.getY(), position.getZ(), -healAmount);
-    }
-
 }
