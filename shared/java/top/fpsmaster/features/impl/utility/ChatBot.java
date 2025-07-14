@@ -49,7 +49,7 @@ public class ChatBot extends Module {
 
     @Subscribe
     public void onSend(EventSendChatMessage e) {
-        if (ignoreSelf.value) {
+        if (ignoreSelf.getValue()) {
             String s = e.msg;
             lastMsg = s.length() > 20 ? s.substring(0, 20) : s;
         }
@@ -57,14 +57,14 @@ public class ChatBot extends Module {
 
     @Subscribe
     public void onChat(EventPacket e) {
-        if (ProviderManager.packetChat.isPacket(e.packet) && timer.delay(cooldown.value.longValue())) {
+        if (ProviderManager.packetChat.isPacket(e.packet) && timer.delay(cooldown.getValue().longValue())) {
             String formattedText = ProviderManager.packetChat.getUnformattedText(e.packet);
             if (formattedText.contains(lastMsg) && lastMsg.length() > 1) {
                 System.out.println(lastMsg);
                 return;
             }
             FPSMaster.async.runnable(() -> {
-                Pattern pattern = Pattern.compile(regex.value);
+                Pattern pattern = Pattern.compile(regex.getValue());
                 if (pattern.matcher(formattedText).find()) {
                     OpenAI openAi;
                     NotificationManager.addNotification("ChatGPT", formattedText, 1f);
@@ -74,14 +74,14 @@ public class ChatBot extends Module {
                     userRole.addProperty("content", formattedText);
                     msgs.add(userRole);
                     if (mode.isMode("Custom")) {
-                        openAi = new OpenAI(apiUrl.value, apiKey.value, model.value, prompt.value);
+                        openAi = new OpenAI(apiUrl.getValue(), apiKey.getValue(), model.getValue(), prompt.getValue());
                         JsonArray msgs1 = new JsonArray();
                         msgs.forEach(msgs1::add);
                         s = openAi.requestNewAnswer(formattedText, msgs1).replace("\n", "").trim();
                     } else {
                         JsonArray msgs1 = new JsonArray();
                         msgs.forEach(msgs1::add);
-                        String[] requestClientAI = OpenAI.requestClientAI(prompt.value, model.value, msgs1);
+                        String[] requestClientAI = OpenAI.requestClientAI(prompt.getValue(), model.getValue(), msgs1);
                         if ("200".equals(requestClientAI[0])) {
                             s = requestClientAI[1];
                         } else {
@@ -94,12 +94,12 @@ public class ChatBot extends Module {
                     aiRole.addProperty("role", "assistant");
                     aiRole.addProperty("content", s);
                     msgs.add(aiRole);
-                    if (msgs.size() > maxContext.value.intValue()) {
+                    if (msgs.size() > maxContext.getValue().intValue()) {
                         // remove the oldest message
                         msgs.remove(0);
                     }
                     try {
-                        Thread.sleep(delay.value.longValue());
+                        Thread.sleep(delay.getValue().longValue());
                     } catch (InterruptedException e1) {
                         e1.printStackTrace();
                     }

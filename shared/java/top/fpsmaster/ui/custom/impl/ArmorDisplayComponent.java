@@ -31,7 +31,7 @@ public class ArmorDisplayComponent extends Component {
             int x1 = (int) (x + i * 18);
             int y1 = (int) y;
 
-            switch (ArmorDisplay.mode.value) {
+            switch (ArmorDisplay.mode.getValue()) {
                 case 0:
                     itemStack = armorInventory.get(armorInventory.size() - 1 - i);
                     break;
@@ -65,7 +65,7 @@ public class ArmorDisplayComponent extends Component {
             GlStateManager.disableRescaleNormal();
             GlStateManager.disableBlend();
 
-            if (ArmorDisplay.mode.value == 2) {
+            if (ArmorDisplay.mode.getValue() == 2) {
                 // Draw durability
                 int durability = itemStack.getMaxDamage() - itemStack.getItemDamage();
                 float dura = (float) durability / itemStack.getMaxDamage();
@@ -89,7 +89,7 @@ public class ArmorDisplayComponent extends Component {
             }
         }
 
-        switch (ArmorDisplay.mode.value) {
+        switch (ArmorDisplay.mode.getValue()) {
             case 0:
                 width = 70f;
                 height = 18f;

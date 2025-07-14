@@ -45,7 +45,7 @@ public class IngameOverlay {
                     averageMagnitude = Math.sqrt(averageMagnitude);
                     smoothCurve[bar] = AnimationUtils.base(smoothCurve[bar], averageMagnitude, 0.1);
                     float xPos = (float) bar / numBars * screenWidth;
-                    float height = (float) (smoothCurve[bar] * 100f * MusicOverlay.amplitude.value.floatValue());
+                    float height = (float) (smoothCurve[bar] * 100f * MusicOverlay.amplitude.getValue().floatValue());
 
                     Render2DUtils.drawRect(
                             xPos,

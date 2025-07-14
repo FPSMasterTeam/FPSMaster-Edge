@@ -23,14 +23,9 @@ public class NumberSetting extends Setting<Number> {
     }
 
     @Override
-    public Number getValue() {
-        return value;
-    }
-
-    @Override
     public void setValue(Number newValue) {
         double closestMultipleOfInc = Math.round(newValue.doubleValue() / inc.doubleValue()) * inc.doubleValue();
         closestMultipleOfInc = Math.round(closestMultipleOfInc * 100) / 100.0;
-        value = Math.max(min.doubleValue(), Math.min(max.doubleValue(), closestMultipleOfInc));
+        super.setValue(Math.max(min.doubleValue(), Math.min(max.doubleValue(), closestMultipleOfInc)));
     }
 }

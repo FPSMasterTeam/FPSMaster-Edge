@@ -137,7 +137,7 @@ public class Component {
     private void move(int x, int y) {
         ScaledResolution sr = new ScaledResolution(Utility.mc);
         int scaleFactor = 2;
-        if (ClientSettings.fixedScale.value) {
+        if (ClientSettings.fixedScale.getValue()) {
             scaleFactor = sr.getScaleFactor();
         }
         float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;

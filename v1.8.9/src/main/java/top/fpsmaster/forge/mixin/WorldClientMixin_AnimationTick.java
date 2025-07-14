@@ -10,6 +10,6 @@ import top.fpsmaster.features.impl.optimizes.Performance;
 public class WorldClientMixin_AnimationTick {
     @ModifyConstant(method = "doVoidFogParticles", constant = @Constant(intValue = 1000))
     private int patcher$lowerTickCount(int original) {
-        return Performance.lowAnimationTick.value ? 100 : original;
+        return Performance.lowAnimationTick.getValue() ? 100 : original;
     }
 }

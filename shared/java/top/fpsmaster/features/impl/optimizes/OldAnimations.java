@@ -76,7 +76,7 @@ public class OldAnimations extends Module {
             delta *= 0.4f;
             eyeHeight = START_HEIGHT - delta;
         }
-        if (Minecraft.getMinecraft().gameSettings.keyBindAttack.isKeyDown() && thePlayer.isUsingItem() && blockSwing.value) {
+        if (Minecraft.getMinecraft().gameSettings.keyBindAttack.isKeyDown() && thePlayer.isUsingItem() && blockSwing.getValue()) {
             swingItem();
         }
     }

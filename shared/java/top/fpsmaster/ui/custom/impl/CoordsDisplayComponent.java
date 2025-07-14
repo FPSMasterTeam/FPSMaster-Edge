@@ -23,7 +23,7 @@ public class CoordsDisplayComponent extends Component {
                 (int) ProviderManager.mcProvider.getPlayer().posY,
                 (int) ProviderManager.mcProvider.getPlayer().posZ);
 
-        if (((CoordsDisplay) mod).limitDisplay.value) {
+        if (((CoordsDisplay) mod).limitDisplay.getValue()) {
             String yStr = getString();
 
             s = String.format("X:%d Y:%d(%s) Z:%d", 
@@ -41,7 +41,7 @@ public class CoordsDisplayComponent extends Component {
     }
 
     private @NotNull String getString() {
-        int restHeight = ((CoordsDisplay) mod).limitDisplayY.value.intValue() - (int) ProviderManager.mcProvider.getPlayer().posY;
+        int restHeight = ((CoordsDisplay) mod).limitDisplayY.getValue().intValue() - (int) ProviderManager.mcProvider.getPlayer().posY;
         String yStr;
 
         // color

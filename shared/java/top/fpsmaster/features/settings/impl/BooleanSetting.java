@@ -14,6 +14,6 @@ public class BooleanSetting extends Setting<Boolean> {
     }
 
     public void toggle() {
-        value = !value;
+        setValue(!getValue());
     }
 }

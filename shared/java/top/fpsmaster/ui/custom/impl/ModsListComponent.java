@@ -4,6 +4,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ModsList;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.features.settings.impl.TextSetting;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.render.Render2DUtils;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 public class ModsListComponent extends Component {
 
     List<Module> modules = new ArrayList<>();
-
+    
     public ModsListComponent() {
         super(ModsList.class);
         this.x = 1f;
@@ -31,9 +32,10 @@ public class ModsListComponent extends Component {
         UFontRenderer font = FPSMaster.fontManager.s18;
         float modY = 0f;
 
-        if (((ModsList) mod).getShowLogo().value) {
-            drawString(36, "FPS V3", x + 0.5f, y + 0.5f, new Color(0, 0, 0, 150).getRGB());
-            drawString(36, "FPS V3", x, y, FPSMaster.theme.getPrimary().getRGB());
+        ModsList modlist = (ModsList) mod;
+        if (modlist.showLogo.getValue()) {
+            drawString(36, modlist.text.getValue(), x + 0.5f, y + 0.5f, new Color(0, 0, 0, 100).getRGB());
+            drawString(36, modlist.text.getValue(), x, y, FPSMaster.theme.getPrimary().getRGB());
             modY = 20f;
         }
 
@@ -43,12 +45,12 @@ public class ModsListComponent extends Component {
         if (ProviderManager.mcProvider.getPlayer().ticksExisted % 20 == 0)
             modules = FPSMaster.moduleManager.modules.stream()
                     .sorted((m1, m2) -> {
-                        float w1 = (mod).betterFont.value
-                                ? font.getStringWidth(((ModsList) mod).getEnglish().value ? m1.name : FPSMaster.i18n.get(m1.name.toLowerCase()))
-                                : ProviderManager.mcProvider.getFontRenderer().getStringWidth(((ModsList) mod).getEnglish().value ? m1.name : FPSMaster.i18n.get(m1.name.toLowerCase()));
-                        float w2 = (mod.betterFont.value
-                                ? font.getStringWidth(((ModsList) mod).getEnglish().value ? m2.name : FPSMaster.i18n.get(m2.name.toLowerCase()))
-                                : ProviderManager.mcProvider.getFontRenderer().getStringWidth(((ModsList) mod).getEnglish().value ? m2.name : FPSMaster.i18n.get(m2.name.toLowerCase())));
+                        float w1 = (mod).betterFont.getValue()
+                                ? font.getStringWidth(modlist.english.getValue() ? m1.name : FPSMaster.i18n.get(m1.name.toLowerCase()))
+                                : ProviderManager.mcProvider.getFontRenderer().getStringWidth(modlist.english.getValue() ? m1.name : FPSMaster.i18n.get(m1.name.toLowerCase()));
+                        float w2 = (mod.betterFont.getValue()
+                                ? font.getStringWidth(modlist.english.getValue() ? m2.name : FPSMaster.i18n.get(m2.name.toLowerCase()))
+                                : ProviderManager.mcProvider.getFontRenderer().getStringWidth(modlist.english.getValue() ? m2.name : FPSMaster.i18n.get(m2.name.toLowerCase())));
                         return Float.compare(w2, w1);
                     }).collect(Collectors.toList());
 
@@ -64,11 +66,11 @@ public class ModsListComponent extends Component {
             }
 
             String name = FPSMaster.i18n.get(module.name.toLowerCase());
-            if (((ModsList) mod).getEnglish().value) {
+            if (modlist.english.getValue()) {
                 name = module.name;
             }
 
-            float width = mod.betterFont.value
+            float width = mod.betterFont.getValue()
                     ? font.getStringWidth(name)
                     : ProviderManager.mcProvider.getFontRenderer().getStringWidth(name);
 
@@ -76,13 +78,13 @@ public class ModsListComponent extends Component {
                 width2 = width + 5;
             }
 
-            Render2DUtils.drawRect(x - width - 4, y + modY, width + 4, 14f, ((ModsList) mod).backgroundColor.getColor());
-            Color color = ((ModsList) mod).getColor().getColor();
-            if (((ModsList) mod).getRainbow().value) {
+            Render2DUtils.drawRect(x - width - 4, y + modY, width + 4, 14f, modlist.backgroundColor.getColor());
+            Color color = modlist.color.getColor();
+            if (modlist.rainbow.getValue()) {
                 color = col;
             }
 
-            if (mod.betterFont.value) {
+            if (mod.betterFont.getValue()) {
                 font.drawStringWithShadow(name, x - width - 2, y + modY + 2, color.getRGB());
             } else {
                 ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(name, x - width - 2, y + modY, color.getRGB());

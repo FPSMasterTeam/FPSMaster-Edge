@@ -1,9 +1,12 @@
 package top.fpsmaster.features.settings;
 
+import top.fpsmaster.event.EventDispatcher;
+import top.fpsmaster.event.events.EventValueChange;
+
 public class Setting<T> {
 
     public String name;
-    public T value;
+    T value;
     public VisibleCondition visible;
 
     public Setting(String name, T value) {
@@ -30,6 +33,10 @@ public class Setting<T> {
     }
 
     public void setValue(T value) {
-        this.value = value;
+        EventValueChange event = new EventValueChange(this, this.value, value);
+        EventDispatcher.dispatchEvent(event);
+        if (!event.isCanceled()) {
+            this.value = value;
+        }
     }
 }

@@ -32,7 +32,7 @@ public abstract class MixinFontRender {
     @Inject(method = "getStringWidth", at = @At("HEAD"), cancellable = true)
     public void getStringWidth(String text, CallbackInfoReturnable<Integer> cir) {
         text = GlobalTextFilter.filter(text);
-        if (Performance.fontOptimize.value) {
+        if (Performance.fontOptimize.getValue()) {
             cir.setReturnValue(this.patcher$fontRendererHook.getStringWidth(text));
         } else {
             int i = 0;
@@ -67,7 +67,7 @@ public abstract class MixinFontRender {
 
     @Inject(method = "renderStringAtPos", at = @At("HEAD"), cancellable = true)
     private void patcher$useOptimizedRendering(String text, boolean shadow, CallbackInfo ci) {
-        if (Performance.fontOptimize.value) {
+        if (Performance.fontOptimize.getValue()) {
             if (this.patcher$fontRendererHook.renderStringAtPos(text, shadow)) {
                 ci.cancel();
             }

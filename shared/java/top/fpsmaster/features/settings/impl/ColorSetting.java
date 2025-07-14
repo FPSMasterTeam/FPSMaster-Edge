@@ -23,10 +23,10 @@ public class ColorSetting extends Setting<CustomColor> {
     }
 
     public int getRGB() {
-        return value.getRGB();
+        return getValue().getRGB();
     }
 
     public Color getColor() {
-        return value.getColor();
+        return getValue().getColor();
     }
 }

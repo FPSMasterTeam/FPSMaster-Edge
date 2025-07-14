@@ -22,14 +22,14 @@ public class TexturedQuadMixin_BatchDraw {
     @Redirect(method = "draw", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/WorldRenderer;begin(ILnet/minecraft/client/renderer/vertex/VertexFormat;)V"))
     private void patcher$beginDraw(WorldRenderer renderer, int glMode, VertexFormat format) {
         this.patcher$drawOnSelf = !((WorldRendererAccessor) renderer).isDrawing();
-        if (this.patcher$drawOnSelf || !Performance.batchModelRendering.value) {
+        if (this.patcher$drawOnSelf || !Performance.batchModelRendering.getValue()) {
             renderer.begin(glMode, DefaultVertexFormats.POSITION_TEX_NORMAL);
         }
     }
 
     @Redirect(method = "draw", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/Tessellator;draw()V"))
     private void patcher$endDraw(Tessellator tessellator) {
-        if (this.patcher$drawOnSelf || !Performance.batchModelRendering.value) {
+        if (this.patcher$drawOnSelf || !Performance.batchModelRendering.getValue()) {
             tessellator.draw();
         }
     }

@@ -10,6 +10,6 @@ import top.fpsmaster.features.impl.optimizes.Performance;
 public class EntityFXMixin_StaticParticleColor {
     @Redirect(method = "renderParticle", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/EntityFX;getBrightnessForRender(F)I"))
     private int patcher$staticParticleColor(EntityFX entityFX, float partialTicks) {
-        return Performance.staticParticleColor.value ? 15728880 : entityFX.getBrightnessForRender(partialTicks);
+        return Performance.staticParticleColor.getValue() ? 15728880 : entityFX.getBrightnessForRender(partialTicks);
     }
 }

@@ -11,6 +11,7 @@ import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.music.MusicPlayer;
 import top.fpsmaster.ui.notification.NotificationManager;
+import top.fpsmaster.utils.OptifineUtil;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.MathTimer;
 import top.fpsmaster.utils.render.StencilUtil;
@@ -77,7 +78,7 @@ public class GlobalSubmitter {
         float mouseX = (float) Mouse.getX() / scaledResolution.getScaleFactor();
         float mouseY = scaledResolution.getScaledHeight() - (float) Mouse.getY() / scaledResolution.getScaleFactor();
 
-        if (ClientSettings.blur.value) {
+        if (ClientSettings.blur.getValue()) {
             StencilUtil.initStencilToWrite();
             EventDispatcher.dispatchEvent(new EventShader());
             FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);

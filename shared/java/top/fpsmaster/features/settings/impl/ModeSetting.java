@@ -2,6 +2,8 @@ package top.fpsmaster.features.settings.impl;
 
 import top.fpsmaster.features.settings.Setting;
 
+import java.util.Objects;
+
 public class ModeSetting extends Setting<Integer> {
 
     private String[] modes;
@@ -17,7 +19,7 @@ public class ModeSetting extends Setting<Integer> {
     }
 
     public void cycle() {
-        value = (value + 1) % modes.length;
+        setValue((getValue() + 1) % modes.length);
     }
 
     public String getMode(int num) {
@@ -25,15 +27,15 @@ public class ModeSetting extends Setting<Integer> {
     }
 
     public boolean isMode(String mode) {
-        return modes[value] == mode;
+        return Objects.equals(modes[getValue()], mode);
     }
 
     public String getModeName() {
-        return modes[value];
+        return modes[getValue()];
     }
 
     public int getMode() {
-        return value;
+        return getValue();
     }
 
     public int getModesSize() {

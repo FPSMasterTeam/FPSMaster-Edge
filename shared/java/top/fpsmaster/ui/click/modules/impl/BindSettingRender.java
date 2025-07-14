@@ -28,7 +28,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
             FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault())),
             x + 10, y + 2, FPSMaster.theme.getTextColorTitle().getRGB()
         );
-        String keyName = Keyboard.getKeyName(setting.value);
+        String keyName = Keyboard.getKeyName(setting.getValue());
         UFontRenderer s16b = FPSMaster.fontManager.s16;
         float width1 = 10 + s16b.getStringWidth(keyName);
         if (Render2DUtils.isHovered(x + 15 + fw, y, width1, 14f, (int) mouseX, (int) mouseY)) {
@@ -55,7 +55,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
         float fw = FPSMaster.fontManager.s16.getStringWidth(
             FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault()))
         );
-        String keyName = Keyboard.getKeyName(setting.value);
+        String keyName = Keyboard.getKeyName(setting.getValue());
         UFontRenderer s16b = FPSMaster.fontManager.s16;
         if (Render2DUtils.isHovered(
                 x + 25 + fw,
@@ -74,7 +74,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
     @Override
     public void keyTyped(char typedChar, int keyCode) {
         if (MainPanel.bindLock.equals(setting.name)) {
-            setting.value = Keyboard.getEventKey();
+            setting.setValue(Keyboard.getEventKey());
             MainPanel.bindLock = "";
         }
     }

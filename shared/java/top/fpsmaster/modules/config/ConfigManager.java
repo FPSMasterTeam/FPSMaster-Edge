@@ -10,6 +10,7 @@ import top.fpsmaster.features.impl.utility.IRC;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.*;
+import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
 import top.fpsmaster.utils.os.FileUtils;
@@ -75,11 +76,12 @@ public class ConfigManager {
             moduleJson.addProperty("enabled", module.isEnabled());
             moduleJson.addProperty("key", module.key);
             for (Setting<?> setting : module.settings) {
-                String settingValue = setting.value.toString();
+                String settingValue = setting.getValue().toString();
                 if (setting instanceof ColorSetting) {
                     ColorSetting colorSetting = (ColorSetting) setting;
-                    settingValue = colorSetting.value.hue + "|" + colorSetting.value.saturation +
-                            "|" + colorSetting.value.brightness + "|" + colorSetting.value.alpha;
+                    CustomColor value = colorSetting.getValue();
+                    settingValue = value.hue + "|" + value.saturation +
+                            "|" + value.brightness + "|" + value.alpha;
                 }
                 moduleJson.addProperty(setting.name, settingValue);
             }
@@ -113,20 +115,20 @@ public class ConfigManager {
                     if (settingValue != null) {
                         if (setting instanceof BooleanSetting) {
                             BooleanSetting booleanSetting = (BooleanSetting) setting;
-                            booleanSetting.value = settingValue.getAsBoolean();
+                            booleanSetting.setValue(settingValue.getAsBoolean());
                         } else if (setting instanceof NumberSetting) {
                             NumberSetting numberSetting = (NumberSetting) setting;
-                            numberSetting.value = settingValue.getAsDouble();
+                            numberSetting.setValue(settingValue.getAsDouble());
                         } else if (setting instanceof ModeSetting) {
                             ModeSetting modeSetting = (ModeSetting) setting;
-                            modeSetting.value = settingValue.getAsInt();
+                            modeSetting.setValue(settingValue.getAsInt());
                         } else if (setting instanceof TextSetting) {
                             TextSetting textSetting = (TextSetting) setting;
-                            textSetting.value = settingValue.getAsString();
+                            textSetting.setValue(settingValue.getAsString());
                         } else if (setting instanceof ColorSetting) {
                             ColorSetting colorSetting = (ColorSetting) setting;
                             String[] colorParts = settingValue.getAsString().split("\\|");
-                            colorSetting.value.setColor(
+                            colorSetting.getValue().setColor(
                                     Float.parseFloat(colorParts[0]),
                                     Float.parseFloat(colorParts[1]),
                                     Float.parseFloat(colorParts[2]),
@@ -134,7 +136,7 @@ public class ConfigManager {
                             );
                         } else if (setting instanceof BindSetting) {
                             BindSetting bindSetting = (BindSetting) setting;
-                            bindSetting.value = settingValue.getAsInt();
+                            bindSetting.setValue(settingValue.getAsInt());
                         }
                     }
                 }
