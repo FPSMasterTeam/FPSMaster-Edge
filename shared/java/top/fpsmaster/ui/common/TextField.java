@@ -105,7 +105,7 @@ public class TextField extends Gui {
                 this.text = text;
             }
 
-            this.setCursorPositionEnd();
+            this.setCursorPositionZero();
         }
     }
 

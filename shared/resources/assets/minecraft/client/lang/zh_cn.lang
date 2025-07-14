@@ -454,7 +454,8 @@ coordsdisplay.background=背景
 
 modslist=功能列表
 modslist.desc=显示开启的功能
-modslist.showlogo=显示客户端标志
+modslist.showtext=显示自定义文本
+modslist.text=自定义文本
 modslist.english=显示英文功能名
 modslist.color=功能列表颜色
 modslist.rainbow=功能列表彩色
