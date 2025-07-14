@@ -21,12 +21,12 @@ import top.fpsmaster.wrapper.util.WrapperAxisAlignedBB;
 import java.awt.*;
 
 public class BlockOverlay extends Module {
-    private BooleanSetting fill = new BooleanSetting("Fill", true);
-    private BooleanSetting outline = new BooleanSetting("Outline", true);
-    private BooleanSetting throughBlock = new BooleanSetting("ThroughBlock", false);
-    private NumberSetting width = new NumberSetting("Width", 1, 0.1, 10, 0.1, ()->outline.getValue());
-    private ColorSetting color1 = new ColorSetting("FillColor", new Color(255, 255, 255, 50), ()->fill.getValue());
-    private ColorSetting color2 = new ColorSetting("OutlineColor", new Color(255, 255, 255, 255), ()->outline.getValue());
+    private final BooleanSetting fill = new BooleanSetting("Fill", true);
+    private final BooleanSetting outline = new BooleanSetting("Outline", true);
+    private final BooleanSetting throughBlock = new BooleanSetting("ThroughBlock", false);
+    private final NumberSetting width = new NumberSetting("Width", 1, 0.1, 10, 0.1, ()->outline.getValue());
+    private final ColorSetting color1 = new ColorSetting("FillColor", new Color(255, 255, 255, 50), ()->fill.getValue());
+    private final ColorSetting color2 = new ColorSetting("OutlineColor", new Color(255, 255, 255, 255), ()->outline.getValue());
     public static boolean using = false;
 
     public BlockOverlay(){

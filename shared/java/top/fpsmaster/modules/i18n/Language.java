@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Language {
-    private Map<String, String> prompts = new HashMap<>();
+    private final Map<String, String> prompts = new HashMap<>();
 
     public Language() {
         FileUtils.release("en_us");

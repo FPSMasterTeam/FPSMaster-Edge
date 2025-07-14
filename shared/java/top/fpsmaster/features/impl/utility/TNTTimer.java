@@ -16,7 +16,7 @@ import java.text.DecimalFormat;
 public class TNTTimer extends Module {
 
     private static boolean using = false;
-    private static NumberSetting duration = new NumberSetting("Duration", 4, 1, 10, 0.1);
+    private static final NumberSetting duration = new NumberSetting("Duration", 4, 1, 10, 0.1);
 
     public TNTTimer() {
         super("TNTTimer", Category.Utility);

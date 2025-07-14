@@ -8,8 +8,8 @@ import top.fpsmaster.utils.render.Render2DUtils;
 import java.awt.*;
 
 public class MenuButton {
-    private String text;
-    private Runnable runnable;
+    private final String text;
+    private final Runnable runnable;
     private float x;
     private float y;
     private float width;

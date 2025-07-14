@@ -10,7 +10,7 @@ import top.fpsmaster.wrapper.mods.WrapperHitboxes;
 import java.awt.*;
 
 public class Hitboxes extends Module {
-    private ColorSetting color = new ColorSetting("Color", new Color(255, 255, 255, 255));
+    private final ColorSetting color = new ColorSetting("Color", new Color(255, 255, 255, 255));
     public static boolean using = false;
     public Hitboxes(){
         super("HitBoxes", Category.RENDER);

@@ -16,8 +16,8 @@ public class Notification {
 
     public Animation animation;
     private float positionY;
-    private float width;
-    private float height;
+    private final float width;
+    private final float height;
     private long startTime = -1L;
 
     public Notification(String title, String description, Type type, float time) {

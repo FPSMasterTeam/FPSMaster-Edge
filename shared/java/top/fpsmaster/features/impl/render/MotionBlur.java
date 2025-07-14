@@ -32,8 +32,8 @@ public class MotionBlur extends Module {
     private static Framebuffer blurBufferMain;
     private static Framebuffer blurBufferInto;
 
-    private ModeSetting mode = new ModeSetting("Mode", 1, "Old", "New");
-    private NumberSetting multiplier = new NumberSetting("Strength", 2, 0, 10, 0.5);
+    private final ModeSetting mode = new ModeSetting("Mode", 1, "Old", "New");
+    private final NumberSetting multiplier = new NumberSetting("Strength", 2, 0, 10, 0.5);
 
     public MotionBlur() {
         super("MotionBlur", Category.RENDER);

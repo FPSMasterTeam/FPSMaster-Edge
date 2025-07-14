@@ -16,7 +16,7 @@ public class GuiButton {
     private float height = 0f;
     Color color;
     Color hoverColor;
-    private ColorAnimation btnColor = new ColorAnimation(new Color(113, 127, 254));
+    private final ColorAnimation btnColor = new ColorAnimation(new Color(113, 127, 254));
 
 
     public GuiButton(String text, Runnable runnable, Color color, Color hoverColor) {

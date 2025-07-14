@@ -13,7 +13,7 @@ import top.fpsmaster.utils.render.Render2DUtils;
 import java.awt.*;
 
 public class SearchBox extends Gui {
-    private UFontRenderer font;
+    private final UFontRenderer font;
 
     private float width;
     private float height;
@@ -21,21 +21,21 @@ public class SearchBox extends Gui {
     private float yPosition;
 
     private String text = "";
-    private int maxStringLength = 1000;
+    private final int maxStringLength = 1000;
     private int cursorCounter;
-    private boolean enableBackgroundDrawing = true;
+    private final boolean enableBackgroundDrawing = true;
     private boolean canLoseFocus = true;
     private boolean isFocused;
     private boolean isEnabled = true;
-    private int lineScrollOffset = 0;
+    private final int lineScrollOffset = 0;
     private int cursorPosition = 0;
     private int selectionEnd = 0;
-    private Color enabledColor;
-    private Color disabledColor;
+    private final Color enabledColor;
+    private final Color disabledColor;
 
-    private Predicate<String> validator = Predicates.alwaysTrue();
+    private final Predicate<String> validator = Predicates.alwaysTrue();
     private String placeholder = "";
-    private ColorAnimation btnColor = new ColorAnimation();
+    private final ColorAnimation btnColor = new ColorAnimation();
 
     private boolean visible = true;
     private Runnable runnable;

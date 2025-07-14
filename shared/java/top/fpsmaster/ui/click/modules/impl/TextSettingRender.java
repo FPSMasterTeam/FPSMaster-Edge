@@ -11,7 +11,7 @@ import java.awt.*;
 import java.util.Locale;
 
 public class TextSettingRender extends SettingRender<TextSetting> {
-    private TextField inputBox;
+    private final TextField inputBox;
 
     public TextSettingRender(Module mod, TextSetting setting) {
         super(setting);

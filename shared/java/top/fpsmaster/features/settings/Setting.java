@@ -25,7 +25,7 @@ public class Setting<T> {
 
     // Functional interface to represent the visibility check (similar to the Kotlin lambda)
     public interface VisibleCondition {
-        abstract boolean isVisible();
+        boolean isVisible();
     }
 
     public T getValue() {

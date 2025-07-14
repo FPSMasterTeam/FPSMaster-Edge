@@ -16,7 +16,7 @@ import java.net.URLEncoder;
 import java.util.Iterator;
 
 public class MusicWrapper {
-    private static Gson gson = new GsonBuilder().create();
+    private static final Gson gson = new GsonBuilder().create();
 
     public static String getSongUrl(String id) {
         JsonObject jsonObject = gson.fromJson(NeteaseApi.getPlayURL(id), JsonObject.class);

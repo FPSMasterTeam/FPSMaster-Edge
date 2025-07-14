@@ -12,8 +12,8 @@ import static top.fpsmaster.utils.Utility.mc;
 import static top.fpsmaster.utils.render.shader.GradientUtils.interpolateColorC;
 
 public class RoundedUtil {
-    private static ShaderUtil roundedShader = new ShaderUtil("roundedRect");
-    private static ShaderUtil roundedGradientShader = new ShaderUtil("roundedRectGradient");
+    private static final ShaderUtil roundedShader = new ShaderUtil("roundedRect");
+    private static final ShaderUtil roundedGradientShader = new ShaderUtil("roundedRectGradient");
     public static Framebuffer bloomFramebuffer = new Framebuffer(1, 1, false);
 
     public static void drawRound(float x, float y, float width, float height, float radius, Color color) {

@@ -39,10 +39,10 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     private final List<ServerData> servers = Lists.newArrayList();
     private final List<ServerListEntry> serverListDisplay = Lists.newArrayList();
     private final List<ServerListEntry> serverListInternet = Lists.newArrayList();
-    private static List<ServerListEntry> serverListRecommended = Lists.newArrayList();
+    private static final List<ServerListEntry> serverListRecommended = Lists.newArrayList();
     public final OldServerPinger oldServerPinger = new OldServerPinger();
 
-    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     String action = "";
 
@@ -54,12 +54,12 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         FMLClientHandler.instance().connectToServer(this, selectedServer);
     }, new Color(0, 0, 0, 140), new Color(113, 127, 254));
     GuiButton connect = new GuiButton("直接连接", () -> {
-        this.mc.displayGuiScreen(new GuiScreenServerList(this, this.selectedServer = new ServerData(I18n.format("selectServer.defaultName", new Object[0]), "", false)));
+        this.mc.displayGuiScreen(new GuiScreenServerList(this, this.selectedServer = new ServerData(I18n.format("selectServer.defaultName"), "", false)));
         action = "connect";
     }, new Color(0, 0, 0, 140), new Color(113, 127, 254));
     GuiButton add = new GuiButton("添加服务器", () -> {
         action = "add";
-        this.mc.displayGuiScreen(new GuiScreenAddServer(this, this.selectedServer = new ServerData(I18n.format("selectServer.defaultName", new Object[0]), "", false)));
+        this.mc.displayGuiScreen(new GuiScreenAddServer(this, this.selectedServer = new ServerData(I18n.format("selectServer.defaultName"), "", false)));
     }, new Color(0, 0, 0, 140), new Color(113, 127, 254));
     GuiButton edit = new GuiButton("编辑", () -> {
         if (selectedServer == null)
@@ -73,10 +73,10 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         action = "remove";
         String s4 = selectedServer.serverName;
         if (s4 != null) {
-            String s = I18n.format("selectServer.deleteQuestion", new Object[0]);
-            String s1 = "'" + s4 + "' " + I18n.format("selectServer.deleteWarning", new Object[0]);
-            String s2 = I18n.format("selectServer.deleteButton", new Object[0]);
-            String s3 = I18n.format("gui.cancel", new Object[0]);
+            String s = I18n.format("selectServer.deleteQuestion");
+            String s1 = "'" + s4 + "' " + I18n.format("selectServer.deleteWarning");
+            String s2 = I18n.format("selectServer.deleteButton");
+            String s3 = I18n.format("gui.cancel");
             GuiYesNo guiyesno = new GuiYesNo(this, s, s1, s2, s3, servers.indexOf(selectedServer));
             this.mc.displayGuiScreen(guiyesno);
         }

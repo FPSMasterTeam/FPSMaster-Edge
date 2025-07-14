@@ -13,7 +13,7 @@ import java.util.Locale;
 
 public class BooleanSettingRender extends SettingRender<BooleanSetting> {
     // animation
-    private ColorAnimation box = new ColorAnimation(new Color(255, 255, 255, 0));
+    private final ColorAnimation box = new ColorAnimation(new Color(255, 255, 255, 0));
 
     public BooleanSettingRender(Module mod, BooleanSetting setting) {
         super(setting);

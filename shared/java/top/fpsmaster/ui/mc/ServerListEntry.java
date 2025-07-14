@@ -97,7 +97,7 @@ public class ServerListEntry {
         List<String> list = text.listFormattedStringToWidth(FMLClientHandler.instance().fixDescription(this.server.serverMOTD), listWidth - 48 - 2);
 
         for (int i = 0; i < Math.min(list.size(), 2); ++i) {
-            text.drawString((String) list.get(i), x + 32 + 3 + 10, y + 12 + 10 + this.mc.fontRendererObj.FONT_HEIGHT * i, -1);
+            text.drawString(list.get(i), x + 32 + 3 + 10, y + 12 + 10 + this.mc.fontRendererObj.FONT_HEIGHT * i, -1);
         }
 
         String s2 = flag2 ? EnumChatFormatting.DARK_RED + this.server.gameVersion : this.server.populationInfo;
@@ -134,7 +134,7 @@ public class ServerListEntry {
             }
         } else {
             k = 1;
-            l = (int) (Minecraft.getSystemTime() / 100L + (long) (slotIndex * 2) & 7L);
+            l = (int) (Minecraft.getSystemTime() / 100L + (long) (slotIndex * 2L) & 7L);
             if (l > 4) {
                 l = 8 - l;
             }
@@ -229,12 +229,12 @@ public class ServerListEntry {
             {
                 try {
                     bufferedimage = TextureUtil.readBufferedImage(new ByteBufInputStream(bytebuf1));
-                    Validate.validState(bufferedimage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
-                    Validate.validState(bufferedimage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
+                    Validate.validState(bufferedimage.getWidth() == 64, "Must be 64 pixels wide");
+                    Validate.validState(bufferedimage.getHeight() == 64, "Must be 64 pixels high");
                     break label80;
                 } catch (Throwable throwable) {
                     logger.error("Invalid icon for server " + this.server.serverName + " (" + this.server.serverIP + ")", throwable);
-                    this.server.setBase64EncodedIconData((String) null);
+                    this.server.setBase64EncodedIconData(null);
                 } finally {
                     bytebuf.release();
                     bytebuf1.release();

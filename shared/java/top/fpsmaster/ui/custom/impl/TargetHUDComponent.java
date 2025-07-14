@@ -17,7 +17,7 @@ public class TargetHUDComponent extends Component {
 
     private float animation = 0f;
     private float healthWidth = 0f;
-    private ColorAnimation colorAnimation = new ColorAnimation();
+    private final ColorAnimation colorAnimation = new ColorAnimation();
 
     public TargetHUDComponent() {
         super(TargetDisplay.class);
@@ -39,7 +39,7 @@ public class TargetHUDComponent extends Component {
         if (target1 == null) return;
 
         // Set width and height
-        String name = ((Entity) target1).getDisplayName().getFormattedText();
+        String name = target1.getDisplayName().getFormattedText();
 
         if (name.length() > 12 && TargetDisplay.omit.getValue()) {
             name = name.substring(0, 10) + "..";
@@ -53,8 +53,8 @@ public class TargetHUDComponent extends Component {
                 : (float) AnimationUtils.base(animation, 80.0, 0.1);
 
         // Health width
-        float health = ((EntityPlayer) target1).getHealth();
-        float maxHealth = ((EntityPlayer) target1).getMaxHealth();
+        float health = target1.getHealth();
+        float maxHealth = target1.getMaxHealth();
         healthWidth = (float) AnimationUtils.base(healthWidth, (health / maxHealth), 0.1);
 
         // Set color based on health percentage

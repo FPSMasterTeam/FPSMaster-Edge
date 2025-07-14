@@ -33,17 +33,17 @@ public class MusicPanel {
     private static Thread searchThread = null;
 
     private static float playProgress = 0f;
-    private static SearchBox inputBox = new SearchBox(FPSMaster.i18n.get("music.search"), () -> {
+    private static final SearchBox inputBox = new SearchBox(FPSMaster.i18n.get("music.search"), () -> {
         searchThread = new Thread(MusicPanel::run);
         searchThread.start();
     });
 
-    private static String[] pages = {"music.name", "music.list", "music.daily"};
+    private static final String[] pages = {"music.name", "music.list", "music.daily"};
     private static int curSearch = 0;
     private static boolean isWaitingLogin = false;
     private static String key = null;
     private static Thread loginThread = null;
-    private static ScrollContainer container = new ScrollContainer();
+    private static final ScrollContainer container = new ScrollContainer();
 
     public static int code = 801;
     public static String nickname = "Unknown";
@@ -225,8 +225,8 @@ public class MusicPanel {
                         FPSMaster.fontManager.s16.drawString(music.name + "  " + music.author, x + 60, dY.get() + 10, new Color(234, 234, 234).getRGB());
                         FPSMaster.fontManager.s16.drawString(music.author, x + 60, dY.get() + 20, new Color(162, 162, 162).getRGB());
                     }
-                    dY.updateAndGet(v -> new Float((float) (v + 40f)));
-                    musicHeight.updateAndGet(v -> new Float((float) (v + 40f)));
+                    dY.updateAndGet(v -> new Float(v + 40f));
+                    musicHeight.updateAndGet(v -> new Float(v + 40f));
                 }
                 container.setHeight(musicHeight.get());
             });

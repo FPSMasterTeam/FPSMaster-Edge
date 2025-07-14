@@ -66,7 +66,7 @@ public class IngameOverlay {
         Render2DUtils.drawOptimizedRoundedRect(x, y, width, height, new Color(0, 0, 0, 180));
         Render2DUtils.drawOptimizedRoundedRect(x, y, songProgress, height, MusicOverlay.progressColor.getColor());
 
-        songProgress = (float) AnimationUtils.base((double) songProgress, 6 + (width - 6) * MusicPlayer.curPlayProgress, 0.1);
+        songProgress = (float) AnimationUtils.base(songProgress, 6 + (width - 6) * MusicPlayer.curPlayProgress, 0.1);
 
         Render2DUtils.drawImage(
                 new ResourceLocation("music/netease/" + current.id),

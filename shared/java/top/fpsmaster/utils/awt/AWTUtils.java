@@ -10,8 +10,8 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 
 public class AWTUtils {
-    private static HashMap<Integer, ResourceLocation[]> generated = new HashMap<>();
-    private static HashMap<Integer, ResourceLocation> generatedFull = new HashMap<>();
+    private static final HashMap<Integer, ResourceLocation[]> generated = new HashMap<>();
+    private static final HashMap<Integer, ResourceLocation> generatedFull = new HashMap<>();
 
     public static ResourceLocation generateRoundImage(int width, int height, int radius) {
         ResourceLocation location = generatedFull.get(radius);

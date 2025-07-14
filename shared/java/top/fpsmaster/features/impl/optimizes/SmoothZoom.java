@@ -12,8 +12,8 @@ import top.fpsmaster.utils.Utility;
 
 public class SmoothZoom extends Module {
 
-    private BindSetting zoomBind = new BindSetting("ZoomBind", Keyboard.KEY_C);
-    private BooleanSetting smoothMouse = new BooleanSetting("SmoothMouse", false);
+    private final BindSetting zoomBind = new BindSetting("ZoomBind", Keyboard.KEY_C);
+    private final BooleanSetting smoothMouse = new BooleanSetting("SmoothMouse", false);
 
     public SmoothZoom() {
         super("SmoothZoom", Category.OPTIMIZE);

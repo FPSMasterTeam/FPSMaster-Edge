@@ -6,7 +6,7 @@ import java.util.Objects;
 
 public class ModeSetting extends Setting<Integer> {
 
-    private String[] modes;
+    private final String[] modes;
 
     public ModeSetting(String name, int value, String... modes) {
         super(name, value);

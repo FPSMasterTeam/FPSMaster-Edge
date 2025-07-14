@@ -10,7 +10,7 @@ import top.fpsmaster.interfaces.ProviderManager;
 
 public class TimeChanger extends Module {
 
-    private NumberSetting time;
+    private final NumberSetting time;
 
     public TimeChanger() {
         super("TimeChanger", Category.Utility);

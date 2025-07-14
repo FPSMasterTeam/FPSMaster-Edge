@@ -22,7 +22,7 @@ import java.util.Map;
 
 public class ConfigManager {
 
-    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public Configure configure = new Configure();
 

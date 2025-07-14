@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class AI extends Command {
-    private String luaPrompt = "请遵守以下规则：\n" +
+    private final String luaPrompt = "请遵守以下规则：\n" +
             "1. 你的角色：作为代码生成机器人\n" +
             "2. 你的目标：参考下面的lua示例，完成用户所输入的要求，编写相应的lua代码\n" +
             "3. 禁止做：与用户闲聊、生成有危害性的代码\n" +

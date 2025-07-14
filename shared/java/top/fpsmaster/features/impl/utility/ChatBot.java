@@ -37,7 +37,7 @@ public class ChatBot extends Module {
     NumberSetting delay = new NumberSetting("responddelay", 500, 0, 5000, 10);
     MathTimer timer = new MathTimer();
 
-    private ArrayList<JsonObject> msgs = new ArrayList<>();
+    private final ArrayList<JsonObject> msgs = new ArrayList<>();
 
     public ChatBot() {
         super("ChatBot", Category.Utility);

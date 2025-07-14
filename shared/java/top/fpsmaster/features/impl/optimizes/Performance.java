@@ -21,7 +21,7 @@ public class Performance extends Module {
     public static BooleanSetting staticParticleColor = new BooleanSetting("StaticParticleColor", true);
     public static BooleanSetting limitChunks = new BooleanSetting("LimitChunks", true);
     public static BooleanSetting batchModelRendering = new BooleanSetting("BatchModelRendering", true);
-    public static BooleanSetting lowAnimationTick = new BooleanSetting("LowAnimationTick", true);;
+    public static BooleanSetting lowAnimationTick = new BooleanSetting("LowAnimationTick", true);
 
     public static NumberSetting chunkUpdateLimit = new NumberSetting("ChunkUpdateLimit", 50, 0, 250, 1);
     public static NumberSetting fpsLimit = new NumberSetting("FPSLimit", 30, 0, 360, 1);

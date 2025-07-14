@@ -11,7 +11,7 @@ import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.wrapper.mods.WrapperFreeLook;
 
 public class FreeLook extends Module {
-    private BindSetting bind = new BindSetting("bind", Keyboard.KEY_LMENU);
+    private final BindSetting bind = new BindSetting("bind", Keyboard.KEY_LMENU);
 
     public FreeLook() {
         super("FreeLook", Category.RENDER);

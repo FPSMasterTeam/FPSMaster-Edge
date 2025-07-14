@@ -36,17 +36,17 @@ public class Module {
         for (Setting<?> setting : settings) {
             if (setting != null) {
                 if (setting instanceof BooleanSetting) {
-                    this.settings.add((BooleanSetting) setting);
+                    this.settings.add(setting);
                 } else if (setting instanceof BindSetting) {
-                    this.settings.add((BindSetting) setting);
+                    this.settings.add(setting);
                 } else if (setting instanceof ModeSetting) {
-                    this.settings.add((ModeSetting) setting);
+                    this.settings.add(setting);
                 } else if (setting instanceof NumberSetting) {
-                    this.settings.add((NumberSetting) setting);
+                    this.settings.add(setting);
                 } else if (setting instanceof TextSetting) {
-                    this.settings.add((TextSetting) setting);
+                    this.settings.add(setting);
                 } else if (setting instanceof ColorSetting) {
-                    this.settings.add((ColorSetting) setting);
+                    this.settings.add(setting);
                 }
             }
         }

@@ -86,10 +86,10 @@ public class LevelTag extends Module {
             int j = fontRenderer.getStringWidth(str) / 2;
             GlStateManager.disableTexture2D();
             worldRenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
-            worldRenderer.pos((double)(-j - 1), (double)(-1 + i), (double)0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
-            worldRenderer.pos((double)(-j - 1), (double)(8 + i), (double)0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
-            worldRenderer.pos((double)(j + 1), (double)(8 + i), (double)0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
-            worldRenderer.pos((double)(j + 1), (double)(-1 + i), (double)0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
+            worldRenderer.pos(-j - 1, -1 + i, 0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
+            worldRenderer.pos(-j - 1, 8 + i, 0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
+            worldRenderer.pos(j + 1, 8 + i, 0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
+            worldRenderer.pos(j + 1, -1 + i, 0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
             tessellator.draw();
             GlStateManager.enableTexture2D();
             fontRenderer.drawString(str, -fontRenderer.getStringWidth(str) / 2, i, 553648127);

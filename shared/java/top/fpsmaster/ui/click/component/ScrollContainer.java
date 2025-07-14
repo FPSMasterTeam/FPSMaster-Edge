@@ -78,7 +78,7 @@ public class ScrollContainer {
                 float maxUp = this.height - height;
                 wheel_anim = Math.min(Math.max(wheel_anim, -maxUp), 0f);
             }
-            wheel = (float) AnimationUtils.base((double) wheel, (double) wheel_anim, 0.2);
+            wheel = (float) AnimationUtils.base(wheel, wheel_anim, 0.2);
         }
     }
 

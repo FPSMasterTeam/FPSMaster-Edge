@@ -259,7 +259,7 @@ public class DevSpace extends ScaledGuiScreen {
         if (expression instanceof Expression.AnonymousFunctionExpression)
             return new AnonymousFunctionExpressionComponent((Expression.AnonymousFunctionExpression) expression);
         if (expression instanceof Expression.NilLiteralExpression)
-            return new NilLiteralExpressionComponent((Expression.NilLiteralExpression) expression);
+            return new NilLiteralExpressionComponent(expression);
 
         return new LiteralExpressionComponent(new Expression.LiteralExpression("UNKNOWN", expression.getClass().getSimpleName()));
     }

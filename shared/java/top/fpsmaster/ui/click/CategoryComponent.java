@@ -12,7 +12,7 @@ import java.util.Locale;
 
 public class CategoryComponent {
     public Category category;
-    private ColorAnimation animationName = new ColorAnimation();
+    private final ColorAnimation animationName = new ColorAnimation();
     public ColorAnimation categorySelectionColor = new ColorAnimation();
 
     public CategoryComponent(Category category) {

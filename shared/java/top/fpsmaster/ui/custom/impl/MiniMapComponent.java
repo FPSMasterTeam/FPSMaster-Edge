@@ -16,7 +16,7 @@ import java.io.IOException;
 public class MiniMapComponent extends Component {
 
     private boolean loadedMinimap = false;
-    private XaeroMinimap minimap = new XaeroMinimap();
+    private final XaeroMinimap minimap = new XaeroMinimap();
 
     public MiniMapComponent() {
         super(MiniMap.class);

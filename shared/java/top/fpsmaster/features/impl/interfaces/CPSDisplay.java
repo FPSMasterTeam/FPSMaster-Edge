@@ -12,7 +12,7 @@ import java.util.LinkedList;
 
 public class CPSDisplay extends InterfaceModule {
 
-    private LinkedList<Key> keys = new LinkedList<>();
+    private final LinkedList<Key> keys = new LinkedList<>();
 
     public CPSDisplay() {
         super("CPSDisplay", Category.Interface);

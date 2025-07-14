@@ -10,8 +10,8 @@ import java.awt.*;
 public class NewMusicPanel {
 
     private static Thread playThread;
-    private static PlayList playList = new PlayList();
-    private static PlayList displayList = new PlayList();
+    private static final PlayList playList = new PlayList();
+    private static final PlayList displayList = new PlayList();
 
 
     public static void draw(float x, int y, float width, float height, int mouseX, int mouseY, int scaleFactor) {

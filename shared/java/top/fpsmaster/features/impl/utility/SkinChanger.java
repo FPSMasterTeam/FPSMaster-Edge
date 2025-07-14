@@ -11,7 +11,7 @@ import top.fpsmaster.modules.account.AccountManager;
 
 public class SkinChanger extends Module {
 
-    private TextSetting skinName = new TextSetting("Skin", "");
+    private final TextSetting skinName = new TextSetting("Skin", "");
     private Thread updateThread = new Thread(() -> {
         while (true) {
             update();

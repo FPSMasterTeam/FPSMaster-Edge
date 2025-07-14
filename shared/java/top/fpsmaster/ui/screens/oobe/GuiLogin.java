@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public class GuiLogin extends GuiScreen {
 
-    private static Login login = new Login(false);
+    private static final Login login = new Login(false);
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {

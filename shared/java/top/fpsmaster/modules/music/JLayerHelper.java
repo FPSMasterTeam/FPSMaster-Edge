@@ -104,9 +104,7 @@ public class JLayerHelper {
 
         int fftSize = 1024;
         double[] paddedData = new double[fftSize];
-        for (int i = 0; i < min(fftSize, audioData.length); i++) {
-            paddedData[i] = audioData[i];
-        }
+        System.arraycopy(audioData, 0, paddedData, 0, min(fftSize, audioData.length));
 
         DoubleFFT_1D fft = new DoubleFFT_1D(fftSize);
         fft.realForward(paddedData);

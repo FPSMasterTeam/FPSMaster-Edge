@@ -10,7 +10,7 @@ import top.fpsmaster.utils.Utility;
 
 public class DirectionDisplay extends Module {
 
-    private Compass compass = new Compass(325f, 325f, 1f, 2, true);
+    private final Compass compass = new Compass(325f, 325f, 1f, 2, true);
 
     public DirectionDisplay() {
         super("DirectionDisplay", Category.Interface);
