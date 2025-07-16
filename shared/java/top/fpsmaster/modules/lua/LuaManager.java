@@ -9,6 +9,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.os.FileUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
@@ -28,8 +29,15 @@ public class LuaManager {
     }
 
 
-    public static LuaScript loadLua(RawLua rawLua) {
-        Lua lua = new Lua53();
+    public static LuaScript loadLua(RawLua rawLua) throws FileException {
+        Lua lua;
+        try {
+            lua = new Lua53();
+        }catch (LinkageError e){
+            ClientLogger.error("[Warning] Device does not support Lua.");
+            // todo: 在这里应该设置一个flag，然后禁止用户使用所有相关功能。
+            return null;
+        }
         LuaScript luaScript = new LuaScript(lua, rawLua);
         try {
             lua.run("System = java.import('java.lang.System')");
@@ -217,7 +225,7 @@ public class LuaManager {
         }
     }
 
-    public static void hotswap() throws FileException {
+    public static void hotswap() throws Throwable {
         ArrayList<RawLua> newRawLuaList = new ArrayList<>();
         File[] luas = FileUtils.plugins.listFiles();
         for (File luaFile : luas) {
