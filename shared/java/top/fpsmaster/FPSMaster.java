@@ -4,6 +4,7 @@ import top.fpsmaster.exception.ExceptionHandler;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.GlobalListener;
 import top.fpsmaster.features.command.CommandManager;
+import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.manager.ModuleManager;
 import top.fpsmaster.font.FontManager;
 import top.fpsmaster.modules.account.AccountManager;
@@ -88,7 +89,11 @@ public class FPSMaster {
 
     private void initializeLang() throws FileException {
         ClientLogger.info("Initializing I18N...");
-        i18n.read("zh_cn");
+        if (ClientSettings.language.getValue() == 1) {
+            i18n.read("zh_cn");
+        } else {
+            i18n.read("en_us");
+        }
     }
 
     private void initializeConfigures() throws Exception {
@@ -174,13 +179,13 @@ public class FPSMaster {
     public void initialize() {
         try {
             initializeFonts();
-            initializeLang();
             initializeMusic();
             initializeModules();
             initializeComponents();
             initializeConfigures();
             initializeCommands();
             initializePlugins();
+            initializeLang();
             checkUpdate();
             checkOptifine();
         } catch (Exception e) {

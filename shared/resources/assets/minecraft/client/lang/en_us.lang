@@ -459,6 +459,9 @@ clientsettings.fixedscale=Fixed GUI Scale
 clientsettings.blur=Blur UI Elements
 clientsettings.command=Client Command
 clientsettings.prefix=Command Prefix
+clientsettings.language=Language
+clientsettings.language.chinese=Simplified Chinese
+clientsettings.language.english=English
 
 dragonwings=Dragon Wings
 dragonwings.desc=Display dragon wings
