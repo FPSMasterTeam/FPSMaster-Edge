@@ -67,7 +67,13 @@ public class TextField extends Gui {
     public int backGroundColor;
     public int fontColor;
     public String placeHolder;
+    private Runnable onEnter;
 
+
+    public TextField(UFontRenderer fontrendererObj, String placeHolder, int color, int fontColor, int maxLength, Runnable onEnter) {
+        this(fontrendererObj, placeHolder, color, fontColor, maxLength);
+        this.onEnter = onEnter;
+    }
 
     public TextField(UFontRenderer fontrendererObj, String placeHolder, int color, int fontColor, int maxLength) {
         this.backGroundColor = color;
@@ -384,7 +390,11 @@ public class TextField extends Gui {
                     }
 
                     return true;
-
+                case 28:
+                    if (onEnter != null) {
+                        onEnter.run();
+                    }
+                    return true;
                 default:
                     if (ChatAllowedCharacters.isAllowedCharacter(p_146201_1_)) {
                         if (this.isEnabled) {

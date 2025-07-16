@@ -17,6 +17,7 @@ import top.fpsmaster.modules.music.netease.Music;
 import top.fpsmaster.modules.music.netease.NeteaseApi;
 import top.fpsmaster.modules.music.netease.deserialize.MusicWrapper;
 import top.fpsmaster.ui.click.component.ScrollContainer;
+import top.fpsmaster.ui.common.TextField;
 import top.fpsmaster.utils.os.FileUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -33,10 +34,11 @@ public class MusicPanel {
     private static Thread searchThread = null;
 
     private static float playProgress = 0f;
-    private static final SearchBox inputBox = new SearchBox(FPSMaster.i18n.get("music.search"), () -> {
-        searchThread = new Thread(MusicPanel::run);
-        searchThread.start();
-    });
+//    private static final SearchBox inputBox = new SearchBox(FPSMaster.i18n.get("music.search"), () -> {
+//        searchThread = new Thread(MusicPanel::run);
+//        searchThread.start();
+//    });
+    private static final TextField inputBox = new TextField(FPSMaster.fontManager.s16, FPSMaster.i18n.get("music.search"), new Color(40,40,40, 180).getRGB(), -1, 100);
 
     private static final String[] pages = {"music.name", "music.list", "music.daily"};
     private static int curSearch = 0;
@@ -150,7 +152,7 @@ public class MusicPanel {
     }
 
     public static void keyTyped(char c, int keyCode) {
-        inputBox.keyTyped(c, keyCode);
+        inputBox.textboxKeyTyped(c, keyCode);
     }
 
     public static void draw(float x, float y, float width, float height, int mouseX, int mouseY, int scaleFactor) {
@@ -237,7 +239,7 @@ public class MusicPanel {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
         // 搜索
-        inputBox.render(x + 5, y + 6, 80f, 16f, mouseX, mouseY);
+        inputBox.drawTextBox(x + 5, y + 8, 80f, 16f);
 
         // 分页
         int xOffset = 0;
@@ -245,14 +247,14 @@ public class MusicPanel {
         for (String page : pages) {
             pagesWidth += FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get(page)) + 10;
         }
-        Render2DUtils.drawOptimizedRoundedRect(x + 90, y + 6, pagesWidth, 16f, new Color(50, 50, 50,100).getRGB());
+        Render2DUtils.drawOptimizedRoundedRect(x + 90, y + 8, pagesWidth, 16f, new Color(50, 50, 50,100).getRGB());
         for (String page : pages) {
             int stringWidth = FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get(page));
             if (page.equals(pages[curSearch])) {
-                Render2DUtils.drawOptimizedRoundedRect(x + 90 + xOffset, y + 6, stringWidth + 10, 16f, -1);
-                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 10, new Color(50, 50, 50).getRGB());
+                Render2DUtils.drawOptimizedRoundedRect(x + 90 + xOffset, y + 8, stringWidth + 10, 16f, -1);
+                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 12, new Color(50, 50, 50).getRGB());
             } else {
-                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 10, -1);
+                FPSMaster.fontManager.s16.drawString(FPSMaster.i18n.get(page), x + 95 + xOffset, y + 12, -1);
             }
             xOffset += stringWidth + 10;
         }
@@ -416,8 +418,8 @@ public class MusicPanel {
     }
 
     private static void run() {
-        if (!inputBox.getContent().isEmpty()) {
-            searchList = curSearch == 0 ? MusicWrapper.searchSongs(inputBox.getContent()) : MusicWrapper.searchList(inputBox.getContent());
+        if (!inputBox.getText().isEmpty()) {
+            searchList = curSearch == 0 ? MusicWrapper.searchSongs(inputBox.getText()) : MusicWrapper.searchList(inputBox.getText());
             displayList = searchList;
             MusicPlayer.playList.pause();
             setMusicList();
