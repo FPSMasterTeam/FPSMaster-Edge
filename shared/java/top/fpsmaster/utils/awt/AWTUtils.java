@@ -14,38 +14,40 @@ public class AWTUtils {
     private static final HashMap<Integer, ResourceLocation> generatedFull = new HashMap<>();
 
     public static ResourceLocation generateRoundImage(int width, int height, int radius) {
-        ResourceLocation location = generatedFull.get(radius);
-        if (location != null) {
-            return location;
+        if (width <= 0 || height <= 0 || radius < 0) {
+            throw new IllegalArgumentException("Width, height must be positive and radius must be non-negative");
         }
 
-        width *= 2;
-        height *= 2;
+        return generatedFull.computeIfAbsent(radius, r -> {
+            int scaledWidth = width * 2;
+            int scaledHeight = height * 2;
 
-        try {
-            BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-            java.awt.Graphics2D graphics2D = bufferedImage.createGraphics();
+            try {
+                BufferedImage bufferedImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D graphics2D = bufferedImage.createGraphics();
 
-            graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            graphics2D.setColor(new Color(0, 0, 0, 0)); // 透明背景
-            graphics2D.fillRect(0, 0, width, height);
+                graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                graphics2D.setColor(new Color(0,0,0,0));
+                graphics2D.fillRect(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight());
 
-            graphics2D.setComposite(AlphaComposite.SrcOver);
-            graphics2D.setColor(Color.WHITE); // 白色圆角矩形
-            RoundRectangle2D roundRectangle = new RoundRectangle2D.Float(0, 0, width, height, 0,0);
-            graphics2D.fill(roundRectangle);
+                graphics2D.setComposite(AlphaComposite.SrcOver);
+                graphics2D.setColor(Color.WHITE); // 白色圆角矩形
+                RoundRectangle2D roundRectangle = new RoundRectangle2D.Float(0, 0, scaledWidth, scaledHeight, r * 2, r * 2);
+                graphics2D.fill(roundRectangle);
 
-            location = Minecraft.getMinecraft().getTextureManager()
-                    .getDynamicTextureLocation(radius + "_full", new DynamicTexture(bufferedImage));
+                Minecraft mc = Minecraft.getMinecraft();
+                if (mc == null || mc.getTextureManager() == null) {
+                    return null;
+                }
+                graphics2D.dispose();
 
-            generatedFull.put(radius, location);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // 返回生成的纹理
-        return generatedFull.get(radius);
+                return mc.getTextureManager()
+                        .getDynamicTextureLocation(r + "_full", new DynamicTexture(bufferedImage));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        });
     }
 
     public static ResourceLocation[] generateRound(int radius) {

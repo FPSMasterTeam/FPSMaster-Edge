@@ -201,7 +201,7 @@ public class Component {
 
         if (mod.bg.getValue()) {
             if (mod.rounded.getValue()) {
-                Render2DUtils.drawOptimizedRoundedRect(x, y, scaledWidth, scaledHeight, mod.roundRadius.getValue().intValue(), color.getRGB());
+                Render2DUtils.drawRoundedRectImage(x, y, scaledWidth, scaledHeight, mod.roundRadius.getValue().intValue(), color);
             } else {
                 Render2DUtils.drawRect(x, y, scaledWidth, scaledHeight, color);
             }
