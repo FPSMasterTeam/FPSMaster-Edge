@@ -19,7 +19,6 @@
     "EntityFXMixin_StaticParticleColor",
     "MixinAbstractClientPlayer",
     "MixinChatLine",
-    "MixinClientBrandRetriever",
     "MixinEntityPlayerSP",
     "MixinEntityRenderer",
     "MixinFontRender",
