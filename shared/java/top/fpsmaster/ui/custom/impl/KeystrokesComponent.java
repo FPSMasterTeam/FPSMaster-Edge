@@ -29,6 +29,25 @@ public class KeystrokesComponent extends Component {
     public void draw(float x, float y) {
         super.draw(x, y);
         for (Key key : keys) {
+            switch (key.keyCode) {
+                case Keyboard.KEY_W:
+                    key.yOffset = key.defaultYOffset - mod.spacing.getValue().intValue();
+                    break;
+                case Keyboard.KEY_A:
+                    key.xOffset = key.defaultXOffset - mod.spacing.getValue().intValue();
+                    break;
+                case Keyboard.KEY_D:
+                    key.xOffset = key.defaultXOffset + mod.spacing.getValue().intValue();
+                    break;
+                case -1:
+                    key.xOffset = key.defaultXOffset - mod.spacing.getValue().intValue();
+                    key.yOffset = key.defaultYOffset + mod.spacing.getValue().intValue();
+                    break;
+                case -2:
+                    key.xOffset = key.defaultXOffset + mod.spacing.getValue().intValue();
+                    key.yOffset = key.defaultYOffset + mod.spacing.getValue().intValue();
+                    break;
+            }
             key.render(x, y, 0f, mod.backgroundColor.getColor(), Keystrokes.pressedColor.getColor());
         }
         width = 60f;
@@ -38,16 +57,20 @@ public class KeystrokesComponent extends Component {
     public class Key {
         private final String name;
         private final int keyCode;
-        private final int xOffset;
-        private final int yOffset;
+        private final int defaultXOffset;
+        private final int defaultYOffset;
+        private int xOffset;
+        private int yOffset;
         private final ColorAnimation color;
 
         public Key(String name, int keyCode, int xOffset, int yOffset) {
             this.name = name;
             this.keyCode = keyCode;
-            this.xOffset = xOffset;
-            this.yOffset = yOffset;
+            this.defaultXOffset = xOffset;
+            this.defaultYOffset = yOffset;
             this.color = new ColorAnimation();
+            this.xOffset = defaultXOffset;
+            this.yOffset = defaultYOffset;
         }
 
         public void render(float x, float y, float speed, Color color, Color color1) {
