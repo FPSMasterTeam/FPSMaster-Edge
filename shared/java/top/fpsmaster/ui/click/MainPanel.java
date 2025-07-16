@@ -215,6 +215,8 @@ public class MainPanel extends ScaledGuiScreen {
     @Override
     public void updateScreen() {
         super.updateScreen();
+        x = (int) ((guiWidth - width) / 2);
+        y = (int) ((guiHeight - height) / 2);
     }
 
     @Override
@@ -229,8 +231,6 @@ public class MainPanel extends ScaledGuiScreen {
 //            height = scaledHeight / 2f;
 //        }
 
-        x = (int) ((guiWidth - width) / 2);
-        y = (int) ((guiHeight - height) / 2);
 
         categories.clear();
         for (Category c : Category.values()) {
@@ -243,8 +243,6 @@ public class MainPanel extends ScaledGuiScreen {
     @Override
     public void onResize(Minecraft mcIn, int w, int h) {
         super.onResize(mcIn, w, h);
-        x = (int) ((guiWidth - width) / 2);
-        y = (int) ((guiHeight - height) / 2);
     }
 
     @Override
