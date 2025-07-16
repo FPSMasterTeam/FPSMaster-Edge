@@ -11,14 +11,14 @@ import java.util.HashMap;
 
 public class AWTUtils {
     private static final HashMap<Integer, ResourceLocation[]> generated = new HashMap<>();
-    private static final HashMap<Integer, ResourceLocation> generatedFull = new HashMap<>();
+    private static final HashMap<String, ResourceLocation> generatedFull = new HashMap<>();
+
 
     public static ResourceLocation generateRoundImage(int width, int height, int radius) {
         if (width <= 0 || height <= 0 || radius < 0) {
             throw new IllegalArgumentException("Width, height must be positive and radius must be non-negative");
         }
-
-        return generatedFull.computeIfAbsent(radius, r -> {
+        return generatedFull.computeIfAbsent(width + "/" + height + "/" + radius, r -> {
             int scaledWidth = width * 2;
             int scaledHeight = height * 2;
 
@@ -27,12 +27,12 @@ public class AWTUtils {
                 Graphics2D graphics2D = bufferedImage.createGraphics();
 
                 graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                graphics2D.setColor(new Color(0,0,0,0));
+                graphics2D.setColor(new Color(0, 0, 0, 0));
                 graphics2D.fillRect(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight());
 
                 graphics2D.setComposite(AlphaComposite.SrcOver);
                 graphics2D.setColor(Color.WHITE); // 白色圆角矩形
-                RoundRectangle2D roundRectangle = new RoundRectangle2D.Float(0, 0, scaledWidth, scaledHeight, r * 2, r * 2);
+                RoundRectangle2D roundRectangle = new RoundRectangle2D.Float(0, 0, scaledWidth, scaledHeight, radius * 2, radius * 2);
                 graphics2D.fill(roundRectangle);
 
                 Minecraft mc = Minecraft.getMinecraft();
