@@ -225,7 +225,7 @@ public class LuaManager {
         }
     }
 
-    public static void hotswap() throws Throwable {
+    public static void hotswap() throws FileException {
         ArrayList<RawLua> newRawLuaList = new ArrayList<>();
         File[] luas = FileUtils.plugins.listFiles();
         for (File luaFile : luas) {
