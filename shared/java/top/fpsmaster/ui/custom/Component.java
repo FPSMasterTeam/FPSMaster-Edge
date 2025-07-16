@@ -3,6 +3,7 @@ package top.fpsmaster.ui.custom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
@@ -16,6 +17,9 @@ import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
+
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.GL_BLEND;
 
 public class Component {
     private float dragX = 0f;
@@ -99,6 +103,8 @@ public class Component {
                 AnimationUtils.base(alpha, 50.0, 0.1f) : AnimationUtils.base(alpha, 0.0, 0.1f));
 
         Render2DUtils.drawOptimizedRoundedRect(rX - 2, rY - 2, scaledWidth + 4, scaledHeight + 4, new Color(0, 0, 0, (int) alpha));
+        GL11.glColor4f(1,1,1,1);
+
 
         if (!Mouse.isButtonDown(0)) {
             FPSMaster.componentsManager.dragLock = "";
