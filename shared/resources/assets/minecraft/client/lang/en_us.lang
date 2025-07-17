@@ -278,7 +278,7 @@ lyricsdisplay.fontshadow=Font Shadow
 lyricsdisplay.betterfont=Clean Font
 lyricsdisplay.roundradius=Corner Radius
 lyricsdisplay.background=Show Background
-
+lyricsdisplay.scale=Play Text Scale
 crosshair=Custom Crosshair
 crosshair.desc=Replaces the default crosshair
 crosshair.dynamic=Dynamic

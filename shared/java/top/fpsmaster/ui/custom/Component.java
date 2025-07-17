@@ -230,4 +230,8 @@ public class Component {
         UFontRenderer font = FPSMaster.fontManager.getFont(fontSize);
         return mod.betterFont.getValue() ? font.getStringWidth(name) : ProviderManager.mcProvider.getFontRenderer().getStringWidth(name);
     }
+    public float getStringHeight(int fontSize) {
+        UFontRenderer font = FPSMaster.fontManager.getFont(fontSize);
+        return mod.betterFont.getValue() ? font.getHeight() : ProviderManager.mcProvider.getFontRenderer().FONT_HEIGHT;
+    }
 }

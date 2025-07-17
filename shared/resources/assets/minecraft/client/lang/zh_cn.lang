@@ -278,6 +278,7 @@ lyricsdisplay.fontshadow=字体阴影
 lyricsdisplay.betterfont=更好的字体
 lyricsdisplay.roundradius=圆角半径
 lyricsdisplay.background=背景
+lyricsdisplay.scale=播放文字缩放
 
 crosshair=自定义准心
 crosshair.desc=使用一个自定义的准星替代原版的准星

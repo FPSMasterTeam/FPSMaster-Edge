@@ -212,6 +212,15 @@ public class Render2DUtils extends Utility {
         return scaleFactor;
     }
 
+    public static void scaleStart(float x, float y, float scale) {
+        glPushMatrix();
+        glTranslatef(x, y, 0);
+        glScalef(scale, scale, 1);
+        glTranslatef(-x, -y, 0);
+    }
+    public static void scaleEnd() {
+        glPopMatrix();
+    }
     public static float[] getFixedBounds() {
         ScaledResolution sr = new ScaledResolution(mc);
         int scaleFactor;
