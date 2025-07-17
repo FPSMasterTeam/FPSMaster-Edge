@@ -85,7 +85,7 @@ public class LevelTag extends Module {
                 i = -10;
             }
 
-            boolean isMate = entityIn == mc.thePlayer;
+            boolean isMate = (entityIn == mc.thePlayer) && str.contains(entityIn.getName());
             int j = fontRenderer.getStringWidth(str) / 2;
 
             if (isMate) {
