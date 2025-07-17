@@ -117,8 +117,13 @@ dependencies {
     implementation("javazoom:jlayer:1.0.1")
 // https://mvnrepository.com/artifact/net.sourceforge.jtransforms/jtransforms
     implementation("net.sourceforge.jtransforms:jtransforms:2.4.0")
+    shadowImpl("net.sourceforge.jtransforms:jtransforms:2.4.0") {
+        isTransitive = true
+    }
     implementation("com.github.FPSMasterTeam:JLuaParser:master-SNAPSHOT")
-
+    shadowImpl("com.github.FPSMasterTeam:JLuaParser:master-SNAPSHOT") {
+        isTransitive = true
+    }
 }
 
 // Tasks:
