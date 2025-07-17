@@ -113,6 +113,7 @@ keystrokes.fontshadow=Font Shadow
 keystrokes.betterfont=Clean Font
 keystrokes.roundradius=Corner Radius
 keystrokes.background=Show Background
+keystrokes.spacing=Spacing
 
 potiondisplay=Potion HUD
 potiondisplay.desc=Displays active potion effects

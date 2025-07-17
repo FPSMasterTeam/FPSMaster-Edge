@@ -113,6 +113,7 @@ keystrokes.fontshadow=字体阴影
 keystrokes.betterfont=更好的字体
 keystrokes.roundradius=圆角半径
 keystrokes.background=背景
+keystrokes.spacing=间距
 
 potiondisplay=药水显示
 potiondisplay.desc=显示玩家的药水效果
