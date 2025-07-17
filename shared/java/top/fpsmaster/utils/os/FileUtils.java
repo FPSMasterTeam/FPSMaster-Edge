@@ -136,6 +136,7 @@ public class FileUtils {
                 }
             }
         } catch (IOException e) {
+            ClientLogger.error("An error occurred while releasing language file: " + file + ".lang");
             e.printStackTrace();
         }
     }

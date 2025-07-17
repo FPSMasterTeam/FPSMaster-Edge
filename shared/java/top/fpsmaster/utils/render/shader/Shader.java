@@ -2,6 +2,7 @@ package top.fpsmaster.utils.render.shader;
 
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.opengl.*;
+import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.Utility;
 
 import java.io.InputStream;
@@ -25,7 +26,8 @@ public abstract class Shader extends Utility {
             IOUtils.closeQuietly(vertexStream);
 
             fragmentShaderID = createShader(shader, ARBFragmentShader.GL_FRAGMENT_SHADER_ARB);
-        } catch (final Exception e) {
+        } catch (Exception e) {
+            ClientLogger.error("An error occurred while loading shader: " + shader);
             e.printStackTrace();
             return;
         }

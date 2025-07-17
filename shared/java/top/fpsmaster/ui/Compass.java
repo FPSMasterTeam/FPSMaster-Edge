@@ -64,102 +64,98 @@ public class Compass {
         GL11.glPushMatrix();
         GL11.glEnable(3089);
         int scaleFactor = Render2DUtils.fixScale();
-        Render2DUtils.doGlScissor(sr.getScaledWidth() / 2f - 100, 25, 200, 25,scaleFactor);
-        try {
-            for (Degree d : degrees) {
-                float location = center + (count * 30) - yaaahhrewindTime;
-                float completeLocation = d.type == 1 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
-                        : d.type == 2 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
-                        : (location - FPSMaster.fontManager.s22.getStringWidth(d.text) / 2f);
+        Render2DUtils.doGlScissor(sr.getScaledWidth() / 2f - 100, 25, 200, 25, scaleFactor);
+        for (Degree d : degrees) {
+            float location = center + (count * 30) - yaaahhrewindTime;
+            float completeLocation = d.type == 1 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
+                    : d.type == 2 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
+                    : (location - FPSMaster.fontManager.s22.getStringWidth(d.text) / 2f);
 
-                int opacity = opacity(sr, completeLocation);
+            int opacity = opacity(sr, completeLocation);
 
-                if (d.type == 1 && opacity != 16777215) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s28.drawString(d.text, completeLocation, -75 + 100, opacity(sr, completeLocation));
-                }
-
-                if (d.type == 2 && opacity != 16777215) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    Gui.drawRect((int) (location - 0.5), -75 + 100 + 4, (int) (location + 0.5), -75 + 105 + 4,
-                            opacity(sr, completeLocation));
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s14.drawString(d.text, completeLocation, -75 + 105 + 3.5f + 4, opacity(sr, completeLocation));
-                }
-
-                if (d.type == 3 && opacity != 16777215) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s22.drawString(d.text, completeLocation,
-                            -75 + 100 + FPSMaster.fontManager.s28.getHeight() / 2 - FPSMaster.fontManager.s22.getHeight() / 2,
-                            opacity(sr, completeLocation));
-                }
-
-                count++;
+            if (d.type == 1 && opacity != 16777215) {
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s28.drawString(d.text, completeLocation, -75 + 100, opacity(sr, completeLocation));
             }
 
-            for (Degree d : degrees) {
-
-                float location = center + (count * 30) - yaaahhrewindTime;
-                float completeLocation = d.type == 1 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
-                        : d.type == 2 ? (location - FPSMaster.fontManager.s14.getStringWidth(d.text) / 2f)
-                        : (location - FPSMaster.fontManager.s22.getStringWidth(d.text) / 2f);
-
-
-                if (d.type == 1) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s28.drawString(d.text, completeLocation, -75 + 100, opacity(sr, completeLocation));
-                }
-
-                if (d.type == 2) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    Gui.drawRect((int) (location - 0.5), -75 + 100 + 4, (int) (location + 0.5), -75 + 105 + 4,
-                            opacity(sr, completeLocation));
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s14.drawString(d.text, completeLocation, -75 + 105 + 3.5f + 4, opacity(sr, completeLocation));
-                }
-
-                if (d.type == 3) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s22.drawString(d.text, completeLocation,
-                            -75 + 100 + FPSMaster.fontManager.s28.getHeight() / 2 - FPSMaster.fontManager.s22.getHeight() / 2,
-                            opacity(sr, completeLocation));
-                }
-
-                count++;
-            }
-            for (Degree d : degrees) {
-
-                float location = center + (count * 30) - yaaahhrewindTime;
-                float completeLocation = d.type == 1 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
-                        : d.type == 2 ? (location - FPSMaster.fontManager.s14.getStringWidth(d.text) / 2f)
-                        : (location - FPSMaster.fontManager.s22.getStringWidth(d.text) / 2f);
-
-                if (d.type == 1) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s28.drawString(d.text, completeLocation, -75 + 100, opacity(sr, completeLocation));
-                }
-
-                if (d.type == 2) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    Gui.drawRect((int) (location - 0.5), -75 + 100 + 4, (int) (location + 0.5), -75 + 105 + 4,
-                            opacity(sr, completeLocation));
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s14.drawString(d.text, completeLocation, -75 + 105 + 3.5f + 4, opacity(sr, completeLocation));
-                }
-
-                if (d.type == 3) {
-                    GlStateManager.color(1, 1, 1, 1);
-                    FPSMaster.fontManager.s22.drawString(d.text, completeLocation,
-                            -75 + 100 + FPSMaster.fontManager.s28.getHeight() / 2 - FPSMaster.fontManager.s22.getHeight() / 2,
-                            opacity(sr, completeLocation));
-                }
-
-                count++;
+            if (d.type == 2 && opacity != 16777215) {
+                GlStateManager.color(1, 1, 1, 1);
+                Gui.drawRect((int) (location - 0.5), -75 + 100 + 4, (int) (location + 0.5), -75 + 105 + 4,
+                        opacity(sr, completeLocation));
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s14.drawString(d.text, completeLocation, -75 + 105 + 3.5f + 4, opacity(sr, completeLocation));
             }
 
-        } catch (Exception e){
-            e.printStackTrace();
+            if (d.type == 3 && opacity != 16777215) {
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s22.drawString(d.text, completeLocation,
+                        -75 + 100 + FPSMaster.fontManager.s28.getHeight() / 2 - FPSMaster.fontManager.s22.getHeight() / 2,
+                        opacity(sr, completeLocation));
+            }
+
+            count++;
         }
+
+        for (Degree d : degrees) {
+
+            float location = center + (count * 30) - yaaahhrewindTime;
+            float completeLocation = d.type == 1 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
+                    : d.type == 2 ? (location - FPSMaster.fontManager.s14.getStringWidth(d.text) / 2f)
+                    : (location - FPSMaster.fontManager.s22.getStringWidth(d.text) / 2f);
+
+
+            if (d.type == 1) {
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s28.drawString(d.text, completeLocation, -75 + 100, opacity(sr, completeLocation));
+            }
+
+            if (d.type == 2) {
+                GlStateManager.color(1, 1, 1, 1);
+                Gui.drawRect((int) (location - 0.5), -75 + 100 + 4, (int) (location + 0.5), -75 + 105 + 4,
+                        opacity(sr, completeLocation));
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s14.drawString(d.text, completeLocation, -75 + 105 + 3.5f + 4, opacity(sr, completeLocation));
+            }
+
+            if (d.type == 3) {
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s22.drawString(d.text, completeLocation,
+                        -75 + 100 + FPSMaster.fontManager.s28.getHeight() / 2 - FPSMaster.fontManager.s22.getHeight() / 2,
+                        opacity(sr, completeLocation));
+            }
+
+            count++;
+        }
+        for (Degree d : degrees) {
+
+            float location = center + (count * 30) - yaaahhrewindTime;
+            float completeLocation = d.type == 1 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
+                    : d.type == 2 ? (location - FPSMaster.fontManager.s14.getStringWidth(d.text) / 2f)
+                    : (location - FPSMaster.fontManager.s22.getStringWidth(d.text) / 2f);
+
+            if (d.type == 1) {
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s28.drawString(d.text, completeLocation, -75 + 100, opacity(sr, completeLocation));
+            }
+
+            if (d.type == 2) {
+                GlStateManager.color(1, 1, 1, 1);
+                Gui.drawRect((int) (location - 0.5), -75 + 100 + 4, (int) (location + 0.5), -75 + 105 + 4,
+                        opacity(sr, completeLocation));
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s14.drawString(d.text, completeLocation, -75 + 105 + 3.5f + 4, opacity(sr, completeLocation));
+            }
+
+            if (d.type == 3) {
+                GlStateManager.color(1, 1, 1, 1);
+                FPSMaster.fontManager.s22.drawString(d.text, completeLocation,
+                        -75 + 100 + FPSMaster.fontManager.s28.getHeight() / 2 - FPSMaster.fontManager.s22.getHeight() / 2,
+                        opacity(sr, completeLocation));
+            }
+
+            count++;
+        }
+
 
         GL11.glDisable(3089);
         GL11.glPopMatrix();

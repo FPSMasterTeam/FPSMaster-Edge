@@ -11,6 +11,7 @@ import top.fpsmaster.modules.music.PlayList;
 import top.fpsmaster.modules.music.Word;
 import top.fpsmaster.modules.music.netease.Music;
 import top.fpsmaster.modules.music.netease.NeteaseApi;
+import top.fpsmaster.utils.Utility;
 
 import java.net.URLEncoder;
 import java.util.Iterator;
@@ -181,16 +182,15 @@ public class MusicWrapper {
                 long id1 = songObject.get("id").getAsLong();
                 String name = songObject.get("name").getAsString();
                 StringBuilder artists = new StringBuilder();
-                Iterator<JsonElement> artistIterator = songObject.getAsJsonArray("ar").iterator();
-                while (artistIterator.hasNext()) {
-                    artists.append(artistIterator.next().getAsJsonObject().get("name").getAsString()).append(" ");
+                for (JsonElement jsonElement : songObject.getAsJsonArray("ar")) {
+                    artists.append(jsonElement.getAsJsonObject().get("name").getAsString()).append(" ");
                 }
                 String picUrl = songObject.getAsJsonObject("al").get("picUrl").getAsString();
                 playList.add(new Music(id1, name, artists.toString(), picUrl));
             }
             return playList;
         } catch (Exception e) {
-            e.printStackTrace();
+            Utility.sendClientNotify("fetch music list failed");
             return new PlayList();
         }
     }

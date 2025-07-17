@@ -3,6 +3,7 @@ package top.fpsmaster.utils.awt;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
+import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
@@ -44,6 +45,7 @@ public class AWTUtils {
                 return mc.getTextureManager()
                         .getDynamicTextureLocation(r + "_full", new DynamicTexture(bufferedImage));
             } catch (Exception e) {
+                ClientLogger.error("An error occurred while generating round texture: " + r);
                 e.printStackTrace();
                 return null;
             }

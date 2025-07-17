@@ -1,8 +1,10 @@
 package top.fpsmaster.modules.music;
 
+import com.sun.security.ntlm.Client;
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import javazoom.jl.converter.Converter;
 import javazoom.jl.decoder.JavaLayerException;
+import top.fpsmaster.modules.logger.ClientLogger;
 
 import javax.sound.sampled.*;
 import java.io.File;
@@ -36,6 +38,7 @@ public class JLayerHelper {
             clip.open(aud);
             clip.start();
         } catch (UnsupportedAudioFileException e) {
+            ClientLogger.error("Unsupported audio file: " + wavFile);
             e.printStackTrace();
         }
     }
