@@ -32,7 +32,7 @@ public class AutoGG extends Module {
                     String componentValue = ProviderManager.packetChat.getChatComponent(event.packet).toString();
                     boolean hasPlayCommand = componentValue.contains("ClickEvent{action=RUN_COMMAND, value='/play ");
                     String chatMessage = ProviderManager.packetChat.getUnformattedText(event.packet);
-                    boolean hasEndInformation = StringUtils.stripControlCodes(chatMessage).contains("                               胜利者  ") || StringUtils.stripControlCodes(chatMessage).startsWith("                               Winner  ");
+                    boolean hasEndInformation = StringUtils.stripControlCodes(chatMessage).contains("                               胜利者  ") || StringUtils.stripControlCodes(chatMessage).startsWith("                              Winner ");
                     if (hasEndInformation) {
                         Utility.sendChatMessage("/ac " + message.getValue());
                     }
