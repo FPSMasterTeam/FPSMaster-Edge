@@ -215,6 +215,13 @@ sprint.desc=保持疾跑
 sprint.togglesprint=保持疾跑
 sprint.betterfont=更好的字体
 
+autogg=自动GG
+autogg.desc=游戏结束后自动地在发送你自定义的消息
+autogg.servers=服务器列表
+autogg.servers.hypxiel=Hypxiel
+autogg.message=自定义消息
+autogg.autoplay=自动重开
+
 musicdisplay=音乐显示
 musicdisplay.desc=显示你正在播放的音乐
 musicdisplay.backgroundcolor=歌曲显示背景颜色

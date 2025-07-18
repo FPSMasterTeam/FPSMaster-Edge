@@ -12,6 +12,11 @@ public class Utility {
 
     static ArrayList<String> messages = new ArrayList<>();
 
+    public static void sendChatMessage(String message) {
+        if (ProviderManager.mcProvider.getPlayer() == null) return;
+        ProviderManager.mcProvider.getPlayer().sendChatMessage(message);
+    }
+
     public static void sendClientMessage(String msg) {
         if (ProviderManager.mcProvider.getWorld() != null) {
             ProviderManager.mcProvider.printChatMessage(ProviderManager.utilityProvider.makeChatComponent(msg));

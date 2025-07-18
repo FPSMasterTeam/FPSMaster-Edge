@@ -93,6 +93,7 @@ public class ModuleManager {
         modules.add(new DragonWings());
         modules.add(new FireModifier());
         modules.add(new FreeLook());
+        modules.add(new AutoGG());
         modules.add(new LyricsDisplay());
         modules.add(new SkinChanger());
         modules.add(new TimeChanger());

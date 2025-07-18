@@ -213,6 +213,13 @@ sprint.desc=Stay sprinting at all times
 sprint.togglesprint=Toggle Sprint
 sprint.betterfont=Clean Font
 
+autogg=AutoGG
+autogg.desc=Automatically send a custom message after a game has ended.
+autogg.servers=Servers
+autogg.servers.hypxiel=Hypxiel
+autogg.message=Custom Message
+autogg.autoplay=Auto Play
+
 musicdisplay=Music HUD
 musicdisplay.desc=Displays current playing music
 musicdisplay.backgroundcolor=Background Color

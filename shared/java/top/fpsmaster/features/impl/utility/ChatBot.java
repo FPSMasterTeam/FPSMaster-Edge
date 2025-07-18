@@ -100,8 +100,7 @@ public class ChatBot extends Module {
                     } catch (InterruptedException e1) {
                         e1.printStackTrace();
                     }
-                    if (ProviderManager.mcProvider.getPlayer() == null) return;
-                    ProviderManager.mcProvider.getPlayer().sendChatMessage(s);
+                    Utility.sendChatMessage(s);
                 }
             });
         }

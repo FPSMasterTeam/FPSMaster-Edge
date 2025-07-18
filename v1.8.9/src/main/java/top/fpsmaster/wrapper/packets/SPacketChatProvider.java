@@ -2,10 +2,10 @@ package top.fpsmaster.wrapper.packets;
 
 import net.minecraft.event.ClickEvent;
 import net.minecraft.event.HoverEvent;
-import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
+import net.minecraft.util.IChatComponent;
 import org.jetbrains.annotations.NotNull;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.interfaces.packets.IPacketChat;
@@ -18,14 +18,20 @@ public class SPacketChatProvider implements IPacketChat {
     }
 
     @NotNull
+    @Override
     public String getUnformattedText(@NotNull Object p){
-        return ((S02PacketChat) p).getChatComponent().getUnformattedText();
+        return getChatComponent(p).getUnformattedText();
     }
-
+    @NotNull
+    @Override
+    public IChatComponent getChatComponent(@NotNull Object p){
+        return ((S02PacketChat) p).getChatComponent();
+    }
+    @Override
     public int getType(@NotNull Object p){
         return ((S02PacketChat) p).getType();
     }
-
+    @Override
     public void appendTranslation(@NotNull Object p){
         String unformattedText = getUnformattedText(p);
         if (!unformattedText.endsWith(" [T]") && unformattedText.length() > 5) {
