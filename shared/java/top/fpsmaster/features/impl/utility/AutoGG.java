@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.utility;
 
+import net.minecraft.util.StringUtils;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventPacket;
 import top.fpsmaster.features.manager.Category;
@@ -27,12 +28,15 @@ public class AutoGG extends Module {
             switch (servers.getValue()) {
                 case 0:
                     String componentValue = ProviderManager.packetChat.getChatComponent(event.packet).toString();
-                    ClientLogger.info(componentValue);
                     boolean hasPlayCommand = componentValue.contains("ClickEvent{action=RUN_COMMAND, value='/play ");
+                    String chatMessage = ProviderManager.packetChat.getUnformattedText(event.packet);
+                    boolean hasDiedInformation = StringUtils.stripControlCodes(chatMessage).startsWith("You died!") || StringUtils.stripControlCodes(chatMessage).startsWith("你死了");
+
                     if (hasPlayCommand) {
-                        Utility.sendChatMessage("/ac " + message.getValue());
-                        if (autoPlay.getValue()){
-                            Utility.sendChatMessage(componentValue.substring(componentValue.indexOf("value='/play ") + 11, componentValue.indexOf("'}")));
+                        if (!hasDiedInformation)
+                            Utility.sendChatMessage("/ac " + message.getValue());
+                        if (autoPlay.getValue()) {
+                            Utility.sendChatMessage(componentValue.substring(componentValue.indexOf("value='") + 6, componentValue.indexOf("'}")));
                         }
                     }
                     break;
