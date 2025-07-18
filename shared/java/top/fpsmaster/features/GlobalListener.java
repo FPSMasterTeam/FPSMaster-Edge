@@ -21,6 +21,11 @@ import top.fpsmaster.websocket.client.WsClient;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static top.fpsmaster.utils.Utility.mc;
 
@@ -50,7 +55,7 @@ public class GlobalListener {
     PlayerInformation playerInformation = null;
 
 
-    ArrayList<NetworkPlayerInfo> playerInfos = new ArrayList<>();
+    Map<UUID, NetworkPlayerInfo> playerInfos = new ConcurrentHashMap<>();
 
     @Subscribe
     public void onTick(EventTick e) throws URISyntaxException {
@@ -79,12 +84,25 @@ public class GlobalListener {
                         FPSMaster.INSTANCE.wsClient.sendPing();
                     }
                 }
-                for (NetworkPlayerInfo networkPlayerInfo : mc.getNetHandler().getPlayerInfoMap()) {
-                    if (!playerInfos.contains(networkPlayerInfo)) {
-                        FPSMaster.INSTANCE.wsClient.fetchPlayer(networkPlayerInfo.getGameProfile().getId().toString(), networkPlayerInfo.getGameProfile().getName());
-                        playerInfos.add(networkPlayerInfo);
+                Set<UUID> currentPlayers = mc.getNetHandler().getPlayerInfoMap().stream()
+                        .map(info -> info.getGameProfile().getId())
+                        .collect(Collectors.toSet());
+
+                playerInfos.keySet().retainAll(currentPlayers);
+
+                for (NetworkPlayerInfo info : mc.getNetHandler().getPlayerInfoMap()) {
+                    UUID uuid = info.getGameProfile().getId();
+                    if (!playerInfos.containsKey(uuid)) {
+                        playerInfos.put(uuid, info);
+                        FPSMaster.INSTANCE.wsClient.fetchPlayer(uuid.toString(), info.getGameProfile().getName());
                     }
                 }
+//                for (NetworkPlayerInfo networkPlayerInfo : mc.getNetHandler().getPlayerInfoMap()) {
+//                    if (!playerInfos.contains(networkPlayerInfo)) {
+//                        FPSMaster.INSTANCE.wsClient.fetchPlayer(networkPlayerInfo.getGameProfile().getId().toString(), networkPlayerInfo.getGameProfile().getName());
+//                        playerInfos.add(networkPlayerInfo);
+//                    }
+//                }
                 if (playerInformation == null) {
                     playerInformation = new PlayerInformation(ProviderManager.mcProvider.getPlayer().getName(), ProviderManager.mcProvider.getPlayer().getUniqueID().toString(), ProviderManager.mcProvider.getServerAddress(), "", AccountManager.skin);
                     FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, "", ProviderManager.mcProvider.getPlayer().getName(), ProviderManager.mcProvider.getServerAddress());
