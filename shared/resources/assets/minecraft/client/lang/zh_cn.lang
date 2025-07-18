@@ -374,6 +374,7 @@ targetdisplay.targetesp.none=不显示
 targetdisplay.targethud=目标显示
 targetdisplay.targethud.none=不显示
 targetdisplay.targethud.simple=简单
+targetdisplay.targethud.fancy=华丽
 targetdisplay.espcolor=ESP颜色
 targetdisplay.roundradius=圆角半径
 targetdisplay.background=背景

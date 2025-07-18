@@ -371,6 +371,7 @@ targetdisplay.targetesp.none=None
 targetdisplay.targethud=Target HUD
 targetdisplay.targethud.none=None
 targetdisplay.targethud.simple=Simple
+targetdisplay.targethud.fancy=Fancy
 targetdisplay.espcolor=ESP Color
 targetdisplay.roundradius=Corner Radius
 targetdisplay.background=Show Background

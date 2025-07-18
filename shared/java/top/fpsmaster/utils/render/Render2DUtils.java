@@ -103,6 +103,11 @@ public class Render2DUtils extends Utility {
         Render2DUtils.drawImage(res, x, y, width, height, color);
     }
 
+    public static void drawRoundedRectImage(float x, float y, float width, float height, int radius, Color color, int borderWidth, Color borderColor) {
+        ResourceLocation res = AWTUtils.generateRoundImage((int) width, (int) height, radius, borderColor, borderWidth);
+        Render2DUtils.drawImage(res, x, y, width, height, color);
+    }
+
     public static void drawRect(float x, float y, float width, float height, Color color) {
         drawRect(x, y, width, height, color.getRGB());
     }
@@ -218,9 +223,11 @@ public class Render2DUtils extends Utility {
         glScalef(scale, scale, 1);
         glTranslatef(-x, -y, 0);
     }
+
     public static void scaleEnd() {
         glPopMatrix();
     }
+
     public static float[] getFixedBounds() {
         ScaledResolution sr = new ScaledResolution(mc);
         int scaleFactor;

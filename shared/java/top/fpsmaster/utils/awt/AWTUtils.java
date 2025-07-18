@@ -14,6 +14,77 @@ public class AWTUtils {
     private static final HashMap<Integer, ResourceLocation[]> generated = new HashMap<>();
     private static final HashMap<String, ResourceLocation> generatedFull = new HashMap<>();
 
+    public static ResourceLocation generateRoundImage(int width, int height, int radius, Color borderColor, int borderWidth) {
+        if (width <= 0 || height <= 0 || radius < 0 || borderWidth < 0) {
+            throw new IllegalArgumentException("Width, height must be positive; radius and borderWidth must be non-negative");
+        }
+
+        String key = width + "/" + height + "/" + radius + "/" + borderWidth + "/" + borderColor.getRGB();
+        return generatedFull.computeIfAbsent(key, r -> {
+            int scaledWidth = width * 2;
+            int scaledHeight = height * 2;
+            int scaledRadius = radius * 2;
+            int scaledBorderWidth = borderWidth * 2;
+
+            try {
+                BufferedImage bufferedImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D graphics2D = bufferedImage.createGraphics();
+
+                graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Clear with transparent background
+                graphics2D.setColor(new Color(0, 0, 0, 0));
+                graphics2D.fillRect(0, 0, scaledWidth, scaledHeight);
+
+                graphics2D.setComposite(AlphaComposite.SrcOver);
+
+                // Draw the border if borderWidth > 0
+                if (borderWidth > 0 && borderColor != null) {
+                    graphics2D.setColor(borderColor);
+                    RoundRectangle2D borderRect = new RoundRectangle2D.Float(
+                            0,
+                            0,
+                            scaledWidth,
+                            scaledHeight,
+                            scaledRadius,
+                            scaledRadius
+                    );
+                    graphics2D.fill(borderRect);
+                }
+
+                // Draw the inner white rectangle (accounting for border)
+                int innerX = scaledBorderWidth;
+                int innerY = scaledBorderWidth;
+                int innerWidth = scaledWidth - (scaledBorderWidth * 2);
+                int innerHeight = scaledHeight - (scaledBorderWidth * 2);
+                int innerRadius = Math.max(0, scaledRadius - (scaledBorderWidth * 2));
+
+                graphics2D.setColor(Color.WHITE);
+                RoundRectangle2D innerRect = new RoundRectangle2D.Float(
+                        innerX,
+                        innerY,
+                        innerWidth,
+                        innerHeight,
+                        innerRadius,
+                        innerRadius
+                );
+                graphics2D.fill(innerRect);
+
+                Minecraft mc = Minecraft.getMinecraft();
+                if (mc == null || mc.getTextureManager() == null) {
+                    return null;
+                }
+                graphics2D.dispose();
+
+                return mc.getTextureManager()
+                        .getDynamicTextureLocation(r + "_full", new DynamicTexture(bufferedImage));
+            } catch (Exception e) {
+                ClientLogger.error("An error occurred while generating round texture: " + r);
+                e.printStackTrace();
+                return null;
+            }
+        });
+    }
 
     public static ResourceLocation generateRoundImage(int width, int height, int radius) {
         if (width <= 0 || height <= 0 || radius < 0) {

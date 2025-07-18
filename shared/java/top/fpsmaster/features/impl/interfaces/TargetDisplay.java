@@ -19,7 +19,7 @@ import java.awt.*;
 public class TargetDisplay extends InterfaceModule {
     private final ModeSetting targetESP = new ModeSetting("TargetESP", 0, "glow", "none");
     private final ColorSetting espColor = new ColorSetting("EspColor", new Color(255, 255, 255, 255), () -> !targetESP.isMode("none"));
-    public static ModeSetting targetHUD = new ModeSetting("TargetHUD", 0, "simple", "none");
+    public static ModeSetting targetHUD = new ModeSetting("TargetHUD", 0, "simple", "fancy", "none");
     public static BooleanSetting omit = new BooleanSetting("OmitName", true);
     public static EntityPlayer target;
     public static long lastHit;
