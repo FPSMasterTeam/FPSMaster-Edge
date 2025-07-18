@@ -10,6 +10,8 @@ import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.TextSetting;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.logger.ClientLogger;
+import top.fpsmaster.ui.notification.Notification;
+import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.utils.Utility;
 
 public class AutoGG extends Module {
@@ -30,13 +32,13 @@ public class AutoGG extends Module {
                     String componentValue = ProviderManager.packetChat.getChatComponent(event.packet).toString();
                     boolean hasPlayCommand = componentValue.contains("ClickEvent{action=RUN_COMMAND, value='/play ");
                     String chatMessage = ProviderManager.packetChat.getUnformattedText(event.packet);
-                    boolean hasDiedInformation = StringUtils.stripControlCodes(chatMessage).startsWith("You died!") || StringUtils.stripControlCodes(chatMessage).startsWith("你死了");
-
+                    boolean hasEndInformation = StringUtils.stripControlCodes(chatMessage).contains("                               胜利者  ") || StringUtils.stripControlCodes(chatMessage).startsWith("                               Winner  ");
+                    if (hasEndInformation) {
+                        Utility.sendChatMessage("/ac " + message.getValue());
+                    }
                     if (hasPlayCommand) {
-                        if (!hasDiedInformation)
-                            Utility.sendChatMessage("/ac " + message.getValue());
                         if (autoPlay.getValue()) {
-                            Utility.sendChatMessage(componentValue.substring(componentValue.indexOf("value='") + 6, componentValue.indexOf("'}")));
+                            Utility.sendChatMessage(componentValue.substring(componentValue.indexOf("value='") + 7, componentValue.indexOf("'}")));
                         }
                     }
                     break;
