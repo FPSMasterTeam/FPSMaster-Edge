@@ -1,12 +1,14 @@
 package top.fpsmaster.features.impl.utility;
 
 import net.minecraft.util.StringUtils;
+import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventPacket;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
+import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.features.settings.impl.TextSetting;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.logger.ClientLogger;
@@ -16,12 +18,15 @@ import top.fpsmaster.utils.Utility;
 
 public class AutoGG extends Module {
     public BooleanSetting autoPlay = new BooleanSetting("AutoPlay", false);
+    public NumberSetting delay = new NumberSetting("DelayToPlay", 5, 0, 10, 1, () -> autoPlay.getValue());
     public TextSetting message = new TextSetting("Message", "gg");
     public ModeSetting servers = new ModeSetting("Servers", 0, "hypxiel");
 
+    public String hypixelTrigger = "Reward Summary;1st Killer;Damage Dealt;奖励总览;击杀数第一名;造成伤害";
+
     public AutoGG() {
         super("AutoGG", Category.Utility);
-        this.addSettings(autoPlay, message, servers);
+        this.addSettings(autoPlay, delay, message, servers);
     }
 
     @Subscribe
@@ -32,13 +37,25 @@ public class AutoGG extends Module {
                     String componentValue = ProviderManager.packetChat.getChatComponent(event.packet).toString();
                     boolean hasPlayCommand = componentValue.contains("ClickEvent{action=RUN_COMMAND, value='/play ");
                     String chatMessage = ProviderManager.packetChat.getUnformattedText(event.packet);
-                    boolean hasEndInformation = StringUtils.stripControlCodes(chatMessage).contains("                               胜利者  ") || StringUtils.stripControlCodes(chatMessage).contains("                   Winner - ");
+                    boolean hasEndInformation = false;
+                    for (String s : hypixelTrigger.split(";")) {
+                        hasEndInformation = StringUtils.stripControlCodes(chatMessage).contains(s);
+                        if (hasEndInformation) break;
+                    }
                     if (hasEndInformation) {
                         Utility.sendChatMessage("/ac " + message.getValue());
                     }
                     if (hasPlayCommand) {
                         if (autoPlay.getValue()) {
-                            Utility.sendChatMessage(componentValue.substring(componentValue.indexOf("value='") + 7, componentValue.indexOf("'}")));
+                            FPSMaster.async.runnable(() -> {
+                                try {
+                                    Thread.sleep(delay.getValue().longValue() * 1000);
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                Utility.sendClientNotify("Sending you to the next game in " + delay.getValue() + " seconds");
+                                Utility.sendChatMessage(componentValue.substring(componentValue.indexOf("value='") + 7, componentValue.indexOf("'}")));
+                            });
                         }
                     }
                     break;

@@ -11,6 +11,7 @@ import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.account.AccountManager;
+import top.fpsmaster.modules.client.ClientUser;
 import top.fpsmaster.modules.music.MusicPlayer;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.utils.Utility;
@@ -57,6 +58,7 @@ public class GlobalListener {
 
     Map<UUID, NetworkPlayerInfo> playerInfos = new ConcurrentHashMap<>();
     Thread tickThread;
+
     @Subscribe
     public void onTick(EventTick e) throws URISyntaxException {
         if (musicSwitchTimer.delay(500)) {
@@ -84,6 +86,11 @@ public class GlobalListener {
                             FPSMaster.INSTANCE.wsClient.sendPing();
                         }
                     }
+                    if (mc.getNetHandler() == null)
+                        return;
+                    if (mc.getNetHandler().getPlayerInfoMap() == null)
+                        return;
+
                     Set<UUID> currentPlayers = mc.getNetHandler().getPlayerInfoMap().stream()
                             .map(info -> info.getGameProfile().getId())
                             .collect(Collectors.toSet());
@@ -97,12 +104,7 @@ public class GlobalListener {
                             FPSMaster.INSTANCE.wsClient.fetchPlayer(uuid.toString(), info.getGameProfile().getName());
                         }
                     }
-//                for (NetworkPlayerInfo networkPlayerInfo : mc.getNetHandler().getPlayerInfoMap()) {
-//                    if (!playerInfos.contains(networkPlayerInfo)) {
-//                        FPSMaster.INSTANCE.wsClient.fetchPlayer(networkPlayerInfo.getGameProfile().getId().toString(), networkPlayerInfo.getGameProfile().getName());
-//                        playerInfos.add(networkPlayerInfo);
-//                    }
-//                }
+
                     if (playerInformation == null) {
                         playerInformation = new PlayerInformation(ProviderManager.mcProvider.getPlayer().getName(), ProviderManager.mcProvider.getPlayer().getUniqueID().toString(), ProviderManager.mcProvider.getServerAddress(), AccountManager.cosmeticsUsing, AccountManager.skin);
                         FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, ProviderManager.mcProvider.getPlayer().getName(), ProviderManager.mcProvider.getServerAddress());
@@ -117,11 +119,19 @@ public class GlobalListener {
     }
 
     @Subscribe
-    public void onCape(EventCapeLoading e){
+    public void onCape(EventCapeLoading e) {
         if (!AccountManager.cosmeticsUsing.isEmpty()) {
-            e.setCachedCape("ornaments/" + AccountManager.cosmeticsUsing + "_resource");
+            if (e.player == mc.thePlayer)
+                e.setCachedCape("ornaments/" + AccountManager.cosmeticsUsing + "_resource");
+            else {
+                ClientUser clientUser = FPSMaster.clientUsersManager.getClientUser(e.player);
+                if (clientUser != null) {
+                    e.setCachedCape("ornaments/" + clientUser.cosmetics + "_resource");
+                }
+            }
         }
     }
+
     @Subscribe
     public void onRender(EventRender2D e) {
         ScaledResolution scaledResolution = new ScaledResolution(Minecraft.getMinecraft());

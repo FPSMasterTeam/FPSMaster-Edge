@@ -17,10 +17,10 @@ public class ClientUsersManager {
         users.add(clientUser);
     }
 
-    public boolean isClientUser(Entity entityIn) {
+    public ClientUser getClientUser(Entity entityIn) {
         for (ClientUser user : users)
             if (user.uuid.equals(entityIn.getUniqueID().toString()))
-                return true;
-        return false;
+                return user;
+        return null;
     }
 }

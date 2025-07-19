@@ -221,6 +221,7 @@ autogg.servers=服务器列表
 autogg.servers.hypxiel=Hypxiel
 autogg.message=自定义消息
 autogg.autoplay=自动重开
+autogg.delaytoplay=自动重开延迟
 
 musicdisplay=音乐显示
 musicdisplay.desc=显示你正在播放的音乐

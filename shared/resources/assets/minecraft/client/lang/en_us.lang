@@ -219,6 +219,7 @@ autogg.servers=Servers
 autogg.servers.hypxiel=Hypxiel
 autogg.message=Custom Message
 autogg.autoplay=Auto Play
+autogg.delaytoplay=Auto Play Delay
 
 musicdisplay=Music HUD
 musicdisplay.desc=Displays current playing music

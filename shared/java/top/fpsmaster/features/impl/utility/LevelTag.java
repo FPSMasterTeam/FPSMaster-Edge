@@ -92,7 +92,7 @@ public class LevelTag extends Module {
                 i = -10;
             }
 
-            boolean isMate = ((entityIn == mc.thePlayer) && str.contains(entityIn.getName())) || FPSMaster.clientUsersManager.isClientUser(entityIn);
+            boolean isMate = ((entityIn == mc.thePlayer) && str.contains(entityIn.getName())) || FPSMaster.clientUsersManager.getClientUser(entityIn) != null;
 
             int j = fontRenderer.getStringWidth(str) / 2;
 

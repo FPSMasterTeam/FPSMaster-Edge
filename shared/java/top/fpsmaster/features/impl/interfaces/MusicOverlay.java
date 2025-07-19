@@ -30,6 +30,7 @@ public class MusicOverlay extends InterfaceModule {
     @Subscribe
     public void onRender(EventRender2D e) {
         if (timer.delay(50) && !updateThread.isAlive()) {
+            updateThread = new Thread(JLayerHelper::updateLoudness);
             updateThread.start();
         }
         IngameOverlay.onRender();
