@@ -88,45 +88,45 @@ public class Component {
     public void display(int mouseX, int mouseY) {
         float rX = getRealPosition()[0];
         float rY = getRealPosition()[1];
-        draw(rX, rY);
-        if (!(Utility.mc.currentScreen instanceof GuiChat || Utility.mc.currentScreen instanceof MainPanel)) return;
+        if ((Utility.mc.currentScreen instanceof GuiChat || Utility.mc.currentScreen instanceof MainPanel)) {
+            float scaledWidth = width * scale;
+            float scaledHeight = height * scale;
+            boolean drag = FPSMaster.componentsManager.dragLock.equals(mod.name);
 
-        float scaledWidth = width * scale;
-        float scaledHeight = height * scale;
-        boolean drag = FPSMaster.componentsManager.dragLock.equals(mod.name);
+            alpha = (float) ((Render2DUtils.isHovered(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) ?
+                    AnimationUtils.base(alpha, 1f, 0.2f) : AnimationUtils.base(alpha, 0.0f, 0.2f));
 
-        alpha = (float) ((Render2DUtils.isHovered(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) ?
-                AnimationUtils.base(alpha, 50.0, 0.1f) : AnimationUtils.base(alpha, 0.0, 0.1f));
-
-        Render2DUtils.drawOptimizedRoundedRect(rX - 2, rY - 2, scaledWidth + 4, scaledHeight + 4, new Color(0, 0, 0, (int) alpha));
-        GL11.glColor4f(1, 1, 1, 1);
-
-
-        if (!Mouse.isButtonDown(0)) {
-            FPSMaster.componentsManager.dragLock = "";
-        }
-        if (Render2DUtils.isHovered(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) {
-            if (!MainPanel.dragLock.equals("null"))
-                return;
-            if (allowScale) {
-                int dWheel = Mouse.getDWheel();
-                if (dWheel > 0) scaleUp();
-                else if (dWheel < 0) scaleDown();
+            Render2DUtils.drawRect(rX - 2, rY - 2, scaledWidth + 4, scaledHeight + 4, new Color(0, 0, 0, (int) (alpha * 80)));
+            draw(rX, rY);
+            GL11.glColor4f(1, 1, 1, 1);
+            if (!Mouse.isButtonDown(0)) {
+                FPSMaster.componentsManager.dragLock = "";
             }
-            FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get(mod.name.toLowerCase()) + " " + (scale * 10) / 10f + "x", rX, rY - 10, -1);
+            if (Render2DUtils.isHovered(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) {
+                if (!MainPanel.dragLock.equals("null"))
+                    return;
+                if (allowScale) {
+                    int dWheel = Mouse.getDWheel();
+                    if (dWheel > 0) scaleUp();
+                    else if (dWheel < 0) scaleDown();
+                }
+                FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get(mod.name.toLowerCase()) + " " + (scale * 10) / 10f + "x", rX, rY - 10, new Color(255, 255, 255, (int) (alpha * 255)).getRGB());
 
-            if (!Mouse.isButtonDown(0)) return;
+                if (!Mouse.isButtonDown(0)) return;
 
-            if (!drag && FPSMaster.componentsManager.dragLock.isEmpty()) {
-                dragX = mouseX - rX;
-                dragY = mouseY - rY;
-                FPSMaster.componentsManager.dragLock = mod.name;
+                if (!drag && FPSMaster.componentsManager.dragLock.isEmpty()) {
+                    dragX = mouseX - rX;
+                    dragY = mouseY - rY;
+                    FPSMaster.componentsManager.dragLock = mod.name;
+                }
+
+                if (FPSMaster.componentsManager.dragLock.equals(mod.name)) {
+                    move(mouseX, mouseY);
+                    FPSMaster.componentsManager.dragLock = mod.name;
+                }
             }
-
-            if (FPSMaster.componentsManager.dragLock.equals(mod.name)) {
-                move(mouseX, mouseY);
-                FPSMaster.componentsManager.dragLock = mod.name;
-            }
+        } else {
+            draw(rX, rY);
         }
     }
 
@@ -189,6 +189,13 @@ public class Component {
             }
         }
 
+        if (changeX < 0f || changeX + width * scale > guiWidth) {
+            changeX = Math.min(Math.max(changeX, 0f), guiWidth - width * scale);
+        }
+        if (changeY < 0f || changeY + height * scale > guiHeight) {
+            changeY = Math.min(Math.max(changeY, 0f), guiHeight - height * scale);
+        }
+
         this.x = changeX / guiWidth * 2f;
         this.y = changeY / guiHeight * 2f;
     }
@@ -224,7 +231,7 @@ public class Component {
             if (mod.fontShadow.getValue()) {
                 ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(text, 0f, 0f, color);
             } else {
-                GL11.glColor4f(1,1,1,1);
+                GL11.glColor4f(1, 1, 1, 1);
                 ProviderManager.mcProvider.drawString(text, 0f, 0f, color);
             }
             GL11.glPopMatrix();
