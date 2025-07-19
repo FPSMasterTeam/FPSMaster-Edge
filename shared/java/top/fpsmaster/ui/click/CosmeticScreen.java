@@ -1,5 +1,6 @@
 package top.fpsmaster.ui.click;
 
+import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.AccountException;
 import top.fpsmaster.modules.account.AccountManager;
@@ -19,6 +20,8 @@ public class CosmeticScreen extends ScaledGuiScreen {
         super.render(mouseX, mouseY, partialTicks);
         String[] split = AccountManager.cosmeticsHeld.split(",");
         Render2DUtils.drawRoundedRectImage(width / 2f - 200, height / 2f - 130, 400, 260, 4, new Color(0, 0, 0, 100));
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        Render2DUtils.doGlScissor(width / 2f - 200, height / 2f - 130, 400, 260, scaleFactor);
         container.draw(width / 2f - 200, height / 2f - 130, 400, 260, mouseX, mouseY, () -> {
             int y = 0;
             for (String id : split) {
@@ -28,11 +31,13 @@ public class CosmeticScreen extends ScaledGuiScreen {
                 if (!cosmetic.loaded) {
                     cosmetic.load();
                 }
-                FPSMaster.fontManager.s18.drawString(cosmetic.name, width / 2f - 190, height / 2f - 120 + y, id.equals(AccountManager.cosmeticsUsing) ? Color.GREEN.getRGB() : Color.WHITE.getRGB());
+                FPSMaster.fontManager.s18.drawString(cosmetic.name, width / 2f - 190, height / 2f - 120 + y + container.getScroll(), id.equals(AccountManager.cosmeticsUsing) ? Color.GREEN.getRGB() : Color.WHITE.getRGB());
                 y += 20;
             }
             container.setHeight(y);
         });
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+
 
     }
 
