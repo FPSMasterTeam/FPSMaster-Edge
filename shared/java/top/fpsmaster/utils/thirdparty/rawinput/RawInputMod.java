@@ -6,14 +6,32 @@ import net.java.games.input.Mouse;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.MouseHelper;
 
+import java.io.File;
+
 public class RawInputMod {
 
     private Thread inputThread;
+    public static Mouse mouse = null;
+    public static Controller[] controllers;
+    public static int dx = 0;
+    public static int dy = 0;
+    private String environment;
 
     public void start() {
         try {
             Minecraft.getMinecraft().mouseHelper = new RawMouseHelper();
-            controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+            if (checkLibrary("jinput-dx8")){
+                environment = "DirectInputEnvironmentPlugin";
+            }else if (checkLibrary("jinput-raw")){
+                environment = "DirectAndRawInputEnvironmentPlugin";
+            }else{
+                return;
+            }
+
+            Class<?> aClass = Class.forName("net.java.games.input." + environment);
+            aClass.getDeclaredConstructor().setAccessible(true);
+            ControllerEnvironment env = (ControllerEnvironment) aClass.newInstance();
+            controllers = env.getControllers();
             inputThread = new Thread(() -> {
                 while (true) {
                     int i = 0;
@@ -28,8 +46,8 @@ public class RawInputMod {
                     }
                     if (mouse != null) {
                         mouse.poll();
-                        dx += mouse.getX().getPollData();
-                        dy += mouse.getY().getPollData();
+                        dx += (int) mouse.getX().getPollData();
+                        dy += (int) mouse.getY().getPollData();
                         if (Minecraft.getMinecraft().currentScreen != null) {
                             dx = 0;
                             dy = 0;
@@ -60,8 +78,21 @@ public class RawInputMod {
         }
     }
 
-    public static Mouse mouse = null;
-    public static Controller[] controllers;
-    public static int dx = 0;
-    public static int dy = 0;
+    public static boolean checkLibrary(String name) {
+        try {
+            String path = System.getProperty("java.library.path");
+            if (path != null) {
+                String mapped = System.mapLibraryName(name);
+                String[] paths = path.split(File.pathSeparator);
+                for (String libPath : paths) {
+                    if (new File(libPath, mapped).exists()) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
