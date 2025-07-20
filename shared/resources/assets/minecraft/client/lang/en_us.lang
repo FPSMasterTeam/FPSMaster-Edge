@@ -521,3 +521,5 @@ command.notfound=Command not found. If the client command affects your chat, dis
 blur.fast_render=UI blur is not compatible with Fast Render. Please disable Fast Render first.
 blur.performance=Blur may reduce performance. Disable on low-end PCs!
 motionblur.fast_render=Motion Blur is not compatible with Fast Render. Fast Render has been disabled.
+chat.irc=Client
+chat.mc=Vanilla
