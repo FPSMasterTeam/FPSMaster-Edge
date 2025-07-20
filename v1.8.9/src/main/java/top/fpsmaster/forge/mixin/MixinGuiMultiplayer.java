@@ -10,7 +10,7 @@ import top.fpsmaster.ui.screens.mainmenu.MainMenu;
 
 @Mixin(GuiMultiplayer.class)
 public class MixinGuiMultiplayer {
-    @Inject(method = "initGui", at = @At("HEAD"))
+    @Inject(method = "initGui", at = @At("HEAD"), cancellable = true)
     public void initGui(CallbackInfo ci) {
         // check ViaVersion
         try {
