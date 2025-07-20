@@ -34,6 +34,7 @@
     "MixinItemRenderer",
     "MixinKeybinding",
     "MixinLayerArmorBase",
+    "MixinLayerCape",
     "MixinLayerHeldItem",
     "MixinMainMenu",
     "MixinMinecraft",

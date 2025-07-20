@@ -501,6 +501,9 @@ customtitles.x=横坐标偏移
 customtitles.y=纵坐标偏移
 customtitles.scale=缩放
 
+wavycape=披风飘动
+wavycape.desc=使你的披风随着移动飘动
+
 # 类别
 category.optimize=优化
 category.render=视觉

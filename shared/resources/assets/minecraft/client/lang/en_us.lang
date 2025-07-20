@@ -497,6 +497,9 @@ customtitles.x=xOffset
 customtitles.y=yOffset
 customtitles.scale=Scale
 
+wavycape=Wavy Cape
+wavycape.desc=Make your cape natural if exists
+
 # Categories
 category.optimize=Performance
 category.render=Visual

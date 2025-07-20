@@ -76,6 +76,7 @@ public class ModuleManager {
         modules.add(new Performance());
         modules.add(new MotionBlur());
         modules.add(new SmoothZoom());
+        modules.add(new WavyCape());
         modules.add(new FullBright());
         modules.add(new ItemPhysics());
         modules.add(new MinimizedBobbing());

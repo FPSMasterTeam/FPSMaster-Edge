@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.shader.Framebuffer;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.SplashProgress;
 import org.lwjgl.opengl.Display;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,7 +13,7 @@ import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
-@Mixin(value = SplashProgress.class)
+@Mixin(SplashProgress.class)
 @SuppressWarnings("all")
 public class MixinSplashScreen {
 
