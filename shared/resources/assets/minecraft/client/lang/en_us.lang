@@ -231,6 +231,8 @@ musicdisplay.roundradius=Corner Radius
 musicdisplay.round=Rounded Corners
 musicdisplay.betterfont=Clean Font
 musicdisplay.background=Show Background
+musicdisplay.fontshadow=Font Shadow
+
 
 oldanimations=Old Animations
 oldanimations.desc=Revert to old 1.7 animations

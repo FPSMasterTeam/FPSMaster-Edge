@@ -126,6 +126,7 @@ public class Render2DUtils extends Utility {
     public static void drawRect(float x, float y, float width, float height, int color) {
         GlStateManager.enableBlend();
         GlStateManager.disableTexture2D();
+        GlStateManager.enableAlpha();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
         glColor(color);

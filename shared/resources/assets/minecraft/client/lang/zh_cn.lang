@@ -233,6 +233,7 @@ musicdisplay.roundradius=圆角半径
 musicdisplay.round=圆角
 musicdisplay.betterfont=更好的字体
 musicdisplay.background=背景
+musicdisplay.fontshadow=字体阴影
 
 oldanimations=旧动画
 oldanimations.desc=旧动画
