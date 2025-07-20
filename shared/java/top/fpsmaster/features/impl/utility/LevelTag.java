@@ -31,6 +31,8 @@ public class LevelTag extends Module {
     }
 
     public static void renderHealth(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
+        if (!using)
+            return;
         if(!str.contains(entityIn.getName()) || !(entityIn instanceof EntityPlayer))
             return;
         if (str.contains("[NPC]"))
@@ -65,6 +67,8 @@ public class LevelTag extends Module {
     }
 
     public static void renderName(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
+        if ((!using || !showSelf.getValue()) && entityIn == mc.thePlayer)
+            return;
         double d = entityIn.getDistanceSqToEntity(mc.getRenderManager().livingPlayer);
         if (!(d > (double)(maxDistance * maxDistance))) {
             FontRenderer fontRenderer = mc.fontRendererObj;

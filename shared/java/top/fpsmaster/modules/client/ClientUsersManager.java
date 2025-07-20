@@ -29,4 +29,11 @@ public class ClientUsersManager {
                 return user;
         return null;
     }
+
+    public ClientUser getClientUser(String name, String uuid) {
+        for (ClientUser user : users)
+            if (user.gameId.equals(name) && user.uuid.equals(uuid))
+                return user;
+        return null;
+    }
 }

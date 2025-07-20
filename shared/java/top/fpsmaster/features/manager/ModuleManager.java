@@ -121,6 +121,8 @@ public class ModuleManager {
         modules.add(new MiniMap());
         modules.add(new DirectionDisplay());
         modules.add(new DamageIndicator());
+        modules.add(new TabOverlay());
+
 
         if (ProviderManager.constants.getVersion().equals("1.12.2")) {
             modules.add(new HideIndicator());

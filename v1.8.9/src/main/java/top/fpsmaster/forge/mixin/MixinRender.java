@@ -15,6 +15,8 @@ import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.utility.LevelTag;
 import top.fpsmaster.interfaces.ProviderManager;
 
+import static top.fpsmaster.utils.Utility.mc;
+
 @Mixin(Render.class)
 public abstract class MixinRender {
     protected MixinRender() {
@@ -37,12 +39,10 @@ public abstract class MixinRender {
 
     @Inject(method = "renderLivingLabel", at = @At("HEAD"), cancellable = true)
     protected void renderLivingLabel(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci) {
-        if (LevelTag.using) {
-            if (LevelTag.health.getValue())
-                LevelTag.renderHealth(entityIn, str, x, y, z, maxDistance);
-            LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
-            ci.cancel();
-        }
+        if (LevelTag.health.getValue())
+            LevelTag.renderHealth(entityIn, str, x, y, z, maxDistance);
+        LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
+        ci.cancel();
     }
 
     @Inject(method = "renderName", at = @At("HEAD"), cancellable = true)
