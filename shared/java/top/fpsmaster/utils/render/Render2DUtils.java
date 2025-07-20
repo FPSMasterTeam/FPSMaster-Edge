@@ -53,11 +53,11 @@ public class Render2DUtils extends Utility {
     }
 
     public static void drawOptimizedRoundedRect(float x, float y, float width, float height, int radius, int color, boolean rawImage) {
+        radius = (int) Math.min(Math.min(height, width) / 2, radius);
         if (width < radius * 2 || radius < 1) {
             drawRect(x, y, width, height, color);
             return;
         }
-        radius = (int) Math.min(Math.min(height, width) / 2, radius);
         ResourceLocation[] resourceLocations = AWTUtils.generateRound(radius);
         if (resourceLocations == null || resourceLocations.length == 0) {
             return;

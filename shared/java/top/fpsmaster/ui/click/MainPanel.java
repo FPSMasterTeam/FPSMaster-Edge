@@ -158,13 +158,13 @@ public class MainPanel extends ScaledGuiScreen {
             categoryAnimation = (float) AnimationUtils.base(categoryAnimation, 30f, 0.15f);
         }
 
-        Render2DUtils.drawOptimizedRoundedRect(
+        Render2DUtils.drawRoundedRectImage(
                 x + categoryAnimation / 50f,
                 y + height / 2 - 74,
                 categoryAnimation,
                 140,
-                14,
-                new Color(0, 0, 0, 200).getRGB()
+                20,
+                new Color(0, 0, 0, 200)
         );
 
         Render2DUtils.drawRoundedRectImage(
@@ -185,13 +185,13 @@ public class MainPanel extends ScaledGuiScreen {
                 -1);
 
         float my = y + 60;
-        Render2DUtils.drawOptimizedRoundedRect(
+        Render2DUtils.drawRoundedRectImage(
                 x + 4 + categoryAnimation / 50f,
                 selection - 6,
                 categoryAnimation - 8,
                 22f,
-                10,
-                new Color(255, 255, 255).getRGB()
+                20,
+                new Color(255, 255, 255)
         );
 
 

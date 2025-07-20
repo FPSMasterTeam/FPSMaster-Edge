@@ -56,8 +56,6 @@ public class AWTUtils {
             return generated.get(radius);
         }
 
-        if (radius <= 0)
-            radius = 1;
         try {
             String[] fileNames = {"lt.png", "rt.png", "lb.png", "rb.png"}; // 存储文件名
             int radius2 = radius * 2;
