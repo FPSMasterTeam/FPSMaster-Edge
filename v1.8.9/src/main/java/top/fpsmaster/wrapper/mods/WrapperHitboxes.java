@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 public class WrapperHitboxes {
     public static void render(EventRender3D event, ColorSetting color) {
+        GlStateManager.pushMatrix();
         GlStateManager.depthMask(false);
         GlStateManager.disableTexture2D();
         GlStateManager.disableLighting();
@@ -45,5 +46,6 @@ public class WrapperHitboxes {
         GlStateManager.enableCull();
         GlStateManager.disableBlend();
         GlStateManager.depthMask(true);
+        GlStateManager.popMatrix();
     }
 }
