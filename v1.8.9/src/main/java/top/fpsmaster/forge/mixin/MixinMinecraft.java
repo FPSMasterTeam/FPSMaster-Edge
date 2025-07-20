@@ -67,6 +67,10 @@ public abstract class MixinMinecraft implements IMinecraft {
     @Shadow
     public PlayerControllerMP playerController;
 
+
+    @Shadow
+    boolean running;
+
     @Shadow
     public abstract void displayGuiScreen(@Nullable GuiScreen guiScreenIn);
 
@@ -253,5 +257,10 @@ public abstract class MixinMinecraft implements IMinecraft {
     @Inject(method = "createDisplay", at = @At(value = "RETURN"))
     public void setTitle(CallbackInfo ci) {
         Display.setTitle(getClientTitle());
+    }
+
+    @Override
+    public boolean arch$getRunning() {
+        return running;
     }
 }

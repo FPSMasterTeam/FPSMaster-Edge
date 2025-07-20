@@ -9,4 +9,5 @@ public interface IMinecraft {
     void arch$setSession(Session session);
     void arch$setLeftClickCounter(int c);
     void arch$setRightClickDelayTimer(int c);
+    boolean arch$getRunning();
 }

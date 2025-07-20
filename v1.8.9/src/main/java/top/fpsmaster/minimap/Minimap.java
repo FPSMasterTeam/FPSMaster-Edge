@@ -25,6 +25,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GLContext;
 import top.fpsmaster.features.impl.interfaces.MiniMap;
+import top.fpsmaster.forge.api.IMinecraft;
 import top.fpsmaster.ui.minimap.animation.MinimapAnimation;
 import top.fpsmaster.ui.minimap.interfaces.Interface;
 import top.fpsmaster.ui.minimap.interfaces.InterfaceHandler;
@@ -821,7 +822,7 @@ public class Minimap {
         public void run() {
             int updateChunkX = 0;
             int updateChunkZ = 0;
-            while (true) {
+            while (((IMinecraft) mc).arch$getRunning()) {
                 if(!MiniMap.using) {
                     try {
                         Thread.sleep(1000L);
