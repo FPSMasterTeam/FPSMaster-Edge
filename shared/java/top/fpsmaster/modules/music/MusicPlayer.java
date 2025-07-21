@@ -18,17 +18,23 @@ public class MusicPlayer {
 
     private static Thread playThread;
 
+    private static float pauseAt;
+
     public static float getPlayProgress() {
-        if (isPlaying && JLayerHelper.clip != null) {
+        if (JLayerHelper.clip != null) {
             curPlayProgress = JLayerHelper.getProgress();
         }
         return min(curPlayProgress, 1f);
     }
 
     public static void play() {
-        isPlaying = true;
         if (JLayerHelper.clip == null) return;
+        isPlaying = true;
         JLayerHelper.start();
+        if (pauseAt != 0) {
+            JLayerHelper.seek(pauseAt);
+            pauseAt = 0;
+        }
     }
 
     public static double[] getCurve() {
@@ -36,12 +42,15 @@ public class MusicPlayer {
     }
 
     public static void pause() {
-        stop();
+        if (JLayerHelper.clip == null) return;
+        isPlaying = false;
+        pauseAt = getPlayProgress();
+        JLayerHelper.pause();
     }
 
     public static void stop() {
-        isPlaying = false;
         if (JLayerHelper.clip == null) return;
+        isPlaying = false;
         JLayerHelper.stop();
     }
 
@@ -77,5 +86,9 @@ public class MusicPlayer {
         if (JLayerHelper.clip == null) return;
         JLayerHelper.setVolume(volume);
         FPSMaster.configManager.configure.set("volume", String.valueOf(volume));
+    }
+
+    public float getPauseAt() {
+        return pauseAt;
     }
 }

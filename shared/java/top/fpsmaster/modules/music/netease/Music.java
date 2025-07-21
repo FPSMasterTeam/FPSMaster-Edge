@@ -19,6 +19,7 @@ public class Music extends AbstractMusic {
     String musicURL;
     public String id;
     public static Thread downloadThread;
+    public float downloadProgress;
 
     public Music(long id, String name, String artists, String picUrl) {
         this.name = name;
@@ -47,6 +48,7 @@ public class Music extends AbstractMusic {
 
     @Override
     public void play() {
+        MusicPlayer.stop();
         File flac = new File(FileUtils.music, FileUtils.fixName(name + "(" + id + ").flac"));
         File mp3 = new File(FileUtils.music, FileUtils.fixName(name + "(" + id + ").mp3"));
         if (flac.exists() || mp3.exists()) {
@@ -56,6 +58,7 @@ public class Music extends AbstractMusic {
                 } else {
                     MusicPlayer.playFile(mp3.getAbsolutePath());
                 }
+                MusicPlayer.isPlaying = true;
             }).start();
         } else {
             downloadThread = new Thread(this::download);
@@ -71,7 +74,9 @@ public class Music extends AbstractMusic {
                     new File(FileUtils.music, FileUtils.fixName(name + "(" + id + ").flac")) :
                     new File(FileUtils.music, FileUtils.fixName(name + "(" + id + ").mp3"));
             if (!download.exists()) {
-                HttpRequest.downloadFile(musicURL, download.getAbsolutePath());
+                HttpRequest.downloadFile(musicURL, download.getAbsolutePath(), (downloadedBytes, totalBytes) -> {
+                    this.downloadProgress = downloadedBytes * 1.0f / totalBytes;
+                });
                 play();
             }
         } catch (Exception e) {

@@ -13,6 +13,7 @@ import top.fpsmaster.ui.ai.AIChatPanel;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.click.modules.ModuleRenderer;
 import top.fpsmaster.ui.click.music.MusicPanel;
+import top.fpsmaster.ui.click.music.NewMusicPanel;
 import top.fpsmaster.utils.math.animation.Animation;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.math.animation.Type;
@@ -103,18 +104,17 @@ public class MainPanel extends ScaledGuiScreen {
                 -1
         );
 
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        Render2DUtils.doGlScissor(
-                x, y + 10, width,
-                (height - 18),
-                scaleFactor
-        );
-
         moduleListAlpha = (float) AnimationUtils.base(moduleListAlpha, 255.0, 0.1f);
 
         if (curType == Category.Music) {
-            MusicPanel.draw(x + leftWidth, y, width - leftWidth, height, mouseX, mouseY, scaleFactor);
+            NewMusicPanel.draw(x + leftWidth, y, width - leftWidth, height, mouseX, mouseY, scaleFactor);
         } else {
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            Render2DUtils.doGlScissor(
+                    x, y + 10, width,
+                    (height - 18),
+                    scaleFactor
+            );
             modHeight = 20f;
             float containerWidth = width - leftWidth - 10;
             int finalMouseY = mouseY;
@@ -140,16 +140,10 @@ public class MainPanel extends ScaledGuiScreen {
                 }
                 modsContainer.setHeight(modHeight);
             });
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
         }
 
-//        Render2DUtils.drawRect(
-//                x + leftWidth, y,
-//                width - leftWidth, height,
-//                Render2DUtils.reAlpha(new Color(39, 39, 39), Render2DUtils.limit(255 - moduleListAlpha))
-//        );
-
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
 
         if (Render2DUtils.isHoveredWithoutScale(x, (int) (y + height / 2 - 70), categoryAnimation, 140, mouseX, mouseY)) {
@@ -239,7 +233,8 @@ public class MainPanel extends ScaledGuiScreen {
     @Override
     public void initGui() {
         super.initGui();
-        aiChatPanel.init();
+//        aiChatPanel.init();
+        NewMusicPanel.init();
         scaleAnimation.fstart(0.8, 1.0, 0.2f, Type.EASE_IN_OUT_QUAD);
         close = false;
 
@@ -274,7 +269,7 @@ public class MainPanel extends ScaledGuiScreen {
 
     @Override
     public void keyTyped(char typedChar, int keyCode) throws IOException {
-        aiChatPanel.keyTyped(typedChar, keyCode);
+//        aiChatPanel.keyTyped(typedChar, keyCode);
 
         if (keyCode == 1) {
             if (scaleAnimation.end != 0.1) {
@@ -290,7 +285,7 @@ public class MainPanel extends ScaledGuiScreen {
             }
         }
 
-        MusicPanel.keyTyped(typedChar, keyCode);
+        NewMusicPanel.keyTyped(typedChar, keyCode);
         super.keyTyped(typedChar, keyCode);
     }
 
@@ -339,7 +334,7 @@ public class MainPanel extends ScaledGuiScreen {
         }
 
         if (curType == Category.Music) {
-            MusicPanel.mouseClicked(mouseX, mouseY, mouseButton);
+            NewMusicPanel.mouseClicked(mouseX, mouseY, mouseButton);
         } else {
             float modsY = y + 22f + modsContainer.getRealScroll();
             for (ModuleRenderer m : mods) {

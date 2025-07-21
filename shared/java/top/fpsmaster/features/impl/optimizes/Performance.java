@@ -26,7 +26,7 @@ public class Performance extends Module {
     public static NumberSetting chunkUpdateLimit = new NumberSetting("ChunkUpdateLimit", 50, 0, 250, 1);
     public static NumberSetting fpsLimit = new NumberSetting("FPSLimit", 30, 0, 360, 1);
     public static NumberSetting entityLimit = new NumberSetting("EntityLimit", 200, 0, 800, 1);
-    public static NumberSetting particlesLimit = new NumberSetting("ParticlesLimit", 100, 0, 2000, 1);
+    public static NumberSetting particlesLimit = new NumberSetting("ParticlesLimit", 400, 0, 2000, 1);
 
     public Performance() {
         super("Performance", Category.OPTIMIZE);

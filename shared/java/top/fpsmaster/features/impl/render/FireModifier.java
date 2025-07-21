@@ -11,7 +11,7 @@ import java.awt.*;
 public class FireModifier extends Module {
 
     public static boolean using = false;
-    public static final NumberSetting height = new NumberSetting("Height", 0.5, 0, 0.7, 0.1);
+    public static final NumberSetting height = new NumberSetting("Height", 0.2, 0, 0.7, 0.1);
     public static final BooleanSetting customColor = new BooleanSetting("CustomColor", false);
     public static final ColorSetting colorSetting = new ColorSetting("Color", new Color(255, 0, 0), customColor::getValue);
 

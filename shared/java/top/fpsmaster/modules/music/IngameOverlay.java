@@ -17,7 +17,7 @@ public class IngameOverlay {
     private static double[] smoothCurve = new double[0];
 
     public static void onRender() {
-        if (MusicPlayer.playList.getCurrent() != -1) {
+        if (MusicPlayer.isPlaying) {
             ScaledResolution sr = new ScaledResolution(Utility.mc);
             double[] curve = MusicPlayer.getCurve();
             if (curve.length != 0) {

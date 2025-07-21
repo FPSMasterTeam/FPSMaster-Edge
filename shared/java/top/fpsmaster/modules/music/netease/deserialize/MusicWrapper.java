@@ -1,20 +1,17 @@
 package top.fpsmaster.modules.music.netease.deserialize;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.modules.music.Line;
-import top.fpsmaster.modules.music.Lyrics;
-import top.fpsmaster.modules.music.PlayList;
-import top.fpsmaster.modules.music.Word;
+import top.fpsmaster.modules.music.*;
 import top.fpsmaster.modules.music.netease.Music;
 import top.fpsmaster.modules.music.netease.NeteaseApi;
+import top.fpsmaster.modules.music.netease.NeteaseProfile;
 import top.fpsmaster.utils.Utility;
 
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class MusicWrapper {
     private static final Gson gson = new GsonBuilder().create();
@@ -83,6 +80,27 @@ public class MusicWrapper {
         }
         return playList;
     }
+
+    public static ArrayList<Track> getTracksDaily() {
+        ArrayList<Track> trackList = new ArrayList<>();
+        try {
+            JsonObject jsonObject = gson.fromJson(NeteaseApi.getTracksDaily(), JsonObject.class);
+            JsonArray tracks = jsonObject.getAsJsonArray("recommend");
+            for (JsonElement track : tracks) {
+                JsonObject trackObject = track.getAsJsonObject();
+                long id1 = trackObject.get("id").getAsLong();
+                String name = trackObject.get("name").getAsString();
+                String picUrl = trackObject.get("picUrl").getAsString();
+                Track e = new Track(id1, name, picUrl);
+                e.loadTrack();
+                trackList.add(e);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return trackList;
+    }
+
 
     public static void loadLyrics(Music music) {
         try {
@@ -200,5 +218,36 @@ public class MusicWrapper {
     public static JsonObject getLoginStatus(String key) {
         String json = NeteaseApi.checkLoginStatus(key);
         return gson.fromJson(json, JsonObject.class);
+    }
+
+
+    public static NeteaseProfile getProfile() {
+        JsonObject jsonObject = gson.fromJson(NeteaseApi.getProfile(), JsonObject.class);
+        try {
+            JsonObject asJsonObject = jsonObject.get("data").getAsJsonObject().get("profile").getAsJsonObject();
+            return new NeteaseProfile(asJsonObject.get("userId").getAsLong(), asJsonObject.get("nickname").getAsString(), asJsonObject.get("avatarUrl").getAsString());
+        }catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    public static ArrayList<Track> getTracksLiked(long uid) {
+        ArrayList<Track> trackList = new ArrayList<>();
+        try {
+            JsonObject jsonObject = gson.fromJson(NeteaseApi.getTracksLiked(uid), JsonObject.class);
+            JsonArray tracks = jsonObject.getAsJsonArray("playlist");
+            for (JsonElement track : tracks) {
+                JsonObject trackObject = track.getAsJsonObject();
+                long id1 = trackObject.get("id").getAsLong();
+                String name = trackObject.get("name").getAsString();
+                String picUrl = trackObject.get("coverImgUrl").getAsString();
+                Track e = new Track(id1, name, picUrl);
+                e.loadTrack();
+                trackList.add(e);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return trackList;
     }
 }

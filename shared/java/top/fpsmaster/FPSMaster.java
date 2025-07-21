@@ -17,6 +17,7 @@ import top.fpsmaster.modules.lua.LuaManager;
 import top.fpsmaster.modules.music.MusicPlayer;
 import top.fpsmaster.modules.music.netease.NeteaseApi;
 import top.fpsmaster.ui.click.music.MusicPanel;
+import top.fpsmaster.ui.click.music.NewMusicPanel;
 import top.fpsmaster.ui.custom.ComponentsManager;
 import top.fpsmaster.ui.screens.oobe.OOBEScreen;
 import top.fpsmaster.utils.GitInfo;
@@ -102,6 +103,7 @@ public class FPSMaster {
         MusicPlayer.setVolume(Float.parseFloat(configManager.configure.getOrCreate("volume", "1")));
         NeteaseApi.cookies = FileUtils.readTempValue("cookies");
         MusicPanel.nickname = FileUtils.readTempValue("nickname");
+        NewMusicPanel.nickname = FileUtils.readTempValue("nickname");
         accountManager.autoLogin();
     }
 

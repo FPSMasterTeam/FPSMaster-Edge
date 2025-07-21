@@ -72,14 +72,14 @@ public class GlobalListener {
                 } catch (InterruptedException ex) {
                     throw new RuntimeException(ex);
                 }
-                if (MusicPlayer.isPlaying && MusicPlayer.getPlayProgress() > 0.999 && (Music.downloadThread == null || !Music.downloadThread.isAlive())) {
-                    MusicPlayer.playList.next();
-                    try {
-                        Thread.sleep(20000);
-                    } catch (InterruptedException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                }
+//                if (MusicPlayer.isPlaying && MusicPlayer.getPlayProgress() > 0.999 && (Music.downloadThread == null || !Music.downloadThread.isAlive())) {
+//                    MusicPlayer.playList.next();
+//                    try {
+//                        Thread.sleep(20000);
+//                    } catch (InterruptedException ex) {
+//                        throw new RuntimeException(ex);
+//                    }
+//                }
                 if (ProviderManager.mcProvider.getWorld() != null) {
                     Utility.flush();
                 }

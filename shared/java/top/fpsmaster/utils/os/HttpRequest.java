@@ -143,6 +143,40 @@ public final class HttpRequest {
         }
     }
 
+    public static boolean downloadFile(String url, String filepath, ProgressCallback callback) {
+        try {
+            HttpResponse response = HTTP_CLIENT.execute(new HttpGet(url));
+            HttpEntity entity = response.getEntity();
+            long totalSize = entity.getContentLength();
+
+            try (InputStream is = entity.getContent();
+                 FileOutputStream fos = new FileOutputStream(filepath)) {
+
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                long downloadedSize = 0;
+
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    fos.write(buffer, 0, bytesRead);
+                    downloadedSize += bytesRead;
+
+                    // Invoke progress callback if provided
+                    if (callback != null) {
+                        callback.onProgress(downloadedSize, totalSize);
+                    }
+                }
+                return true;
+            }
+        } catch (Exception e) {
+            ClientLogger.error("Download failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public interface ProgressCallback {
+        void onProgress(long downloadedBytes, long totalBytes);
+    }
+
     // download file to buffer
     public static InputStream downloadFile(String url) {
         try {

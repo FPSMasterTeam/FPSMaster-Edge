@@ -1,5 +1,6 @@
 package top.fpsmaster.modules.music.netease;
 
+import com.google.gson.JsonElement;
 import top.fpsmaster.utils.os.HttpRequest;
 
 import java.io.IOException;
@@ -103,6 +104,33 @@ public class NeteaseApi {
         String url = BASE_URL + "register/anonimous?timestamp=" + System.currentTimeMillis();
         try {
             return HttpRequest.getWithCookie(url, "").getBody();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String getTracksDaily() {
+        String url = BASE_URL + "recommend/resource?timestamp=" + System.currentTimeMillis();
+        try {
+            return HttpRequest.getWithCookie(url, cookies).getBody();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String getProfile() {
+        String url = BASE_URL + "login/status?timestamp=" + System.currentTimeMillis();
+        try {
+            return HttpRequest.getWithCookie(url, cookies).getBody();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String getTracksLiked(long uid) {
+        String url = BASE_URL + "user/playlist?uid="+uid+"&timestamp=" + System.currentTimeMillis();
+        try {
+            return HttpRequest.getWithCookie(url, cookies).getBody();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

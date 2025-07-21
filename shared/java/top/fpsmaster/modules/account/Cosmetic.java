@@ -41,8 +41,7 @@ public class Cosmetic {
                 try {
                     downloadImageData.setBufferedImage(HttpRequest.downloadImage(resource));
                     mc.getTextureManager().loadTexture(textureLocation, downloadImageData);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                } catch (IOException ignored) {
                 }
             } else if (resource.endsWith(".gif")) {
                 try {

@@ -44,11 +44,11 @@ public class MainMenu extends ScaledGuiScreen {
     @Override
     public void initGui() {
         ProviderManager.mainmenuProvider.initGui();
-        if (!MusicPlayer.playList.getMusics().isEmpty()) {
-            if (MusicPlayer.isPlaying) {
-                MusicPlayer.playList.pause();
-            }
-        }
+//        if (!MusicPlayer.playList.getMusics().isEmpty()) {
+//            if (MusicPlayer.isPlaying) {
+//                MusicPlayer.playList.pause();
+//            }
+//        }
     }
 
     @Override

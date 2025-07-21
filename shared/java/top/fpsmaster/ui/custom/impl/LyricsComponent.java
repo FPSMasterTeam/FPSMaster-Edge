@@ -1,7 +1,10 @@
 package top.fpsmaster.ui.custom.impl;
 
+import net.minecraft.client.renderer.GlStateManager;
+import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.LyricsDisplay;
 import top.fpsmaster.modules.music.*;
+import top.fpsmaster.ui.click.music.NewMusicPanel;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
 import top.fpsmaster.utils.math.animation.Animation;
@@ -36,8 +39,12 @@ public class LyricsComponent extends Component {
         width = 200f;
         height = 70f;
         drawRect(x, y, width, height, mod.backgroundColor.getColor());
-        y += 10;
-        AbstractMusic current = MusicPlayer.playList.current();
+        if (((LyricsDisplay) mod).scale.getValue()) {
+            y += 10;
+        }else{
+            y += 5;
+        }
+        AbstractMusic current = NewMusicPanel.playing;
         if (current != null && current.lyrics != null) {
             int curLine = -1;
             List<Line> lines = current.lyrics.lines;
@@ -66,11 +73,15 @@ public class LyricsComponent extends Component {
             }
 
             if (curLine != -1) {
-                for (int j = curLine - 2; j <= curLine + 2; j++) {
+                for (int j = curLine - 3; j <= curLine + 2; j++) {
                     if (j >= 0 && j < lines.size()) {
                         Line line = lines.get(j);
                         String content = line.getContent();
-                        float xOffset = x + (width - getStringWidth(20, content)) / 2;
+                        float stringWidth = getStringWidth(20, content);
+                        float xOffset = x + (width - stringWidth) / 2;
+                        if (this.width < stringWidth + 10) {
+                            this.width = stringWidth + 10;
+                        }
                         if (j == curLine) {
                             line.animation = (float) AnimationUtils.base(line.animation, 0.0, 0.1f);
                             line.alpha = (float) AnimationUtils.base(line.alpha, 1.0, 0.1f);
@@ -95,17 +106,21 @@ public class LyricsComponent extends Component {
         if (lyrics.scale.getValue()) {
             //default scale ratio
             float scaleRatio = 1.0f;
-            if(line.finished || current) {
+            if(current) {
                 line.scaleAnimation.start(1.0,1.3,0.3f,Type.LINEAR);
-                line.scaleAnimation.update();
-                scaleRatio = (float) line.scaleAnimation.value;
+            }else{
+                line.scaleAnimation.start(line.scaleAnimation.value,1.0,0.3f,Type.LINEAR);
             }
+            line.scaleAnimation.update();
+            scaleRatio = (float) line.scaleAnimation.value;
             Render2DUtils.scaleStart(xOffset + (getStringWidth(20, line.getContent()) / 2.0f), y + (getStringHeight(20) / 2.0f), scaleRatio);
+            GL11.glTranslated(0, -8, 0);
         }
         for (Word word : line.words) {
             xOffset += current ? drawWord(word, xOffset, y, line) : drawWordBG(word, xOffset, y, line);
         }
         if (lyrics.scale.getValue()) {
+            GL11.glTranslated(0, 8, 0);
             Render2DUtils.scaleEnd();
         }
     }
@@ -115,7 +130,7 @@ public class LyricsComponent extends Component {
         if (duration >= word.time) {
             float animation = 0.3f + (float) (duration - word.time) / word.duration;
             float animation2 = (float) (duration - word.time) / word.duration;
-            drawString(20, word.content, xOffset, y + 7 - Math.min(animation2, 1f) * 3,
+            drawString(20, word.content, xOffset, y + 7 - Math.min(animation2, 1f),
                     Render2DUtils.reAlpha(LyricsDisplay.textColor.getColor(), (int) Math.min(animation * 255, 255)).getRGB());
         }else {
             drawString(20, word.content, xOffset, y + 7,

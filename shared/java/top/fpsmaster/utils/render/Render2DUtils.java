@@ -22,6 +22,7 @@ import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.awt.AWTUtils;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.os.FileUtils;
+import top.fpsmaster.utils.os.HttpRequest;
 import top.fpsmaster.utils.os.OSUtil;
 import top.fpsmaster.utils.render.shader.GLSLSandboxShader;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
@@ -30,6 +31,8 @@ import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
 
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -310,6 +313,31 @@ public class Render2DUtils extends Utility {
             } else {
                 ProviderManager.mainmenuProvider.renderSkybox(mouseX, mouseY, partialTicks, guiWidth, guiHeight, zLevel);
             }
+        }
+    }
+
+    static ArrayList<String> downloadingImages = new ArrayList<>();
+    static ArrayList<String> downloadedImages = new ArrayList<>();
+
+
+    public static void drawWebImage(String url, float x, float y, int width, int height) {
+        if (downloadingImages.contains(url)){
+            drawRoundedRectImage(x, y, width, height, 5, new Color(194, 194, 194, 255));
+        } else if (downloadedImages.contains(url)) {
+            drawImage(new ResourceLocation(url), x, y, width, height, -1);
+        }else{
+            downloadingImages.add(url);
+            FPSMaster.async.runnable(()->{
+                ResourceLocation textureLocation = new ResourceLocation(url);
+                ThreadDownloadImageData downloadImageData = new ThreadDownloadImageData(null, null, textureLocation, null);
+                try {
+                    downloadImageData.setBufferedImage(HttpRequest.downloadImage(url));
+                    mc.getTextureManager().loadTexture(textureLocation, downloadImageData);
+                } catch (IOException ignored) {
+                }
+                downloadedImages.add(url);
+                downloadingImages.remove(url);
+            });
         }
     }
 }

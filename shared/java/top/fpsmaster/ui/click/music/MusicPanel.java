@@ -66,7 +66,6 @@ public class MusicPanel {
                 if (Render2DUtils.isHovered(x, dY, width - 10f, 40f, mouseX, mouseY) && mouseY < y + height - 34 && mouseY > y + 34) {
                     if (Mouse.isButtonDown(0)) {
                         music.play();
-                        MusicPlayer.isPlaying = true;
                         MusicPlayer.playList.current = MusicPlayer.playList.musics.indexOf(music);
                     }
                 }
@@ -132,7 +131,6 @@ public class MusicPanel {
                 if (MusicPlayer.isPlaying) {
                     playProgress = MusicPlayer.getPlayProgress();
                     MusicPlayer.playList.pause();
-                    MusicPlayer.isPlaying = false;
                 } else {
                     FPSMaster.async.runnable(() -> {
                         MusicPlayer.playList.current().play();

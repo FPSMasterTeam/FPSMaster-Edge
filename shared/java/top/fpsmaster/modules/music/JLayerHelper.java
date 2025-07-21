@@ -49,7 +49,7 @@ public class JLayerHelper {
     }
 
     public static void updateLoudness() {
-        if (clip == null || audIn == null) return;
+        if (clip == null || audIn == null || !clip.isActive()) return;
 
         AudioFormat format = audIn.getFormat();
         if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED || format.getSampleSizeInBits() != 16) {
@@ -155,6 +155,8 @@ public class JLayerHelper {
     public static void stop() {
         if (clip != null) {
             clip.stop();
+            clip.close();
+            clip = null;
         }
     }
 
@@ -166,5 +168,11 @@ public class JLayerHelper {
 
     public static double getDuration() {
         return clip.getMicrosecondLength() / 1000000.0 / 60.0;
+    }
+
+    public static void pause() {
+        if (clip != null) {
+            clip.stop();
+        }
     }
 }
