@@ -196,6 +196,18 @@ public class Component {
             changeY = Math.min(Math.max(changeY, 0f), guiHeight - height * scale);
         }
 
+        for (Component component : FPSMaster.componentsManager.components) {
+            if (component == this || !component.shouldDisplay()) {
+                continue;
+            }
+            // auto align
+
+            if (Math.abs(changeX - component.getRealPosition()[0]) < 2){
+                changeX = component.getRealPosition()[0];
+                Render2DUtils.drawRect(component.getRealPosition()[0] - 0.5f, 0, 1, guiHeight, Color.WHITE);
+            }
+        }
+
         this.x = changeX / guiWidth * 2f;
         this.y = changeY / guiHeight * 2f;
     }
