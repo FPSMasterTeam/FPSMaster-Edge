@@ -21,6 +21,8 @@ public class LyricsComponent extends Component {
         super(LyricsDisplay.class);
         x = 0.5f;
         y = 0.2f;
+        width = 200f;
+        height = 70f;
         position = Position.CT;
     }
 
@@ -36,8 +38,6 @@ public class LyricsComponent extends Component {
     @Override
     public void draw(float x, float y) {
         super.draw(x, y);
-        width = 200f;
-        height = 70f;
         drawRect(x, y, width, height, mod.backgroundColor.getColor());
         if (((LyricsDisplay) mod).scale.getValue()) {
             y += 10;
