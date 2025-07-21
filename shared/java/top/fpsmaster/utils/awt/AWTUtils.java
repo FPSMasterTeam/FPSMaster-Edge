@@ -21,11 +21,9 @@ public class AWTUtils {
         return generatedFull.computeIfAbsent(width + "/" + height + "/" + radius, r -> {
             int scaledWidth = width * 2;
             int scaledHeight = height * 2;
-
+            BufferedImage bufferedImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D graphics2D = bufferedImage.createGraphics();
             try {
-                BufferedImage bufferedImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D graphics2D = bufferedImage.createGraphics();
-
                 graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 graphics2D.setColor(new Color(0, 0, 0, 0));
                 graphics2D.fillRect(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight());
@@ -39,7 +37,6 @@ public class AWTUtils {
                 if (mc == null || mc.getTextureManager() == null) {
                     return null;
                 }
-                graphics2D.dispose();
 
                 return mc.getTextureManager()
                         .getDynamicTextureLocation(r + "_full", new DynamicTexture(bufferedImage));
@@ -47,6 +44,8 @@ public class AWTUtils {
                 ClientLogger.error("An error occurred while generating round texture: " + r);
                 e.printStackTrace();
                 return null;
+            } finally {
+                graphics2D.dispose();
             }
         });
     }
@@ -55,13 +54,12 @@ public class AWTUtils {
         if (generated.get(radius) != null) {
             return generated.get(radius);
         }
+        int radius2 = radius * 2;
 
+        BufferedImage bufferedImage = new BufferedImage(radius2, radius2, BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D graphics2D = bufferedImage.createGraphics();
         try {
             String[] fileNames = {"lt.png", "rt.png", "lb.png", "rb.png"}; // 存储文件名
-            int radius2 = radius * 2;
-
-            BufferedImage bufferedImage = new BufferedImage(radius2, radius2, BufferedImage.TYPE_INT_ARGB);
-            java.awt.Graphics2D graphics2D = bufferedImage.createGraphics();
             graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             graphics2D.setColor(Color.decode("#00000000"));
             graphics2D.fillRect(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight());
@@ -93,6 +91,8 @@ public class AWTUtils {
             generated.put(radius, locations);
         } catch (Exception exception) {
             exception.printStackTrace();
+        } finally {
+            graphics2D.dispose();
         }
         return generated.get(radius);
     }

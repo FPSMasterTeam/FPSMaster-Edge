@@ -3,6 +3,7 @@ package top.fpsmaster.forge.mixin;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiScreen;
+import org.java_websocket.enums.ReadyState;
 import org.lwjgl.input.Mouse;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -24,21 +25,23 @@ public class MixinGuiChat extends GuiScreen {
 
     @Inject(method = "drawScreen", at = @At("HEAD"))
     public void drawScreen(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        int width1 = mc.fontRendererObj.getStringWidth(FPSMaster.i18n.get("chat.mc"));
-        int width2 = mc.fontRendererObj.getStringWidth(FPSMaster.i18n.get("chat.irc"));
+        if (FPSMaster.INSTANCE.wsClient != null && FPSMaster.INSTANCE.wsClient.getReadyState() == ReadyState.OPEN) {
+            int width1 = mc.fontRendererObj.getStringWidth(FPSMaster.i18n.get("chat.mc"));
+            int width2 = mc.fontRendererObj.getStringWidth(FPSMaster.i18n.get("chat.irc"));
 
 
-        Gui.drawRect(2, this.height - 28, 2 + width1 + 4, this.height - 14, irc ? new Color(0, 0, 0, 180).getRGB() : new Color(80, 80, 80, 180).getRGB());
-        mc.fontRendererObj.drawStringWithShadow(FPSMaster.i18n.get("chat.mc"), 4, this.height - 26, irc ? new Color(200, 200, 200).getRGB() : -1);
+            Gui.drawRect(2, this.height - 28, 2 + width1 + 4, this.height - 14, irc ? new Color(0, 0, 0, 180).getRGB() : new Color(80, 80, 80, 180).getRGB());
+            mc.fontRendererObj.drawStringWithShadow(FPSMaster.i18n.get("chat.mc"), 4, this.height - 26, irc ? new Color(200, 200, 200).getRGB() : -1);
 
-        Gui.drawRect(2 + width1 + 4, this.height - 28, 2 + width1 + 6 + width2 + 2, this.height - 14, irc ? new Color(80, 80, 80, 180).getRGB() : new Color(0, 0, 0, 180).getRGB());
-        mc.fontRendererObj.drawStringWithShadow(FPSMaster.i18n.get("chat.irc"), 4 + width1 + 4, this.height - 26, irc ? -1 : new Color(200, 200, 200).getRGB());
+            Gui.drawRect(2 + width1 + 4, this.height - 28, 2 + width1 + 6 + width2 + 2, this.height - 14, irc ? new Color(80, 80, 80, 180).getRGB() : new Color(0, 0, 0, 180).getRGB());
+            mc.fontRendererObj.drawStringWithShadow(FPSMaster.i18n.get("chat.irc"), 4 + width1 + 4, this.height - 26, irc ? -1 : new Color(200, 200, 200).getRGB());
 
-        if (Mouse.isButtonDown(0)) {
-            if (Render2DUtils.isHovered(2, this.height - 28, width1 + 4, 12, mouseX, mouseY)) {
-                irc = false;
-            } else if (Render2DUtils.isHovered(2 + width1 + 4, this.height - 28, width2 + 2, 12, mouseX, mouseY)) {
-                irc = true;
+            if (Mouse.isButtonDown(0)) {
+                if (Render2DUtils.isHovered(2, this.height - 28, width1 + 4, 12, mouseX, mouseY)) {
+                    irc = false;
+                } else if (Render2DUtils.isHovered(2 + width1 + 4, this.height - 28, width2 + 2, 12, mouseX, mouseY)) {
+                    irc = true;
+                }
             }
         }
     }
@@ -46,7 +49,7 @@ public class MixinGuiChat extends GuiScreen {
 
     @Redirect(method = "keyTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiChat;sendChatMessage(Ljava/lang/String;)V"))
     public void sendChatMessage(GuiChat instance, String message) {
-        if (irc) {
+        if (irc && FPSMaster.INSTANCE.wsClient != null && FPSMaster.INSTANCE.wsClient.getReadyState() == ReadyState.OPEN) {
             FPSMaster.INSTANCE.wsClient.sendMessage(message);
         } else {
             instance.sendChatMessage(message);

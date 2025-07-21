@@ -27,12 +27,6 @@ public abstract class AbstractResourcePackMixin_DownscaleImages {
             return;
         }
 
-        // 检查是否是特殊材质（如附魔效果）
-        if (isSpecialTexture(image)) {
-            cir.setReturnValue(image);
-            return;
-        }
-
         // 如果图片尺寸已经小于等于64x64，直接返回原图
         if (image.getWidth() <= 64 && image.getHeight() <= 64) {
             cir.setReturnValue(image);
@@ -52,43 +46,5 @@ public abstract class AbstractResourcePackMixin_DownscaleImages {
             graphics.dispose();
         }
         cir.setReturnValue(downscaledIcon);
-    }
-
-    /**
-     * 检查是否为特殊材质（如附魔效果）
-     * @param image 要检查的图片
-     * @return 如果是特殊材质返回true
-     */
-    private boolean isSpecialTexture(BufferedImage image) {
-        // 检查图片是否具有半透明像素（附魔效果通常有）
-        if (hasSemiTransparentPixels(image)) {
-            return true;
-        }
-        
-        // 可以添加其他特殊材质的检测条件
-        return false;
-    }
-
-    /**
-     * 检查图片是否包含半透明像素
-     * @param image 要检查的图片
-     * @return 如果包含半透明像素返回true
-     */
-    private boolean hasSemiTransparentPixels(BufferedImage image) {
-        int width = image.getWidth();
-        int height = image.getHeight();
-        
-        // 只检查部分像素以提高性能
-        for (int x = 0; x < width; x += Math.max(1, width / 10)) {
-            for (int y = 0; y < height; y += Math.max(1, height / 10)) {
-                int pixel = image.getRGB(x, y);
-                int alpha = (pixel >> 24) & 0xff;
-                // 如果有半透明像素（既不全透明也不全不透明）
-                if (alpha > 0 && alpha < 255) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

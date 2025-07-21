@@ -6,6 +6,6 @@ import top.fpsmaster.features.manager.Category;
 public class InventoryDisplay extends InterfaceModule {
     public InventoryDisplay() {
         super("InventoryDisplay", Category.Interface);
-        addSettings(rounded, backgroundColor, bg, rounded, roundRadius);
+        addSettings(backgroundColor, bg, rounded, roundRadius);
     }
 }
