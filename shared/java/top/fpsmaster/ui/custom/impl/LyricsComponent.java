@@ -21,7 +21,6 @@ public class LyricsComponent extends Component {
         super(LyricsDisplay.class);
         x = 0.5f;
         y = 0.2f;
-        width = 200f;
         height = 70f;
         position = Position.CT;
     }
@@ -79,6 +78,7 @@ public class LyricsComponent extends Component {
                         String content = line.getContent();
                         float stringWidth = getStringWidth(20, content);
                         float xOffset = x + (width - stringWidth) / 2;
+                        width = 200f;
                         if (this.width < stringWidth + 10) {
                             this.width = stringWidth + 10;
                         }
