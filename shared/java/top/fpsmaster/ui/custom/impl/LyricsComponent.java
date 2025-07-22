@@ -12,7 +12,9 @@ import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.math.animation.Type;
 import top.fpsmaster.utils.render.Render2DUtils;
 
+import java.awt.*;
 import java.util.List;
+import java.util.Objects;
 
 public class LyricsComponent extends Component {
 
@@ -23,6 +25,7 @@ public class LyricsComponent extends Component {
         y = 0.2f;
         height = 70f;
         position = Position.CT;
+        allowScale = true;
     }
 
     private long fromTimeTick(String timeTick) {
@@ -43,6 +46,7 @@ public class LyricsComponent extends Component {
         }else{
             y += 5;
         }
+        y += (scale - 1) * 23;
         AbstractMusic current = NewMusicPanel.playing;
         if (current != null && current.lyrics != null) {
             int curLine = -1;
@@ -77,22 +81,23 @@ public class LyricsComponent extends Component {
                         Line line = lines.get(j);
                         String content = line.getContent();
                         float stringWidth = getStringWidth(20, content);
-                        float xOffset = x + (width - stringWidth) / 2;
+                        float xOffset = x + (width - stringWidth) / 2 * scale ;
                         width = 200f;
-                        if (this.width < stringWidth + 10) {
-                            this.width = stringWidth + 10;
+
+                        if (this.width < stringWidth + 10 ) {
+                            this.width = stringWidth + 10 ;
                         }
                         if (j == curLine) {
-                            line.animation = (float) AnimationUtils.base(line.animation, 0.0, 0.1f);
-                            line.alpha = (float) AnimationUtils.base(line.alpha, 1.0, 0.1f);
+                            line.animation = (float) AnimationUtils.base(line.animation, 0.0, 0.05f);
+                            line.alpha = (float) AnimationUtils.base(line.alpha, 1.0, 0.05f);
                         } else {
-                            line.animation = (float) AnimationUtils.base(line.animation, j - curLine, 0.1f);
+                            line.animation = (float) AnimationUtils.base(line.animation, j - curLine, 0.05f);
                             line.alpha = (float) (Math.abs(j - curLine) == 1 ?
-                                    AnimationUtils.base(line.alpha, 1.0, 0.1f) :
-                                    AnimationUtils.base(line.alpha, 0.0, 0.1f));
+                                    AnimationUtils.base(line.alpha, 1.0, 0.05f) :
+                                    AnimationUtils.base(line.alpha, 0.0, 0.05f));
                         }
                         if (Math.abs(j - curLine) <= 1) {
-                            drawLine(line, xOffset, y + line.animation * 20 + 20, 20,j == curLine);
+                            drawLine(line, xOffset, y + line.animation * (20 * scale)+ 20, 20,j == curLine);
                         }
                     }
                 }
@@ -113,7 +118,8 @@ public class LyricsComponent extends Component {
             }
             line.scaleAnimation.update();
             scaleRatio = (float) line.scaleAnimation.value;
-            Render2DUtils.scaleStart(xOffset + (getStringWidth(20, line.getContent()) / 2.0f), y + (getStringHeight(20) / 2.0f), scaleRatio);
+
+            Render2DUtils.scaleStart(xOffset + (getStringWidth((int) (20 * scale), line.getContent()) / 2.0f), y + (getStringHeight(20) / 2.0f), scaleRatio);
             GL11.glTranslated(0, -8, 0);
         }
         for (Word word : line.words) {
@@ -136,12 +142,12 @@ public class LyricsComponent extends Component {
             drawString(20, word.content, xOffset, y + 7,
                     Render2DUtils.reAlpha(LyricsDisplay.textColor.getColor(), (int) Math.min(line.alpha * 120, 255)).getRGB());
         }
-        return getStringWidth(20, word.content);
+        return getStringWidth(20, word.content) * scale;
     }
 
     private float drawWordBG(Word word, float xOffset, float y, Line line) {
         drawString(20, word.content, xOffset, y + 5,
                 Render2DUtils.reAlpha(LyricsDisplay.textBG.getColor(), (int) Math.min(line.alpha * 120, 255)).getRGB());
-        return getStringWidth(20, word.content);
+        return getStringWidth(20, word.content) * scale;
     }
 }
