@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
@@ -49,8 +50,13 @@ public class MixinGuiChat extends GuiScreen {
 
     @Redirect(method = "keyTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiChat;sendChatMessage(Ljava/lang/String;)V"))
     public void sendChatMessage(GuiChat instance, String message) {
+        message = message.trim();
         if (irc && FPSMaster.INSTANCE.wsClient != null && FPSMaster.INSTANCE.wsClient.getReadyState() == ReadyState.OPEN) {
-            FPSMaster.INSTANCE.wsClient.sendMessage(message);
+            if (message.toLowerCase().startsWith("/")) {
+                Utility.sendClientMessage("\247cIRC不允许命令输入！");
+            } else {
+                FPSMaster.INSTANCE.wsClient.sendMessage(message);
+            }
         } else {
             instance.sendChatMessage(message);
         }
