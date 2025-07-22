@@ -50,7 +50,7 @@ public class PotionDisplayComponent extends Component {
                     0,
                     0,
                     (potion % 8 * 18) + 1,
-                    (198 + (float) potion / 8 * 18) + 1,
+                    (198 + (float)(potion / 8) * 18) + 1,
                     16,
                     16,
                     256f,

@@ -18,6 +18,8 @@ import top.fpsmaster.modules.music.netease.NeteaseProfile;
 import top.fpsmaster.modules.music.netease.deserialize.MusicWrapper;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.common.TextField;
+import top.fpsmaster.utils.math.animation.Animation;
+import top.fpsmaster.utils.math.animation.Type;
 import top.fpsmaster.utils.os.FileUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -52,8 +54,7 @@ public class NewMusicPanel {
     public static Music playing;
     static NeteaseProfile profile;
     private static Track playingTrack;
-
-
+    private static final Animation opacityAnimation = new Animation();
     // search
     public static TextField searchField = new TextField(FPSMaster.fontManager.s14, "搜索歌曲", new Color(56, 56, 56).getRGB(), new Color(200, 200, 200).getRGB(), 50, NewMusicPanel::search);
     static boolean searching = false;
@@ -135,7 +136,6 @@ public class NewMusicPanel {
     static ScrollContainer scrollContainer = new ScrollContainer();
     static ScrollContainer songsContainer = new ScrollContainer();
 
-
     public static void draw(float x, int y, float width, float height, int mouseX, int mouseY, int scaleFactor) {
         Render2DUtils.drawImage(new ResourceLocation("client/gui/music.png"), x + 12, y + 14, 75, 16, -1);
         searchField.drawTextBox(x + 32, y + 14, 100, 16);
@@ -166,126 +166,142 @@ public class NewMusicPanel {
                 }
             }
         }
-
-
-        if (searching) {
-            FPSMaster.fontManager.s22.drawCenteredString("加载中...", x + width / 2, y + height / 2 - 20, -1);
-        } else {
-            if (currentTrack == null) {
-                GL11.glEnable(GL11.GL_SCISSOR_TEST);
-                Render2DUtils.doGlScissor(x + 12, y + 35, width - 12, height - 65, scaleFactor);
-                int finalY = (int) (y + scrollContainer.getScroll());
-                scrollContainer.draw(x + 12, y + 35, width - 12, height - 65, mouseX, mouseY, () -> {
-                    String recommendSong = "";
-
-                    if (recommendTrack != null && !recommendTrack.getMusics().isEmpty()) {
-                        recommendSong = recommendTrack.getMusics().get(0).name;
-                    }
-
-                    int tX = 0;
-                    int tY = 60;
-                    FPSMaster.fontManager.s22.drawString("推荐歌单", x + 20, finalY + 40, -1);
-                    if (recommendTrack != null)
-                        drawTrack(recommendTrack, "每日推荐", "每日推荐，从『" + recommendSong + "』听起", x + 20, finalY + 60, mouseX, mouseY, new Color(255, 73, 73, 200));
-                    tY = drawTracks(x, width, mouseX, mouseY, finalY, tX + 70, tY, dailyTracks);
-                    tY += 120;
-                    FPSMaster.fontManager.s22.drawString("收藏的歌单", x + 20, finalY + tY - 20, -1);
-                    tY = drawTracks(x, width, mouseX, mouseY, finalY, tX, tY, likedTracks);
-                    scrollContainer.setHeight(tY + 80);
-                });
-                GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        if(isWaitingLogin) {
+            ResourceLocation resourceLocation = new ResourceLocation("music/qr");
+            Render2DUtils.drawImage(resourceLocation, x + width / 2 - 45, y + height / 2 - 45, 90f, 90f, -1);
+        }else{
+            if (searching) {
+                FPSMaster.fontManager.s22.drawCenteredString("加载中...", x + width / 2, y + height / 2 - 20, -1);
             } else {
-                GL11.glEnable(GL11.GL_SCISSOR_TEST);
-                Render2DUtils.doGlScissor(x + 12, y + 35, width - 12, height - 65, scaleFactor);
-                if (!currentTrack.isLoaded() && (songsLoadThread == null || !songsLoadThread.isAlive())) {
-                    songsLoadThread = new Thread(() -> {
-                        searching = true;
-                        currentTrack.loadMusic();
-                        searching = false;
-                    });
-                    songsLoadThread.start();
-                }
-                if (currentTrack.isLoaded()) {
-                    int finalY = (int) (y + songsContainer.getScroll());
-                    songsContainer.draw(x + 12, y + 35, width - 12, height - 65, mouseX, mouseY, () -> {
-                        int sY = 40;
-                        for (AbstractMusic music : currentTrack.getMusics()) {
-                            if (finalY + sY + 25 > y + 35 && finalY + sY < y + 35 + height - 65) {
-                                Music neteaseMusic = (Music) music;
-                                if (neteaseMusic.isLoadedImage) {
-                                    Render2DUtils.drawImage(new ResourceLocation("music/netease/" + neteaseMusic.id), x + 20, finalY + sY, 20f, 20f, -1);
-                                } else {
-                                    Render2DUtils.drawOptimizedRoundedRect(x + 20, finalY + sY, 20f, 20f, new Color(200, 200, 200, 255));
-                                }
-                                FPSMaster.fontManager.s18.drawString(neteaseMusic.name, x + 45, finalY + sY, -1);
-                                FPSMaster.fontManager.s14.drawString(neteaseMusic.author, x + 45, finalY + sY + 10, new Color(200, 200, 200).getRGB());
+                if (currentTrack == null) {
+                    GL11.glEnable(GL11.GL_SCISSOR_TEST);
+                    Render2DUtils.doGlScissor(x + 12, y + 35, width - 12, height - 65, scaleFactor);
+                    int finalY = (int) (y + scrollContainer.getScroll());
+                    scrollContainer.draw(x + 12, y + 35, width - 12, height - 65, mouseX, mouseY, () -> {
+                        String recommendSong = "";
 
-                                if (Render2DUtils.isHovered(x + 45, finalY + sY + 5, 45 + FPSMaster.fontManager.s18.getStringWidth(neteaseMusic.name), 18, mouseX, mouseY) && consumeClick(0)) {
-                                    playing = (Music) music;
-                                    playingTrack = currentTrack;
-                                    music.play();
-                                }
-                            }
-                            sY += 25;
+                        if (recommendTrack != null && !recommendTrack.getMusics().isEmpty()) {
+                            recommendSong = recommendTrack.getMusics().get(0).name;
                         }
-                        songsContainer.setHeight(sY);
+
+                        int tX = 0;
+                        int tY = 60;
+                        FPSMaster.fontManager.s22.drawString("推荐歌单", x + 20, finalY + 40, -1);
+                        if (recommendTrack != null)
+                            drawTrack(recommendTrack, "每日推荐", "每日推荐，从『" + recommendSong + "』听起", x + 20, finalY + 60, mouseX, mouseY, new Color(255, 73, 73, 200));
+                        tY = drawTracks(x, width, mouseX, mouseY, finalY, tX + 70, tY, dailyTracks);
+                        tY += 120;
+                        FPSMaster.fontManager.s22.drawString("收藏的歌单", x + 20, finalY + tY - 20, -1);
+                        tY = drawTracks(x, width, mouseX, mouseY, finalY, tX, tY, likedTracks);
+                        scrollContainer.setHeight(tY + 80);
                     });
-                }
-                GL11.glDisable(GL11.GL_SCISSOR_TEST);
-            }
-
-            Render2DUtils.drawRoundedRectImage(x + 1, y + height - 30, width - 2, 31, 10, new Color(0, 0, 0, 150));
-            if (playing != null) {
-                UFontRenderer s14 = FPSMaster.fontManager.s14;
-                s14.drawString(s14.trimString(playing.name, 100, false), x + 30, y + height - 22, new Color(234, 234, 234).getRGB());
-                s14.drawString(s14.trimString(playing.author, 60, false), x + 30, y + height - 12, new Color(124, 124, 124).getRGB());
-
-                if (playing.isLoadedImage) {
-                    Render2DUtils.drawImage(new ResourceLocation("music/netease/" + playing.id), x + 5, y + height - 25, 20f, 20f, -1);
+                    GL11.glDisable(GL11.GL_SCISSOR_TEST);
                 } else {
-                    Render2DUtils.drawOptimizedRoundedRect(x + 5, y + height - 25, 20f, 20f, new Color(200, 200, 200, 255));
-                }
-                // 进度条
-                if (Render2DUtils.isHovered(x + width / 2 - 80, y + height - 6, 160, 3, mouseX, mouseY)) {
-                    Render2DUtils.drawRoundedRectImage(x + width / 2 - 80, y + height - 6, 160, 3, 3, new Color(95, 95, 95));
-                    if (consumeClick(0)) {
-                        playing.seek((mouseX - (x + width / 2 - 80)) / 160f);
-                        if (!MusicPlayer.isPlaying)
-                            MusicPlayer.play();
+                    GL11.glEnable(GL11.GL_SCISSOR_TEST);
+                    Render2DUtils.doGlScissor(x + 12, y + 35, width - 12, height - 65, scaleFactor);
+                    if (!currentTrack.isLoaded() && (songsLoadThread == null || !songsLoadThread.isAlive())) {
+                        songsLoadThread = new Thread(() -> {
+                            searching = true;
+                            currentTrack.loadMusic();
+                            searching = false;
+                        });
+                        songsLoadThread.start();
                     }
-                } else {
-                    Render2DUtils.drawRoundedRectImage(x + width / 2 - 80, y + height - 6, 160, 3, 3, new Color(51, 51, 51));
-                }
-                float playProgress = MusicPlayer.getPlayProgress();
-                if (JLayerHelper.clip == null) {
-                    Render2DUtils.drawRoundedRectImage(x + width / 2 - 80, y + height - 6, 160f * playing.downloadProgress, 3, 3, new Color(148, 148, 148));
-                } else {
-                    Render2DUtils.drawRoundedRectImage(x + width / 2 - 80, y + height - 6, 160f * playProgress, 3, 3, new Color(225, 73, 73));
+                    if (currentTrack.isLoaded()) {
+                        int finalY = (int) (y + songsContainer.getScroll());
+                        songsContainer.draw(x + 12, y + 35, width - 12, height - 65, mouseX, mouseY, () -> {
+                            int sY = 40;
+                            for (AbstractMusic music : currentTrack.getMusics()) {
+                                if (finalY + sY + 25 > y + 35 && finalY + sY < y + 35 + height - 65) {
+                                    Music neteaseMusic = (Music) music;
+                                    boolean isHovered = Render2DUtils.isHovered(x + 15, finalY + sY - 5, width - 25, 30, mouseX, mouseY);
+                                    if (isHovered) {
+                                        Render2DUtils.drawOptimizedRoundedRect(x + 15,finalY + sY - 5, width - 25, 30,new Color(255,255,255,50));
+                                        if(consumeClick(0)){
+                                            playing = (Music) music;
+                                            playingTrack = currentTrack;
+                                            music.play();
+                                        }
+                                    }
+                                    if (neteaseMusic.isLoadedImage) {
+                                        Render2DUtils.drawImage(new ResourceLocation("music/netease/" + neteaseMusic.id), x + 20, finalY + sY, 20f, 20f, -1);
+                                    } else {
+                                        Render2DUtils.drawOptimizedRoundedRect(x + 20, finalY + sY, 20f, 20f, new Color(200, 200, 200, 255));
+                                    }
+                                    FPSMaster.fontManager.s18.drawString(neteaseMusic.name, x + 45, finalY + sY, -1);
+                                    FPSMaster.fontManager.s14.drawString(neteaseMusic.author, x + 45, finalY + sY + 10, new Color(200, 200, 200).getRGB());
+                                }
+                                sY += 31;
+                            }
+                            songsContainer.setHeight(sY);
+                        });
+                    }
+                    GL11.glDisable(GL11.GL_SCISSOR_TEST);
                 }
 
-                // 操作按钮
-                Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/music/previous.png"), x + width / 2 - 35, y + height - 25, 16f, 16f, new Color(234, 234, 234));
-                Render2DUtils.drawImage(MusicPlayer.isPlaying ? new ResourceLocation("client/gui/settings/music/pause.png") : new ResourceLocation("client/gui/settings/music/play.png"), x + width / 2 - 15, y + height - 26, 35 / 2f, 35 / 2f, -1);
-                Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/music/next.png"), x + width / 2 + 5, y + height - 25, 16f, 16f, new Color(234, 234, 234));
-
-                if (JLayerHelper.clip != null) {
-                    if (Render2DUtils.isHovered(x + width / 2 - 15, y + height - 26, 35 / 2f, 35 / 2f, mouseX, mouseY) && consumeClick(0)) {
-                        if (MusicPlayer.isPlaying)
-                            MusicPlayer.pause();
-                        else
-                            MusicPlayer.play();
+                Render2DUtils.drawRoundedRectImage(x + 1, y + height - 30, width - 2, 31, 10, new Color(0, 0, 0, 150));
+                if (playing != null) {
+                    int opacity;
+                    opacityAnimation.start(0,255,0.2f,Type.EASE_IN_QUAD);
+                    if(!opacityAnimation.isFinished()){
+                        opacityAnimation.update();
+                        opacity = (int) opacityAnimation.value;
+                    } else {
+                        opacity = 255;
                     }
 
-                    double duration = JLayerHelper.getDuration();
-                    int minutes = (int) (duration * playProgress);
-                    int seconds = (int) ((duration * playProgress - minutes) * 60);
-                    String progress = minutes + ":" + seconds;
-                    String total = (int) duration + ":" + (int) ((duration - (int) duration) * 60);
-                    s14.drawString(progress, x + width / 2 - 80 - s14.getStringWidth(progress) - 2, y + height - 10, new Color(160, 160, 160).getRGB());
-                    s14.drawString(total, x + width / 2 + 80 + 2, y + height - 10, new Color(160, 160, 160).getRGB());
+                    UFontRenderer s14 = FPSMaster.fontManager.s14;
+                    s14.drawString(s14.trimString(playing.name, 100, false), x + 30, y + height - 22, new Color(234, 234, 234, opacity).getRGB());
+                    s14.drawString(s14.trimString(playing.author, 60, false), x + 30, y + height - 12, new Color(124, 124, 124, opacity).getRGB());
+
+                    if (playing.isLoadedImage) {
+                        Render2DUtils.drawImage(new ResourceLocation("music/netease/" + playing.id), x + 5, y + height - 25, 20f, 20f, new Color(255,255,255,opacity));
+                    } else {
+                        Render2DUtils.drawOptimizedRoundedRect(x + 5, y + height - 25, 20f, 20f, new Color(200, 200, 200, opacity));
+                    }
+                    // 进度条
+                    if (Render2DUtils.isHovered(x + width / 2 - 80, y + height - 6, 160, 3, mouseX, mouseY)) {
+                        Render2DUtils.drawRoundedRectImage(x + width / 2 - 80, y + height - 6, 160, 3, 3, new Color(95, 95, 95,opacity));
+                        if (consumeClick(0)) {
+                            playing.seek((mouseX - (x + width / 2 - 80)) / 160f);
+                            if (!MusicPlayer.isPlaying)
+                                MusicPlayer.play();
+                        }
+                    } else {
+                        Render2DUtils.drawRoundedRectImage(x + width / 2 - 80, y + height - 6, 160, 3, 3, new Color(51, 51, 51,opacity));
+                    }
+                    float playProgress = MusicPlayer.getPlayProgress();
+                    if (JLayerHelper.clip == null) {
+                        Render2DUtils.drawRoundedRectImage(x + width / 2 - 80, y + height - 6, 160f * playing.downloadProgress, 3, 3, new Color(148, 148, 148,opacity));
+                    } else {
+                        Render2DUtils.drawRoundedRectImage(x + width / 2 - 80, y + height - 6, 160f * playProgress, 3, 3, new Color(225, 73, 73,opacity));
+                    }
+
+                    // 操作按钮
+                    Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/music/previous.png"), x + width / 2 - 35, y + height - 25, 16f, 16f, new Color(234, 234, 234,opacity));
+                    Render2DUtils.drawImage(MusicPlayer.isPlaying ? new ResourceLocation("client/gui/settings/music/pause.png") : new ResourceLocation("client/gui/settings/music/play.png"), x + width / 2 - 15, y + height - 26, 35 / 2f, 35 / 2f, new Color(255,255,255,opacity));
+                    Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/music/next.png"), x + width / 2 + 5, y + height - 25, 16f, 16f, new Color(234, 234, 234,opacity));
+
+                    if (JLayerHelper.clip != null) {
+                        if (Render2DUtils.isHovered(x + width / 2 - 15, y + height - 26, 35 / 2f, 35 / 2f, mouseX, mouseY) && consumeClick(0)) {
+                            if (MusicPlayer.isPlaying)
+                                MusicPlayer.pause();
+                            else
+                                MusicPlayer.play();
+                        }
+
+                        double duration = JLayerHelper.getDuration();
+                        int minutes = (int) (duration * playProgress);
+                        int seconds = (int) ((duration * playProgress - minutes) * 60);
+                        String progress = minutes + ":" + seconds;
+                        String total = (int) duration + ":" + (int) ((duration - (int) duration) * 60);
+                        s14.drawString(progress, x + width / 2 - 80 - s14.getStringWidth(progress) - 2, y + height - 10, new Color(160, 160, 160,opacity).getRGB());
+                        s14.drawString(total, x + width / 2 + 80 + 2, y + height - 10, new Color(160, 160, 160,opacity).getRGB());
+                    }
                 }
             }
         }
+
         mouseButton = -1;
     }
 

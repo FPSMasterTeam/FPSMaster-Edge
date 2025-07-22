@@ -82,4 +82,7 @@ public class Animation {
         isStarted = false;
         start(start, end, duration, type);
     }
+    public boolean isFinished() {
+        return this.value == this.end;
+    }
 }
