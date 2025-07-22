@@ -23,6 +23,7 @@ import static top.fpsmaster.utils.Utility.mc;
 public class ReachDisplay extends InterfaceModule {
     public static double reach = 0.0;
     public static ColorSetting textColor = new ColorSetting("TextColor", new Color(255, 255, 255));
+    public static double distance;
 
     public ReachDisplay() {
         super("ReachDisplay", Category.Interface);
@@ -33,10 +34,8 @@ public class ReachDisplay extends InterfaceModule {
     public void onAttack(EventAttack e) {
         Entity entity = mc.getRenderViewEntity();
         if (entity != null && ProviderManager.mcProvider.getWorld() != null) {
-            Vec3 vec3d = entity.getPositionEyes(ProviderManager.timerProvider.getRenderPartialTicks());
             if (mc.objectMouseOver == null || mc.objectMouseOver.entityHit == null)
                 return;
-            double distance = mc.objectMouseOver.hitVec.distanceTo(vec3d);
             reach = Double.parseDouble(String.format("%.2f", distance));
         }
     }

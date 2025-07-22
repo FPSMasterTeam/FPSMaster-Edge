@@ -1,5 +1,7 @@
 package top.fpsmaster.forge.mixin;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -11,6 +13,7 @@ import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.util.*;
 import net.minecraftforge.client.ForgeHooksClient;
@@ -27,12 +30,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventRender3D;
+import top.fpsmaster.features.impl.interfaces.ReachDisplay;
 import top.fpsmaster.features.impl.optimizes.NoHurtCam;
 import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.optimizes.SmoothZoom;
 import top.fpsmaster.features.impl.render.FreeLook;
 import top.fpsmaster.features.impl.render.MinimizedBobbing;
 import top.fpsmaster.utils.math.MathUtils;
+
+import java.util.List;
 
 import static top.fpsmaster.utils.Utility.mc;
 
@@ -293,6 +299,91 @@ public abstract class MixinEntityRenderer {
     @Inject(method = "updateCameraAndRender", at = @At(value = "HEAD"))
     public void freelook(float partialTicks, long nanoTime, CallbackInfo ci) {
         FreeLook.overrideMouse();
+    }
+
+
+    @Shadow
+    private Entity pointedEntity;
+
+    /**
+     * @author SuperSkidder
+     * @reason Reach Display
+     */
+    @Overwrite
+    public void getMouseOver(float partialTicks) {
+        Entity entity = mc.getRenderViewEntity();
+        if (entity != null && mc.theWorld != null) {
+            mc.mcProfiler.startSection("pick");
+            mc.pointedEntity = null;
+            double d0 = (double) mc.playerController.getBlockReachDistance();
+            mc.objectMouseOver = entity.rayTrace(d0, partialTicks);
+            double d1 = d0;
+            Vec3 vec3 = entity.getPositionEyes(partialTicks);
+            boolean flag = false;
+            int i = 3;
+            if (mc.playerController.extendedReach()) {
+                d0 = (double) 6.0F;
+                d1 = (double) 6.0F;
+            } else if (d0 > (double) 3.0F) {
+                flag = true;
+            }
+
+            if (mc.objectMouseOver != null) {
+                d1 = mc.objectMouseOver.hitVec.distanceTo(vec3);
+            }
+
+            Vec3 vec31 = entity.getLook(partialTicks);
+            Vec3 vec32 = vec3.addVector(vec31.xCoord * d0, vec31.yCoord * d0, vec31.zCoord * d0);
+            this.pointedEntity = null;
+            Vec3 vec33 = null;
+            float f = 1.0F;
+            List<Entity> list = mc.theWorld.getEntitiesInAABBexcluding(entity, entity.getEntityBoundingBox().addCoord(vec31.xCoord * d0, vec31.yCoord * d0, vec31.zCoord * d0).expand((double) f, (double) f, (double) f), Predicates.and(EntitySelectors.NOT_SPECTATING, Entity::canBeCollidedWith));
+            double d2 = d1;
+
+            for (int j = 0; j < list.size(); ++j) {
+                Entity entity1 = (Entity) list.get(j);
+                float f1 = entity1.getCollisionBorderSize();
+                AxisAlignedBB axisalignedbb = entity1.getEntityBoundingBox().expand((double) f1, (double) f1, (double) f1);
+                MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(vec3, vec32);
+                if (axisalignedbb.isVecInside(vec3)) {
+                    if (d2 >= (double) 0.0F) {
+                        this.pointedEntity = entity1;
+                        vec33 = movingobjectposition == null ? vec3 : movingobjectposition.hitVec;
+                        d2 = (double) 0.0F;
+                    }
+                } else if (movingobjectposition != null) {
+                    double d3 = vec3.distanceTo(movingobjectposition.hitVec);
+                    if (d3 < d2 || d2 == (double) 0.0F) {
+                        if (entity1 == entity.ridingEntity && !entity.canRiderInteract()) {
+                            if (d2 == (double) 0.0F) {
+                                this.pointedEntity = entity1;
+                                vec33 = movingobjectposition.hitVec;
+                            }
+                        } else {
+                            this.pointedEntity = entity1;
+                            vec33 = movingobjectposition.hitVec;
+                            d2 = d3;
+                        }
+                    }
+                }
+            }
+
+            double v = vec3.distanceTo(vec33);
+            if (this.pointedEntity != null && flag && v > (double) 3.0F) {
+                this.pointedEntity = null;
+                mc.objectMouseOver = new MovingObjectPosition(MovingObjectPosition.MovingObjectType.MISS, vec33, (EnumFacing) null, new BlockPos(vec33));
+            }
+
+            if (this.pointedEntity != null && (d2 < d1 || mc.objectMouseOver == null)) {
+                mc.objectMouseOver = new MovingObjectPosition(this.pointedEntity, vec33);
+                if (this.pointedEntity instanceof EntityLivingBase || this.pointedEntity instanceof EntityItemFrame) {
+                    mc.pointedEntity = this.pointedEntity;
+                    ReachDisplay.distance = v;
+                }
+            }
+
+            mc.mcProfiler.endSection();
+        }
     }
 
 }
