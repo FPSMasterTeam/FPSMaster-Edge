@@ -386,6 +386,20 @@ targetdisplay.roundradius=圆角半径
 targetdisplay.background=背景
 targetdisplay.omitname=省略过长的名字
 
+itemcountdisplay=物品数量
+itemcountdisplay.desc=便捷的展示你的物品数量
+itemcountdisplay.round=背景圆角
+itemcountdisplay.roundradius=圆角半径
+itemcountdisplay.background=背景
+itemcountdisplay.backgroundcolor=背景颜色
+itemcountdisplay.betterfont=更好的字体
+itemcountdisplay.fontshadow=字体阴影
+itemcountdisplay.spacing=间距
+itemcountdisplay.mode=模式
+itemcountdisplay.mode.potpvp=Pot PVP
+itemcountdisplay.mode.uhc=UHC
+itemcountdisplay.mode.custom=自定义
+
 minimizedbobbing=最小摇晃
 minimizedbobbing.desc=停止全局的摇晃
 

@@ -37,6 +37,7 @@ public class ComponentsManager {
         components.add(new ModsListComponent());
         components.add(new MiniMapComponent());
         components.add(new SprintComponent());
+        components.add(new ItemCountDisplayComponent());
     }
 
     // Get a component by its class type

@@ -13,7 +13,6 @@ import top.fpsmaster.features.impl.utility.*;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.dev.DevMode;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.ui.click.CosmeticScreen;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.ui.click.modules.ModuleRenderer;
 import top.fpsmaster.ui.devspace.DevSpace;
@@ -123,7 +122,7 @@ public class ModuleManager {
         modules.add(new DirectionDisplay());
         modules.add(new DamageIndicator());
         modules.add(new TabOverlay());
-
+        modules.add(new ItemCountDisplay());
 
         if (ProviderManager.constants.getVersion().equals("1.12.2")) {
             modules.add(new HideIndicator());

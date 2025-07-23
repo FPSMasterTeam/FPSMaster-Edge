@@ -384,6 +384,21 @@ targetdisplay.roundradius=Corner Radius
 targetdisplay.background=Show Background
 targetdisplay.omitname=Omit Long Names
 
+itemcountdisplay=Item Count Display
+itemcountdisplay.desc=Quick show your items count in hud
+itemcountdisplay.round=Rounded Corners
+itemcountdisplay.roundradius=Corner Radius
+itemcountdisplay.background=Show Background
+itemcountdisplay.backgroundcolor=Background Color
+itemcountdisplay.betterfont=Clean Font
+itemcountdisplay.fontshadow=Font Shadow
+itemcountdisplay.spacing=Spacing
+itemcountdisplay.mode=Mode
+itemcountdisplay.mode.potpvp=Pot PVP
+itemcountdisplay.mode.uhc=UHC
+itemcountdisplay.mode.custom=Custom
+
+
 minimizedbobbing=No Bobbing
 minimizedbobbing.desc=Removes all screen shake
 
