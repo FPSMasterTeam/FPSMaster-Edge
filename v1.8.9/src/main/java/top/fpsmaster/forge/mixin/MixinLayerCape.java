@@ -32,9 +32,13 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
     @Final
     private RenderPlayer playerRenderer;
 
-    private static final int SEGMENTS = 16;
+    @Unique
+    private static final int SEGMENTS = 18;
+    @Unique
     private static final float CAPE_WIDTH = 0.6F;
-    private static final float CAPE_LENGTH = 0.96F;
+    @Unique
+    private static final float CAPE_LENGTH = 1.08F;
+    @Unique
     private static final float CAPE_DEPTH = 0.06F;
 
     @Inject(method = "doRenderLayer", at = @At("HEAD"), cancellable = true)
@@ -73,17 +77,16 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
             applySegmentTransform(poseStack, player, partialTicks, segment);
 
             Matrix4f currentMatrix = poseStack.last().pose;
-            float yOffsetTop = segment * segmentLength;
-            float yOffsetBottom = (segment + 1) * segmentLength;
+            float yOffsetTop = (segment - 1) * segmentLength;
+            float yOffsetBottom = (segment) * segmentLength;
+
 
             if (prevMatrix != null) {
                 renderCapeSegment(buffer, prevMatrix, currentMatrix, yOffsetTop, yOffsetBottom, segment);
             }
-
             if (segment == 0) {
                 renderTopSegment(buffer, currentMatrix);
             }
-
             prevMatrix = currentMatrix;
             poseStack.popPose();
         }
@@ -94,7 +97,7 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
 
     @Unique
     private void applySegmentTransform(PoseStack poseStack, AbstractClientPlayer player, float partialTicks, int segment) {
-        poseStack.translate(0.0, 0.0, 0.125);
+        poseStack.translate(0.0, 0.0, 0.175);
 
         // 计算玩家运动差值
         double motionX = interpolate(partialTicks, player.prevChasingPosX, player.chasingPosX) -
