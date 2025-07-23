@@ -220,6 +220,7 @@ autogg=AutoGG
 autogg.desc=Automatically send a custom message after a game has ended.
 autogg.servers=Servers
 autogg.servers.hypxiel=Hypxiel
+autogg.servers.kkcraft=KKCraft
 autogg.message=Custom Message
 autogg.autoplay=Auto Play
 autogg.delaytoplay=Auto Play Delay

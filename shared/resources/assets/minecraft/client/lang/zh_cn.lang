@@ -222,6 +222,7 @@ autogg=自动GG
 autogg.desc=游戏结束后自动地在发送你自定义的消息
 autogg.servers=服务器列表
 autogg.servers.hypxiel=Hypxiel
+autogg.servers.kkcraft=KKCraft
 autogg.message=自定义消息
 autogg.autoplay=自动重开
 autogg.delaytoplay=自动重开延迟
