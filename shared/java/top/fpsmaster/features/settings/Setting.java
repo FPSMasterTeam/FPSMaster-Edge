@@ -6,7 +6,7 @@ import top.fpsmaster.event.events.EventValueChange;
 public class Setting<T> {
 
     public String name;
-    T value;
+    public T value;
     public VisibleCondition visible;
 
     public Setting(String name, T value) {

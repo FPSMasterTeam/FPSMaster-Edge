@@ -5,6 +5,8 @@ import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.dev.DevMode;
 
 import java.util.ArrayList;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class Utility {
 
@@ -46,4 +48,24 @@ public class Utility {
         }
         messages.clear();
     }
+    /**
+     * withIndex实现streamAPI foreach循环附带index <br />
+     * 用法:
+     * <code>
+     * list.stream().forEach(Utility.withIndex((item,index)->{
+     *      ...
+     * }))
+     * </code>
+     */
+    public static <T> Consumer<T> withIndex(BiConsumer<T, Integer> biConsumer) {
+        class IncrementInt{
+            int i = 0;
+            public int getAndIncrement(){
+                return i++;
+            }
+        }
+        IncrementInt incrementInt = new IncrementInt();
+        return t -> biConsumer.accept(t, incrementInt.getAndIncrement());
+    }
+
 }

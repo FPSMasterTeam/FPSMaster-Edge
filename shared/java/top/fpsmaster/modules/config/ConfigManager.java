@@ -1,9 +1,8 @@
 package top.fpsmaster.modules.config;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.impl.optimizes.OldAnimations;
@@ -17,8 +16,9 @@ import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
 import top.fpsmaster.utils.os.FileUtils;
+import top.fpsmaster.utils.world.ItemsUtil;
 
-import java.util.Map;
+import java.util.*;
 
 public class ConfigManager {
 
@@ -80,6 +80,18 @@ public class ConfigManager {
             moduleJson.addProperty("enabled", module.isEnabled());
             moduleJson.addProperty("key", module.key);
             for (Setting<?> setting : module.settings) {
+                if(setting instanceof MutipleItemSetting) {
+                    MutipleItemSetting mutipleItemSetting = (MutipleItemSetting) setting;
+                    ArrayList<ItemStack> value = mutipleItemSetting.getValue();
+                    List<String> items = new ArrayList<>();
+                    value.forEach((itemStack)->{
+                        items.add(Item.getIdFromItem(itemStack.getItem()) + "|" + itemStack.getMetadata());
+                    });
+                    JsonElement jsonTree = gson.toJsonTree(items);
+                    moduleJson.add(setting.name, jsonTree);
+                    continue;
+                }
+
                 String settingValue = setting.getValue().toString();
                 if (setting instanceof ColorSetting) {
                     ColorSetting colorSetting = (ColorSetting) setting;
@@ -140,6 +152,15 @@ public class ConfigManager {
                         } else if (setting instanceof BindSetting) {
                             BindSetting bindSetting = (BindSetting) setting;
                             bindSetting.setValue(settingValue.getAsInt());
+                        } else if (setting instanceof MutipleItemSetting) {
+                            MutipleItemSetting mutipleItemSetting = (MutipleItemSetting) setting;
+                            String[] itemInfoList = gson.fromJson(settingValue.getAsJsonArray(), String[].class);
+                            for (String itemStack : itemInfoList) {
+                                String[] item = itemStack.split("\\|");
+                                int id = Integer.parseInt(item[0]);
+                                int metadata = Integer.parseInt(item[1]);
+                                mutipleItemSetting.addItem(ItemsUtil.getItemStackWithMetadata(Item.getItemById(id),metadata));
+                            }
                         }
                     }
                 }

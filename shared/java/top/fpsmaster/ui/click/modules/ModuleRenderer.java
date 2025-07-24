@@ -28,22 +28,24 @@ public class ModuleRenderer extends ValueRender {
     ColorAnimation option = new ColorAnimation();
     float optionX = 0;
 
-    public ModuleRenderer(Module mod) {
-        this.mod = mod;
-        content = new ColorAnimation(mod.isEnabled() ? new Color(66, 66, 66) : new Color(40, 40, 40));
-        mod.settings.forEach(setting -> {
+    public ModuleRenderer(Module module) {
+        this.mod = module;
+        content = new ColorAnimation(module.isEnabled() ? new Color(66, 66, 66) : new Color(40, 40, 40));
+        module.settings.forEach(setting -> {
             if (setting instanceof BooleanSetting) {
-                settingsRenderers.add(new BooleanSettingRender(mod, (BooleanSetting) setting));
+                settingsRenderers.add(new BooleanSettingRender(module, (BooleanSetting) setting));
             } else if (setting instanceof ModeSetting) {
-                settingsRenderers.add(new ModeSettingRender(mod, (ModeSetting) setting));
+                settingsRenderers.add(new ModeSettingRender(module, (ModeSetting) setting));
             } else if (setting instanceof TextSetting) {
-                settingsRenderers.add(new TextSettingRender(mod, (TextSetting) setting));
+                settingsRenderers.add(new TextSettingRender(module, (TextSetting) setting));
             } else if (setting instanceof NumberSetting) {
-                settingsRenderers.add(new NumberSettingRender(mod, (NumberSetting) setting));
+                settingsRenderers.add(new NumberSettingRender(module, (NumberSetting) setting));
             } else if (setting instanceof ColorSetting) {
-                settingsRenderers.add(new ColorSettingRender(mod, (ColorSetting) setting));
+                settingsRenderers.add(new ColorSettingRender(module, (ColorSetting) setting));
             } else if (setting instanceof BindSetting) {
-                settingsRenderers.add(new BindSettingRender(mod, (BindSetting) setting));
+                settingsRenderers.add(new BindSettingRender(module, (BindSetting) setting));
+            } else if(setting instanceof  MutipleItemSetting) {
+                settingsRenderers.add(new MultipleItemSettingRender(module,(MutipleItemSetting)setting));
             }
         });
     }

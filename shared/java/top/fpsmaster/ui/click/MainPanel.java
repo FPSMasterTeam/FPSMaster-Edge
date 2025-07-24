@@ -12,7 +12,6 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.ui.ai.AIChatPanel;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.click.modules.ModuleRenderer;
-import top.fpsmaster.ui.click.music.MusicPanel;
 import top.fpsmaster.ui.click.music.NewMusicPanel;
 import top.fpsmaster.utils.math.animation.Animation;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
@@ -52,7 +51,7 @@ public class MainPanel extends ScaledGuiScreen {
     static int y = -1;
     static float width = 430f;
     static float height = 245.5f;
-    final float leftWidth = 50f;
+    public static final float leftWidth = 50f;
     public static String bindLock = "";
     public static Module curModule = null;
     public static String dragLock = "null";

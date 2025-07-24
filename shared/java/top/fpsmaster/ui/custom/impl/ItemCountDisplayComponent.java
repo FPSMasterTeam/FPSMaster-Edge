@@ -11,9 +11,7 @@ import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.world.ItemsUtil;
 import top.fpsmaster.utils.world.PotionMetadata;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -24,7 +22,7 @@ public class ItemCountDisplayComponent extends Component {
     private static final float DISPLAY_HEIGHT = 27;
     private static final float ITEM_WIDTH = 17;
     public Map<Integer, ItemStack[]> modeItems = new HashMap<>();
-
+    private List<ItemStack> itemStacks = new ArrayList<>();
     public ItemCountDisplayComponent() {
         super(ItemCountDisplay.class);
         modeItems.put(0,
@@ -38,20 +36,21 @@ public class ItemCountDisplayComponent extends Component {
                         ItemsUtil.getItemStack(Items.golden_apple),
                         ItemsUtil.getItemStack(Items.arrow),
                 });
-        modeItems.put(2,
-                new ItemStack[]{});
-//        allowScale = true;
+
     }
 
     @Override
     public void draw(float x, float y) {
         super.draw(x, y);
         ItemCountDisplay displayModule = ((ItemCountDisplay) mod);
-        ItemStack[] itemStacks = ProviderManager.mcProvider.getPlayer().inventory.mainInventory;
+        ItemStack[] mainInventory = ProviderManager.mcProvider.getPlayer().inventory.mainInventory;
+
+        if(displayModule.modes.getValue() != 2) itemStacks = Arrays.stream(modeItems.get(displayModule.modes.getValue())).collect(Collectors.toList());
+        else itemStacks = displayModule.itemsSetting.getValue();
         int index = 0;
-        for (ItemStack itemStack : modeItems.get(displayModule.mode.getValue())) {
+        for (ItemStack itemStack : itemStacks) {
             AtomicLong count = new AtomicLong();
-            Arrays.stream(itemStacks)
+            Arrays.stream(mainInventory)
                     .filter((stack) -> {
                         if (stack == null) {
                             return false;
@@ -63,7 +62,7 @@ public class ItemCountDisplayComponent extends Component {
             float xOffset = x + index * (ITEM_WIDTH + mod.spacing.getValue().intValue());
             float textOffset = xOffset + 8f - (getStringWidth(20,String.valueOf(count)) / 2);
             drawRect(xOffset,y,ITEM_WIDTH,DISPLAY_HEIGHT, mod.backgroundColor.getColor());
-            renderItem(itemStack, xOffset, y);
+            ItemsUtil.renderItem(itemStack, xOffset, y);
             drawString(20, String.valueOf(count), textOffset, y + ITEM_WIDTH, -1);
             index++;
         }
@@ -71,24 +70,5 @@ public class ItemCountDisplayComponent extends Component {
         height = DISPLAY_HEIGHT;
     }
 
-    public void renderItem(ItemStack itemStack, float x, float y) {
-        GlStateManager.pushMatrix();
-        GlStateManager.disableCull();
-        GlStateManager.disableBlend();
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
-        GlStateManager.enableRescaleNormal();
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        RenderHelper.enableGUIStandardItemLighting();
-        GlStateManager.pushMatrix();
-        mc.getRenderItem().renderItemIntoGUI(itemStack, (int) x, (int) y);
-        GlStateManager.popMatrix();
-        mc.getRenderItem().renderItemOverlays(ProviderManager.mcProvider.getFontRenderer(), itemStack, (int) x, (int) y);
-
-        RenderHelper.disableStandardItemLighting();
-        GlStateManager.disableRescaleNormal();
-        GlStateManager.disableBlend();
-        GlStateManager.popMatrix();
-    }
 }
