@@ -397,7 +397,10 @@ itemcountdisplay.mode=Mode
 itemcountdisplay.mode.potpvp=Pot PVP
 itemcountdisplay.mode.uhc=UHC
 itemcountdisplay.mode.custom=Custom
+itemcountdisplay.items=Items
 
+itemssetting.isempty=null
+itemssetting.helditem=your current held item
 
 minimizedbobbing=No Bobbing
 minimizedbobbing.desc=Removes all screen shake
@@ -458,6 +461,8 @@ coordsdisplay.limitdisplay=Y Limit Display
 coordsdisplay.limitdisplayy=Y Limit
 coordsdisplay.roundradius=Corner Radius
 coordsdisplay.background=Show Background
+
+
 
 modslist=Mod List
 modslist.desc=Show enabled modules

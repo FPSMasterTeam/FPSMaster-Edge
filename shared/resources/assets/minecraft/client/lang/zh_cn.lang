@@ -400,6 +400,11 @@ itemcountdisplay.mode.potpvp=Pot PVP
 itemcountdisplay.mode.uhc=UHC
 itemcountdisplay.mode.custom=自定义
 
+itemcountdisplay.items=物品
+
+itemssetting.isempty=空的
+itemssetting.helditem=你当前手持的物品
+
 minimizedbobbing=最小摇晃
 minimizedbobbing.desc=停止全局的摇晃
 
