@@ -58,13 +58,13 @@ public class Compass {
         if (ProviderManager.mcProvider.getPlayer() == null)
             return;
         preRender(sr);
-        float center = sr.getScaledWidth() / 2f;
+        float center = Render2DUtils.getFixedBounds()[0] / 2;
         int count = 0;
         float yaaahhrewindTime = (ProviderManager.mcProvider.getPlayer().rotationYaw % 360) * 2 + 360 * 3;
         GL11.glPushMatrix();
         GL11.glEnable(3089);
         int scaleFactor = Render2DUtils.fixScale();
-        Render2DUtils.doGlScissor(sr.getScaledWidth() / 2f - 100, 25, 200, 25, scaleFactor);
+        Render2DUtils.doGlScissor(Render2DUtils.getFixedBounds()[0] / 2f - 100, 25, 200, 25, scaleFactor);
         for (Degree d : degrees) {
             float location = center + (count * 30) - yaaahhrewindTime;
             float completeLocation = d.type == 1 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
@@ -169,7 +169,7 @@ public class Compass {
 
     public static int opacity(ScaledResolution sr, float offset) {
         int op = 0;
-        float offs = 255 - Math.abs(sr.getScaledWidth() / 2f - offset) * 1.8f;
+        float offs = 255 - Math.abs(Render2DUtils.getFixedBounds()[0] / 2f - offset) * 1.8f;
         Color c = new Color(255, 255, 255, (int) Math.min(Math.max(0, offs), 255));
         return c.getRGB();
     }

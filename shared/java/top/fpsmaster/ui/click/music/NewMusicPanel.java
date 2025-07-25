@@ -103,19 +103,20 @@ public class NewMusicPanel {
                 searching = true;
                 if (profile == null)
                     profile = MusicWrapper.getProfile();
+                if (profile != null) {
+                    if (dailyTracks.isEmpty()) {
+                        dailyTracks = MusicWrapper.getTracksDaily();
+                    }
+                    if (likedTracks.isEmpty()) {
+                        likedTracks = MusicWrapper.getTracksLiked(profile.id);
+                    }
+                }
+                searching = false;
                 if (recommendTrack == null || recommendTrack.getMusics().isEmpty()) {
                     recommendTrack = new Track(0L, "日推", "");
                     recommendTrack.setMusics(MusicWrapper.getSongsFromDaily().musics);
                     recommendTrack.setLoaded(true);
                 }
-                if (dailyTracks.isEmpty()) {
-                    dailyTracks = MusicWrapper.getTracksDaily();
-                }
-
-                if (likedTracks.isEmpty()) {
-                    likedTracks = MusicWrapper.getTracksLiked(profile.id);
-                }
-                searching = false;
             });
             loadThread.start();
         }
@@ -141,6 +142,11 @@ public class NewMusicPanel {
         searchField.drawTextBox(x + 32, y + 14, 100, 16);
         if (Render2DUtils.isHovered(x + 12, y + 14, 16, 16, mouseX, mouseY) && consumeClick(0)) {
             currentTrack = null;
+            isWaitingLogin = false;
+            if (loginThread != null) {
+                loginThread.interrupt();
+                loginThread = null;
+            }
         }
         if (profile == null) {
             int stringWidth = FPSMaster.fontManager.s16.getStringWidth(FPSMaster.i18n.get("music.notLoggedIn"));
@@ -386,7 +392,9 @@ public class NewMusicPanel {
 
                         try {
                             FileUtils.saveTempValue("cookies", NeteaseApi.cookies);
-                            System.out.println("cookies: " + NeteaseApi.cookies);
+                            isWaitingLogin = false;
+                            profile = MusicWrapper.getProfile();
+                            return;
                         } catch (FileException e) {
                             ExceptionHandler.handleFileException(e, "无法保存cookies");
                         }
@@ -399,6 +407,7 @@ public class NewMusicPanel {
         });
         FPSMaster.async.runnable(() -> {
             key = MusicWrapper.getQRKey();
+            System.out.println(key);
             if (key == null) return;
             String base64 = MusicWrapper.getQRCodeImg(key);
             // render base64 img data

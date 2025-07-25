@@ -1,12 +1,15 @@
 package top.fpsmaster.utils.os;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Random;
 
 public class CryptUtils {
     private static final String ALGORITHM = "AES";
@@ -81,5 +84,47 @@ public class CryptUtils {
             e.printStackTrace();
             return null;
         }
+    }
+
+
+    public static String aesEncrypt(String text, String key) {
+        try {
+            IvParameterSpec iv = new IvParameterSpec("0102030405060708".getBytes(StandardCharsets.UTF_8));
+            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES");
+
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
+
+            byte[] encrypted = cipher.doFinal(text.getBytes());
+
+            return Base64.getEncoder().encodeToString(encrypted);
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
+    public static String rsaEncrypt(String text, String pubKey, String modulus) {
+        text = new StringBuilder(text).reverse().toString();
+        BigInteger rs = new BigInteger(String.format("%x", new BigInteger(1, text.getBytes())), 16)
+                .modPow(new BigInteger(pubKey, 16), new BigInteger(modulus, 16));
+        StringBuilder r = new StringBuilder(rs.toString(16));
+        if (r.length() >= 256) {
+            return r.substring(r.length() - 256);
+        } else {
+            while (r.length() < 256) {
+                r.insert(0, 0);
+            }
+            return r.toString();
+        }
+    }
+
+
+    public static String createSecretKey(int length) {
+        String shits = "0123456789abcdefghijklmnopqrstuvwxyz";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; ++i) {
+            sb.append(shits.charAt(new Random().nextInt(shits.length())));
+        }
+        return sb.toString();
     }
 }

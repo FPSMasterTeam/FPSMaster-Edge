@@ -22,8 +22,9 @@ public class MusicWrapper {
     }
 
     public static String getQRKey() {
-        JsonObject jsonObject = gson.fromJson(NeteaseApi.getUniKey(), JsonObject.class);
-        return jsonObject == null ? null : jsonObject.getAsJsonObject("data").get("unikey").getAsString();
+//        JsonObject jsonObject = gson.fromJson(NeteaseApi.getUniKeyNew(), JsonObject.class);
+//        return jsonObject == null ? null : jsonObject.get("unikey").getAsString();
+        return NeteaseApi.getUniKeyNew();
     }
 
     public static String getQRCodeImg(String key) {
