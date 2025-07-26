@@ -20,7 +20,7 @@ public class AutoGG extends Module {
     public BooleanSetting autoPlay = new BooleanSetting("AutoPlay", false);
     public NumberSetting delay = new NumberSetting("DelayToPlay", 5, 0, 10, 1, () -> autoPlay.getValue());
     public TextSetting message = new TextSetting("Message", "gg");
-    public ModeSetting servers = new ModeSetting("Servers", 0, "hypxiel", "kkcraft");
+    public ModeSetting servers = new ModeSetting("Servers", 0, "hypixel", "kkcraft");
 
     public String hypixelTrigger = "Reward Summary;1st Killer;Damage Dealt;奖励总览;击杀数第一名;造成伤害";
     public String kkcraftTrigger = "获胜者;第一名杀手;击杀第一名";

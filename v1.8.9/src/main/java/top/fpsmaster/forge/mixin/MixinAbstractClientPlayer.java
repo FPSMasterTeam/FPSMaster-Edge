@@ -38,16 +38,18 @@ public abstract class MixinAbstractClientPlayer extends MixinEntityPlayer {
                 f = 1.0F;
             }
 
-            if (this.isUsingItem() && this.getItemInUse().getItem() == Items.bow) {
-                int i = this.getItemInUseDuration();
-                float f1 = (float) i / 20.0F;
-                if (f1 > 1.0F) {
-                    f1 = 1.0F;
-                } else {
-                    f1 *= f1;
-                }
+            if (!CustomFOV.noBowFov.getValue()) {
+                if (this.isUsingItem() && this.getItemInUse().getItem() == Items.bow) {
+                    int i = this.getItemInUseDuration();
+                    float f1 = (float) i / 20.0F;
+                    if (f1 > 1.0F) {
+                        f1 = 1.0F;
+                    } else {
+                        f1 *= f1;
+                    }
 
-                f *= 1.0F - f1 * 0.15F;
+                    f *= 1.0F - f1 * 0.15F;
+                }
             }
             cir.setReturnValue(f);
         }
