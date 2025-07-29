@@ -145,7 +145,7 @@ public class MainPanel extends ScaledGuiScreen {
 
 
 
-        if (Render2DUtils.isHoveredWithoutScale(x, (int) (y + height / 2 - 70), categoryAnimation, 140, mouseX, mouseY)) {
+        if (Render2DUtils.isHovered(x, (int) (y + height / 2 - 70), categoryAnimation, 140, mouseX, mouseY)) {
             categoryAnimation = (float) AnimationUtils.base(categoryAnimation, 100f, 0.15f);
         } else {
             categoryAnimation = (float) AnimationUtils.base(categoryAnimation, 30f, 0.15f);
@@ -196,7 +196,7 @@ public class MainPanel extends ScaledGuiScreen {
         );
 
         for (CategoryComponent m : categories) {
-            if (Render2DUtils.isHoveredWithoutScale(x, my - 6, leftWidth - 10, 20f, mouseX, mouseY)) {
+            if (Render2DUtils.isHovered(x, my - 6, leftWidth - 10, 20f, mouseX, mouseY)) {
                 m.categorySelectionColor.base(new Color(70, 70, 70));
             } else {
                 m.categorySelectionColor.base(Render2DUtils.reAlpha(new Color(70, 70, 70), 0));
@@ -299,7 +299,7 @@ public class MainPanel extends ScaledGuiScreen {
                 mc.displayGuiScreen(new CosmeticScreen());
             }
         }
-        if (!Render2DUtils.isHoveredWithoutScale(x, y, width, height, mouseX, mouseY)) return;
+        if (!Render2DUtils.isHovered(x, y, width, height, mouseX, mouseY)) return;
 
 //        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
 //                x + leftWidth, y, width - leftWidth, 20f, mouseX, mouseY
@@ -321,7 +321,7 @@ public class MainPanel extends ScaledGuiScreen {
             return;
         float my = y + 60f;
         for (Category c : Category.values()) {
-            if (Render2DUtils.isHoveredWithoutScale(x, my - 8, leftWidth, 24f, mouseX, mouseY)) {
+            if (Render2DUtils.isHovered(x, my - 8, leftWidth, 24f, mouseX, mouseY)) {
                 wheelTemp = 0f;
                 modsWheel = 0f;
                 if (curType != c) {

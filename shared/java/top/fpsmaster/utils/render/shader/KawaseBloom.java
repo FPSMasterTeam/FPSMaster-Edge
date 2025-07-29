@@ -98,7 +98,7 @@ public class KawaseBloom {
         ShaderUtil.drawQuads();
         GlStateManager.bindTexture(0);
         setAlphaLimit(0);
-        Render2DUtils.beginBlend();
+        Render2DUtils.endBlend();
     }
 
     private static void renderFBO(Framebuffer framebuffer, int framebufferTexture, ShaderUtil shader, float offset) {

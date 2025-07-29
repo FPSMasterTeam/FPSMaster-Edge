@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import static org.lwjgl.opengl.GL11.*;
 
 public class Render2DUtils extends Utility {
+    // AWT
     public static void drawOptimizedRoundedRect(float x, float y, float width, float height, Color color) {
         drawOptimizedRoundedRect(x, y, width, height, 3, color.getRGB());
     }
@@ -76,6 +77,37 @@ public class Render2DUtils extends Utility {
         drawImage(resourceLocations[3], x + width - radius, y + height - radius, radius, radius, color, rawImage);
     }
 
+    static ArrayList<String> downloadingImages = new ArrayList<>();
+    static ArrayList<String> downloadedImages = new ArrayList<>();
+
+
+    public static void drawWebImage(String url, float x, float y, int width, int height) {
+        if (downloadingImages.contains(url)){
+            drawRoundedRectImage(x, y, width, height, 5, new Color(194, 194, 194, 255));
+        } else if (downloadedImages.contains(url)) {
+            drawImage(new ResourceLocation(url), x, y, width, height, -1);
+        }else{
+            downloadingImages.add(url);
+            FPSMaster.async.runnable(()->{
+                ResourceLocation textureLocation = new ResourceLocation(url);
+                ThreadDownloadImageData downloadImageData = new ThreadDownloadImageData(null, null, textureLocation, null);
+                try {
+                    downloadImageData.setBufferedImage(HttpRequest.downloadImage(url));
+                    mc.getTextureManager().loadTexture(textureLocation, downloadImageData);
+                } catch (IOException ignored) {
+                }
+                downloadedImages.add(url);
+                downloadingImages.remove(url);
+            });
+        }
+    }
+
+    // vanilla
+    public static void drawRect(float x, float y, float width, float height, Color color) {
+        drawRect(x, y, width, height, color.getRGB());
+    }
+
+
     public static void drawImage(ResourceLocation res, float x, float y, float width, float height, Color color) {
         drawImage(res, x, y, width, height, color.getRGB(), false);
     }
@@ -110,20 +142,18 @@ public class Render2DUtils extends Utility {
         }
     }
 
-    public static void drawRect(float x, float y, float width, float height, Color color) {
-        drawRect(x, y, width, height, color.getRGB());
+    public static void drawHue(float x, float y, int width, float height) {
+        float hue = 0;
+        float increment = 1.0F / height;
+        for (int i = 0; i < height; i++) {
+            drawRect(x, y + i, width, 1, Color.getHSBColor(hue, 1.0F, 1.0F).getRGB());
+            hue += increment;
+        }
     }
 
-    public static Color reAlpha(Color color, int alpha) {
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), limit(alpha));
-    }
-
-    public static int limit(double i) {
-        if (i > 255)
-            return 255;
-        if (i < 0)
-            return 0;
-        return (int) i;
+    public static void drawPlayerHead(EntityPlayer target, float x, float y, int w, int h) {
+        mc.getTextureManager().bindTexture(((AbstractClientPlayer) target).getLocationSkin());
+        Gui.drawScaledCustomSizeModalRect((int) x, (int) y, 8, 8, 8, 8, w, h, 64, 64);
     }
 
     public static void drawRect(float x, float y, float width, float height, int color) {
@@ -144,18 +174,6 @@ public class Render2DUtils extends Utility {
         GlStateManager.disableBlend();
     }
 
-    public static Color intToColor(Integer c) {
-        return new Color(c >> 16 & 255, c >> 8 & 255, c & 255, c >> 24 & 255);
-    }
-
-    private static void glColor(int color) {
-        int red = color >> 16 & 255;
-        int green = color >> 8 & 255;
-        int blue = color & 255;
-        int alpha = color >> 24 & 255;
-        GL11.glColor4f(red / 255.0F, green / 255.0F, blue / 255.0F, alpha / 255.0F);
-    }
-
     public static void drawModalRectWithCustomSizedTexture(float x, float y, float u, float v, float width, float height, float textureWidth, float textureHeight) {
         float f = 1.0F / textureWidth;
         float f1 = 1.0F / textureHeight;
@@ -169,6 +187,34 @@ public class Render2DUtils extends Utility {
         tessellator.draw();
     }
 
+
+    // other
+
+    public static Color reAlpha(Color color, int alpha) {
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), limit(alpha));
+    }
+
+    public static int limit(double i) {
+        if (i > 255)
+            return 255;
+        if (i < 0)
+            return 0;
+        return (int) i;
+    }
+
+
+    public static Color intToColor(Integer c) {
+        return new Color(c >> 16 & 255, c >> 8 & 255, c & 255, c >> 24 & 255);
+    }
+
+    private static void glColor(int color) {
+        int red = color >> 16 & 255;
+        int green = color >> 8 & 255;
+        int blue = color & 255;
+        int alpha = color >> 24 & 255;
+        GL11.glColor4f(red / 255.0F, green / 255.0F, blue / 255.0F, alpha / 255.0F);
+    }
+
     public static void doGlScissor(float x, float y, float width, float height, int scaleFactor) {
         if (mc.currentScreen != null) {
             width *= 1f / scaleFactor * 2;
@@ -180,27 +226,14 @@ public class Render2DUtils extends Utility {
     }
 
 
-    public static void drawHue(float x, float y, int width, float height) {
-        float hue = 0;
-        float increment = 1.0F / height;
-        for (int i = 0; i < height; i++) {
-            drawRect(x, y + i, width, 1, Color.getHSBColor(hue, 1.0F, 1.0F).getRGB());
-            hue += increment;
-        }
-    }
 
-    public static void drawPlayerHead(EntityPlayer target, float x, float y, int w, int h) {
-        mc.getTextureManager().bindTexture(((AbstractClientPlayer) target).getLocationSkin());
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) y, 8, 8, 8, 8, w, h, 64, 64);
-    }
 
     public static boolean isHovered(float x, float y, float width, float height, int mouseX, int mouseY) {
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
 
-    public static boolean isHoveredWithoutScale(float x, float y, float width, float height, int mouseX, int mouseY) {
-        ScaledResolution sr = new ScaledResolution(mc);
-        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+    public static boolean isHovered(Bounding bounding, int mouseX, int mouseY) {
+        return isHovered(bounding.x, bounding.y, bounding.width, bounding.height, mouseX, mouseY);
     }
 
     public static int fixScale() {
@@ -220,17 +253,6 @@ public class Render2DUtils extends Utility {
         return scaleFactor;
     }
 
-    public static void scaleStart(float x, float y, float scale) {
-        glPushMatrix();
-        glTranslatef(x, y, 0);
-        glScalef(scale, scale, 1);
-        glTranslatef(-x, -y, 0);
-    }
-
-    public static void scaleEnd() {
-        glPopMatrix();
-    }
-
     public static float[] getFixedBounds() {
         ScaledResolution sr = new ScaledResolution(mc);
         int scaleFactor;
@@ -243,6 +265,19 @@ public class Render2DUtils extends Utility {
         float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
         return new float[]{guiWidth, guiHeight};
     }
+
+    public static void scaleStart(float x, float y, float scale) {
+        glPushMatrix();
+        glTranslatef(x, y, 0);
+        glScalef(scale, scale, 1);
+        glTranslatef(-x, -y, 0);
+    }
+
+    public static void scaleEnd() {
+        glPopMatrix();
+    }
+
+
 
     public static void beginBlend() {
         GlStateManager.enableBlend();
@@ -265,6 +300,8 @@ public class Render2DUtils extends Utility {
         StencilUtil.uninitStencilBuffer();
     }
 
+
+    // background(shader)
     public static float animation = 0f;
     static GLSLSandboxShader shader;
     static long initTime = System.currentTimeMillis();
@@ -313,31 +350,6 @@ public class Render2DUtils extends Utility {
             } else {
                 ProviderManager.mainmenuProvider.renderSkybox(mouseX, mouseY, partialTicks, guiWidth, guiHeight, zLevel);
             }
-        }
-    }
-
-    static ArrayList<String> downloadingImages = new ArrayList<>();
-    static ArrayList<String> downloadedImages = new ArrayList<>();
-
-
-    public static void drawWebImage(String url, float x, float y, int width, int height) {
-        if (downloadingImages.contains(url)){
-            drawRoundedRectImage(x, y, width, height, 5, new Color(194, 194, 194, 255));
-        } else if (downloadedImages.contains(url)) {
-            drawImage(new ResourceLocation(url), x, y, width, height, -1);
-        }else{
-            downloadingImages.add(url);
-            FPSMaster.async.runnable(()->{
-                ResourceLocation textureLocation = new ResourceLocation(url);
-                ThreadDownloadImageData downloadImageData = new ThreadDownloadImageData(null, null, textureLocation, null);
-                try {
-                    downloadImageData.setBufferedImage(HttpRequest.downloadImage(url));
-                    mc.getTextureManager().loadTexture(textureLocation, downloadImageData);
-                } catch (IOException ignored) {
-                }
-                downloadedImages.add(url);
-                downloadingImages.remove(url);
-            });
         }
     }
 }
