@@ -33,7 +33,6 @@ public class Music extends AbstractMusic {
     public void loadMusic() {
         try {
             if (ProviderManager.worldClientProvider.getWorld() == null) return;
-            MusicWrapper.loadLyrics(this);
             File artist = new File(FileUtils.artists, FileUtils.fixName(name + "(" + id + ").png"));
             if (!artist.exists()) {
                 HttpRequest.downloadFile(imgURL + "?param=90y90", artist.getAbsolutePath());
@@ -49,6 +48,7 @@ public class Music extends AbstractMusic {
     @Override
     public void play() {
         MusicPlayer.stop();
+        MusicWrapper.loadLyrics(this);
         File flac = new File(FileUtils.music, FileUtils.fixName(name + "(" + id + ").flac"));
         File mp3 = new File(FileUtils.music, FileUtils.fixName(name + "(" + id + ").mp3"));
         if (flac.exists() || mp3.exists()) {

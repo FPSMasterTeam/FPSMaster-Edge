@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ThreadDownloadImageData;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.ExceptionHandler;
@@ -287,6 +288,17 @@ public class NewMusicPanel {
                     Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/music/previous.png"), x + width / 2 - 35, y + height - 25, 16f, 16f, new Color(234, 234, 234,opacity));
                     Render2DUtils.drawImage(MusicPlayer.isPlaying ? new ResourceLocation("client/gui/settings/music/pause.png") : new ResourceLocation("client/gui/settings/music/play.png"), x + width / 2 - 15, y + height - 26, 35 / 2f, 35 / 2f, new Color(255,255,255,opacity));
                     Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/music/next.png"), x + width / 2 + 5, y + height - 25, 16f, 16f, new Color(234, 234, 234,opacity));
+
+                    // 音量键
+                    Render2DUtils.drawImage(new ResourceLocation("client/textures/ui/volume.png"), x + width  - 62, y + height - 16, 7f, 7f, new Color(234, 234, 234,opacity));
+                    Render2DUtils.drawRoundedRectImage(x + width  - 50, y + height - 13, 30f, 2f,1, new Color(108, 108, 108));
+                    float volume = MusicPlayer.getVolume();
+                    Render2DUtils.drawRoundedRectImage(x + width  - 50, y + height - 13, 30f * volume, 2f,1, new Color(255,255,255));
+                    if (Render2DUtils.isHovered(x + width  - 50, y + height - 13, 30f, 2f, mouseX, mouseY) && Mouse.isButtonDown(0)){
+                        float newVolume = (mouseX - (x + width  - 50)) / 30f;
+                        MusicPlayer.setVolume(newVolume);
+                    }
+
 
                     if (JLayerHelper.clip != null) {
                         if (Render2DUtils.isHovered(x + width / 2 - 15, y + height - 26, 35 / 2f, 35 / 2f, mouseX, mouseY) && consumeClick(0)) {

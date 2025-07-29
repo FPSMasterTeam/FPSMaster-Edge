@@ -30,8 +30,7 @@ public class WrapperHitboxes {
         GlStateManager.disableTexture2D();
 //        GlStateManager.disableLighting();
         GlStateManager.disableCull();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
+        GlStateManager.disableAlpha();
         for (Entity entity : Minecraft.getMinecraft().theWorld.loadedEntityList.stream().filter(e -> e != Minecraft.getMinecraft().thePlayer && !e.isInvisible()).collect(Collectors.toList())) {
             AxisAlignedBB axisalignedbb = entity.getEntityBoundingBox();
             double d0 = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * ProviderManager.timerProvider.getRenderPartialTicks();
