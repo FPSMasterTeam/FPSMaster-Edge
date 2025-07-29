@@ -19,7 +19,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.modules.client.ClientThreadPool;
+import top.fpsmaster.modules.client.thread.ClientThreadPool;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.common.GuiButton;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
@@ -98,8 +98,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         serverListDisplay.clear();
         serverListDisplay.addAll(serverListInternet);
         if (serverListRecommended.isEmpty()) {
-            ClientThreadPool clientThreadPool = new ClientThreadPool(100);
-            clientThreadPool.runnable(() -> {
+            FPSMaster.async.runnable(() -> {
                 String s;
                 try {
                     s = HttpRequest.get("https://service.fpsmaster.top/api/client/servers").getBody();
