@@ -15,7 +15,7 @@ public class MixinGuiMultiplayer {
         // check ViaVersion
         try {
             Class.forName("com.viaversion.viaversion.api.Via");
-            Minecraft.getMinecraft().displayGuiScreen(new GuiMultiplayer(new MainMenu()));
+//            Minecraft.getMinecraft().displayGuiScreen(new GuiMultiplayer(new MainMenu()));
         } catch (ClassNotFoundException e) {
             Minecraft.getMinecraft().displayGuiScreen(new top.fpsmaster.ui.mc.GuiMultiplayer());
             ci.cancel();
