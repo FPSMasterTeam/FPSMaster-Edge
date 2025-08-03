@@ -527,6 +527,20 @@ customtitles.scale=Scale
 wavycape=Wavy Cape
 wavycape.desc=Make your cape natural if exists
 
+
+soundmodifier=SoundModifier
+soundmodifier.desc=Modify the volume of sounds
+soundmodifier.block=Block Sound
+soundmodifier.dig=Dig Sound
+soundmodifier.liquid=Liquid Sound
+soundmodifier.game=Game Sound
+soundmodifier.mob=Mob Sound
+
+particlesmodifier=ParticlesModifier
+particlesmodifier.desc=Modify the amount of particles
+particlesmodifier.block=Block Particles
+
+
 # Categories
 category.optimize=Performance
 category.render=Visual

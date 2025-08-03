@@ -5,6 +5,7 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.server.S0BPacketAnimation;
 import net.minecraft.potion.Potion;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.WorldServer;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventTick;
@@ -76,7 +77,7 @@ public class OldAnimations extends Module {
             delta *= 0.4f;
             eyeHeight = START_HEIGHT - delta;
         }
-        if (Minecraft.getMinecraft().gameSettings.keyBindAttack.isKeyDown() && thePlayer.isUsingItem() && blockSwing.getValue()) {
+        if (Minecraft.getMinecraft().gameSettings.keyBindAttack.isKeyDown() && thePlayer.isUsingItem() && blockSwing.getValue() && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
             swingItem();
         }
     }

@@ -19,6 +19,7 @@
     "EntityFXMixin_StaticParticleColor",
     "MixinAbstractClientPlayer",
     "MixinChatLine",
+    "MixinEffectRender",
     "MixinEntityPlayerSP",
     "MixinEntityRenderer",
     "MixinFontRender",
@@ -47,7 +48,8 @@
     "MixinRenderTNTPrimed",
     "MixinServerSelectionList",
     "MixinShaderGroup",
-    "WorldClientMixin_AnimationTick",
+    "MixinSoundHandler",
+    "WorldClientMixin",
     "accessor.FontRendererAccessor",
     "accessor.GlStateManagerAccessor",
     "accessor.WorldRendererAccessor"

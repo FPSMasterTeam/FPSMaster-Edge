@@ -28,6 +28,7 @@ public class ModeSettingRender extends SettingRender<ModeSetting> {
                 x + 10, y + 8, new Color(162, 162, 162).getRGB()
         );
         float maxWidth = 80f;
+        maxWidth = Math.max(maxWidth, fw + 10);
         Render2DUtils.drawOptimizedRoundedBorderRect(
                 x + 16 + fw,
                 y + 4,

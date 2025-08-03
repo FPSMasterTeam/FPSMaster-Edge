@@ -124,6 +124,8 @@ public class ModuleManager {
         modules.add(new DamageIndicator());
         modules.add(new TabOverlay());
         modules.add(new ItemCountDisplay());
+        modules.add(new SoundModifier());
+        modules.add(new ParticlesModifier());
 
         if (ProviderManager.constants.getVersion().equals("1.12.2")) {
             modules.add(new HideIndicator());

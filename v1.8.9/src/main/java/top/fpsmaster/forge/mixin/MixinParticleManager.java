@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import top.fpsmaster.features.impl.optimizes.Performance;
+import top.fpsmaster.features.impl.utility.ParticlesModifier;
 
 import java.util.List;
 
