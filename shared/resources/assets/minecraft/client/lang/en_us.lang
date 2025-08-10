@@ -567,6 +567,7 @@ irc.not_login=§c[IRC] §r§cYou're not connected to IRC. Check your connection 
 irc.disconnect=§c[IRC] §r§cDisconnected. Please reconnect.
 special.under_dev=Under development. Wait for future updates.
 translate.hover=Click to Translate
+copy.hover=Click to copy
 command.notfound=Command not found. If the client command affects your chat, disable ClientSettings -> Client Command.
 blur.fast_render=UI blur is not compatible with Fast Render. Please disable Fast Render first.
 blur.performance=Blur may reduce performance. Disable on low-end PCs!

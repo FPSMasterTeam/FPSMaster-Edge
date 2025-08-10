@@ -18,7 +18,6 @@ import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 

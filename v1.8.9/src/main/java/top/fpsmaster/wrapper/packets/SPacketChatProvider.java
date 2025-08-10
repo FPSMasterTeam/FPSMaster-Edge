@@ -19,20 +19,23 @@ public class SPacketChatProvider implements IPacketChat {
 
     @NotNull
     @Override
-    public String getUnformattedText(@NotNull Object p){
+    public String getUnformattedText(@NotNull Object p) {
         return getChatComponent(p).getUnformattedText();
     }
+
     @NotNull
     @Override
-    public IChatComponent getChatComponent(@NotNull Object p){
+    public IChatComponent getChatComponent(@NotNull Object p) {
         return ((S02PacketChat) p).getChatComponent();
     }
+
     @Override
-    public int getType(@NotNull Object p){
+    public int getType(@NotNull Object p) {
         return ((S02PacketChat) p).getType();
     }
+
     @Override
-    public void appendTranslation(@NotNull Object p){
+    public void appendTranslation(@NotNull Object p) {
         String unformattedText = getUnformattedText(p);
         if (!unformattedText.endsWith(" [T]") && unformattedText.length() > 5) {
             ClickEvent clickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "#TRANSLATE" + unformattedText);

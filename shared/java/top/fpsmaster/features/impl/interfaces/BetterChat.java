@@ -1,8 +1,10 @@
 package top.fpsmaster.features.impl.interfaces;
 
 import net.minecraft.client.gui.ChatLine;
+import net.minecraft.event.ClickEvent;
 import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventPacket;
 import top.fpsmaster.features.impl.InterfaceModule;
@@ -47,7 +49,11 @@ public class BetterChat extends InterfaceModule {
                 lastMessage = packet.getChatComponent().getUnformattedText();
                 return;
             }
-            if (lastMessage.equals(packet.getChatComponent().getUnformattedText()) && packet.getChatComponent().getChatStyle().getChatHoverEvent() == null && packet.getChatComponent().getChatStyle().getChatClickEvent() == null) {
+            if (lastMessage.equals(packet.getChatComponent().getUnformattedText())
+                    && packet.getChatComponent().getChatStyle().getChatHoverEvent() == null
+                    && packet.getChatComponent().getChatStyle().getChatClickEvent() == null
+                    && packet.getChatComponent().getSiblings() != null
+                    && packet.getChatComponent().getSiblings().stream().allMatch(c -> c.getChatStyle().getChatClickEvent() == null && c.getChatStyle().getChatHoverEvent() == null)) {
                 ChatLine c = chatProvider.getDrawnChatLines().get(0);
                 String text = packet.getChatComponent().getUnformattedText();
                 c = new ChatLine(c.getUpdatedCounter(), new ChatComponentText(text + "\247r\247f [x" + ++counter + "]"), c.getChatLineID());

@@ -1,8 +1,15 @@
 package top.fpsmaster.features;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.network.NetworkPlayerInfo;
+import net.minecraft.event.ClickEvent;
+import net.minecraft.event.HoverEvent;
+import net.minecraft.network.play.client.C01PacketChatMessage;
+import net.minecraft.network.play.server.S02PacketChat;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
 import org.java_websocket.enums.ReadyState;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
@@ -14,8 +21,6 @@ import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.account.AccountManager;
 import top.fpsmaster.modules.account.Cosmetic;
 import top.fpsmaster.modules.client.ClientUser;
-import top.fpsmaster.modules.music.MusicPlayer;
-import top.fpsmaster.modules.music.netease.Music;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.MathTimer;
@@ -24,7 +29,6 @@ import top.fpsmaster.utils.render.shader.KawaseBlur;
 import top.fpsmaster.websocket.client.WsClient;
 
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -43,6 +47,20 @@ public class GlobalListener {
 
     @Subscribe
     public void onChat(EventPacket e) {
+        if (e.packet instanceof S02PacketChat && e.type == EventPacket.PacketType.RECEIVE) {
+            IChatComponent copyText = new ChatComponentText(" \247f[C]");
+            copyText.getChatStyle()
+                    .setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "\u0000#COPY" + ((S02PacketChat) e.packet).getChatComponent().getUnformattedText()))
+                    .setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(FPSMaster.i18n.get("copy.hover"))));
+            ((S02PacketChat) e.packet).getChatComponent().appendSibling(copyText);
+        } else if (e.packet instanceof C01PacketChatMessage && e.type == EventPacket.PacketType.SEND) {
+            String msg = ((C01PacketChatMessage) e.packet).getMessage();
+            if (msg.startsWith("\u0000#COPY")) {
+                msg = msg.substring(6);
+                GuiScreen.setClipboardString(msg);
+                e.cancel();
+            }
+        }
 //        if (Translator.using) {
 //            if (ProviderManager.packetChat.isPacket(e.packet)) {
 //                ProviderManager.packetChat.appendTranslation(e.packet);
@@ -52,7 +70,6 @@ public class GlobalListener {
 
     @Subscribe
     public void onChatSend(EventSendChatMessage e) {
-        String msg = e.msg;
     }
 
 

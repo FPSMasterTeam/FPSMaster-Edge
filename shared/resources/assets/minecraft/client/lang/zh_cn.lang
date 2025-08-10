@@ -569,6 +569,7 @@ irc.not_login=§c[IRC] §r§c您未连接到IRC，请报告本问题或检查网
 irc.disconnect=§c[IRC] §r§c您已断开连接，请重新连接。
 special.under_dev=正在开发中，请等待版本更新
 translate.hover=点此翻译
+copy.hover=点此复制
 command.notfound=未找到命令，如果客户端命令影响了您的消息，请在客户端设置中关闭客户端命令功能。
 blur.fast_render=组件模糊与快速渲染不兼容，如要使用模糊效果，请先在设置中关闭快速渲染。
 blur.performance=组件模糊会极大影响性能，若您的配置较低则不建议开启！
