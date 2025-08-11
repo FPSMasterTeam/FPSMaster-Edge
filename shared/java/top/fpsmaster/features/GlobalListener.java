@@ -1,6 +1,7 @@
 package top.fpsmaster.features;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -16,14 +17,15 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.*;
+import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.interfaces.gui.IGuiNewChatProvider;
 import top.fpsmaster.modules.account.AccountManager;
 import top.fpsmaster.modules.account.Cosmetic;
 import top.fpsmaster.modules.client.ClientUser;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.utils.Utility;
-import top.fpsmaster.utils.math.MathTimer;
 import top.fpsmaster.utils.render.StencilUtil;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
 import top.fpsmaster.websocket.client.WsClient;
@@ -38,8 +40,8 @@ import java.util.stream.Collectors;
 import static top.fpsmaster.utils.Utility.mc;
 
 public class GlobalListener {
-
-    MathTimer musicSwitchTimer = new MathTimer();
+    private IChatComponent lastMessage = null;
+    private int counter = 1;
 
     public void init() {
         EventDispatcher.registerListener(this);
@@ -48,7 +50,29 @@ public class GlobalListener {
     @Subscribe
     public void onChat(EventPacket e) {
         if (e.packet instanceof S02PacketChat && e.type == EventPacket.PacketType.RECEIVE) {
-            if (((S02PacketChat) e.packet).getChatComponent().getUnformattedText().length() > 5 && ((S02PacketChat) e.packet).isChat()) {
+            if (BetterChat.using && BetterChat.foldMessage.getValue()) {
+                S02PacketChat packet = (S02PacketChat) e.packet;
+                if (packet.getType() == 2) return;
+                IGuiNewChatProvider chatProvider = (IGuiNewChatProvider) mc.ingameGUI.getChatGUI();
+                if (chatProvider.getDrawnChatLines().isEmpty()) {
+                    counter = 1;
+                    lastMessage = packet.getChatComponent();
+                    return;
+                }
+                if (lastMessage.equals(packet.getChatComponent())) {
+                    ChatLine c = chatProvider.getDrawnChatLines().get(0);
+                    c = new ChatLine(c.getUpdatedCounter(), lastMessage.createCopy().appendSibling(new ChatComponentText("\247r\247f [x" + ++counter + "]")), c.getChatLineID());
+                    chatProvider.getChatLines().set(0, c);
+                    chatProvider.getDrawnChatLines().set(0, c);
+                    e.cancel();
+                } else {
+                    System.out.println(lastMessage);
+                    System.out.println(packet.getChatComponent());
+                    counter = 1;
+                    lastMessage = packet.getChatComponent();
+                }
+            }
+            if (((S02PacketChat) e.packet).getChatComponent().getUnformattedText().trim().length() > 2 && ((S02PacketChat) e.packet).getType() != 2) {
                 IChatComponent copyText = new ChatComponentText(" \247f[C]");
                 copyText.getChatStyle()
                         .setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "\u0000#COPY" + ((S02PacketChat) e.packet).getChatComponent().getUnformattedText()))
