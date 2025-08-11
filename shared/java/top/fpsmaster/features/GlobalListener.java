@@ -49,35 +49,31 @@ public class GlobalListener {
 
     @Subscribe
     public void onChat(EventPacket e) {
-        if (e.packet instanceof S02PacketChat && e.type == EventPacket.PacketType.RECEIVE) {
+        if (e.packet instanceof S02PacketChat && e.type == EventPacket.PacketType.RECEIVE && ((S02PacketChat) e.packet).getType() != 2) {
+            S02PacketChat packet = (S02PacketChat) e.packet;
+            IChatComponent copyText = new ChatComponentText(" \247f[C]");
+            copyText.getChatStyle()
+                    .setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "\u0000#COPY" + ((S02PacketChat) e.packet).getChatComponent().getUnformattedText()))
+                    .setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(FPSMaster.i18n.get("copy.hover"))));
             if (BetterChat.using && BetterChat.foldMessage.getValue()) {
-                S02PacketChat packet = (S02PacketChat) e.packet;
-                if (packet.getType() == 2) return;
                 IGuiNewChatProvider chatProvider = (IGuiNewChatProvider) mc.ingameGUI.getChatGUI();
                 if (chatProvider.getDrawnChatLines().isEmpty()) {
                     counter = 1;
-                    lastMessage = packet.getChatComponent();
-                    return;
-                }
-                if (lastMessage.equals(packet.getChatComponent())) {
+                    lastMessage = packet.getChatComponent().createCopy();
+                } else if (lastMessage.equals(packet.getChatComponent())) {
                     ChatLine c = chatProvider.getDrawnChatLines().get(0);
-                    c = new ChatLine(c.getUpdatedCounter(), lastMessage.createCopy().appendSibling(new ChatComponentText("\247r\247f [x" + ++counter + "]")), c.getChatLineID());
+                    c = new ChatLine(c.getUpdatedCounter(), lastMessage.createCopy().appendSibling(new ChatComponentText("\247r\247f [x" + ++counter + "]")).appendSibling(copyText), c.getChatLineID());
                     chatProvider.getChatLines().set(0, c);
                     chatProvider.getDrawnChatLines().set(0, c);
                     e.cancel();
+                    return;
                 } else {
-                    System.out.println(lastMessage);
-                    System.out.println(packet.getChatComponent());
                     counter = 1;
-                    lastMessage = packet.getChatComponent();
+                    lastMessage = packet.getChatComponent().createCopy();
                 }
             }
-            if (((S02PacketChat) e.packet).getChatComponent().getUnformattedText().trim().length() > 2 && ((S02PacketChat) e.packet).getType() != 2) {
-                IChatComponent copyText = new ChatComponentText(" \247f[C]");
-                copyText.getChatStyle()
-                        .setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "\u0000#COPY" + ((S02PacketChat) e.packet).getChatComponent().getUnformattedText()))
-                        .setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(FPSMaster.i18n.get("copy.hover"))));
-                ((S02PacketChat) e.packet).getChatComponent().appendSibling(copyText);
+            if (packet.getChatComponent().getUnformattedText().trim().length() > 2) {
+                packet.getChatComponent().appendSibling(copyText);
             }
         } else if (e.packet instanceof C01PacketChatMessage && e.type == EventPacket.PacketType.SEND) {
             String msg = ((C01PacketChatMessage) e.packet).getMessage();
