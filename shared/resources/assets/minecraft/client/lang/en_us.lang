@@ -533,7 +533,7 @@ wavycape=Wavy Cape
 wavycape.desc=Make your cape natural if exists
 
 
-soundmodifier=SoundModifier
+soundmodifier=Sound Modifier
 soundmodifier.desc=Modify the volume of sounds
 soundmodifier.block=Block Sound
 soundmodifier.dig=Dig Sound
@@ -541,9 +541,13 @@ soundmodifier.liquid=Liquid Sound
 soundmodifier.game=Game Sound
 soundmodifier.mob=Mob Sound
 
-particlesmodifier=ParticlesModifier
+particlesmodifier=Particles Modifier
 particlesmodifier.desc=Modify the amount of particles
 particlesmodifier.block=Block Particles
+
+betterfishingrod=Better Fishing Rod
+betterfishingrod.desc=Modify the fishing rod
+betterfishingrod.stringwidth=String Width
 
 
 # Categories

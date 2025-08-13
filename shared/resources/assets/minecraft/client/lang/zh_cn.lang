@@ -547,6 +547,10 @@ particlesmodifier=粒子修改
 particlesmodifier.desc=修改各类粒子
 particlesmodifier.block=方块粒子
 
+betterfishingrod=更好的鱼竿
+betterfishingrod.desc=修改钓鱼竿
+betterfishingrod.stringwidth=线宽度
+
 
 # 类别
 category.optimize=优化

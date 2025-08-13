@@ -10,9 +10,11 @@ import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
+import java.text.DecimalFormat;
 import java.util.Locale;
 
 public class NumberSettingRender extends SettingRender<NumberSetting> {
+    private static final DecimalFormat df = new DecimalFormat("#.##");
     // animation
     private float aWidth = 0f;
 
@@ -32,7 +34,7 @@ public class NumberSettingRender extends SettingRender<NumberSetting> {
         aWidth = (float) AnimationUtils.base(aWidth, 160 * percent, 0.2);
         Render2DUtils.drawOptimizedRoundedRect(x + 16 + fw, y + 3, aWidth, 6f, -1);
         FPSMaster.fontManager.s16.drawString(
-                setting.getValue().toString(),
+                df.format(setting.getValue()),
                 x + fw + 20 + 160,
                 y + 2,
                 new Color(128, 128, 128).getRGB()

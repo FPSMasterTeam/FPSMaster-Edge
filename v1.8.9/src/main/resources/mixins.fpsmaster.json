@@ -43,6 +43,7 @@
     "MixinPlayerControllerMP",
     "MixinRender",
     "MixinRenderEntityItem",
+    "MixinRenderItem",
     "MixinRenderLivingBase",
     "MixinRenderManager",
     "MixinRenderTNTPrimed",
