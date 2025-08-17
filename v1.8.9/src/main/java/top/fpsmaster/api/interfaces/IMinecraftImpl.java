@@ -2,6 +2,7 @@ package top.fpsmaster.api.interfaces;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import org.jetbrains.annotations.Nullable;
 
 public class IMinecraftImpl implements IMinecraft{
     private final Minecraft mc;
@@ -13,8 +14,11 @@ public class IMinecraftImpl implements IMinecraft{
     }
 
     @Override
-    public IPlayer getPlayer() {
-        if (player == null || mcPlayer != mc.thePlayer){
+    public @Nullable IPlayer getPlayer() {
+        if (player == null || mcPlayer != mc.thePlayer) {
+            if (mc.thePlayer == null) {
+                return null; // Better keep the nullability.
+            }
             player = new IPlayerImpl(mc.thePlayer);
             mcPlayer = mc.thePlayer;
         }

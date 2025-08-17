@@ -1,7 +1,8 @@
 package top.fpsmaster.api.provider;
 
+import org.jetbrains.annotations.NotNull;
 import top.fpsmaster.api.interfaces.IMinecraft;
 
 public interface IMinecraftProvider {
-    IMinecraft getMinecraft();
+    @NotNull IMinecraft getMinecraft();
 }

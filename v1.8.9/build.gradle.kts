@@ -124,6 +124,8 @@ dependencies {
     shadowImpl("com.github.FPSMasterTeam:JLuaParser:master-SNAPSHOT") {
         isTransitive = true
     }
+    compileOnly("org.projectlombok:lombok:1.18.38")
+    annotationProcessor("org.projectlombok:lombok:1.18.38")
 }
 
 // Tasks:

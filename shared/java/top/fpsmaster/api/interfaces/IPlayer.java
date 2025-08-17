@@ -1,9 +1,11 @@
 package top.fpsmaster.api.interfaces;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.UUID;
 
 public interface IPlayer {
-    String getName();
+    @NotNull String getName();
 
-    UUID getUniqueId();
+    @NotNull UUID getUniqueId();
 }

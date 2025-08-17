@@ -1,6 +1,7 @@
 package top.fpsmaster.api.interfaces;
 
 import net.minecraft.client.entity.EntityPlayerSP;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
@@ -12,12 +13,12 @@ public class IPlayerImpl implements IPlayer{
     }
 
     @Override
-    public String getName() {
+    public @NotNull String getName() {
         return playerSP.getName();
     }
 
     @Override
-    public UUID getUniqueId() {
+    public @NotNull UUID getUniqueId() {
         return playerSP.getUniqueID();
     }
 }

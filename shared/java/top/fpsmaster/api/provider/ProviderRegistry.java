@@ -1,13 +1,11 @@
 package top.fpsmaster.api.provider;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class ProviderRegistry {
+    @Getter
+    @Setter
     private static IMinecraftProvider minecraftProvider;
 
-    public static void setMinecraftProvider(IMinecraftProvider provider) {
-        minecraftProvider = provider;
-    }
-
-    public static IMinecraftProvider getMinecraftProvider() {
-        return minecraftProvider;
-    }
 }
