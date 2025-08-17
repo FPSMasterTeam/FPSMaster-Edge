@@ -4,10 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 
 public class IMinecraftImpl implements IMinecraft{
-    Minecraft mc;
-
-    IPlayerImpl player;
-    EntityPlayerSP mcPlayer;
+    private final Minecraft mc;
+    private IPlayerImpl player;
+    private EntityPlayerSP mcPlayer;
 
     public IMinecraftImpl(Minecraft mc) {
         this.mc = mc;
