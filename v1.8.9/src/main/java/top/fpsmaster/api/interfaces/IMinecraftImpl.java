@@ -3,10 +3,12 @@ package top.fpsmaster.api.interfaces;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import org.jetbrains.annotations.Nullable;
+import top.fpsmaster.api.interfaces.client.IMinecraft;
+import top.fpsmaster.api.interfaces.client.IClientPlayerEntity;
 
-public class IMinecraftImpl implements IMinecraft{
+public class IMinecraftImpl implements IMinecraft {
     private final Minecraft mc;
-    private IPlayerImpl player;
+    private IClientPlayerEntityImpl player;
     private EntityPlayerSP mcPlayer;
 
     public IMinecraftImpl(Minecraft mc) {
@@ -14,12 +16,12 @@ public class IMinecraftImpl implements IMinecraft{
     }
 
     @Override
-    public @Nullable IPlayer getPlayer() {
+    public @Nullable IClientPlayerEntity getClientPlayer() {
         if (player == null || mcPlayer != mc.thePlayer) {
             if (mc.thePlayer == null) {
                 return null; // Better keep the nullability.
             }
-            player = new IPlayerImpl(mc.thePlayer);
+            player = new IClientPlayerEntityImpl(mc.thePlayer);
             mcPlayer = mc.thePlayer;
         }
         return player;

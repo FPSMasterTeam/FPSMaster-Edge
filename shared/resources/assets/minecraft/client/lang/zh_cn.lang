@@ -219,7 +219,7 @@ motionblur.fastrender=注意！动态模糊功能与快速渲染并不兼容，�
 
 sprint=强制疾跑
 sprint.desc=保持疾跑
-sprint.togglesprint=保持疾跑
+sprint.togglesprint=切换疾跑
 sprint.betterfont=更好的字体
 
 autogg=自动GG

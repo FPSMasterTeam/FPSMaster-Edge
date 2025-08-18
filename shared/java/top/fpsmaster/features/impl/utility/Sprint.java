@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.utility;
 
+import top.fpsmaster.api.provider.ProviderRegistry;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventUpdate;
@@ -11,10 +12,9 @@ import top.fpsmaster.interfaces.ProviderManager;
 import static top.fpsmaster.utils.Utility.mc;
 
 public class Sprint extends InterfaceModule {
+    private final BooleanSetting toggleSprint = new BooleanSetting("ToggleSprint", true);
     public static boolean using = true;
     public static boolean sprint = true;
-
-    BooleanSetting toggleSprint = new BooleanSetting("ToggleSprint", true);
 
     public Sprint() {
         super("Sprint", Category.Utility);
@@ -40,7 +40,7 @@ public class Sprint extends InterfaceModule {
         if (toggleSprint.getValue() && e.key == mc.gameSettings.keyBindSprint.getKeyCode()) {
             sprint = !sprint;
             if (!sprint)
-                mc.thePlayer.setSprinting(false);
+                ProviderRegistry.getMinecraftProvider().getMinecraft().getClientPlayer().setSprinting(false);
         }
     }
 

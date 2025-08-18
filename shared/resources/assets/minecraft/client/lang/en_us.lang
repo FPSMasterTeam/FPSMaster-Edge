@@ -215,7 +215,7 @@ motionblur.mode.old=Classic
 motionblur.mode.new=Modern
 motionblur.fastrender=Warning! Motion Blur is not compatible with Fast Render. Fast Render has been disabled.
 
-sprint=Toggle Sprint
+sprint=Sprint
 sprint.desc=Stay sprinting at all times
 sprint.togglesprint=Toggle Sprint
 sprint.betterfont=Clean Font

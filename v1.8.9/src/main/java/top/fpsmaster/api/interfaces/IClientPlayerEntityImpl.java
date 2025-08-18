@@ -2,13 +2,14 @@ package top.fpsmaster.api.interfaces;
 
 import net.minecraft.client.entity.EntityPlayerSP;
 import org.jetbrains.annotations.NotNull;
+import top.fpsmaster.api.interfaces.client.IClientPlayerEntity;
 
 import java.util.UUID;
 
-public class IPlayerImpl implements IPlayer {
+public class IClientPlayerEntityImpl implements IClientPlayerEntity {
     private final EntityPlayerSP playerSP;
 
-    public IPlayerImpl(EntityPlayerSP playerSP) {
+    public IClientPlayerEntityImpl(EntityPlayerSP playerSP) {
         this.playerSP = playerSP;
     }
 

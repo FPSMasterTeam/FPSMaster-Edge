@@ -2,7 +2,7 @@ package top.fpsmaster.api.provider;
 
 import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.NotNull;
-import top.fpsmaster.api.interfaces.IMinecraft;
+import top.fpsmaster.api.interfaces.client.IMinecraft;
 import top.fpsmaster.api.interfaces.IMinecraftImpl;
 
 public class IMinecraftProviderImpl implements IMinecraftProvider {
