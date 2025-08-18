@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.features.impl.utility.ParticlesModifier;
 
 import java.util.List;
 
@@ -26,9 +25,9 @@ public class MixinParticleManager {
      */
     @Overwrite
     public void emitParticleAtEntity(Entity entityIn, EnumParticleTypes particleTypes) {
-        if (!Performance.using || particleEmitters.size() > Performance.particlesLimit.getValue().intValue()) {
+        if (Performance.using && particleEmitters.size() > Performance.particlesLimit.getValue().intValue()) {
             this.particleEmitters.remove(0);
-            this.particleEmitters.add(new EntityParticleEmitter(Minecraft.getMinecraft().theWorld, entityIn, particleTypes));
         }
+        this.particleEmitters.add(new EntityParticleEmitter(Minecraft.getMinecraft().theWorld, entityIn, particleTypes));
     }
 }
