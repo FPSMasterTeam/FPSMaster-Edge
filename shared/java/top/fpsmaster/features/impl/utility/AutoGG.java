@@ -12,7 +12,7 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.MathTimer;
 
@@ -32,8 +32,8 @@ public class AutoGG extends Module {
 
     @Subscribe
     public void onPacket(EventPacket event) {
-        if (event.type == EventPacket.PacketType.RECEIVE && ProviderManager.packetChat.isPacket(event.packet)) {
-            IChatComponent componentValue = ProviderManager.packetChat.getChatComponent(event.packet);
+        if (event.type == EventPacket.PacketType.RECEIVE && Wrappers.chatPacket().isPacket(event.packet)) {
+            IChatComponent componentValue = Wrappers.chatPacket().getChatComponent(event.packet);
             String chatMessage = componentValue.getUnformattedText();
             switch (servers.getValue()) {
                 case 0:

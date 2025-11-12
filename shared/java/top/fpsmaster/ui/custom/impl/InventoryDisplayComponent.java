@@ -6,7 +6,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.InventoryDisplay;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 
 import static top.fpsmaster.utils.Utility.mc;
@@ -30,7 +30,7 @@ public class InventoryDisplayComponent extends Component {
         GL11.glTranslated(x, y, 0);
         if (scale != 1)
             GL11.glScaled(scale, scale, 0);
-        for (Slot slot : ProviderManager.mcProvider.getPlayer().inventoryContainer.inventorySlots) {
+        for (Slot slot : Wrappers.minecraft().getPlayer().inventoryContainer.inventorySlots) {
             count2++;
 
             if (count2 <= 9 || count2 > 36) {
@@ -47,7 +47,7 @@ public class InventoryDisplayComponent extends Component {
                 GlStateManager.disableBlend();
                 RenderHelper.enableGUIStandardItemLighting();
                 mc.getRenderItem().renderItemAndEffectIntoGUI(itemStack, x1, y1);
-                mc.getRenderItem().renderItemOverlays(ProviderManager.mcProvider.getFontRenderer(), itemStack, x1, y1);
+                mc.getRenderItem().renderItemOverlays(Wrappers.minecraft().getFontRenderer(), itemStack, x1, y1);
                 RenderHelper.disableStandardItemLighting();
 
                 GlStateManager.enableAlpha();

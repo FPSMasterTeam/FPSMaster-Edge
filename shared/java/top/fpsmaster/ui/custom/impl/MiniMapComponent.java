@@ -4,7 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.MiniMap;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.minimap.XaeroMinimap;
 import top.fpsmaster.ui.minimap.animation.MinimapAnimation;
@@ -49,7 +49,7 @@ public class MiniMapComponent extends Component {
         }
         GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
         Minecraft.getMinecraft().entityRenderer.setupOverlayRendering();
-        InterfaceHandler.drawInterfaces(width, height, ProviderManager.timerProvider.getRenderPartialTicks());
+        InterfaceHandler.drawInterfaces(width, height, Wrappers.timer().getRenderPartialTicks());
         MinimapAnimation.tick();
         GL11.glPopMatrix();
         Render2DUtils.fixScale();

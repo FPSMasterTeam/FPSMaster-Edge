@@ -5,7 +5,7 @@ import org.java_websocket.handshake.ServerHandshake;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.impl.utility.IRC;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.websocket.data.message.Packet;
 import top.fpsmaster.websocket.data.message.client.*;
@@ -24,7 +24,7 @@ public class WsClient extends WebSocketClient {
     @Override
     public void onOpen(ServerHandshake handshakedata) {
         Utility.sendClientDebug("成功连接到irc服务器，开始验证登录信息");
-        if (ProviderManager.mcProvider.getPlayer() != null) {
+        if (Wrappers.minecraft().getPlayer() != null) {
             Utility.sendClientMessage(FPSMaster.i18n.get("irc.enable").replace("%s", ClientSettings.prefix.getValue()));
         }
         assert FPSMaster.accountManager != null;
@@ -36,7 +36,7 @@ public class WsClient extends WebSocketClient {
     }
 
     public void sendInformation(String skin, String cosmetics, String gameID, String serverAddress) {
-        send(new PlayerInfoPacket(gameID, ProviderManager.mcProvider.getPlayer().getUniqueID().toString(), serverAddress, skin, cosmetics).toJson());
+        send(new PlayerInfoPacket(gameID, Wrappers.minecraft().getPlayer().getUniqueID().toString(), serverAddress, skin, cosmetics).toJson());
     }
 
 

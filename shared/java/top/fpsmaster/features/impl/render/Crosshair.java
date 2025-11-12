@@ -13,7 +13,7 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -122,12 +122,12 @@ public class Crosshair extends Module {
     }
 
     private boolean isTeammate(EntityPlayer e) {
-        EntityPlayer player = ProviderManager.mcProvider.getPlayer();
+        EntityPlayer player = Wrappers.minecraft().getPlayer();
         return player != null && e.getTeam() != null && e.getTeam().isSameTeam(player.getTeam());
     }
 
     private boolean isMoving() {
-        EntityPlayer player = ProviderManager.mcProvider.getPlayer();
+        EntityPlayer player = Wrappers.minecraft().getPlayer();
         return player != null && player.isSprinting();
     }
 

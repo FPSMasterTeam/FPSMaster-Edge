@@ -19,7 +19,7 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.forge.api.IShaderGroup;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.OptifineUtil;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
@@ -80,7 +80,7 @@ public class MotionBlur extends Module {
 
     @Subscribe
     public void renderOverlay(EventMotionBlur event) {
-        if (ProviderManager.mcProvider.getWorld() == null)
+        if (Wrappers.minecraft().getWorld() == null)
             return;
 
         if (mode.isMode("Old")) {

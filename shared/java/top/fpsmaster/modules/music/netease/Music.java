@@ -3,7 +3,7 @@ package top.fpsmaster.modules.music.netease;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ThreadDownloadImageData;
 import net.minecraft.util.ResourceLocation;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.music.AbstractMusic;
 import top.fpsmaster.modules.music.MusicPlayer;
@@ -32,7 +32,7 @@ public class Music extends AbstractMusic {
 
     public void loadMusic() {
         try {
-            if (ProviderManager.worldClientProvider.getWorld() == null) return;
+            if (Wrappers.world().getWorld() == null) return;
             File artist = new File(FileUtils.artists, FileUtils.fixName(name + "(" + id + ").png"));
             if (!artist.exists()) {
                 HttpRequest.downloadFile(imgURL + "?param=90y90", artist.getAbsolutePath());

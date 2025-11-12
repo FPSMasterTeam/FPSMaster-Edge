@@ -4,7 +4,7 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.command.Command;
 import top.fpsmaster.features.impl.utility.IRC;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.modules.account.AccountManager;
 import top.fpsmaster.utils.Utility;
 
@@ -46,7 +46,7 @@ public class IRCChat extends Command {
                 String message = sb.toString();
                 FPSMaster.INSTANCE.wsClient.sendDM(args[1], message);
             } else if ("update".equals(args[0])) {
-                FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, ProviderManager.mcProvider.getPlayer().getName(), ProviderManager.mcProvider.getServerAddress());
+                FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, Wrappers.minecraft().getPlayer().getName(), Wrappers.minecraft().getServerAddress());
             } else if ("fetch".equals(args[0])) {
                 for (NetworkPlayerInfo networkPlayerInfo : mc.getNetHandler().getPlayerInfoMap()) {
                     FPSMaster.INSTANCE.wsClient.fetchPlayer(networkPlayerInfo.getGameProfile().getId().toString(), networkPlayerInfo.getGameProfile().getName());

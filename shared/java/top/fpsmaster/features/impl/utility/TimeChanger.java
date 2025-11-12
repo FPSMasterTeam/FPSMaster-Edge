@@ -6,7 +6,7 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 
 public class TimeChanger extends Module {
 
@@ -20,15 +20,15 @@ public class TimeChanger extends Module {
 
     @Subscribe
     public void onTick(EventTick e) {
-        if (ProviderManager.worldClientProvider.getWorld() != null) {
-            ProviderManager.worldClientProvider.setWorldTime(time.getValue().longValue());
+        if (Wrappers.world().getWorld() != null) {
+            Wrappers.world().setWorldTime(time.getValue().longValue());
         }
     }
 
     @Subscribe
     public void onPacket(EventPacket e) {
         if (e.type == EventPacket.PacketType.RECEIVE) {
-            if (ProviderManager.packetTimeUpdate.isPacket(e.packet)) {
+            if (Wrappers.timeUpdatePacket().isPacket(e.packet)) {
                 e.cancel();
             }
         }

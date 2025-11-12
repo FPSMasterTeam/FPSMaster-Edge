@@ -12,7 +12,7 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.MathTimer;
@@ -54,8 +54,8 @@ public class ChatBot extends Module {
 
     @Subscribe
     public void onChat(EventPacket e) {
-        if (ProviderManager.packetChat.isPacket(e.packet) && timer.delay(cooldown.getValue().longValue())) {
-            String formattedText = ProviderManager.packetChat.getUnformattedText(e.packet);
+        if (Wrappers.chatPacket().isPacket(e.packet) && timer.delay(cooldown.getValue().longValue())) {
+            String formattedText = Wrappers.chatPacket().getUnformattedText(e.packet);
             if (formattedText.contains(lastMsg) && lastMsg.length() > 1) {
                 System.out.println(lastMsg);
                 return;

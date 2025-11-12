@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import top.fpsmaster.forge.api.INetworkPlayerInfo;
 import top.fpsmaster.api.Wrappers;
-import top.fpsmaster.api.provider.game.ISkinProvider;
+import top.fpsmaster.api.wrapper.SkinWrap;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.os.HttpRequest;
 
@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 
-public class SkinProvider implements ISkinProvider {
+public class SkinProvider implements SkinWrap {
     public void updateSkin(String name, String uuid, String skin) {
         if (Wrappers.minecraft().getPlayer() != null && !skin.isEmpty()) {
             Minecraft mc = Minecraft.getMinecraft();

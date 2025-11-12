@@ -9,17 +9,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.forge.api.INetworkPlayerInfo;
-import top.fpsmaster.api.provider.game.ISkinProvider;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.wrapper.SkinWrap;
 import top.fpsmaster.utils.os.HttpRequest;
 
 import java.util.Map;
 import java.util.UUID;
 
-public class SkinProvider implements ISkinProvider {
+public class SkinProvider implements SkinWrap {
     public void updateSkin(String name, String uuid, String skin) {
         try {
-            if (ProviderManager.mcProvider.getPlayer() != null) {
+            if (Minecraft.getMinecraft().player != null) {
                 Minecraft mc = Minecraft.getMinecraft();
                 NetworkPlayerInfo info = new NetworkPlayerInfo(new GameProfile(UUID.fromString(uuid), name));
 

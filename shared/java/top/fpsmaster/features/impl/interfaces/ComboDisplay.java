@@ -7,7 +7,7 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.settings.impl.ColorSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 
 import java.awt.*;
 
@@ -25,8 +25,8 @@ public class ComboDisplay extends InterfaceModule {
 
     @Subscribe
     public void onTick(EventTick e) {
-        if (ProviderManager.mcProvider.getPlayer() == null) return;
-        if (ProviderManager.mcProvider.getPlayer().hurtTime == 1 || (target != null && ProviderManager.utilityProvider.getDistanceToEntity(ProviderManager.mcProvider.getPlayer(), target) > 7)) {
+        if (Wrappers.minecraft().getPlayer() == null) return;
+        if (Wrappers.minecraft().getPlayer().hurtTime == 1 || (target != null && Wrappers.minecraft().getPlayer().getDistanceToEntity(target) > 7)) {
             combo = 0;
         }
         if (target != null && target.isEntityAlive() && target.hurtResistantTime == 19) {

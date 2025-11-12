@@ -11,7 +11,7 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.modules.account.AccountManager;
 
 import static top.fpsmaster.utils.Utility.mc;
@@ -42,7 +42,7 @@ public class SkinChanger extends Module {
     public void onEnable() {
         super.onEnable();
         using = true;
-        if (ProviderManager.mcProvider.getPlayer() != null) {
+        if (Wrappers.minecraft().getPlayer() != null) {
             if (!updateThread.isAlive()) {
                 updateThread = new Thread(this::update);
                 updateThread.start();
@@ -53,7 +53,7 @@ public class SkinChanger extends Module {
 
     @Subscribe
     public void onTick(EventTick e) {
-        if (ProviderManager.mcProvider.getPlayer() != null && ProviderManager.mcProvider.getPlayer().ticksExisted % 30 == 0) {
+        if (Wrappers.minecraft().getPlayer() != null && Wrappers.minecraft().getPlayer().ticksExisted % 30 == 0) {
             if (AccountManager.skin.equals(skinName.getValue()) && world == mc.theWorld)
                 return;
             world = mc.theWorld;
@@ -63,9 +63,9 @@ public class SkinChanger extends Module {
     }
 
     public void update() {
-        ProviderManager.skinProvider.updateSkin(
-                ProviderManager.mcProvider.getPlayer().getName(),
-                ProviderManager.mcProvider.getPlayer().getUniqueID().toString(),
+        Wrappers.skin().updateSkin(
+                Wrappers.minecraft().getPlayer().getName(),
+                Wrappers.minecraft().getPlayer().getUniqueID().toString(),
                 skinName.getValue()
         );
     }
@@ -73,10 +73,10 @@ public class SkinChanger extends Module {
     @Override
     public void onDisable() {
         super.onDisable();
-        FPSMaster.async.runnable(() -> ProviderManager.skinProvider.updateSkin(
-                ProviderManager.mcProvider.getPlayer().getName(),
-                ProviderManager.mcProvider.getPlayer().getUniqueID().toString(),
-                ProviderManager.mcProvider.getPlayer().getName()
+        FPSMaster.async.runnable(() -> Wrappers.skin().updateSkin(
+                Wrappers.minecraft().getPlayer().getName(),
+                Wrappers.minecraft().getPlayer().getUniqueID().toString(),
+                Wrappers.minecraft().getPlayer().getName()
         ));
         using = false;
     }

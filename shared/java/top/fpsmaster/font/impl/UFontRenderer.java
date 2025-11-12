@@ -3,7 +3,6 @@ package top.fpsmaster.font.impl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.ResourceLocation;
-import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.modules.client.GlobalTextFilter;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.os.FileUtils;
@@ -63,10 +62,22 @@ public class UFontRenderer extends FontRenderer {
             colorCode[i] = (k & 255) << 16 | (l & 255) << 8 | (i1 & 255);
         }
 
-        if (ProviderManager.utilityProvider.getResourcePath(res).equalsIgnoreCase("textures/font/ascii.png")) {
+        if (path(res).equalsIgnoreCase("textures/font/ascii.png")) {
             stringCache = new StringCache(colorCode);
             stringCache.setDefaultFont(font, size, antiAlias);
         }
+    }
+
+    private static String path(ResourceLocation rl) {
+        try {
+            return (String) ResourceLocation.class.getMethod("getResourcePath").invoke(rl);
+        } catch (Exception ignored) {
+        }
+        try {
+            return (String) ResourceLocation.class.getMethod("getPath").invoke(rl);
+        } catch (Exception ignored) {
+        }
+        return "";
     }
 
     /**

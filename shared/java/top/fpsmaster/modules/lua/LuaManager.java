@@ -8,7 +8,7 @@ import party.iroiro.luajava.value.LuaValue;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.manager.Module;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.os.FileUtils;
@@ -92,16 +92,16 @@ public class LuaManager {
 
             lua.push(L -> {
                 boolean sneak = L.toBoolean(1);
-                ProviderManager.gameSettings.setKeyPress(Utility.mc.gameSettings.keyBindSneak, sneak);
+                Wrappers.gameSettings().setKeyPress(Utility.mc.gameSettings.keyBindSneak, sneak);
                 return 0; // 返回值数量
             });
             lua.setGlobal("sneak");
 
             lua.push(L -> {
-                double posX = ProviderManager.mcProvider.getPlayer().posX;
-                double posY = ProviderManager.mcProvider.getPlayer().posY;
-                double posZ = ProviderManager.mcProvider.getPlayer().posZ;
-                boolean onGround = ProviderManager.mcProvider.getPlayer().onGround;
+                double posX = Wrappers.minecraft().getPlayer().posX;
+                double posY = Wrappers.minecraft().getPlayer().posY;
+                double posZ = Wrappers.minecraft().getPlayer().posZ;
+                boolean onGround = Wrappers.minecraft().getPlayer().onGround;
 
                 lua.push(posX);
                 lua.push(posY);

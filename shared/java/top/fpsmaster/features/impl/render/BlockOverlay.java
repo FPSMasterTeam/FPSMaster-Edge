@@ -13,7 +13,7 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.render.Render3DUtils;
 import top.fpsmaster.wrapper.blockpos.WrapperBlockPos;
 import top.fpsmaster.wrapper.util.WrapperAxisAlignedBB;
@@ -49,10 +49,10 @@ public class BlockOverlay extends Module {
     @Subscribe
     public void onRender3D(EventRender3D e) {
         if (Minecraft.getMinecraft().objectMouseOver != null) {
-            if (ProviderManager.mcProvider.isHoveringOverBlock()) {
+            if (Wrappers.minecraft().isHoveringOverBlock()) {
                 WrapperBlockPos pos = new WrapperBlockPos(Minecraft.getMinecraft().objectMouseOver.getBlockPos());
-                IBlockState state = ProviderManager.worldClientProvider.getBlockState(pos);
-                Block block = ProviderManager.worldClientProvider.getBlock(pos);
+                IBlockState state = Wrappers.world().getBlockState(pos);
+                Block block = Wrappers.world().getBlock(pos);
                 double x = pos.getX() - Minecraft.getMinecraft().getRenderManager().viewerPosX;
                 double y = pos.getY() - Minecraft.getMinecraft().getRenderManager().viewerPosY;
                 double z = pos.getZ() - Minecraft.getMinecraft().getRenderManager().viewerPosZ;
@@ -66,7 +66,7 @@ public class BlockOverlay extends Module {
                     GL11.glDisable(2929);
                 }
                 GL11.glDepthMask(false);
-                WrapperAxisAlignedBB blockBoundingBox = ProviderManager.worldClientProvider.getBlockBoundingBox(pos, state);
+                WrapperAxisAlignedBB blockBoundingBox = Wrappers.world().getBlockBoundingBox(pos, state);
                 double minX = block instanceof BlockStairs ? 0.0 : blockBoundingBox.minX();
                 double minY = block instanceof BlockStairs ? 0.0 : blockBoundingBox.minY();
                 double minZ = block instanceof BlockStairs ? 0.0 : blockBoundingBox.minZ();

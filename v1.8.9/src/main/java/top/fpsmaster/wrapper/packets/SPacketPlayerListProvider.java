@@ -2,7 +2,7 @@ package top.fpsmaster.wrapper.packets;
 
 import net.minecraft.network.play.server.S38PacketPlayerListItem;
 import org.jetbrains.annotations.NotNull;
-import top.fpsmaster.api.wrapper.packets.AddPlayerDataWrap;
+import top.fpsmaster.api.wrapper.packets.PlayerListItemAddWrap;
 import top.fpsmaster.api.wrapper.packets.PlayerListItemWrap;
 
 import java.util.List;
@@ -21,7 +21,7 @@ public class SPacketPlayerListProvider implements PlayerListItemWrap {
         return isPacket(p) && ((S38PacketPlayerListItem) p).getAction() == S38PacketPlayerListItem.Action.REMOVE_PLAYER;
     }
 
-    public List<AddPlayerDataWrap> getEntries(@NotNull Object p) {
+    public List<PlayerListItemAddWrap> getEntries(@NotNull Object p) {
         List<S38PacketPlayerListItem.AddPlayerData> entries = ((S38PacketPlayerListItem) p).getEntries();
         return entries.stream().map(WrapperAddPlayerData::new).collect(Collectors.toList());
     }

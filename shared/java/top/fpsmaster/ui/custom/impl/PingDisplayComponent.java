@@ -1,7 +1,7 @@
 package top.fpsmaster.ui.custom.impl;
 
 import top.fpsmaster.features.impl.interfaces.PingDisplay;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 
 public class PingDisplayComponent extends Component {
@@ -16,11 +16,11 @@ public class PingDisplayComponent extends Component {
         super.draw(x, y);
         
         // Get ping of connection
-        if (ProviderManager.mcProvider.getPlayer() == null) {
+        if (Wrappers.minecraft().getPlayer() == null) {
             return;
         }
 
-        String ping = ProviderManager.mcProvider.getRespondTime() + "ms";
+        String ping = Wrappers.minecraft().getRespondTime() + "ms";
         String text = "Ping: " + ping;
 
         width = getStringWidth(16, text) + 4;

@@ -13,7 +13,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.modules.client.ClientUsersManager;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -56,7 +56,7 @@ public class LevelTag extends Module {
             GlStateManager.disableDepth();
             GlStateManager.enableBlend();
             GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-            ProviderManager.guiIngameProvider.drawHealth(entityIn);
+            Wrappers.guiIngame().drawHealth(entityIn);
             GlStateManager.disableTexture2D();
             GlStateManager.enableTexture2D();
             GlStateManager.enableLighting();

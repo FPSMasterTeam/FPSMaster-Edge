@@ -54,11 +54,6 @@ public class GlobalListener {
                 e.cancel();
             }
         }
-//        if (Translator.using) {
-//            if (ProviderManager.packetChat.isPacket(e.packet)) {
-//                ProviderManager.packetChat.appendTranslation(e.packet);
-//            }
-//        }
     }
 
     @Subscribe

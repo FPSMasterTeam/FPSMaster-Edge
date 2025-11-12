@@ -7,7 +7,7 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.wrapper.entities.EntityTNTPrimedUtil;
 
 import java.awt.*;
@@ -46,10 +46,10 @@ public class TNTTimer extends Module {
         GlStateManager.enableBlend();
         GL11.glBlendFunc(770, 771);
         GL11.glDisable(3553);
-        float partialTicks = ProviderManager.timerProvider.getRenderPartialTicks();
-        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - ProviderManager.renderManagerProvider.renderPosX();
-        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks - ProviderManager.renderManagerProvider.renderPosY();
-        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks - ProviderManager.renderManagerProvider.renderPosZ();
+        float partialTicks = Wrappers.timer().getRenderPartialTicks();
+        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - Wrappers.renderManager().renderPosX();
+        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks - Wrappers.renderManager().renderPosY();
+        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks - Wrappers.renderManager().renderPosZ();
         float scale = 0.065f;
         GlStateManager.translate(x, y + entity.height + 0.5f - entity.height / 2.0f, z);
         GL11.glNormal3f(0.0f, 1.0f, 0.0f);
@@ -72,7 +72,7 @@ public class TNTTimer extends Module {
     }
 
     private static void drawTime(EntityTNTPrimed entity) {
-        float width = ProviderManager.mcProvider.getFontRenderer().getStringWidth("0.00") / 2.0f + 6.0f;
+        float width = Wrappers.minecraft().getFontRenderer().getStringWidth("0.00") / 2.0f + 6.0f;
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
         GlStateManager.disableLighting();
@@ -85,7 +85,7 @@ public class TNTTimer extends Module {
         if (time < 1.0) {
             color = new Color(255, 0, 0);
         }
-        ProviderManager.mcProvider.getFontRenderer().drawStringWithShadow(df.format(time), -width + 5, -20f, color.getRGB());
+        Wrappers.minecraft().getFontRenderer().drawStringWithShadow(df.format(time), -width + 5, -20f, color.getRGB());
         GlStateManager.enableLighting();
         GlStateManager.enableBlend();
         GlStateManager.enableDepth();
