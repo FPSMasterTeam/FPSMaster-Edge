@@ -5,7 +5,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.PlayerDisplay;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.render.Render2DUtils;
 

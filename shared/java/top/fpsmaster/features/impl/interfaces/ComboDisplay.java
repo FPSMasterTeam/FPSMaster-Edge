@@ -7,7 +7,7 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.settings.impl.ColorSetting;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 
 import java.awt.*;
 

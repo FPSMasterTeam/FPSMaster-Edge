@@ -7,7 +7,7 @@ import net.minecraft.entity.Entity;
 import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.forge.api.IRenderManager;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.wrapper.TimerProvider;
 import top.fpsmaster.wrapper.WorldClientProvider;

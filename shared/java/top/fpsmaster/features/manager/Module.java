@@ -5,7 +5,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.*;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.notification.NotificationManager;
 

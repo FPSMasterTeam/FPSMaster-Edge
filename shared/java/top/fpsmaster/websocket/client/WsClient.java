@@ -5,7 +5,7 @@ import org.java_websocket.handshake.ServerHandshake;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.impl.utility.IRC;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.websocket.data.message.Packet;
 import top.fpsmaster.websocket.data.message.client.*;

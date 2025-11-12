@@ -5,7 +5,7 @@ import net.minecraft.client.gui.GuiOptions;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.mc.GuiMultiplayer;
 import top.fpsmaster.ui.screens.account.GuiWaiting;
 import top.fpsmaster.ui.screens.oobe.GuiLogin;
@@ -35,7 +35,7 @@ public class MainMenu extends ScaledGuiScreen {
 
 
     public MainMenu() {
-        singlePlayer = new MenuButton("mainmenu.single", () -> ProviderManager.mainmenuProvider.showSinglePlayer(this));
+        singlePlayer = new MenuButton("mainmenu.single", () -> Wrappers.mainMenu().showSinglePlayer(this));
         multiPlayer = new MenuButton("mainmenu.multi", () -> mc.displayGuiScreen(new GuiMultiplayer()));
         options = new MenuButton("mainmenu.settings", () -> mc.displayGuiScreen(new GuiOptions(this, mc.gameSettings)));
         exit = new MenuButton("X", () -> mc.shutdown());
@@ -43,7 +43,7 @@ public class MainMenu extends ScaledGuiScreen {
 
     @Override
     public void initGui() {
-        ProviderManager.mainmenuProvider.initGui();
+        Wrappers.mainMenu().initGui();
         if (firstBoot == 0) {
             // Check Java Version
             String version = System.getProperty("java.version");

@@ -8,8 +8,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import top.fpsmaster.features.impl.optimizes.CheckEntity;
-import top.fpsmaster.interfaces.ProviderManager;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.wrapper.WorldClientProvider;
 
 public class WrapperPerformance {

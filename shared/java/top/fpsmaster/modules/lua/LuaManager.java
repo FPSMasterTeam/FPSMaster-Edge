@@ -8,7 +8,7 @@ import party.iroiro.luajava.value.LuaValue;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.manager.Module;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.os.FileUtils;

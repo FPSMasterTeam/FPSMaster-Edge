@@ -3,7 +3,7 @@ package top.fpsmaster.modules.music.netease;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ThreadDownloadImageData;
 import net.minecraft.util.ResourceLocation;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.music.AbstractMusic;
 import top.fpsmaster.modules.music.MusicPlayer;

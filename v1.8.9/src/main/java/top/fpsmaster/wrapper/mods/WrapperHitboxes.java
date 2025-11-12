@@ -15,7 +15,7 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.forge.api.IRenderManager;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.wrapper.RenderManagerProvider;
 import top.fpsmaster.wrapper.TimerProvider;
 import top.fpsmaster.wrapper.util.WrapperAxisAlignedBB;
@@ -33,9 +33,9 @@ public class WrapperHitboxes {
         GlStateManager.disableAlpha();
         for (Entity entity : Minecraft.getMinecraft().theWorld.loadedEntityList.stream().filter(e -> e != Minecraft.getMinecraft().thePlayer && !e.isInvisible()).collect(Collectors.toList())) {
             AxisAlignedBB axisalignedbb = entity.getEntityBoundingBox();
-            double d0 = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * ProviderManager.timerProvider.getRenderPartialTicks();
-            double d1 = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * ProviderManager.timerProvider.getRenderPartialTicks();
-            double d2 = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * ProviderManager.timerProvider.getRenderPartialTicks();
+            double d0 = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * Wrappers.timer().getRenderPartialTicks();
+            double d1 = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * Wrappers.timer().getRenderPartialTicks();
+            double d2 = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * Wrappers.timer().getRenderPartialTicks();
             double x = d0 - ((IRenderManager) Minecraft.getMinecraft().getRenderManager()).renderPosX();
             double y = d1 - ((IRenderManager) Minecraft.getMinecraft().getRenderManager()).renderPosY();
             double z = d2 - ((IRenderManager) Minecraft.getMinecraft().getRenderManager()).renderPosZ();

@@ -12,7 +12,7 @@ import top.fpsmaster.event.events.EventPacket;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
-import top.fpsmaster.interfaces.gui.IGuiNewChatProvider;
+import top.fpsmaster.api.provider.gui.IGuiNewChatProvider;
 
 import static top.fpsmaster.utils.Utility.mc;
 

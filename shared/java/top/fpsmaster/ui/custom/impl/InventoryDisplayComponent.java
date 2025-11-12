@@ -6,7 +6,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.InventoryDisplay;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.ui.custom.Component;
 
 import static top.fpsmaster.utils.Utility.mc;

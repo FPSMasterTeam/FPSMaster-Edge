@@ -1,9 +1,9 @@
 name: Java CI with Gradle - Nightly
 
-on:
-  schedule:
-    - cron: '0 17 * * *'
-  workflow_dispatch:
+#on:
+#  schedule:
+#    - cron: '0 17 * * *'
+#  workflow_dispatch:
 
 jobs:
   build:

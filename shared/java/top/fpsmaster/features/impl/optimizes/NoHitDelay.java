@@ -4,7 +4,7 @@ import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 
 public class NoHitDelay extends Module {
 
@@ -28,7 +28,7 @@ public class NoHitDelay extends Module {
 
     @Subscribe
     public void onTick(EventTick e) {
-        ProviderManager.mcProvider.removeClickDelay();
+        Wrappers.minecraft().removeClickDelay();
     }
 
     public static boolean isUsing() {

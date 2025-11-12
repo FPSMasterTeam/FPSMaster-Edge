@@ -35,7 +35,7 @@ public class FPSMaster {
     public boolean loggedIn;
     public WsClient wsClient;
 
-    public static final String phase = "beta";
+    public static final String phase = "pre-release";
     public static final String SERVICE_API = "https://service.fpsmaster.top";
 
     public static final String EDITION = Constants.EDITION;
@@ -44,7 +44,7 @@ public class FPSMaster {
     public static FPSMaster INSTANCE = new FPSMaster();
 
     public static String CLIENT_NAME = "FPSMaster";
-    public static String CLIENT_VERSION = "v4";
+    public static String CLIENT_VERSION = "4.0.0";
 
     public static ModuleManager moduleManager = new ModuleManager();
     public static FontManager fontManager = new FontManager();

@@ -16,7 +16,7 @@ import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL20;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.awt.AWTUtils;
@@ -348,7 +348,7 @@ public class Render2DUtils extends Utility {
                 GL11.glEnable(GL11.GL_ALPHA_TEST);
                 Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(26, 59, 109, 60));
             } else {
-                ProviderManager.mainmenuProvider.renderSkybox(mouseX, mouseY, partialTicks, guiWidth, guiHeight, zLevel);
+                Wrappers.mainMenu().renderSkybox(mouseX, mouseY, partialTicks, guiWidth, guiHeight, zLevel);
             }
         }
     }

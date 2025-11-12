@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventSendChatMessage;
 import top.fpsmaster.features.impl.interfaces.BetterScreen;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -64,7 +64,7 @@ public abstract class MixinGuiScreen extends Gui {
      */
     @Overwrite
     public void drawWorldBackground(int tint) {
-        if (ProviderManager.mcProvider.getWorld() != null) {
+        if (Wrappers.minecraft().getWorld() != null) {
             if (BetterScreen.using) {
                 if (BetterScreen.useBG.getValue()) {
                     if (BetterScreen.backgroundAnimation.getValue()) {

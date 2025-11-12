@@ -15,13 +15,13 @@ import net.minecraft.util.text.ITextComponent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import top.fpsmaster.forge.api.IMinecraft;
-import top.fpsmaster.interfaces.game.IMinecraftProvider;
+import top.fpsmaster.api.wrapper.MinecraftWrap;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.Objects;
 
-public class MinecraftProvider implements IMinecraftProvider {
+public class MinecraftProvider implements MinecraftWrap {
 
     @Override
     public File getGameDir() {

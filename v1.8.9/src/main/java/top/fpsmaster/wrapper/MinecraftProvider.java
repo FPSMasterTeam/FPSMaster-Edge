@@ -13,12 +13,12 @@ import net.minecraft.util.Session;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import top.fpsmaster.forge.api.IMinecraft;
-import top.fpsmaster.interfaces.game.IMinecraftProvider;
+import top.fpsmaster.api.wrapper.MinecraftWrap;
 
 import java.io.File;
 import java.util.Collection;
 
-public class MinecraftProvider implements IMinecraftProvider {
+public class MinecraftProvider implements MinecraftWrap {
     public File getGameDir() {
         return Minecraft.getMinecraft().mcDataDir;
     }

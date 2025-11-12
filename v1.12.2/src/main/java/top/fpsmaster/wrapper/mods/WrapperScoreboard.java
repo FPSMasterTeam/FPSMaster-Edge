@@ -9,7 +9,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.features.impl.interfaces.Scoreboard;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.ui.custom.impl.ScoreboardComponent;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.wrapper.TextFormattingProvider;

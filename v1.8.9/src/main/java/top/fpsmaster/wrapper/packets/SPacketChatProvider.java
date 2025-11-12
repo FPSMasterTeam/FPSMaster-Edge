@@ -8,11 +8,11 @@ import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
 import org.jetbrains.annotations.NotNull;
 import top.fpsmaster.FPSMaster;
-import top.fpsmaster.interfaces.packets.IPacketChat;
+import top.fpsmaster.api.wrapper.packets.ChatPacketWrap;
 import top.fpsmaster.wrapper.TextFormattingProvider;
 
 
-public class SPacketChatProvider implements IPacketChat {
+public class SPacketChatProvider implements ChatPacketWrap {
     public boolean isPacket(@NotNull Object p) {
         return p instanceof S02PacketChat;
     }

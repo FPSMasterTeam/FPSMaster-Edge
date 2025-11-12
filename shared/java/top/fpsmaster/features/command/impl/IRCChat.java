@@ -4,7 +4,7 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.command.Command;
 import top.fpsmaster.features.impl.utility.IRC;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.modules.account.AccountManager;
 import top.fpsmaster.utils.Utility;
 

@@ -6,7 +6,7 @@ import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
-import top.fpsmaster.interfaces.game.IUtilityProvider;
+import top.fpsmaster.api.provider.game.IUtilityProvider;
 
 public class UtilityProvider implements IUtilityProvider {
     public String getResourcePath(ResourceLocation resourceLocation){

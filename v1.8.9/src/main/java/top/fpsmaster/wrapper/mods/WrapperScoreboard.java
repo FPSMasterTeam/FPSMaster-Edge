@@ -10,7 +10,7 @@ import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.impl.interfaces.Scoreboard;
 import top.fpsmaster.ui.custom.impl.ScoreboardComponent;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.wrapper.TextFormattingProvider;
 
 import java.util.Collection;
@@ -19,12 +19,12 @@ import java.util.stream.Collectors;
 
 public class WrapperScoreboard {
     public static float[] render(ScoreboardComponent scoreboardComponent, InterfaceModule mod, float x, float y) {
-        top.fpsmaster.wrapper.scoreboard.WrapperScoreboard scoreboard = new top.fpsmaster.wrapper.scoreboard.WrapperScoreboard(ProviderManager.worldClientProvider.getWorld().getScoreboard());
+        top.fpsmaster.wrapper.scoreboard.WrapperScoreboard scoreboard = new top.fpsmaster.wrapper.scoreboard.WrapperScoreboard(Wrappers.world().getWorld().getScoreboard());
         ScoreObjective scoreobjective = null;
-        ScorePlayerTeam scoreplayerteam = scoreboard.getPlayersTeam(ProviderManager.mcProvider.getPlayer().getName());
+        ScorePlayerTeam scoreplayerteam = scoreboard.getPlayersTeam(Wrappers.minecraft().getPlayer().getName());
 
         if (scoreplayerteam != null) {
-            int i1 = scoreboard.getPlayersTeamColorIndex(ProviderManager.mcProvider.getPlayer().getName());
+            int i1 = scoreboard.getPlayersTeamColorIndex(Wrappers.minecraft().getPlayer().getName());
 
             if (i1 >= 0) {
                 scoreobjective = scoreboard.getObjectiveInDisplaySlot(3 + i1);

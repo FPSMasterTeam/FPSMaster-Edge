@@ -7,11 +7,11 @@ import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.entity.effect.EntityLightningBolt;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
-import top.fpsmaster.interfaces.game.IWorldClientProvider;
+import top.fpsmaster.api.wrapper.WorldWrap;
 import top.fpsmaster.wrapper.blockpos.WrapperBlockPos;
 import top.fpsmaster.wrapper.util.WrapperAxisAlignedBB;
 
-public class WorldClientProvider implements IWorldClientProvider {
+public class WorldClientProvider implements WorldWrap {
 
     public IBlockState getBlockState(WrapperBlockPos pos) {
         return Minecraft.getMinecraft().theWorld.getBlockState(pos.getPos());

@@ -12,10 +12,10 @@ import net.minecraft.util.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;
-import top.fpsmaster.interfaces.gui.IGuiMainMenuProvider;
+import top.fpsmaster.api.wrapper.MainMenuWrap;
 import static top.fpsmaster.utils.Utility.mc;
 
-public class GuiMainMenuProvider implements IGuiMainMenuProvider {
+public class GuiMainMenuProvider implements MainMenuWrap {
     private static final ResourceLocation[] TITLE_PANORAMA_PATHS = new ResourceLocation[]{new ResourceLocation("client/background/panorama_0.png"), new ResourceLocation("client/background/panorama_1.png"), new ResourceLocation("client/background/panorama_2.png"), new ResourceLocation("client/background/panorama_3.png"), new ResourceLocation("client/background/panorama_4.png"), new ResourceLocation("client/background/panorama_5.png")};
     private float panoramaTimer;
     private ResourceLocation backgroundTexture;

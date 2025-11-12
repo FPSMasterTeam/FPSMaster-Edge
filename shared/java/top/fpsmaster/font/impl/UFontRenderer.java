@@ -3,7 +3,7 @@ package top.fpsmaster.font.impl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.ResourceLocation;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.modules.client.GlobalTextFilter;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.os.FileUtils;

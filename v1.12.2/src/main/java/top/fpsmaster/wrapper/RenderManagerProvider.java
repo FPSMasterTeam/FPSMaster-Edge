@@ -2,9 +2,9 @@ package top.fpsmaster.wrapper;
 
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.forge.api.IRenderManager;
-import top.fpsmaster.interfaces.render.IRenderManagerProvider;
+import top.fpsmaster.api.wrapper.RenderManagerWrap;
 
-public class RenderManagerProvider implements IRenderManagerProvider {
+public class RenderManagerProvider implements RenderManagerWrap {
     public double renderPosX(){
         return ((IRenderManager) Minecraft.getMinecraft().getRenderManager()).renderPosX();
     }

@@ -29,7 +29,7 @@ import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventMouseClick;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import javax.annotation.Nullable;
@@ -202,7 +202,7 @@ public abstract class MixinMinecraft implements IMinecraft {
      */
     @Overwrite
     public int getLimitFramerate() {
-        if (ProviderManager.mcProvider.getCurrentScreen() != null && ProviderManager.mcProvider.getWorld() == null)
+        if (Wrappers.minecraft().getCurrentScreen() != null && Wrappers.minecraft().getWorld() == null)
             return 60;
         return (Display.isActive()) ? this.gameSettings.limitFramerate : Performance.using ? Performance.fpsLimit.getValue().intValue() : this.gameSettings.limitFramerate;
     }

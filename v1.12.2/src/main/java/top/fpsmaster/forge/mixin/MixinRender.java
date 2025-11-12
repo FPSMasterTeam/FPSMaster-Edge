@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.utility.LevelTag;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.modules.client.PlayerManager;
 import top.fpsmaster.features.impl.optimizes.CheckEntity;
 import top.fpsmaster.features.impl.optimizes.Performance;

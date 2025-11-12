@@ -7,7 +7,7 @@ import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BindSetting;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.wrapper.mods.WrapperFreeLook;
 
 public class FreeLook extends Module {

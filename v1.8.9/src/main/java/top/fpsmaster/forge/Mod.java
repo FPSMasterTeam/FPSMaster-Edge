@@ -4,6 +4,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.api.provider.IMinecraftProviderImpl;
 import top.fpsmaster.api.provider.ProviderRegistry;
+import top.fpsmaster.wrapper.MinecraftProvider;
 
 @net.minecraftforge.fml.common.Mod(modid = "fpsmaster", useMetadata = true)
 public class Mod {

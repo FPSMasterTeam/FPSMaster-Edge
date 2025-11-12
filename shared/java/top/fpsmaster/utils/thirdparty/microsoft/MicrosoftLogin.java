@@ -3,7 +3,7 @@ package top.fpsmaster.utils.thirdparty.microsoft;
 import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpServer;
 import net.minecraft.util.Session;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
 import top.fpsmaster.utils.os.HttpRequest;
 
@@ -252,7 +252,7 @@ public class MicrosoftLogin {
 
         // Set Minecraft Session
         logInfo("Setting Minecraft session...");
-        ProviderManager.mcProvider.setSession(new Session(name, uuid, mcAccessToken, "mojang"));
+        Wrappers.minecraft().setSession(new Session(name, uuid, mcAccessToken, "mojang"));
         setStep("Minecraft session updated successfully!");
         try {
             Thread.sleep(1000);

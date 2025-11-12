@@ -4,7 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.MiniMap;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.minimap.XaeroMinimap;
 import top.fpsmaster.ui.minimap.animation.MinimapAnimation;

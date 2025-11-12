@@ -2,9 +2,9 @@ package top.fpsmaster.wrapper.packets;
 
 
 import net.minecraft.network.play.server.SPacketPlayerListItem;
-import top.fpsmaster.interfaces.packets.IAddPlayerData;
+import top.fpsmaster.api.wrapper.packets.AddPlayerDataWrap;
 
-public class WrapperAddPlayerData implements IAddPlayerData {
+public class WrapperAddPlayerData implements AddPlayerDataWrap {
     public SPacketPlayerListItem.AddPlayerData entity;
 
     public WrapperAddPlayerData(SPacketPlayerListItem.AddPlayerData entity) {

@@ -12,14 +12,14 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.MathHelper;
 import org.jetbrains.annotations.NotNull;
-import top.fpsmaster.interfaces.gui.IGuiIngameProvider;
+import top.fpsmaster.api.wrapper.GuiIngameWrap;
 
 import java.util.Random;
 
 import static net.minecraft.client.gui.Gui.icons;
 import static top.fpsmaster.utils.Utility.mc;
 
-public class GuiIngameProvider implements IGuiIngameProvider {
+public class GuiIngameProvider implements GuiIngameWrap {
     protected static final Random rand = new Random();
     protected static int playerHealth = 0;
     protected static int lastPlayerHealth = 0;

@@ -6,7 +6,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import top.fpsmaster.features.impl.interfaces.ItemCountDisplay;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.world.ItemsUtil;
 import top.fpsmaster.utils.world.PotionMetadata;
@@ -43,7 +43,7 @@ public class ItemCountDisplayComponent extends Component {
     public void draw(float x, float y) {
         super.draw(x, y);
         ItemCountDisplay displayModule = ((ItemCountDisplay) mod);
-        ItemStack[] mainInventory = ProviderManager.mcProvider.getPlayer().inventory.mainInventory;
+        ItemStack[] mainInventory = Wrappers.minecraft().getPlayer().inventory.mainInventory;
 
         if(displayModule.modes.getValue() != 2) itemStacks = Arrays.stream(modeItems.get(displayModule.modes.getValue())).collect(Collectors.toList());
         else itemStacks = displayModule.itemsSetting.getValue();

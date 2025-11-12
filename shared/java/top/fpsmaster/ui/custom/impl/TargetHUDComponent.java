@@ -3,7 +3,7 @@ package top.fpsmaster.ui.custom.impl;
 import net.minecraft.entity.player.EntityPlayer;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.TargetDisplay;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.animation.AnimationUtils;

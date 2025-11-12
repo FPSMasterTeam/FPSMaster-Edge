@@ -10,7 +10,6 @@ import top.fpsmaster.features.impl.interfaces.*;
 import top.fpsmaster.features.impl.optimizes.*;
 import top.fpsmaster.features.impl.render.*;
 import top.fpsmaster.features.impl.utility.*;
-import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.modules.dev.DevMode;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.MainPanel;
@@ -128,7 +127,7 @@ public class ModuleManager {
         modules.add(new SoundModifier());
         modules.add(new ParticlesModifier());
 
-        if (ProviderManager.constants.getVersion().equals("1.12.2")) {
+        if (FPSMaster.EDITION.equals("1.12.2")) {
             modules.add(new HideIndicator());
         }
 

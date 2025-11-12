@@ -8,8 +8,8 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import top.fpsmaster.forge.api.INetworkPlayerInfo;
-import top.fpsmaster.interfaces.ProviderManager;
-import top.fpsmaster.interfaces.game.ISkinProvider;
+import top.fpsmaster.api.Wrappers;
+import top.fpsmaster.api.provider.game.ISkinProvider;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.os.HttpRequest;
 
@@ -19,7 +19,7 @@ import java.util.UUID;
 
 public class SkinProvider implements ISkinProvider {
     public void updateSkin(String name, String uuid, String skin) {
-        if (ProviderManager.mcProvider.getPlayer() != null && !skin.isEmpty()) {
+        if (Wrappers.minecraft().getPlayer() != null && !skin.isEmpty()) {
             Minecraft mc = Minecraft.getMinecraft();
             NetworkPlayerInfo info = new NetworkPlayerInfo(new GameProfile(UUID.fromString(uuid), name));
 

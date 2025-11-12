@@ -13,7 +13,7 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.ProviderManager;
 import top.fpsmaster.utils.render.Render3DUtils;
 import top.fpsmaster.wrapper.blockpos.WrapperBlockPos;
 import top.fpsmaster.wrapper.util.WrapperAxisAlignedBB;

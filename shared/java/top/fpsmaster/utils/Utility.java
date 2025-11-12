@@ -1,7 +1,8 @@
 package top.fpsmaster.utils;
 
 import net.minecraft.client.Minecraft;
-import top.fpsmaster.interfaces.ProviderManager;
+import net.minecraft.util.ChatComponentText;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.modules.dev.DevMode;
 
 import java.util.ArrayList;
@@ -15,13 +16,13 @@ public class Utility {
     static ArrayList<String> messages = new ArrayList<>();
 
     public static void sendChatMessage(String message) {
-        if (ProviderManager.mcProvider.getPlayer() == null) return;
-        ProviderManager.mcProvider.getPlayer().sendChatMessage(message);
+        if (Wrappers.minecraft().getPlayer() == null) return;
+        Wrappers.minecraft().getPlayer().sendChatMessage(message);
     }
 
     public static void sendClientMessage(String msg) {
-        if (ProviderManager.mcProvider.getWorld() != null) {
-            ProviderManager.mcProvider.printChatMessage(ProviderManager.utilityProvider.makeChatComponent(msg));
+        if (Wrappers.minecraft().getWorld() != null) {
+            Wrappers.minecraft().printChatMessage(new ChatComponentText(msg));
         } else {
             messages.add(msg);
         }
@@ -29,8 +30,8 @@ public class Utility {
 
     public static void sendClientNotify(String msg) {
         String msg1 = "§9[FPSMaster]§r " + msg;
-        if (ProviderManager.mcProvider.getWorld() != null) {
-            ProviderManager.mcProvider.printChatMessage(ProviderManager.utilityProvider.makeChatComponent(msg1));
+        if (Wrappers.minecraft().getWorld() != null) {
+            Wrappers.minecraft().printChatMessage(new ChatComponentText(msg1));
         } else {
             messages.add(msg1);
         }
@@ -44,7 +45,7 @@ public class Utility {
 
     public static void flush() {
         for (String message : messages) {
-            ProviderManager.mcProvider.printChatMessage(ProviderManager.utilityProvider.makeChatComponent(message));
+            Wrappers.minecraft().printChatMessage(new ChatComponentText(message));
         }
         messages.clear();
     }

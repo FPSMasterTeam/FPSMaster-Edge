@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.forge.api.INetworkPlayerInfo;
-import top.fpsmaster.interfaces.game.ISkinProvider;
+import top.fpsmaster.api.provider.game.ISkinProvider;
 import top.fpsmaster.interfaces.ProviderManager;
 import top.fpsmaster.utils.os.HttpRequest;
 

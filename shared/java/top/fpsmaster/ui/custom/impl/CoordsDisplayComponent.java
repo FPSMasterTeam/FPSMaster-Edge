@@ -3,7 +3,7 @@ package top.fpsmaster.ui.custom.impl;
 import org.jetbrains.annotations.NotNull;
 import top.fpsmaster.features.impl.interfaces.CoordsDisplay;
 import top.fpsmaster.features.impl.interfaces.FPSDisplay;
-import top.fpsmaster.interfaces.ProviderManager;
+import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.wrapper.TextFormattingProvider;
 
@@ -18,18 +18,18 @@ public class CoordsDisplayComponent extends Component {
     public void draw(float x, float y) {
         super.draw(x, y);
         String s = String.format("X:%d Y:%d Z:%d",
-                (int) ProviderManager.mcProvider.getPlayer().posX,
-                (int) ProviderManager.mcProvider.getPlayer().posY,
-                (int) ProviderManager.mcProvider.getPlayer().posZ);
+                (int) Wrappers.minecraft().getPlayer().posX,
+                (int) Wrappers.minecraft().getPlayer().posY,
+                (int) Wrappers.minecraft().getPlayer().posZ);
 
         if (((CoordsDisplay) mod).limitDisplay.getValue()) {
             String yStr = getString();
 
             s = String.format("X:%d Y:%d(%s) Z:%d", 
-                    (int) ProviderManager.mcProvider.getPlayer().posX, 
-                    (int) ProviderManager.mcProvider.getPlayer().posY, 
+                    (int) Wrappers.minecraft().getPlayer().posX, 
+                    (int) Wrappers.minecraft().getPlayer().posY, 
                     yStr, 
-                    (int) ProviderManager.mcProvider.getPlayer().posZ);
+                    (int) Wrappers.minecraft().getPlayer().posZ);
         }
 
         width = getStringWidth(18, s) + 4;
@@ -40,7 +40,7 @@ public class CoordsDisplayComponent extends Component {
     }
 
     private @NotNull String getString() {
-        int restHeight = ((CoordsDisplay) mod).limitDisplayY.getValue().intValue() - (int) ProviderManager.mcProvider.getPlayer().posY;
+        int restHeight = ((CoordsDisplay) mod).limitDisplayY.getValue().intValue() - (int) Wrappers.minecraft().getPlayer().posY;
         String yStr;
 
         // color
