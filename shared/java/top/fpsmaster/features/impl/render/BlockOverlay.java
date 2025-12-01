@@ -5,6 +5,7 @@ import net.minecraft.block.BlockStairs;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.util.AxisAlignedBB;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventRender3D;
@@ -13,6 +14,7 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
+import top.fpsmaster.api.MinecraftAPI;
 import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.render.Render3DUtils;
 import top.fpsmaster.wrapper.blockpos.WrapperBlockPos;
@@ -49,13 +51,20 @@ public class BlockOverlay extends Module {
     @Subscribe
     public void onRender3D(EventRender3D e) {
         if (Minecraft.getMinecraft().objectMouseOver != null) {
-            if (Wrappers.minecraft().isHoveringOverBlock()) {
-                WrapperBlockPos pos = new WrapperBlockPos(Minecraft.getMinecraft().objectMouseOver.getBlockPos());
-                IBlockState state = Wrappers.world().getBlockState(pos);
-                Block block = Wrappers.world().getBlock(pos);
-                double x = pos.getX() - Minecraft.getMinecraft().getRenderManager().viewerPosX;
-                double y = pos.getY() - Minecraft.getMinecraft().getRenderManager().viewerPosY;
-                double z = pos.getZ() - Minecraft.getMinecraft().getRenderManager().viewerPosZ;
+            // Use raw world for block state access
+            if (MinecraftAPI.world().getWorld() != null && Minecraft.getMinecraft().objectMouseOver != null) {
+                // Get raw world through casting (this is a bridge pattern)
+                Object rawWorldObj = MinecraftAPI.world().getWorld().getRawWorld();
+                net.minecraft.client.multiplayer.WorldClient rawWorld = (net.minecraft.client.multiplayer.WorldClient) rawWorldObj;
+                
+                net.minecraft.util.BlockPos mcPos = Minecraft.getMinecraft().objectMouseOver.getBlockPos();
+                IBlockState state = rawWorld.getBlockState(mcPos);
+                Block block = state.getBlock();
+                
+                if (!block.getMaterial().isReplaceable()) {
+                double x = mcPos.getX() - Minecraft.getMinecraft().getRenderManager().viewerPosX;
+                double y = mcPos.getY() - Minecraft.getMinecraft().getRenderManager().viewerPosY;
+                double z = mcPos.getZ() - Minecraft.getMinecraft().getRenderManager().viewerPosZ;
                 GL11.glPushMatrix();
                 GlStateManager.enableAlpha();
                 GlStateManager.enableBlend();
@@ -66,7 +75,8 @@ public class BlockOverlay extends Module {
                     GL11.glDisable(2929);
                 }
                 GL11.glDepthMask(false);
-                WrapperAxisAlignedBB blockBoundingBox = Wrappers.world().getBlockBoundingBox(pos, state);
+                WrapperAxisAlignedBB blockBoundingBox = new WrapperAxisAlignedBB(block.getBlockBoundsMinX(), block.getBlockBoundsMinY(), block.getBlockBoundsMinZ(),
+                            block.getBlockBoundsMaxX(), block.getBlockBoundsMaxY(), block.getBlockBoundsMaxZ());
                 double minX = block instanceof BlockStairs ? 0.0 : blockBoundingBox.minX();
                 double minY = block instanceof BlockStairs ? 0.0 : blockBoundingBox.minY();
                 double minZ = block instanceof BlockStairs ? 0.0 : blockBoundingBox.minZ();
@@ -121,6 +131,7 @@ public class BlockOverlay extends Module {
                 GL11.glDepthMask(true);
                 GL11.glLineWidth(1.0f);
                 GL11.glPopMatrix();
+                }
             }
         }
     }

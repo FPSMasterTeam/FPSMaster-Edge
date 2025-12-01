@@ -19,6 +19,7 @@ import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
+import top.fpsmaster.api.MinecraftAPI;
 import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.api.provider.gui.IGuiNewChatProvider;
 import top.fpsmaster.modules.account.AccountManager;
@@ -85,7 +86,7 @@ public class GlobalListener {
 //                        throw new RuntimeException(ex);
 //                    }
 //                }
-                if (Wrappers.minecraft().getWorld() != null) {
+                if (MinecraftAPI.client().getMinecraft() != null && MinecraftAPI.world().getWorld() != null) {
                     Utility.flush();
                 }
             });
@@ -145,11 +146,11 @@ public class GlobalListener {
                     }
 
                     if (playerInformation == null) {
-                        playerInformation = new PlayerInformation(Wrappers.minecraft().getPlayer().getName(), Wrappers.minecraft().getPlayer().getUniqueID().toString(), Wrappers.minecraft().getServerAddress(), AccountManager.cosmeticsUsing, AccountManager.skin);
-                        FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, Wrappers.minecraft().getPlayer().getName(), Wrappers.minecraft().getServerAddress());
-                    } else if (!playerInformation.serverAddress.equals(Wrappers.minecraft().getServerAddress()) || !playerInformation.name.equals(Wrappers.minecraft().getPlayer().getName()) || !playerInformation.skin.equals(AccountManager.skin) || !playerInformation.uuid.equals(Wrappers.minecraft().getPlayer().getUniqueID().toString()) || !playerInformation.cosmetics.equals(AccountManager.cosmeticsUsing)) {
-                        playerInformation = new PlayerInformation(Wrappers.minecraft().getPlayer().getName(), Wrappers.minecraft().getPlayer().getUniqueID().toString(), Wrappers.minecraft().getServerAddress(), AccountManager.cosmeticsUsing, AccountManager.skin);
-                        FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, Wrappers.minecraft().getPlayer().getName(), Wrappers.minecraft().getServerAddress());
+                        playerInformation = new PlayerInformation(MinecraftAPI.client().getPlayer().getName(), MinecraftAPI.client().getPlayer().getUUID(), MinecraftAPI.client().getServerAddress(), AccountManager.cosmeticsUsing, AccountManager.skin);
+                        FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, MinecraftAPI.client().getPlayer().getName(), MinecraftAPI.client().getServerAddress());
+                    } else if (!playerInformation.serverAddress.equals(MinecraftAPI.client().getServerAddress()) || !playerInformation.name.equals(MinecraftAPI.client().getPlayer().getName()) || !playerInformation.skin.equals(AccountManager.skin) || !playerInformation.uuid.equals(MinecraftAPI.client().getPlayer().getUUID()) || !playerInformation.cosmetics.equals(AccountManager.cosmeticsUsing)) {
+                        playerInformation = new PlayerInformation(MinecraftAPI.client().getPlayer().getName(), MinecraftAPI.client().getPlayer().getUUID(), MinecraftAPI.client().getServerAddress(), AccountManager.cosmeticsUsing, AccountManager.skin);
+                        FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, MinecraftAPI.client().getPlayer().getName(), MinecraftAPI.client().getServerAddress());
                     }
                 }
             });

@@ -7,6 +7,21 @@ import top.fpsmaster.wrapper.packets.*;
 import top.fpsmaster.wrapper.sound.SoundProvider;
 import top.fpsmaster.wrapper.SkinProvider;
 
+/**
+ * @deprecated Use {@link MinecraftAPI} instead for better cross-version compatibility.
+ * This class is kept for backward compatibility but may be removed in future versions.
+ * <p>
+ * Migration guide:
+ * <ul>
+ *   <li>{@code Wrappers.minecraft()} → {@code MinecraftAPI.client()}</li>
+ *   <li>{@code Wrappers.world()} → {@code MinecraftAPI.world()}</li>
+ *   <li>{@code Wrappers.timer()} → {@code MinecraftAPI.render().getPartialTicks()}</li>
+ *   <li>{@code Wrappers.renderManager()} → {@code MinecraftAPI.render().getRenderManager()}</li>
+ *   <li>{@code Wrappers.sound()} → {@code MinecraftAPI.sound()}</li>
+ *   <li>{@code Wrappers.effects()} → {@code MinecraftAPI.render().getParticleManager()}</li>
+ * </ul>
+ */
+@Deprecated
 public final class Wrappers {
     private Wrappers() {}
 

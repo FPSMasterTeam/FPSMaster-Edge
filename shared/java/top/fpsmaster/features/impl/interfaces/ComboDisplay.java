@@ -7,6 +7,7 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.settings.impl.ColorSetting;
+import top.fpsmaster.api.MinecraftAPI;
 import top.fpsmaster.api.Wrappers;
 
 import java.awt.*;
@@ -25,8 +26,13 @@ public class ComboDisplay extends InterfaceModule {
 
     @Subscribe
     public void onTick(EventTick e) {
-        if (Wrappers.minecraft().getPlayer() == null) return;
-        if (Wrappers.minecraft().getPlayer().hurtTime == 1 || (target != null && Wrappers.minecraft().getPlayer().getDistanceToEntity(target) > 7)) {
+        if (MinecraftAPI.client().getPlayer() == null) return;
+        
+        // Use raw player for combat mechanics
+        net.minecraft.entity.player.EntityPlayer rawPlayer = 
+            (net.minecraft.entity.player.EntityPlayer) MinecraftAPI.client().getPlayer().getRawPlayer();
+        
+        if (rawPlayer.hurtTime == 1 || (target != null && rawPlayer.getDistanceToEntity(target) > 7)) {
             combo = 0;
         }
         if (target != null && target.isEntityAlive() && target.hurtResistantTime == 19) {

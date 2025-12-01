@@ -7,6 +7,7 @@ import top.fpsmaster.event.events.EventSendChatMessage;
 import top.fpsmaster.features.command.impl.AI;
 import top.fpsmaster.features.command.impl.Dev;
 import top.fpsmaster.features.command.impl.IRCChat;
+import top.fpsmaster.features.command.impl.TestNewAPICommand;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.utils.Utility;
 
@@ -24,6 +25,7 @@ public class CommandManager {
         commands.add(new Dev());
         commands.add(new AI());
         commands.add(new IRCChat());
+        commands.add(new TestNewAPICommand());
         EventDispatcher.registerListener(this);
     }
 

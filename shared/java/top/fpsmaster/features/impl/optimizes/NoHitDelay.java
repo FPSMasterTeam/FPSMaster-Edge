@@ -1,10 +1,10 @@
 package top.fpsmaster.features.impl.optimizes;
 
+import top.fpsmaster.api.MinecraftAPI;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
-import top.fpsmaster.api.Wrappers;
 
 public class NoHitDelay extends Module {
 
@@ -28,7 +28,7 @@ public class NoHitDelay extends Module {
 
     @Subscribe
     public void onTick(EventTick e) {
-        Wrappers.minecraft().removeClickDelay();
+        MinecraftAPI.client().removeClickDelay();
     }
 
     public static boolean isUsing() {

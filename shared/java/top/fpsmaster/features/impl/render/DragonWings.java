@@ -15,6 +15,7 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
+import top.fpsmaster.api.MinecraftAPI;
 import top.fpsmaster.api.Wrappers;
 
 import java.awt.*;
@@ -97,7 +98,7 @@ public class DragonWings extends Module {
         public void onRenderPlayer(EventRender3D event) {
             EntityPlayer player;
 
-            player = Wrappers.minecraft().getPlayer();
+            player = (EntityPlayer) MinecraftAPI.client().getPlayer().getRawPlayer();
             if (player == null)
                 return;
             if (!player.isInvisible() && mc.gameSettings.thirdPersonView != 0) // Should render wings onto this player?

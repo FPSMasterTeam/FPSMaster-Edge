@@ -10,6 +10,7 @@ import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.event.events.EventUpdate;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.api.MinecraftAPI;
 import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.math.MathTimer;
 
@@ -82,16 +83,16 @@ public class DamageIndicator extends Module {
         GlStateManager.enableBlend();
         GL11.glBlendFunc(770, 771);
         GL11.glDisable(3553);
-        float partialTicks = Wrappers.timer().getRenderPartialTicks();
-        double x = indicator.x + 1 - Wrappers.renderManager().renderPosX();
-        double y = indicator.y - Wrappers.renderManager().renderPosY() + 1;
-        double z = indicator.z + 1 - Wrappers.renderManager().renderPosZ();
+        float partialTicks = MinecraftAPI.render().getPartialTicks();
+        double x = indicator.x + 1 - MinecraftAPI.render().getRenderManager().getRenderPosX();
+        double y = indicator.y - MinecraftAPI.render().getRenderManager().getRenderPosY() + 1;
+        double z = indicator.z + 1 - MinecraftAPI.render().getRenderManager().getRenderPosZ();
         float scale = 0.065f;
         GlStateManager.translate(x, y + 1 + 0.5f - 1 / 2.0f, z);
         GL11.glNormal3f(0.0f, 1.0f, 0.0f);
         GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0f, 1.0f, 0.0f);
         GL11.glScalef(-scale / 2, -scale, -scale);
-        float width = Wrappers.minecraft().getFontRenderer().getStringWidth(damage) / 2.0f;
+        float width = ((net.minecraft.client.gui.FontRenderer)MinecraftAPI.client().getMinecraft().getFontRenderer()).getStringWidth(damage) / 2.0f;
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
         GlStateManager.disableLighting();
@@ -106,7 +107,7 @@ public class DamageIndicator extends Module {
         GL11.glDisable(3042);
         GL11.glDisable(2848);
         GlStateManager.enableBlend();
-        Wrappers.minecraft().getFontRenderer().drawStringWithShadow(damage, -width + 5, indicator.animation * 10, color.getRGB());
+        ((net.minecraft.client.gui.FontRenderer)MinecraftAPI.client().getMinecraft().getFontRenderer()).drawStringWithShadow(damage, -width + 5, indicator.animation * 10, color.getRGB());
         GlStateManager.enableLighting();
         GlStateManager.enableDepth();
         GlStateManager.disableBlend();

@@ -3,7 +3,6 @@ package top.fpsmaster.features.impl.render;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumParticleTypes;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventAttack;
@@ -13,6 +12,8 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
+import top.fpsmaster.api.MinecraftAPI;
+import top.fpsmaster.api.model.BlockPos;
 import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.wrapper.WrapperEntityLightningBolt;
 import top.fpsmaster.wrapper.blockpos.WrapperBlockPos;
@@ -43,32 +44,32 @@ public class MoreParticles extends Module {
         EntityLivingBase entityLivingBase = (EntityLivingBase) target;
         if (lastEffect != target && (entityLivingBase.getHealth() <= 0 || !entityLivingBase.isEntityAlive())) {
             if (killEffect.getValue() == 1) {
-                Wrappers.world().addWeatherEffect(
-                        new WrapperEntityLightningBolt(
-                                Wrappers.world().getWorld(),
-                                entityLivingBase.posX,
-                                entityLivingBase.posY,
-                                entityLivingBase.posZ,
-                                false
-                        )
-                );
-                Wrappers.sound().playExplosion(
+                // Use raw world for lightning effect
+                net.minecraft.client.multiplayer.WorldClient rawWorld = 
+                    (net.minecraft.client.multiplayer.WorldClient) MinecraftAPI.world().getWorld().getRawWorld();
+                rawWorld.addWeatherEffect(
+                    new net.minecraft.entity.effect.EntityLightningBolt(
+                        rawWorld,
                         entityLivingBase.posX,
                         entityLivingBase.posY,
-                        entityLivingBase.posZ,
-                        1f,
-                        1.0f,
-                        false
+                        entityLivingBase.posZ
+                    )
+                );
+                MinecraftAPI.sound().playExplosionSound(
+                    entityLivingBase.posX,
+                    entityLivingBase.posY,
+                    entityLivingBase.posZ,
+                    1f,
+                    1.0f
                 );
             } else if (killEffect.getValue() == 2) {
                 Minecraft.getMinecraft().effectRenderer.emitParticleAtEntity(target, EnumParticleTypes.EXPLOSION_LARGE);
-                Wrappers.sound().playExplosion(
-                        entityLivingBase.posX,
-                        entityLivingBase.posY,
-                        entityLivingBase.posZ,
-                        1f,
-                        1.0f,
-                        false
+                MinecraftAPI.sound().playExplosionSound(
+                    entityLivingBase.posX,
+                    entityLivingBase.posY,
+                    entityLivingBase.posZ,
+                    1f,
+                    1.0f
                 );
             }
             lastEffect = target;
@@ -80,16 +81,18 @@ public class MoreParticles extends Module {
     public void onAttack(EventAttack event) {
         if (event.target.isEntityAlive()) {
             target = event.target;
-            if (Wrappers.minecraft().getPlayer().fallDistance != 0f || alwaysCrit.getValue()) {
+            if (MinecraftAPI.client().getPlayer().getFallDistance() != 0f || alwaysCrit.getValue()) {
                 for (int i = 0; i < crit.getValue().intValue(); i++) {
                     Minecraft.getMinecraft().effectRenderer.emitParticleAtEntity(event.target, EnumParticleTypes.CRIT);
                 }
             }
             boolean needSharpness = false;
-            if (Wrappers.minecraft().getPlayer().inventory.getCurrentItem() != null) {
-                needSharpness = Wrappers.minecraft().getPlayer().inventory.getCurrentItem().getEnchantmentTagList() != null
-                        && !Wrappers.minecraft().getPlayer().inventory.getCurrentItem().getEnchantmentTagList().hasNoTags()
-                        && Wrappers.minecraft().getPlayer().inventory.getCurrentItem().getEnchantmentTagList().toString().contains("id:16s");
+            net.minecraft.entity.player.EntityPlayer rawPlayer = 
+                (net.minecraft.entity.player.EntityPlayer) MinecraftAPI.client().getPlayer().getRawPlayer();
+            if (rawPlayer.inventory.getCurrentItem() != null) {
+                needSharpness = rawPlayer.inventory.getCurrentItem().getEnchantmentTagList() != null
+                        && !rawPlayer.inventory.getCurrentItem().getEnchantmentTagList().hasNoTags()
+                        && rawPlayer.inventory.getCurrentItem().getEnchantmentTagList().toString().contains("id:16s");
             }
             if (needSharpness || alwaysSharpness.getValue()) {
                 for (int i = 0; i < sharpness.getValue().intValue(); i++) {
@@ -103,15 +106,20 @@ public class MoreParticles extends Module {
             } else if (special.getValue() == 3) {
                 if (mc.objectMouseOver.hitVec != null && event.target.hurtResistantTime <= 10) {
                     System.out.println();
-                    Wrappers.sound().playRedStoneBreak(
+                    MinecraftAPI.sound().playRedstoneBreakSound(
                             mc.objectMouseOver.hitVec.xCoord,
                             mc.objectMouseOver.hitVec.yCoord,
                             mc.objectMouseOver.hitVec.zCoord,
                             1f,
-                            1f,
-                            true
+                            1f
                     );
-                    Wrappers.effects().addRedStoneBreak(new WrapperBlockPos(new BlockPos(mc.objectMouseOver.hitVec)));
+                    MinecraftAPI.render().getParticleManager().addRedstoneBreakParticle(
+                        new BlockPos(
+                            (int)mc.objectMouseOver.hitVec.xCoord,
+                            (int)mc.objectMouseOver.hitVec.yCoord,
+                            (int)mc.objectMouseOver.hitVec.zCoord
+                        )
+                    );
                 }
             }
         }

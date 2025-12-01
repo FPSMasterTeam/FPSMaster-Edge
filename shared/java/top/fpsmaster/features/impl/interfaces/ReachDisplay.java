@@ -11,6 +11,7 @@ import top.fpsmaster.event.events.EventAttack;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.settings.impl.ColorSetting;
+import top.fpsmaster.api.MinecraftAPI;
 import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.wrapper.util.WrapperAxisAlignedBB;
 import top.fpsmaster.wrapper.util.WrapperVec3;
@@ -33,7 +34,7 @@ public class ReachDisplay extends InterfaceModule {
     @Subscribe
     public void onAttack(EventAttack e) {
         Entity entity = mc.getRenderViewEntity();
-        if (entity != null && Wrappers.minecraft().getWorld() != null) {
+        if (entity != null && MinecraftAPI.world().getWorld() != null) {
             if (mc.objectMouseOver == null || mc.objectMouseOver.entityHit == null)
                 return;
             reach = Double.parseDouble(String.format("%.2f", distance));

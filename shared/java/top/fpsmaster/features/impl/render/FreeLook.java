@@ -7,6 +7,7 @@ import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BindSetting;
+import top.fpsmaster.api.MinecraftAPI;
 import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.wrapper.mods.WrapperFreeLook;
 
@@ -37,8 +38,10 @@ public class FreeLook extends Module {
         if (!perspectiveToggled) {
             if (Keyboard.isKeyDown(bind.getValue())) {
                 perspectiveToggled = true;
-                cameraYaw = Wrappers.minecraft().getPlayer().rotationYaw;
-                cameraPitch = Wrappers.minecraft().getPlayer().rotationPitch;
+                if (MinecraftAPI.client().getPlayer() != null) {
+                    cameraYaw = MinecraftAPI.client().getPlayer().getYaw();
+                    cameraPitch = MinecraftAPI.client().getPlayer().getPitch();
+                }
                 previousPerspective = Minecraft.getMinecraft().gameSettings.hideGUI;
                 Minecraft.getMinecraft().gameSettings.thirdPersonView = 1;
             }

@@ -9,6 +9,7 @@
     "MixinEntityPlayer",
     "MixinNetworkManager",
     "MixinParticleManager",
+    "MixinS38PacketPlayerListItem",
     "MixinSplashScreen",
     "ModelRendererMixin_BatchDrawing",
     "TexturedQuadMixin_BatchDraw"
