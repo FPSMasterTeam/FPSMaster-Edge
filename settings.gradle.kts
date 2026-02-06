@@ -24,4 +24,4 @@ plugins {
 }
 
 
-rootProject.name = "v1.8.9"
+rootProject.name = "FPSMaster"

@@ -58,8 +58,6 @@ loom {
 }
 
 sourceSets.main {
-    java.srcDir("../shared/java")
-    resources.srcDir("../shared/resources")
     output.setResourcesDir(sourceSets.main.flatMap { it.java.classesDirectory })
 }
 
