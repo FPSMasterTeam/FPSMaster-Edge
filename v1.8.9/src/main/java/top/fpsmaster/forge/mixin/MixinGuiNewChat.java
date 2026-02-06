@@ -144,10 +144,6 @@ public abstract class MixinGuiNewChat {
                         ChatLine chatLine = drawnChatLines.get(m + this.scrollPos);
                         if (chatLine != null) {
                             if (getChatOpen() && v1_8_9$isChatOpenAnimationNeed) {
-                                for (int i1 = 0; i1 + this.scrollPos < drawnChatLines.size() && i1 < i.get(); ++i1) {
-                                    ChatLine chatline = drawnChatLines.get(i1 + this.scrollPos);
-                                    ((IChatLine) chatline).setAnimation(100);
-                                }
                                 v1_8_9$isChatOpenAnimationNeed = false;
                             }
                             if (!getChatOpen()) {
@@ -156,12 +152,7 @@ public abstract class MixinGuiNewChat {
 
                             n = updateCounter - chatLine.getUpdatedCounter();
                             if (n < 200 || bl) {
-                                if (n < 150 || getChatOpen()) {
-                                    ((IChatLine) chatLine).setAnimation((float) AnimationUtils.base(((IChatLine) chatLine).getAnimation(), 255, 0.1f));
-                                } else {
-                                    ((IChatLine) chatLine).setAnimation((float) AnimationUtils.base(((IChatLine) chatLine).getAnimation(), 0, 0.1f));
-                                }
-                                int alpha = (int) (((IChatLine) chatLine).getAnimation() * f);
+                                int alpha = (int) (255f * f);
 
                                 if (alpha > 3) {
                                     int q = -m * 9;
