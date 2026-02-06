@@ -419,6 +419,9 @@ public class StringCache {
      * @todo Optimize the underline/strikethrough drawing to draw a single line for each run
      */
     public int renderString(String str, float startX, float startY, int initialColor, boolean shadowFlag) {
+        if (str == null) {
+            return 0;
+        }
         // 替换字符串
         str = GlobalTextFilter.filter(str);
         
@@ -429,7 +432,7 @@ public class StringCache {
         startY = Math.round(startY);
 
         // 检查无效参数
-        if (str.isEmpty()) {
+        if (str == null || str.isEmpty()) {
             return 0;
         }
 
@@ -489,6 +492,9 @@ public class StringCache {
             /* 在该字符串中选择当前字形的纹理信息和横向布局位置 */
             Glyph glyph = entry.glyphs[glyphIndex];
             GlyphCache.Entry texture = glyph.texture;
+            if (texture == null) {
+                continue;
+            }
             int glyphX = glyph.x;
 
             /*
@@ -497,9 +503,14 @@ public class StringCache {
              * 在占位符位置上重新居中新字形，以尽量减小宽度不匹配的视觉影响。
              */
             char c = str.charAt(glyph.stringIndex);
-            if (c >= '0' && c <= '9') {
+            if (c >= '0' && c <= '9' && digitGlyphs[fontStyle] != null) {
                 int oldWidth = texture.width - (texture.offsetX * 2);
-                texture = digitGlyphs[fontStyle][c - '0'].texture;
+                Glyph digitGlyph = digitGlyphs[fontStyle][c - '0'];
+                if (digitGlyph != null && digitGlyph.texture != null) {
+                    texture = digitGlyph.texture;
+                } else {
+                    continue;
+                }
                 int newWidth = texture.width - (texture.offsetX * 2);
                 glyphX += (oldWidth - newWidth) >> 1;
             }
