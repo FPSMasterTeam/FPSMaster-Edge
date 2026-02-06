@@ -1,20 +1,11 @@
 package top.fpsmaster.features.impl.interfaces;
 
-import com.google.common.base.Predicates;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.EntitySelectors;
-import net.minecraft.util.MovingObjectPosition;
-import net.minecraft.util.Vec3;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventAttack;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.settings.impl.ColorSetting;
-import top.fpsmaster.api.MinecraftAPI;
-import top.fpsmaster.api.Wrappers;
-import top.fpsmaster.wrapper.util.WrapperAxisAlignedBB;
-import top.fpsmaster.wrapper.util.WrapperVec3;
 
 import java.awt.*;
 import java.util.List;
@@ -34,7 +25,7 @@ public class ReachDisplay extends InterfaceModule {
     @Subscribe
     public void onAttack(EventAttack e) {
         Entity entity = mc.getRenderViewEntity();
-        if (entity != null && MinecraftAPI.world().getWorld() != null) {
+        if (entity != null && mc.theWorld != null) {
             if (mc.objectMouseOver == null || mc.objectMouseOver.entityHit == null)
                 return;
             reach = Double.parseDouble(String.format("%.2f", distance));

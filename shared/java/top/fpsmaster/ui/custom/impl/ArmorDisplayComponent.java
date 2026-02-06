@@ -4,7 +4,6 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.item.ItemStack;
 import top.fpsmaster.features.impl.interfaces.ArmorDisplay;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 
 import java.awt.*;
@@ -22,7 +21,7 @@ public class ArmorDisplayComponent extends Component {
     @Override
     public void draw(float x, float y) {
         super.draw(x, y);
-        List<ItemStack> armorInventory = Arrays.asList(Wrappers.minecraft().getArmorInventory());
+        List<ItemStack> armorInventory = Arrays.asList(mc.thePlayer.inventory.armorInventory);
 
         for (int i = 0; i < armorInventory.size(); i++) {
             ItemStack itemStack = armorInventory.get(i);
@@ -57,7 +56,7 @@ public class ArmorDisplayComponent extends Component {
             GlStateManager.pushMatrix();
             mc.getRenderItem().renderItemIntoGUI(itemStack, x1, y1);
             GlStateManager.popMatrix();
-            mc.getRenderItem().renderItemOverlays(Wrappers.minecraft().getFontRenderer(), itemStack, x1, y1);
+            mc.getRenderItem().renderItemOverlays(mc.fontRendererObj, itemStack, x1, y1);
 
             RenderHelper.disableStandardItemLighting();
             GlStateManager.disableRescaleNormal();

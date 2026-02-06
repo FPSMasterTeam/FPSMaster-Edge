@@ -5,7 +5,6 @@ public enum Category {
     RENDER("Render"),
     Utility("Utility"),
     Interface("Interface"),
-    Music("Music"),
     ;
 
     final String name;

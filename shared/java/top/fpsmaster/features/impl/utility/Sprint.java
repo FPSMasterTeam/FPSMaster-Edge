@@ -1,6 +1,7 @@
 package top.fpsmaster.features.impl.utility;
 
-import top.fpsmaster.api.provider.ProviderRegistry;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.settings.KeyBinding;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventUpdate;
@@ -34,11 +35,11 @@ public class Sprint extends InterfaceModule {
 
     @Subscribe
     public void onKey(EventKey e) {
-        if (toggleSprint.getValue() && e.key == ProviderRegistry.getMinecraftProvider().getMinecraft().getGameSettings().getKeyBindSprint().getKeyCode()) {
+        if (toggleSprint.getValue() && e.key == Minecraft.getMinecraft().gameSettings.keyBindSprint.getKeyCode()) {
             sprint = !sprint;
             if (!sprint) {
-                if (ProviderRegistry.getMinecraftProvider().getMinecraft().getClientPlayer() != null) {
-                    ProviderRegistry.getMinecraftProvider().getMinecraft().getClientPlayer().setSprinting(false);
+                if (Minecraft.getMinecraft().thePlayer != null) {
+                    Minecraft.getMinecraft().thePlayer.setSprinting(false);
                 }
             }
         }
@@ -47,9 +48,9 @@ public class Sprint extends InterfaceModule {
     @Override
     public void onDisable() {
         super.onDisable();
-        ProviderRegistry.getMinecraftProvider().getMinecraft().getKeyBinding().setKeyBindState(ProviderRegistry.getMinecraftProvider().getMinecraft().getGameSettings().getKeyBindSprint().getKeyCode(), false);
-        if (ProviderRegistry.getMinecraftProvider().getMinecraft().getClientPlayer() != null) {
-            ProviderRegistry.getMinecraftProvider().getMinecraft().getClientPlayer().setSprinting(false);
+        KeyBinding.setKeyBindState(Minecraft.getMinecraft().gameSettings.keyBindSprint.getKeyCode(), false);
+        if (Minecraft.getMinecraft().thePlayer != null) {
+            Minecraft.getMinecraft().thePlayer.setSprinting(false);
         }
         using = false;
     }

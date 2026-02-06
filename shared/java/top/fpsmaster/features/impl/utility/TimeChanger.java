@@ -6,7 +6,8 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.api.Wrappers;
+import net.minecraft.network.play.server.S03PacketTimeUpdate;
+import top.fpsmaster.utils.Utility;
 
 public class TimeChanger extends Module {
 
@@ -20,15 +21,15 @@ public class TimeChanger extends Module {
 
     @Subscribe
     public void onTick(EventTick e) {
-        if (Wrappers.world().getWorld() != null) {
-            Wrappers.world().setWorldTime(time.getValue().longValue());
+        if (Utility.mc.theWorld != null) {
+            Utility.mc.theWorld.setWorldTime(time.getValue().longValue());
         }
     }
 
     @Subscribe
     public void onPacket(EventPacket e) {
         if (e.type == EventPacket.PacketType.RECEIVE) {
-            if (Wrappers.timeUpdatePacket().isPacket(e.packet)) {
+            if (e.packet instanceof S03PacketTimeUpdate) {
                 e.cancel();
             }
         }

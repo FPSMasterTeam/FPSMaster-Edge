@@ -29,7 +29,6 @@ import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventMouseClick;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import javax.annotation.Nullable;
@@ -58,6 +57,9 @@ public abstract class MixinMinecraft implements IMinecraft {
     public RenderGlobal renderGlobal;
     @Shadow
     public EntityPlayerSP thePlayer;
+
+    @Shadow
+    public net.minecraft.client.multiplayer.WorldClient theWorld;
 
     @Shadow
     public GuiIngame ingameGUI;
@@ -202,7 +204,7 @@ public abstract class MixinMinecraft implements IMinecraft {
      */
     @Overwrite
     public int getLimitFramerate() {
-        if (Wrappers.minecraft().getCurrentScreen() != null && Wrappers.minecraft().getWorld() == null)
+        if (this.currentScreen != null && this.theWorld == null)
             return 60;
         return (Display.isActive()) ? this.gameSettings.limitFramerate : Performance.using ? Performance.fpsLimit.getValue().intValue() : this.gameSettings.limitFramerate;
     }

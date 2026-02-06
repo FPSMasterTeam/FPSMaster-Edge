@@ -6,7 +6,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemPotion;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.Utility;
 
 import java.util.List;
@@ -58,7 +57,7 @@ public class ItemsUtil {
         GlStateManager.pushMatrix();
         Utility.mc.getRenderItem().renderItemIntoGUI(copyItem, (int) x, (int) y);
         GlStateManager.popMatrix();
-        Utility.mc.getRenderItem().renderItemOverlays(Wrappers.minecraft().getFontRenderer(), copyItem, (int) x, (int) y);
+        Utility.mc.getRenderItem().renderItemOverlays(Utility.mc.fontRendererObj, copyItem, (int) x, (int) y);
 
         RenderHelper.disableStandardItemLighting();
         GlStateManager.disableRescaleNormal();

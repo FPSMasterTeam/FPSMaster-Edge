@@ -6,7 +6,7 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.modules.client.GlobalTextFilter;
-import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
+import net.minecraft.client.renderer.WorldRenderer;
 
 import java.awt.*;
 import java.awt.font.GlyphVector;
@@ -463,7 +463,7 @@ public class StringCache {
 
         /* 使用Tessellator将数据排队至顶点数组然后一次性绘制应该比即时模式更快 */
         Tessellator tessellator = Tessellator.getInstance();
-        WrapperBufferBuilder worldRenderer = new WrapperBufferBuilder(tessellator);
+        WorldRenderer worldRenderer = tessellator.getWorldRenderer();
         //GlStateManager.disableTexture2D();
         worldRenderer.begin(7, DefaultVertexFormats.POSITION);
         GlStateManager.color((color >> 16 & 0xff) / 255F, (color >> 8 & 0xff) / 255F, (color & 0xff) / 255F);
@@ -720,7 +720,7 @@ public class StringCache {
             color = colorTable[colorCode] & 0xffffff | color & 0xff000000;
         }
 
-        new WrapperBufferBuilder(Tessellator.getInstance()).color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >> 24 & 0xff);
+        Tessellator.getInstance().getWorldRenderer().color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >> 24 & 0xff);
         return color;
     }
 

@@ -1,9 +1,6 @@
 package top.fpsmaster.ui.mc;
 
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import net.minecraft.client.gui.GuiScreenAddServer;
 import net.minecraft.client.gui.GuiScreenServerList;
 import net.minecraft.client.gui.GuiYesNo;
@@ -19,18 +16,15 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.modules.client.thread.ClientThreadPool;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.common.GuiButton;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
 import top.fpsmaster.utils.math.MathTimer;
-import top.fpsmaster.utils.os.HttpRequest;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
 
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 public class GuiMultiplayer extends ScaledGuiScreen {
@@ -40,10 +34,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     private final List<ServerData> servers = Lists.newArrayList();
     private final List<ServerListEntry> serverListDisplay = Lists.newArrayList();
     private final List<ServerListEntry> serverListInternet = Lists.newArrayList();
-    private static final List<ServerListEntry> serverListRecommended = Lists.newArrayList();
     public final OldServerPinger oldServerPinger = new OldServerPinger();
-
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     String action = "";
 
@@ -89,7 +80,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     @Override
     public void initGui() {
         super.initGui();
-        tab = 0;
         loadServerList();
         serverListInternet.clear();
         for (ServerData server : servers) {
@@ -97,18 +87,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         }
         serverListDisplay.clear();
         serverListDisplay.addAll(serverListInternet);
-        if (serverListRecommended.isEmpty()) {
-            FPSMaster.async.runnable(() -> {
-                String s;
-                try {
-                    s = HttpRequest.get("https://service.fpsmaster.top/api/client/servers").getBody();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                JsonObject jsonObject = gson.fromJson(s, JsonObject.class);
-                jsonObject.get("data").getAsJsonArray().forEach(e -> serverListRecommended.add(new ServerListEntry(this, new ServerData(e.getAsJsonObject().get("name").getAsString() + " - " + e.getAsJsonObject().get("description").getAsString(), e.getAsJsonObject().get("address").getAsString(), false))));
-            });
-        }
     }
 
     @Override
@@ -157,9 +135,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     }
 
     ScrollContainer scrollContainer = new ScrollContainer();
-    int tab = 0;
-
-
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         super.render(mouseX, mouseY, partialTicks);
@@ -170,9 +145,8 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         title.drawCenteredString("多人游戏", guiWidth / 2f, 16, -1);
 
         Render2DUtils.drawOptimizedRoundedRect((guiWidth - 180) / 2f, 30, 180, 24, 3, new Color(0, 0, 0, 80).getRGB());
-        Render2DUtils.drawOptimizedRoundedRect((guiWidth - 176) / 2f + 90 * tab, 32, 86, 20, 3, -1);
-        FPSMaster.fontManager.s16.drawCenteredString("服务器列表", (guiWidth - 90) / 2f, 36, tab == 0 ? new Color(50, 50, 50).getRGB() : -1);
-        FPSMaster.fontManager.s16.drawCenteredString("推荐服务器", (guiWidth + 90) / 2f, 36, tab == 1 ? new Color(50, 50, 50).getRGB() : -1);
+        Render2DUtils.drawOptimizedRoundedRect((guiWidth - 176) / 2f, 32, 176, 20, 3, -1);
+        FPSMaster.fontManager.s16.drawCenteredString("服务器列表", guiWidth / 2f, 36, new Color(50, 50, 50).getRGB());
 
         GL11.glPushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
@@ -237,21 +211,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         refresh.mouseClick(mouseX, mouseY, mouseButton);
         back.mouseClick(mouseX, mouseY, mouseButton);
 
-
-        Render2DUtils.drawOptimizedRoundedRect((guiWidth - 180) / 2f, 30, 180, 24, 3, new Color(255, 255, 255, 80).getRGB());
-        Render2DUtils.drawOptimizedRoundedRect((guiWidth - 176) / 2f, 32, 86, 20, 3, new Color(113, 127, 254).getRGB());
-        FPSMaster.fontManager.s16.drawCenteredString("服务器列表", (guiWidth - 90) / 2f, 36, -1);
-        FPSMaster.fontManager.s16.drawCenteredString("推荐服务器", (guiWidth + 90) / 2f, 36, -1);
-
-        if (Render2DUtils.isHovered((guiWidth - 180) / 2f, 30, 90, 24, mouseX, mouseY)) {
-            tab = 0;
-            serverListDisplay.clear();
-            serverListDisplay.addAll(serverListInternet);
-        } else if (Render2DUtils.isHovered((guiWidth) / 2f, 30, 90, 24, mouseX, mouseY)) {
-            tab = 1;
-            serverListDisplay.clear();
-            serverListDisplay.addAll(serverListRecommended);
-        }
 
         float y = 70 + scrollContainer.getScroll();
 

@@ -8,7 +8,6 @@ import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.render.ItemPhysics;
-import top.fpsmaster.features.impl.utility.IRC;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.*;
@@ -177,6 +176,5 @@ public class ConfigManager {
         FPSMaster.moduleManager.getModule(Performance.class).set(true);
         FPSMaster.moduleManager.getModule(OldAnimations.class).set(true);
         FPSMaster.moduleManager.getModule(ItemPhysics.class).set(true);
-        FPSMaster.moduleManager.getModule(IRC.class).set(true);
     }
 }

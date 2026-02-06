@@ -1,9 +1,9 @@
 package top.fpsmaster.utils.os;
 
 import top.fpsmaster.exception.FileException;
-import top.fpsmaster.api.Wrappers;
+import net.minecraft.client.Minecraft;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.wrapper.Constants;
+import top.fpsmaster.Constants;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -29,8 +29,8 @@ public class FileUtils {
             cache = file(new File("D:\\Code\\Lua\\FPSMaster"), ".cache");
             dir = file(new File("D:\\Code\\Lua\\FPSMaster"), "FPSMaster " + Constants.VERSION);
         } else {
-            cache = file(Wrappers.minecraft().getGameDir(), ".cache");
-            dir = file(Wrappers.minecraft().getGameDir(), "FPSMaster " + Constants.VERSION);
+            cache = file(Minecraft.getMinecraft().mcDataDir, ".cache");
+            dir = file(Minecraft.getMinecraft().mcDataDir, "FPSMaster " + Constants.VERSION);
         }
         plugins = file(dir, "plugins");
         fonts = file(dir, "fonts");

@@ -9,10 +9,8 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
-import top.fpsmaster.ui.ai.AIChatPanel;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.click.modules.ModuleRenderer;
-import top.fpsmaster.ui.click.music.NewMusicPanel;
 import top.fpsmaster.utils.math.animation.Animation;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.math.animation.Type;
@@ -55,8 +53,6 @@ public class MainPanel extends ScaledGuiScreen {
     public static String bindLock = "";
     public static Module curModule = null;
     public static String dragLock = "null";
-
-    public AIChatPanel aiChatPanel = new AIChatPanel();
 
     public MainPanel() {
         super();
@@ -105,43 +101,39 @@ public class MainPanel extends ScaledGuiScreen {
 
         moduleListAlpha = (float) AnimationUtils.base(moduleListAlpha, 255.0, 0.1f);
 
-        if (curType == Category.Music) {
-            NewMusicPanel.draw(x + leftWidth, y, width - leftWidth, height, mouseX, mouseY, scaleFactor);
-        } else {
-            GL11.glEnable(GL11.GL_SCISSOR_TEST);
-            Render2DUtils.doGlScissor(
-                    x, y + 10, width,
-                    (height - 18),
-                    scaleFactor
-            );
-            modHeight = 20f;
-            float containerWidth = width - leftWidth - 10;
-            int finalMouseY = mouseY;
-            modsContainer.draw(x + leftWidth, y + 25f, containerWidth, height - 20f, mouseX, mouseY, () -> {
-                float modsY = y + 22f;
-                for (ModuleRenderer m : mods) {
-                    if (m.mod.category == curType) {
-                        float moduleY = modsY + modsContainer.getScroll();
-                        if (moduleY + 40 + m.height > y && moduleY < y + height) {
-                            m.render(
-                                    x + leftWidth + 10,
-                                    moduleY,
-                                    containerWidth - 10,
-                                    40f,
-                                    mouseX,
-                                    finalMouseY,
-                                    curModule == m.mod
-                            );
-                        }
-                        modsY += 45 + m.height;
-                        modHeight += 45 + m.height;
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        Render2DUtils.doGlScissor(
+                x, y + 10, width,
+                (height - 18),
+                scaleFactor
+        );
+        modHeight = 20f;
+        float containerWidth = width - leftWidth - 10;
+        int finalMouseY = mouseY;
+        modsContainer.draw(x + leftWidth, y + 25f, containerWidth, height - 20f, mouseX, mouseY, () -> {
+            float modsY = y + 22f;
+            for (ModuleRenderer m : mods) {
+                if (m.mod.category == curType) {
+                    float moduleY = modsY + modsContainer.getScroll();
+                    if (moduleY + 40 + m.height > y && moduleY < y + height) {
+                        m.render(
+                                x + leftWidth + 10,
+                                moduleY,
+                                containerWidth - 10,
+                                40f,
+                                mouseX,
+                                finalMouseY,
+                                curModule == m.mod
+                        );
                     }
+                    modsY += 45 + m.height;
+                    modHeight += 45 + m.height;
                 }
-                modsContainer.setHeight(modHeight);
-            });
-            GL11.glEnable(GL11.GL_BLEND);
-            GL11.glDisable(GL11.GL_SCISSOR_TEST);
-        }
+            }
+            modsContainer.setHeight(modHeight);
+        });
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
 
         if (Render2DUtils.isHovered(x, (int) (y + height / 2 - 70), categoryAnimation, 140, mouseX, mouseY)) {
@@ -232,9 +224,6 @@ public class MainPanel extends ScaledGuiScreen {
     public void initGui() {
         super.initGui();
 //        aiChatPanel.init();
-        if (curType == Category.Music)
-            NewMusicPanel.init();
-
         scaleAnimation.fstart(0.8, 1.0, 0.2f, Type.EASE_IN_OUT_QUAD);
         close = false;
 
@@ -285,21 +274,12 @@ public class MainPanel extends ScaledGuiScreen {
             }
         }
 
-        NewMusicPanel.keyTyped(typedChar, keyCode);
         super.keyTyped(typedChar, keyCode);
     }
 
     @Override
     public void onClick(int mouseX, int mouseY, int mouseButton) {
 //        aiChatPanel.click(mouseX, mouseY, mouseButton);
-        if (Render2DUtils.isHovered(x + 5,
-                y + height - 25,
-                20,
-                20, mouseX, mouseY)) {
-            if (mouseButton == 0) {
-                mc.displayGuiScreen(new CosmeticScreen());
-            }
-        }
         if (!Render2DUtils.isHovered(x, y, width, height, mouseX, mouseY)) return;
 
 //        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
@@ -328,31 +308,23 @@ public class MainPanel extends ScaledGuiScreen {
                 if (curType != c) {
                     moduleListAlpha = 0f;
                 }
-                if (c == Category.Music) {
-                    NewMusicPanel.init();
-                }
                 curType = c;
             }
             my += 27f;
         }
-
-        if (curType == Category.Music) {
-            NewMusicPanel.mouseClicked(mouseX, mouseY, mouseButton);
-        } else {
-            float modsY = y + 22f + modsContainer.getRealScroll();
-            for (ModuleRenderer m : mods) {
-                if (m.mod.category == curType) {
-                    m.mouseClick(
-                            x + leftWidth,
-                            modsY,
-                            width - leftWidth,
-                            40f,
-                            mouseX,
-                            mouseY,
-                            mouseButton
-                    );
-                    modsY += 45 + m.height;
-                }
+        float modsY = y + 22f + modsContainer.getRealScroll();
+        for (ModuleRenderer m : mods) {
+            if (m.mod.category == curType) {
+                m.mouseClick(
+                        x + leftWidth,
+                        modsY,
+                        width - leftWidth,
+                        40f,
+                        mouseX,
+                        mouseY,
+                        mouseButton
+                );
+                modsY += 45 + m.height;
             }
         }
     }

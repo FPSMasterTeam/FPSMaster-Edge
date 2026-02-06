@@ -2,7 +2,7 @@ package top.fpsmaster.ui.custom.impl;
 
 import top.fpsmaster.features.impl.interfaces.CPSDisplay;
 import top.fpsmaster.ui.custom.Component;
-import top.fpsmaster.wrapper.TextFormattingProvider;
+import net.minecraft.util.EnumChatFormatting;
 
 public class CPSDisplayComponent extends Component {
 
@@ -16,10 +16,10 @@ public class CPSDisplayComponent extends Component {
     @Override
     public void draw(float x, float y) {
         super.draw(x, y);
-        String text = String.format("CPS: %d%s | %s%d", 
-                CPSDisplay.lcps, 
-                TextFormattingProvider.getGray(), 
-                TextFormattingProvider.getReset(), 
+        String text = String.format("CPS: %d%s | %s%d",
+                CPSDisplay.lcps,
+                EnumChatFormatting.GRAY,
+                EnumChatFormatting.RESET,
                 CPSDisplay.rcps);
 
         width = getStringWidth(16, text) + 4;

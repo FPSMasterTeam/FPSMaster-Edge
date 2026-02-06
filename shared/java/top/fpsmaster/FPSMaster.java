@@ -7,8 +7,6 @@ import top.fpsmaster.features.command.CommandManager;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.manager.ModuleManager;
 import top.fpsmaster.font.FontManager;
-import top.fpsmaster.modules.account.AccountManager;
-import top.fpsmaster.modules.client.ClientUsersManager;
 import top.fpsmaster.modules.client.thread.ClientThreadPool;
 import top.fpsmaster.modules.config.ConfigManager;
 import top.fpsmaster.modules.i18n.Language;
@@ -16,27 +14,17 @@ import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.lua.LuaManager;
 import top.fpsmaster.modules.music.MusicPlayer;
 import top.fpsmaster.modules.music.netease.NeteaseApi;
-import top.fpsmaster.ui.click.music.MusicPanel;
-import top.fpsmaster.ui.click.music.NewMusicPanel;
 import top.fpsmaster.ui.custom.ComponentsManager;
-import top.fpsmaster.ui.screens.oobe.OOBEScreen;
 import top.fpsmaster.utils.GitInfo;
 import top.fpsmaster.utils.os.FileUtils;
-import top.fpsmaster.utils.os.HttpRequest;
-import top.fpsmaster.utils.thirdparty.github.UpdateChecker;
-import top.fpsmaster.websocket.client.WsClient;
-import top.fpsmaster.wrapper.Constants;
 
 import java.io.File;
 
 public class FPSMaster {
 
     public boolean hasOptifine;
-    public boolean loggedIn;
-    public WsClient wsClient;
 
     public static final String phase = "pre-release";
-    public static final String SERVICE_API = "https://service.fpsmaster.top";
 
     public static final String EDITION = Constants.EDITION;
     public static final String COPYRIGHT = "Copyright ©2020-2025  FPSMaster Team  All Rights Reserved.";
@@ -49,9 +37,6 @@ public class FPSMaster {
     public static ModuleManager moduleManager = new ModuleManager();
     public static FontManager fontManager = new FontManager();
     public static ConfigManager configManager = new ConfigManager();
-    public static OOBEScreen oobeScreen = new OOBEScreen();
-    public static AccountManager accountManager = new AccountManager();
-    public static ClientUsersManager clientUsersManager = new ClientUsersManager();
     public static GlobalListener submitter = new GlobalListener();
     public static CommandManager commandManager = new CommandManager();
     public static ComponentsManager componentsManager = new ComponentsManager();
@@ -81,8 +66,7 @@ public class FPSMaster {
         // add more fonts and add fallback font
         File file = new File(FileUtils.fonts, "harmony_bold.ttf");
         if (!file.exists()) {
-            ClientLogger.info("Downloading Fonts...");
-            HttpRequest.downloadFile("https://13430.kstore.space/harmony_bold.ttf", file.getAbsolutePath());
+            ClientLogger.warn("Missing font file: " + file.getAbsolutePath());
         }
 
         fontManager.load();
@@ -102,9 +86,6 @@ public class FPSMaster {
         configManager.loadConfig("default");
         MusicPlayer.setVolume(Float.parseFloat(configManager.configure.getOrCreate("volume", "1")));
         NeteaseApi.cookies = FileUtils.readTempValue("cookies");
-        MusicPanel.nickname = FileUtils.readTempValue("nickname");
-        NewMusicPanel.nickname = FileUtils.readTempValue("nickname");
-        accountManager.autoLogin();
     }
 
     private void initializeMusic() {
@@ -157,25 +138,9 @@ public class FPSMaster {
     }
 
     private void checkUpdate() {
-        if (development) {
-            isLatest = true;
-            return;
-        }
-        async.runnable(() -> {
-            String s = UpdateChecker.getLatestVersion();
-            if (s == null || s.isEmpty()) {
-                s = UpdateChecker.getLatestVersion();
-                if (s == null || s.isEmpty()) {
-                    isLatest = false;
-                    updateFailed = true;
-                    ClientLogger.error("获取最新版本信息失败");
-                    return;
-                }
-            }
-            s = s.trim();
-            latest = s;
-            isLatest = GitInfo.getCommitId().equals(s);
-        });
+        isLatest = true;
+        updateFailed = false;
+        latest = GitInfo.getCommitId();
     }
 
     public void initialize() {
@@ -200,9 +165,6 @@ public class FPSMaster {
         try {
             ClientLogger.info("Saving configs");
             configManager.saveConfig("default");
-            if (wsClient != null && wsClient.isOpen()) {
-                wsClient.close(200, "Shutdown");
-            }
         } catch (FileException e) {
             throw new RuntimeException(e);
         }

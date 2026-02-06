@@ -5,7 +5,7 @@ import top.fpsmaster.features.impl.interfaces.ModsList;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.api.Wrappers;
+import net.minecraft.client.Minecraft;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -41,22 +41,22 @@ public class ModsListComponent extends Component {
 
         float maxWidth = 40f;
         x += this.width;
-        if (Wrappers.minecraft().getPlayer().ticksExisted % 20 == 0)
+        if (Minecraft.getMinecraft().thePlayer.ticksExisted % 20 == 0)
             modules = FPSMaster.moduleManager.modules.stream()
                     .sorted((m1, m2) -> {
                         float w1 = (mod).betterFont.getValue()
                                 ? font.getStringWidth(modlist.english.getValue() ? m1.name : FPSMaster.i18n.get(m1.name.toLowerCase()))
-                                : Wrappers.minecraft().getFontRenderer().getStringWidth(modlist.english.getValue() ? m1.name : FPSMaster.i18n.get(m1.name.toLowerCase()));
+                                : Minecraft.getMinecraft().fontRendererObj.getStringWidth(modlist.english.getValue() ? m1.name : FPSMaster.i18n.get(m1.name.toLowerCase()));
                         float w2 = (mod.betterFont.getValue()
                                 ? font.getStringWidth(modlist.english.getValue() ? m2.name : FPSMaster.i18n.get(m2.name.toLowerCase()))
-                                : Wrappers.minecraft().getFontRenderer().getStringWidth(modlist.english.getValue() ? m2.name : FPSMaster.i18n.get(m2.name.toLowerCase())));
+                                : Minecraft.getMinecraft().fontRendererObj.getStringWidth(modlist.english.getValue() ? m2.name : FPSMaster.i18n.get(m2.name.toLowerCase())));
                         return Float.compare(w2, w1);
                     }).collect(Collectors.toList());
 
         int index = 0;
         for (Module module : modules) {
             Color textColor = Color.getHSBColor(
-                    index / (float) modules.size() - Wrappers.minecraft().getPlayer().ticksExisted % 50 / 50f,
+                    index / (float) modules.size() - Minecraft.getMinecraft().thePlayer.ticksExisted % 50 / 50f,
                     0.7f,
                     1f
             );
@@ -71,7 +71,7 @@ public class ModsListComponent extends Component {
 
             float textWidth = mod.betterFont.getValue()
                     ? font.getStringWidth(name)
-                    : Wrappers.minecraft().getFontRenderer().getStringWidth(name);
+                    : Minecraft.getMinecraft().fontRendererObj.getStringWidth(name);
 
             if (maxWidth < textWidth) {
                 maxWidth = textWidth + 5;
@@ -89,10 +89,10 @@ public class ModsListComponent extends Component {
                 yOffset = (int) ((MODULE_HEIGHT - font.getHeight()) / 2);
                 font.drawStringWithShadow(name, x - textWidth - 2, y + modY + yOffset, color.getRGB());
             } else {
-                // Problem: yOffset = (BG_HEIGHT - Wrappers.minecraft().getFontRenderer().FONT_HEIGHT) / 2;
+                // Problem: yOffset = (BG_HEIGHT - mc.fontRendererObj.FONT_HEIGHT) / 2;
                 // this is the only way to center the text y position
-                yOffset = Wrappers.minecraft().getFontRenderer().FONT_HEIGHT / 2;
-                Wrappers.minecraft().getFontRenderer().drawStringWithShadow(name, x - textWidth - 2, y + modY + yOffset, color.getRGB());
+                yOffset = Minecraft.getMinecraft().fontRendererObj.FONT_HEIGHT / 2;
+                Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(name, x - textWidth - 2, y + modY + yOffset, color.getRGB());
             }
             index++;
             modY += MODULE_HEIGHT + modlist.spacing.getValue().intValue();

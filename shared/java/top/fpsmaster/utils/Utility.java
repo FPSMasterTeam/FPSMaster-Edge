@@ -2,7 +2,6 @@ package top.fpsmaster.utils;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ChatComponentText;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.modules.dev.DevMode;
 
 import java.util.ArrayList;
@@ -16,13 +15,13 @@ public class Utility {
     static ArrayList<String> messages = new ArrayList<>();
 
     public static void sendChatMessage(String message) {
-        if (Wrappers.minecraft().getPlayer() == null) return;
-        Wrappers.minecraft().getPlayer().sendChatMessage(message);
+        if (mc.thePlayer == null) return;
+        mc.thePlayer.sendChatMessage(message);
     }
 
     public static void sendClientMessage(String msg) {
-        if (Wrappers.minecraft().getWorld() != null) {
-            Wrappers.minecraft().printChatMessage(new ChatComponentText(msg));
+        if (mc.theWorld != null) {
+            mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentText(msg));
         } else {
             messages.add(msg);
         }
@@ -30,8 +29,8 @@ public class Utility {
 
     public static void sendClientNotify(String msg) {
         String msg1 = "§9[FPSMaster]§r " + msg;
-        if (Wrappers.minecraft().getWorld() != null) {
-            Wrappers.minecraft().printChatMessage(new ChatComponentText(msg1));
+        if (mc.theWorld != null) {
+            mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentText(msg1));
         } else {
             messages.add(msg1);
         }
@@ -45,7 +44,7 @@ public class Utility {
 
     public static void flush() {
         for (String message : messages) {
-            Wrappers.minecraft().printChatMessage(new ChatComponentText(message));
+            mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentText(message));
         }
         messages.clear();
     }

@@ -13,7 +13,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.forge.api.IChatLine;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
-import top.fpsmaster.api.wrapper.GuiNewChatWrap;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static top.fpsmaster.utils.Utility.mc;
 
 @Mixin(GuiNewChat.class)
-public abstract class MixinGuiNewChat implements GuiNewChatWrap {
+public abstract class MixinGuiNewChat {
 
     @Unique
     private boolean v1_8_9$isChatOpenAnimationNeed = true;

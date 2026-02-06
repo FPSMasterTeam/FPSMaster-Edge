@@ -2,14 +2,12 @@ package top.fpsmaster.features.impl.render;
 
 import net.minecraft.client.Minecraft;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.Display;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BindSetting;
-import top.fpsmaster.api.MinecraftAPI;
-import top.fpsmaster.api.Wrappers;
-import top.fpsmaster.wrapper.mods.WrapperFreeLook;
 
 public class FreeLook extends Module {
     private final BindSetting bind = new BindSetting("bind", Keyboard.KEY_LMENU);
@@ -36,11 +34,11 @@ public class FreeLook extends Module {
         if (Minecraft.getMinecraft().currentScreen != null) return;
 
         if (!perspectiveToggled) {
-            if (Keyboard.isKeyDown(bind.getValue())) {
-                perspectiveToggled = true;
-                if (MinecraftAPI.client().getPlayer() != null) {
-                    cameraYaw = MinecraftAPI.client().getPlayer().getYaw();
-                    cameraPitch = MinecraftAPI.client().getPlayer().getPitch();
+                if (Keyboard.isKeyDown(bind.getValue())) {
+                    perspectiveToggled = true;
+                if (Minecraft.getMinecraft().thePlayer != null) {
+                    cameraYaw = Minecraft.getMinecraft().thePlayer.rotationYaw;
+                    cameraPitch = Minecraft.getMinecraft().thePlayer.rotationPitch;
                 }
                 previousPerspective = Minecraft.getMinecraft().gameSettings.hideGUI;
                 Minecraft.getMinecraft().gameSettings.thirdPersonView = 1;
@@ -58,22 +56,41 @@ public class FreeLook extends Module {
     private static boolean previousPerspective = false;
 
     public static float getCameraYaw() {
-        return WrapperFreeLook.getCameraYaw();
+        return perspectiveToggled ? cameraYaw : Minecraft.getMinecraft().getRenderViewEntity().rotationYaw;
     }
 
     public static float getCameraPitch() {
-        return WrapperFreeLook.getCameraPitch();
+        return perspectiveToggled ? cameraPitch : Minecraft.getMinecraft().getRenderViewEntity().rotationPitch;
     }
 
     public static float getCameraPrevYaw() {
-        return WrapperFreeLook.getCameraPrevYaw();
+        return perspectiveToggled ? cameraYaw : Minecraft.getMinecraft().getRenderViewEntity().prevRotationYaw;
     }
 
     public static float getCameraPrevPitch() {
-        return WrapperFreeLook.getCameraPrevPitch();
+        return perspectiveToggled ? cameraPitch : Minecraft.getMinecraft().getRenderViewEntity().prevRotationPitch;
     }
 
     public static boolean overrideMouse() {
-        return WrapperFreeLook.overrideMouse();
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.inGameHasFocus && Display.isActive()) {
+            if (!perspectiveToggled) {
+                return true;
+            }
+            mc.mouseHelper.mouseXYChange();
+            float f1 = mc.gameSettings.mouseSensitivity * 0.6f + 0.2f;
+            float f2 = f1 * f1 * f1 * 8.0f;
+            float f3 = mc.mouseHelper.deltaX * f2;
+            float f4 = mc.mouseHelper.deltaY * f2;
+            cameraYaw += f3 * 0.15f;
+            cameraPitch += f4 * 0.15f;
+            if (cameraPitch > 90.0f) {
+                cameraPitch = 90.0f;
+            }
+            if (cameraPitch < -90.0f) {
+                cameraPitch = -90.0f;
+            }
+        }
+        return false;
     }
 }

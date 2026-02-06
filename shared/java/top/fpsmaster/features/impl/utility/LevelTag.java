@@ -9,12 +9,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
-import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
-import top.fpsmaster.api.Wrappers;
-import top.fpsmaster.modules.client.ClientUsersManager;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import static top.fpsmaster.utils.Utility.mc;
@@ -56,7 +53,6 @@ public class LevelTag extends Module {
             GlStateManager.disableDepth();
             GlStateManager.enableBlend();
             GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-            Wrappers.guiIngame().drawHealth(entityIn);
             GlStateManager.disableTexture2D();
             GlStateManager.enableTexture2D();
             GlStateManager.enableLighting();
@@ -96,7 +92,7 @@ public class LevelTag extends Module {
                 i = -10;
             }
 
-            boolean isMate = ((entityIn == mc.thePlayer) && str.contains(entityIn.getName())) || FPSMaster.clientUsersManager.getClientUser(entityIn) != null;
+            boolean isMate = entityIn == mc.thePlayer && str.contains(entityIn.getName());
 
             int j = fontRenderer.getStringWidth(str) / 2;
 

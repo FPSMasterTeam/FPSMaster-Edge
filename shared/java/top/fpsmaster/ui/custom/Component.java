@@ -9,7 +9,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.api.Wrappers;
+import net.minecraft.client.Minecraft;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
@@ -229,10 +229,10 @@ public class Component {
             GL11.glTranslated(x, y, 0.0);
             GL11.glScaled(scaled, scaled, 1.0);
                 if (mod.fontShadow.getValue()) {
-                    Wrappers.minecraft().getFontRenderer().drawStringWithShadow(text, 0f, 0f, color);
+                    Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(text, 0f, 0f, color);
                 } else {
                     GL11.glColor4f(1, 1, 1, 1);
-                    Wrappers.minecraft().drawString(text, 0f, 0f, color);
+                    Minecraft.getMinecraft().fontRendererObj.drawString(text, 0f, 0f, color);
                 }
             GL11.glPopMatrix();
         }
@@ -240,11 +240,11 @@ public class Component {
 
     public float getStringWidth(int fontSize, String name) {
         UFontRenderer font = FPSMaster.fontManager.getFont(fontSize);
-        return mod.betterFont.getValue() ? font.getStringWidth(name) : Wrappers.minecraft().getFontRenderer().getStringWidth(name);
+        return mod.betterFont.getValue() ? font.getStringWidth(name) : Minecraft.getMinecraft().fontRendererObj.getStringWidth(name);
     }
 
     public float getStringHeight(int fontSize) {
         UFontRenderer font = FPSMaster.fontManager.getFont(fontSize);
-        return mod.betterFont.getValue() ? font.getHeight() : Wrappers.minecraft().getFontRenderer().FONT_HEIGHT;
+        return mod.betterFont.getValue() ? font.getHeight() : Minecraft.getMinecraft().fontRendererObj.FONT_HEIGHT;
     }
 }

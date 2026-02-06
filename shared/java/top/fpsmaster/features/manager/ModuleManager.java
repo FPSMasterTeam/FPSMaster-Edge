@@ -80,7 +80,6 @@ public class ModuleManager {
         modules.add(new MinimizedBobbing());
         modules.add(new MoreParticles());
         modules.add(new FPSDisplay());
-        modules.add(new IRC());
         modules.add(new ArmorDisplay());
         modules.add(new BetterChat());
         modules.add(new BetterFishingRod());
@@ -89,7 +88,6 @@ public class ModuleManager {
         modules.add(new PotionDisplay());
         modules.add(new ReachDisplay());
         modules.add(new Scoreboard());
-        modules.add(new MusicOverlay());
         modules.add(new OldAnimations());
         modules.add(new HitColor());
         modules.add(new BlockOverlay());
@@ -98,8 +96,6 @@ public class ModuleManager {
         modules.add(new FireModifier());
         modules.add(new FreeLook());
         modules.add(new AutoGG());
-        modules.add(new LyricsDisplay());
-        modules.add(new SkinChanger());
         modules.add(new TimeChanger());
         modules.add(new TNTTimer());
         modules.add(new Hitboxes());
@@ -127,9 +123,7 @@ public class ModuleManager {
         modules.add(new SoundModifier());
         modules.add(new ParticlesModifier());
 
-        if (FPSMaster.EDITION.equals("1.12.2")) {
-            modules.add(new HideIndicator());
-        }
+        modules.add(new HideIndicator());
 
         for (Module m : FPSMaster.moduleManager.modules) {
             mainPanel.mods.add(new ModuleRenderer(m));

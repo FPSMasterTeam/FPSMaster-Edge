@@ -14,7 +14,7 @@ FPSMaster v4将会在此列表任务大部分完成后发布
 - [x] 迁移优化代码
 - [x] HitMarker
 - [ ] 优化代码结构
-- [ ] 重构MusicPlayer界面
+- [x] 重构MusicPlayer界面
 - [ ] 支持播放无损/VIP音乐
 - [ ] 添加界面自动对齐
 - [ ] 添加翻译功能
@@ -22,14 +22,14 @@ FPSMaster v4将会在此列表任务大部分完成后发布
 - [ ] 攻击音效
 - [ ] 组件更加自定义化（按键显示等）
 - [ ] 修改notification，添加更多样式和自定义
-- [ ] RawInput兼容和优化
+- [x] RawInput兼容和优化
 - [ ] FPS Hurt Cam
 - [ ] World Color
 - [ ] 跨版本框架
 - [ ] 自定义客户端字体
 - [ ] 自定义动画速率、曲线等
 - [ ] 全局搜索
-- [ ] 新的OOBE
+- [x] 新的OOBE
 - [ ] 功能完整的饰品界面
 - [ ] AutoText
 - [ ] 饱和度显示
