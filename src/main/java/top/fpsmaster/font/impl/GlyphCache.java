@@ -1,5 +1,7 @@
 package top.fpsmaster.font.impl;
 
+import top.fpsmaster.utils.render.draw.Images;
+
 import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
@@ -56,6 +58,7 @@ public class GlyphCache {
      * sampling of the glyph cache textures.
      */
     private static final int GLYPH_BORDER = 1;
+    private static final int GLYPH_PAD = 1;
 
     /**
      * Transparent (alpha zero) white background color for use with BufferedImage.clearRect().
@@ -191,6 +194,8 @@ public class GlyphCache {
          * The height in pixels of the glyph image.
          */
         public int height;
+        public int offsetX;
+        public int offsetY;
 
         /**
          * The horizontal texture coordinate of the upper-left corner.
@@ -240,6 +245,7 @@ public class GlyphCache {
         fontSize = size;
         antiAliasEnabled = antiAlias;
         setRenderingHints();
+        resetCache();
     }
 
     /**
@@ -319,6 +325,15 @@ public class GlyphCache {
         return glyphCache.get(fontKey | glyphCode);
     }
 
+    private void resetCache() {
+        glyphCache.clear();
+        fontCache.clear();
+        cachePosX = GLYPH_BORDER;
+        cachePosY = GLYPH_BORDER;
+        cacheLineHeight = 0;
+        allocateGlyphCacheTexture();
+    }
+
     /**
      * Given an OpenType font and a string, make sure that every glyph used by that string is pre-rendered into an OpenGL texture and cached
      * in the glyphCache map for later retrieval by lookupGlyph()
@@ -370,7 +385,7 @@ public class GlyphCache {
                  */
                 for (int i = 0; i < numGlyphs; i++) {
                     Point2D pos = vector.getGlyphPosition(i);
-                    pos.setLocation(pos.getX() + 2 * i, pos.getY());
+                    pos.setLocation(pos.getX() + (8 + GLYPH_PAD * 2) * i, pos.getY());
                     vector.setGlyphPosition(i, pos);
                 }
 
@@ -381,6 +396,13 @@ public class GlyphCache {
                  * horizontal bearing (e.g. U+0423 Cyrillic uppercase letter U on Windows 7).
                  */
                 vectorBounds = vector.getPixelBounds(fontRenderContext, 0, 0);
+                int pad = GLYPH_PAD;
+                vectorBounds = new Rectangle(
+                        vectorBounds.x - pad,
+                        vectorBounds.y - pad,
+                        vectorBounds.width + pad * 2,
+                        vectorBounds.height + pad * 2
+                );
 
                 /* Enlage the stringImage if it is too small to store the entire rendered string */
                 if (stringImage == null)
@@ -392,7 +414,7 @@ public class GlyphCache {
                     allocateStringImage(width, height);
                 }
 
-                /* Erase the upper-left corner where the string will get drawn*/
+                /* Clear the expanded bounds area; avoids stale pixels without clearing full buffer */
                 stringGraphics.clearRect(0, 0, vectorBounds.width, vectorBounds.height);
 
                 /* Draw string with opaque white color and baseline adjustment so the upper-left corner of the image is at (0,0) */
@@ -406,6 +428,14 @@ public class GlyphCache {
              * for extracting the glyph's image from the rendered string.
              */
             Rectangle rect = vector.getGlyphPixelBounds(index, null, -vectorBounds.x, -vectorBounds.y);
+            int pad = GLYPH_PAD;
+            int srcW = stringImage.getWidth();
+            int srcH = stringImage.getHeight();
+            int x1 = Math.max(rect.x - pad, 0);
+            int y1 = Math.max(rect.y - pad, 0);
+            int x2 = Math.min(rect.x + rect.width + pad, srcW);
+            int y2 = Math.min(rect.y + rect.height + pad, srcH);
+            rect = new Rectangle(x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1));
 
             /* If the current line in cache image is full, then advance to the next line */
             if (cachePosX + rect.width + GLYPH_BORDER > TEXTURE_WIDTH) {
@@ -457,6 +487,8 @@ public class GlyphCache {
             entry.textureName = textureName;
             entry.width = rect.width;
             entry.height = rect.height;
+            entry.offsetX = pad;
+            entry.offsetY = pad * 2;
             entry.u1 = ((float) rect.x) / TEXTURE_WIDTH;
             entry.v1 = ((float) rect.y) / TEXTURE_HEIGHT;
             entry.u2 = ((float) (rect.x + rect.width)) / TEXTURE_WIDTH;
@@ -542,7 +574,8 @@ public class GlyphCache {
                 antiAliasEnabled ? RenderingHints.VALUE_TEXT_ANTIALIAS_ON : RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
 //        stringGraphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        stringGraphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+        stringGraphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
+                fontSize <= 14 ? RenderingHints.VALUE_FRACTIONALMETRICS_OFF : RenderingHints.VALUE_FRACTIONALMETRICS_ON);
     }
 
     /**
@@ -573,10 +606,11 @@ public class GlyphCache {
                 GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, imageBuffer);
 
         /* Explicitely disable mipmap support becuase updateTexture() will only update the base level 0 */
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_REPEAT);
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE);
+        int filter = fontSize <= 14 ? GL11.GL_NEAREST : GL11.GL_LINEAR;
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, filter);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, filter);
 
     }
 
@@ -640,4 +674,9 @@ public class GlyphCache {
 
         return textureId;
     }
+
 }
+
+
+
+

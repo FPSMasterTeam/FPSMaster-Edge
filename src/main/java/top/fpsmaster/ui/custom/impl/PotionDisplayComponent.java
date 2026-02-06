@@ -9,11 +9,11 @@ import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.PotionDisplay;
 import top.fpsmaster.ui.custom.Component;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 import java.awt.*;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class PotionDisplayComponent extends Component {
 
@@ -75,3 +75,6 @@ public class PotionDisplayComponent extends Component {
         return p.getStatusIconIndex();
     }
 }
+
+
+

@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class ItemCountDisplayComponent extends Component {
 
@@ -71,3 +71,6 @@ public class ItemCountDisplayComponent extends Component {
 
 
 }
+
+
+

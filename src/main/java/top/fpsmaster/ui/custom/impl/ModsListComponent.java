@@ -1,5 +1,7 @@
 package top.fpsmaster.ui.custom.impl;
 
+import top.fpsmaster.utils.render.draw.Rects;
+
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ModsList;
 import top.fpsmaster.features.manager.Category;
@@ -7,7 +9,6 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.font.impl.UFontRenderer;
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.ui.custom.Component;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -77,7 +78,7 @@ public class ModsListComponent extends Component {
                 maxWidth = textWidth + 5;
             }
             if(modlist.bg.getValue()) {
-                Render2DUtils.drawRect(x - textWidth - 4, y + modY, textWidth + 4, MODULE_HEIGHT + modlist.spacing.getValue().intValue() , modlist.backgroundColor.getColor());
+                Rects.fill(x - textWidth - 4, y + modY, textWidth + 4, MODULE_HEIGHT + modlist.spacing.getValue().intValue() , modlist.backgroundColor.getColor());
             }
             Color color = modlist.color.getColor();
             if (modlist.rainbow.getValue()) {
@@ -102,3 +103,7 @@ public class ModsListComponent extends Component {
         height = modY;
     }
 }
+
+
+
+

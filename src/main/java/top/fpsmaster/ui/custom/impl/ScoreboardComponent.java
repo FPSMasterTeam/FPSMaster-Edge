@@ -1,12 +1,13 @@
 package top.fpsmaster.ui.custom.impl;
 
+import top.fpsmaster.utils.render.draw.Rects;
+
 import top.fpsmaster.features.impl.interfaces.Scoreboard;
 import top.fpsmaster.ui.custom.Component;
 import net.minecraft.client.Minecraft;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.ScorePlayerTeam;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,7 +61,7 @@ public class ScoreboardComponent extends Component {
         int lineHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
         width = maxWidth + 6;
         height = (lines.size() + 1) * lineHeight + 4;
-        Render2DUtils.drawRect(x, y, width, height, mod.backgroundColor.getColor());
+        Rects.fill(x, y, width, height, mod.backgroundColor.getColor());
         mc.fontRendererObj.drawStringWithShadow(objective.getDisplayName(), x + 3, y + 2, 0xFFFFFF);
         float offsetY = y + 2 + lineHeight;
         for (String line : lines) {
@@ -69,3 +70,7 @@ public class ScoreboardComponent extends Component {
         }
     }
 }
+
+
+
+

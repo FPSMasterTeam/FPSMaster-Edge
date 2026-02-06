@@ -20,12 +20,12 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.utils.OptifineUtil;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.system.OptifineUtil;
+import top.fpsmaster.utils.core.Utility;
 
 import java.util.List;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class MotionBlur extends Module {
     private static Framebuffer blurBufferMain;
@@ -177,3 +177,6 @@ public class MotionBlur extends Module {
         }
     }
 }
+
+
+

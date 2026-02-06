@@ -16,3 +16,6 @@ public class MixinLayerArmorBase {
         return OldAnimations.using && OldAnimations.oldDamage.getValue();
     }
 }
+
+
+

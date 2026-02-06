@@ -1,9 +1,8 @@
 package top.fpsmaster.event;
 
 import top.fpsmaster.exception.ExceptionHandler;
-import top.fpsmaster.modules.dev.DevMode;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -74,3 +73,6 @@ public class EventDispatcher {
         }
     }
 }
+
+
+

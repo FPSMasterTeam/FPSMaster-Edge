@@ -1,9 +1,11 @@
 package top.fpsmaster.ui.click;
 
+import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.client.gui.ScaledResolution;
-import top.fpsmaster.utils.Utility;
-import top.fpsmaster.utils.render.Render2DUtils;
-import top.fpsmaster.utils.render.ScaledGuiScreen;
+import top.fpsmaster.utils.core.Utility;
+import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 
 import java.awt.*;
 
@@ -20,10 +22,14 @@ public class TestScreen extends ScaledGuiScreen {
 
 //        GL11.glScaled((double) 2 / sr.getScaleFactor(), (double) 2 / sr.getScaleFactor(), 1.0);
 
-        if (Render2DUtils.isHovered(10, 10, realWidth - 20, 100, mouseX * factor / 2, mouseY * factor / 2)) {
-            Render2DUtils.drawOptimizedRoundedRect(10, 10, realWidth - 20, 100, 10,Color.RED.getRGB());
+        if (Hover.is(10, 10, realWidth - 20, 100, mouseX * factor / 2, mouseY * factor / 2)) {
+            Rects.rounded(10, 10, realWidth - 20, 100, 10,Color.RED.getRGB());
         } else {
-            Render2DUtils.drawOptimizedRoundedRect(10, 10, realWidth - 20, 100, 10,Color.WHITE.getRGB());
+            Rects.rounded(10, 10, realWidth - 20, 100, 10,Color.WHITE.getRGB());
         }
     }
 }
+
+
+
+

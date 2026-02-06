@@ -8,7 +8,7 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.InventoryDisplay;
 import top.fpsmaster.ui.custom.Component;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class InventoryDisplayComponent extends Component {
 
@@ -70,3 +70,6 @@ public class InventoryDisplayComponent extends Component {
         height = 64f;
     }
 }
+
+
+

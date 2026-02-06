@@ -1,6 +1,6 @@
 package top.fpsmaster.utils.render.shader;
 
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 public class Shader2DUtils extends Utility {
     static RainbowShader rainbowShader = new RainbowShader();
@@ -25,3 +25,5 @@ public class Shader2DUtils extends Utility {
         rainbowFontShader.stopShader();
     }
 }
+
+

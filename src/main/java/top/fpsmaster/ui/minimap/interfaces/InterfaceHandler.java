@@ -13,7 +13,7 @@ import top.fpsmaster.ui.custom.Component;
 
 import java.util.ArrayList;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class InterfaceHandler {
     public static int actionTimer;
@@ -183,3 +183,6 @@ public class InterfaceHandler {
         InterfaceHandler.lastFlip = 0L;
     }
 }
+
+
+

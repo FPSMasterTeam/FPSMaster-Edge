@@ -16,3 +16,6 @@ public class FPSDisplay extends InterfaceModule {
         addSettings(rounded, backgroundColor, fontShadow, betterFont, bg, rounded, roundRadius);
     }
 }
+
+
+

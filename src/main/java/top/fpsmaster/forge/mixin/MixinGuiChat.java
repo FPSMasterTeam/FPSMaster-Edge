@@ -14,3 +14,6 @@ public class MixinGuiChat extends GuiScreen {
         instance.sendChatMessage(message.trim());
     }
 }
+
+
+

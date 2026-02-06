@@ -1,5 +1,10 @@
 package top.fpsmaster.ui.click.modules.impl;
 
+import top.fpsmaster.utils.render.draw.Images;
+import top.fpsmaster.utils.render.draw.Gradients;
+import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
@@ -9,8 +14,8 @@ import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.ui.click.modules.SettingRender;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
-import top.fpsmaster.utils.os.OSUtil;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.system.OSUtil;
+import top.fpsmaster.utils.render.gui.GuiScale;
 import top.fpsmaster.utils.render.shader.GradientUtils;
 
 import java.awt.*;
@@ -37,10 +42,10 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                 FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault())),
                 x + 10, y + 3, new Color(162, 162, 162).getRGB()
         );
-        Render2DUtils.drawOptimizedRoundedRect(x + tW + 26, y + 1, 80f, 14f, new Color(39, 39, 39));
+        Rects.rounded(x + tW + 26, y + 1, 80f, 14f, new Color(39, 39, 39));
 
         CustomColor customColor = setting.getValue();
-        Render2DUtils.drawOptimizedRoundedRect(x + tW + 27, y + 2, 12f, 12f, customColor.getRGB());
+        Rects.rounded(x + tW + 27, y + 2, 12f, 12f, customColor.getRGB());
 
         FPSMaster.fontManager.s16.drawString(
                 "#" + Integer.toHexString(setting.getRGB()).toUpperCase(Locale.getDefault()),
@@ -55,8 +60,8 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                         Color.getHSBColor(customColor.hue, 0f, 1f),
                         Color.getHSBColor(customColor.hue, 1f, 0f),
                         Color.getHSBColor(customColor.hue, 1f, 1f),
-                        Render2DUtils.getFixedScale(),
-                        () -> Render2DUtils.drawRoundedRectImage(
+                        GuiScale.getFixedScale(),
+                        () -> Rects.roundedImage(
                                 x + tW + 26, y + 16, 80f, max(aHeight, 1f), 4,
                                 new Color(255, 255, 255)
                         )
@@ -66,7 +71,7 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                     for (int j = 0; j < 80; j++) {
                         float brightness = 1 - (float) i / aHeight;
                         float saturation = (float) j / 80;
-                        Render2DUtils.drawRect(x + tW + 26 + j, y + 16 + i, 1, 1, Color.getHSBColor(customColor.hue, saturation, brightness).getRGB());
+                        Rects.fill(x + tW + 26 + j, y + 16 + i, 1, 1, Color.getHSBColor(customColor.hue, saturation, brightness).getRGB());
                     }
                 }
             }
@@ -74,7 +79,7 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
             float saturation = customColor.saturation;
             float brightness = customColor.brightness;
 
-            if (Render2DUtils.isHovered(
+            if (Hover.is(
                     x + tW + 26, y + 16, 80f, 80f, (int) mouseX, (int) mouseY
             ) && Mouse.isButtonDown(0) || MainPanel.dragLock.equals(mod.name + setting.name + 1)) {
                 if (MainPanel.dragLock.equals("null") && Mouse.isButtonDown(0)) {
@@ -89,21 +94,21 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
             // Draw the selected position circle
             float cX = saturation * 80;
             float cY = (1 - brightness) * aHeight;
-            Render2DUtils.drawImage(
+            Images.draw(
                     new ResourceLocation("client/gui/settings/values/color.png"),
                     x + tW + 26 + cX - 2.5f, y + 15 + cY - 2.5f, 5f, 5f, -1
             );
 
             // Hue adjustment
             float hue = customColor.hue;
-            Render2DUtils.drawHue(x + tW + 110, y + 16, 10, aHeight);
-            Render2DUtils.drawImage(
+            Gradients.hue(x + tW + 110, y + 16, 10, aHeight);
+            Images.draw(
                     new ResourceLocation("client/gui/settings/values/color.png"),
                     x + tW + 112.5f, y + 14 + aHeight * customColor.hue,
                     5f, 5f, -1
             );
 
-            if (Render2DUtils.isHovered(
+            if (Hover.is(
                     x + tW + 110, y + 16, 10f, aHeight, (int) mouseX, (int) mouseY
             ) && Mouse.isButtonDown(0) || MainPanel.dragLock.equals(mod.name + setting.name + 2)) {
                 if (MainPanel.dragLock.equals("null")) {
@@ -116,7 +121,7 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
 
             // Alpha adjustment
             float alpha = customColor.alpha;
-            Render2DUtils.drawImage(
+            Images.draw(
                     new ResourceLocation("client/gui/settings/values/alpha.png"),
                     x + tW + 122, y + 16, 10f, aHeight, -1
             );
@@ -126,12 +131,12 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                 );
             }
 
-            Render2DUtils.drawImage(
+            Images.draw(
                     new ResourceLocation("client/gui/settings/values/color.png"),
                     x + tW + 124.5f, y + 13.5f + aHeight * (1 - alpha), 5f, 5f, -1
             );
 
-            if (Render2DUtils.isHovered(
+            if (Hover.is(
                     x + tW + 122, y + 16, 10f, aHeight, (int) mouseX, (int) mouseY
             ) && Mouse.isButtonDown(0) || MainPanel.dragLock.equals(mod.name + setting.name + 3)) {
                 if (MainPanel.dragLock.equals("null")) {
@@ -165,8 +170,12 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                 FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault())),
                 x + 10, y + 2, new Color(162, 162, 162).getRGB()
         );
-        if (Render2DUtils.isHovered(x + tW + 26, y + 1, 80f, 14f, (int) mouseX, (int) mouseY) && btn == 0) {
+        if (Hover.is(x + tW + 26, y + 1, 80f, 14f, (int) mouseX, (int) mouseY) && btn == 0) {
             expand = !expand;
         }
     }
 }
+
+
+
+

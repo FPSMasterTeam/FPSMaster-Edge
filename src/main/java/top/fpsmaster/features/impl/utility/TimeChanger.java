@@ -7,7 +7,7 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import net.minecraft.network.play.server.S03PacketTimeUpdate;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 public class TimeChanger extends Module {
 
@@ -35,3 +35,6 @@ public class TimeChanger extends Module {
         }
     }
 }
+
+
+

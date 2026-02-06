@@ -1,15 +1,20 @@
 package top.fpsmaster.ui.screens.mainmenu;
 
+import top.fpsmaster.utils.render.draw.Images;
+import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiOptions;
 import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.ui.mc.GuiMultiplayer;
-import top.fpsmaster.utils.math.animation.Animation;
-import top.fpsmaster.utils.math.animation.Type;
-import top.fpsmaster.utils.render.Render2DUtils;
-import top.fpsmaster.utils.render.ScaledGuiScreen;
+import top.fpsmaster.utils.math.anim.AnimClock;
+import top.fpsmaster.utils.math.anim.Animator;
+import top.fpsmaster.utils.math.anim.Easings;
+import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.utils.render.gui.Backgrounds;
 import net.minecraft.util.EnumChatFormatting;
 
 import java.awt.*;
@@ -25,8 +30,9 @@ public class MainMenu extends ScaledGuiScreen {
 
     private String info = "离线模式";
 
-    private static final Animation startAnimation = new Animation();
-    private static final Animation backgroundAnimation = new Animation();
+    private static final Animator startAnimation = new Animator();
+    private static final Animator backgroundAnimation = new Animator();
+    private final AnimClock animClock = new AnimClock();
 
 
     public MainMenu() {
@@ -39,6 +45,7 @@ public class MainMenu extends ScaledGuiScreen {
     @Override
     public void initGui() {
         super.initGui();
+        animClock.reset();
         if (firstBoot == 0) {
             // Check Java Version
             String version = System.getProperty("java.version");
@@ -66,25 +73,30 @@ public class MainMenu extends ScaledGuiScreen {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        Render2DUtils.drawBackground((int) guiWidth, (int) guiHeight, mouseX, mouseY, partialTicks, (int) zLevel);
-        startAnimation.start(0, 1.1, 1.5f, Type.EASE_OUT_QUINT);
-        startAnimation.update();
-        if (startAnimation.value >= 0.5) {
-            backgroundAnimation.start(0, 1.5, 2.0f, Type.LINEAR);
-            backgroundAnimation.update();
+        Backgrounds.draw((int) guiWidth, (int) guiHeight, mouseX, mouseY, partialTicks, (int) zLevel);
+        double dt = animClock.tick();
+        if (!startAnimation.isRunning() && startAnimation.get() == 0.0) {
+            startAnimation.start(0, 1.1, 1.5f, Easings.QUINT_OUT);
+        }
+        startAnimation.update(dt);
+        if (startAnimation.get() >= 0.5) {
+            if (!backgroundAnimation.isRunning() && backgroundAnimation.get() == 0.0) {
+                backgroundAnimation.start(0, 1.5, 2.0f, Easings.LINEAR);
+            }
+            backgroundAnimation.update(dt);
         }
 
 
         // Display user info and avatar
         float stringWidth = FPSMaster.fontManager.s16.getStringWidth(mc.getSession().getUsername());
-        Render2DUtils.drawOptimizedRoundedRect(10f, 10f, 30 + stringWidth, 20f, new Color(0, 0, 0, 60));
-        Render2DUtils.drawImage(new ResourceLocation("client/gui/screen/avatar.png"), 14f, 15f, 10f, 10f, -1);
+        Rects.rounded(10f, 10f, 30 + stringWidth, 20f, new Color(0, 0, 0, 60));
+        Images.draw(new ResourceLocation("client/gui/screen/avatar.png"), 14f, 15f, 10f, 10f, -1);
         FPSMaster.fontManager.s16.drawString(mc.getSession().getUsername(), 28, 16, Color.WHITE.getRGB());
 
 
         // background theme button
-        Render2DUtils.drawOptimizedRoundedRect(guiWidth - 22, 13, 12, 12, new Color(0, 0, 0, 60));
-        Render2DUtils.drawImage(new ResourceLocation("client/gui/screen/theme.png"), guiWidth - 20, 15f, 8f, 8f, -1);
+        Rects.rounded(guiWidth - 22, 13, 12, 12, new Color(0, 0, 0, 60));
+        Images.draw(new ResourceLocation("client/gui/screen/theme.png"), guiWidth - 20, 15f, 8f, 8f, -1);
 
 
         // Position buttons and render them
@@ -106,15 +118,15 @@ public class MainMenu extends ScaledGuiScreen {
         FPSMaster.fontManager.s16.drawString(info, 4, guiHeight - 40, Color.WHITE.getRGB());
 
         // Render client info
-        Render2DUtils.drawRect(0f, 0f, 0f, 0f, -1);
+        Rects.fill(0f, 0f, 0f, 0f, -1);
         FPSMaster.fontManager.s16.drawString(FPSMaster.COPYRIGHT, 4, guiHeight - 14, Color.WHITE.getRGB());
         FPSMaster.fontManager.s16.drawString(FPSMaster.CLIENT_NAME + " Client " + FPSMaster.CLIENT_VERSION + " (Minecraft " + FPSMaster.EDITION + ")", 4, guiHeight - 28, Color.WHITE.getRGB());
         if (firstBoot != 2) {
             FPSMaster.fontManager.s16.drawCenteredString(FPSMaster.i18n.get(firstBoot == 0 ? "mainmenu.oldjava" : "mainmenu.javafail"), width / 2f, height / 2f + 40, Color.WHITE.getRGB());
             FPSMaster.fontManager.s16.drawCenteredString(FPSMaster.i18n.get("mainmenu.javatip"), width / 2f, height / 2f + 50, Color.WHITE.getRGB());
         }
-        Render2DUtils.drawRect(0, 0, width, height, new Color(20, 20, 20, (int) (255 - 255 * Math.max(0, (float) backgroundAnimation.value - 0.5f))));
-        Render2DUtils.drawImage(new ResourceLocation("client/gui/logo.png"), guiWidth / 2f - 153 / 4f, guiHeight / 2f - 30 - 70 * ((float) Math.min(startAnimation.value, 1)), 153 / 2f, 67f, -1);
+        Rects.fill(0, 0, width, height, new Color(20, 20, 20, (int) (255 - 255 * Math.max(0, (float) backgroundAnimation.get() - 0.5f))));
+        Images.draw(new ResourceLocation("client/gui/logo.png"), guiWidth / 2f - 153 / 4f, guiHeight / 2f - 30 - 70 * ((float) Math.min(startAnimation.get(), 1)), 153 / 2f, 67f, -1);
     }
 
     @Override
@@ -125,7 +137,7 @@ public class MainMenu extends ScaledGuiScreen {
         exit.mouseClick(mouseX, mouseY, mouseButton);
 
         if (mouseButton == 0) {
-            if (Render2DUtils.isHovered(guiWidth - 22, 13, 12, 12, mouseX, mouseY)) {
+            if (Hover.is(guiWidth - 22, 13, 12, 12, mouseX, mouseY)) {
                 if (FPSMaster.configManager.configure.getOrCreate("background", "new").equals("classic")) {
                     FPSMaster.configManager.configure.set("background", "new");
                 } else {
@@ -135,3 +147,7 @@ public class MainMenu extends ScaledGuiScreen {
         }
     }
 }
+
+
+
+

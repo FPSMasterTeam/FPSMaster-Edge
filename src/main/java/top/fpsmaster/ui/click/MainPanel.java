@@ -1,5 +1,11 @@
 package top.fpsmaster.ui.click;
 
+import top.fpsmaster.utils.render.state.Alpha;
+import top.fpsmaster.utils.render.draw.Images;
+import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Colors;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
@@ -11,11 +17,13 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.click.modules.ModuleRenderer;
-import top.fpsmaster.utils.math.animation.Animation;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
-import top.fpsmaster.utils.math.animation.Type;
-import top.fpsmaster.utils.render.Render2DUtils;
-import top.fpsmaster.utils.render.ScaledGuiScreen;
+import top.fpsmaster.utils.math.anim.AnimClock;
+import top.fpsmaster.utils.math.anim.Animator;
+import top.fpsmaster.utils.math.anim.BezierEasing;
+import top.fpsmaster.utils.math.anim.Easings;
+import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.utils.render.gui.Scissor;
 
 import java.awt.*;
 import java.io.IOException;
@@ -30,7 +38,12 @@ public class MainPanel extends ScaledGuiScreen {
     float modsWheel = 0f;
     float wheelTemp = 0f;
 
-    Animation scaleAnimation = new Animation();
+    private final Animator scaleAnimation = new Animator();
+    private final Animator alphaAnimation = new Animator();
+    private final Animator maskAlpha = new Animator();
+    private final AnimClock animClock = new AnimClock();
+    private static final BezierEasing CLICKGUI_EASE = BezierEasing.of(0.25, 0.1, 0.25, 1.0);
+    private static final int MASK_MAX_ALPHA = 110;
 
     float selection = 0f;
 
@@ -57,6 +70,25 @@ public class MainPanel extends ScaledGuiScreen {
     public MainPanel() {
         super();
     }
+    private float getCategoryItemSpacing() {
+        return 27f;
+    }
+
+    private float getCategoryListHeight() {
+        return categories.size() * getCategoryItemSpacing();
+    }
+
+    private float getCategoryBgHeight() {
+        return Math.max(40f, getCategoryListHeight() + 8f);
+    }
+
+    private float getCategoryBgY() {
+        return y + (height - getCategoryBgHeight()) / 2f;
+    }
+
+    private float getCategoryStartY() {
+        return getCategoryBgY() + 10f;
+    }
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
@@ -77,21 +109,27 @@ public class MainPanel extends ScaledGuiScreen {
         y = (int) Math.max(0, Math.min(guiHeight - (int) height, y));
 
         if (close) {
-            if (scaleAnimation.value <= 0.7) {
+            if (scaleAnimation.get() <= 0.7) {
                 mc.displayGuiScreen(null);
                 if (mc.currentScreen == null) {
                     mc.setIngameFocus();
                 }
             }
         }
-        scaleAnimation.update();
+        double dt = animClock.tick();
+        scaleAnimation.update(dt);
+        alphaAnimation.update(dt);
+        maskAlpha.update(dt);
+        Alpha.set(1f);
+        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(0, 0, 0, (int) maskAlpha.get()));
+        Alpha.set((float) alphaAnimation.get() / 255f);
 
-        GlStateManager.translate(guiWidth / 2.0, height / 2.0, 0.0);
-        GL11.glScaled(scaleAnimation.value, scaleAnimation.value, 0.0);
-        GlStateManager.translate(-guiWidth / 2.0, -height / 2.0, 0.0);
+        GlStateManager.translate(guiWidth / 2.0, guiHeight / 2.0, 0.0);
+        GL11.glScaled(scaleAnimation.get(), scaleAnimation.get(), 0.0);
+        GlStateManager.translate(-guiWidth / 2.0, -guiHeight / 2.0, 0.0);
 
 
-        Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/window/panel.png"),
+        Images.draw(new ResourceLocation("client/gui/settings/window/panel.png"),
                 x + leftWidth - 8,
                 y - 2,
                 width - leftWidth + 16,
@@ -101,10 +139,18 @@ public class MainPanel extends ScaledGuiScreen {
 
         moduleListAlpha = (float) AnimationUtils.base(moduleListAlpha, 255.0, 0.1f);
 
+        float scale = (float) scaleAnimation.get();
+        float centerX = guiWidth / 2f;
+        float centerY = guiHeight / 2f;
+        float scissorX = centerX + (x - centerX) * scale;
+        float scissorY = centerY + (y + 10 - centerY) * scale;
+        float scissorW = width * scale;
+        float scissorH = (height - 18) * scale;
+
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        Render2DUtils.doGlScissor(
-                x, y + 10, width,
-                (height - 18),
+        Scissor.apply(
+                scissorX, scissorY, scissorW,
+                scissorH,
                 scaleFactor
         );
         modHeight = 20f;
@@ -136,40 +182,27 @@ public class MainPanel extends ScaledGuiScreen {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
 
-        if (Render2DUtils.isHovered(x, (int) (y + height / 2 - 70), categoryAnimation, 140, mouseX, mouseY)) {
+        float categoryBgHeight = getCategoryBgHeight();
+        float categoryBgY = getCategoryBgY();
+        float categoryStartY = getCategoryStartY();
+
+        if (Hover.is(x, (int) categoryBgY, categoryAnimation, categoryBgHeight, mouseX, mouseY)) {
             categoryAnimation = (float) AnimationUtils.base(categoryAnimation, 100f, 0.15f);
         } else {
             categoryAnimation = (float) AnimationUtils.base(categoryAnimation, 30f, 0.15f);
         }
 
-        Render2DUtils.drawRoundedRectImage(
+        Rects.roundedImage(
                 x + categoryAnimation / 50f,
-                y + height / 2 - 74,
+                categoryBgY,
                 categoryAnimation,
-                140,
+                categoryBgHeight,
                 20,
                 new Color(0, 0, 0, 200)
         );
 
-        Render2DUtils.drawRoundedRectImage(
-                x + 5,
-                y + height - 25,
-                20,
-                20,
-                20,
-                new Color(0, 0, 0, 200)
-        );
-
-        Render2DUtils.drawImage(
-                new ResourceLocation("client/gui/screen/theme.png"),
-                x + 11,
-                y + height - 19,
-                8,
-                8,
-                -1);
-
-        float my = y + 60;
-        Render2DUtils.drawRoundedRectImage(
+        float my = categoryStartY;
+        Rects.roundedImage(
                 x + 4 + categoryAnimation / 50f,
                 selection - 6,
                 categoryAnimation - 8,
@@ -180,18 +213,23 @@ public class MainPanel extends ScaledGuiScreen {
 
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        Render2DUtils.doGlScissor(
-                x, y, categoryAnimation,
-                (height - 4),
+        float categoryScissorX = centerX + (x - centerX) * scale;
+        float categoryScissorY = centerY + (categoryBgY - centerY) * scale;
+        float categoryScissorW = categoryAnimation * scale;
+        float categoryScissorH = categoryBgHeight * scale;
+        Scissor.apply(
+                categoryScissorX, categoryScissorY, categoryScissorW,
+                categoryScissorH,
                 scaleFactor
         );
 
         for (CategoryComponent m : categories) {
-            if (Render2DUtils.isHovered(x, my - 6, leftWidth - 10, 20f, mouseX, mouseY)) {
-                m.categorySelectionColor.base(new Color(70, 70, 70));
+            if (Hover.is(x, my - 6, leftWidth - 10, 20f, mouseX, mouseY)) {
+                m.categorySelectionColor.animateTo(new Color(70, 70, 70), 0.15f, Easings.QUAD_OUT);
             } else {
-                m.categorySelectionColor.base(Render2DUtils.reAlpha(new Color(70, 70, 70), 0));
+                m.categorySelectionColor.animateTo(Colors.alpha(new Color(70, 70, 70), 0), 0.15f, Easings.QUAD_OUT);
             }
+            m.categorySelectionColor.update(dt);
 
             if (m.category == curType) {
                 selection = drag
@@ -206,11 +244,13 @@ public class MainPanel extends ScaledGuiScreen {
                     20f,
                     mouseX,
                     mouseY,
-                    curType == m.category
+                    curType == m.category,
+                    dt
             );
             my += 27f;
         }
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        Alpha.set(1f);
     }
 
     @Override
@@ -224,7 +264,10 @@ public class MainPanel extends ScaledGuiScreen {
     public void initGui() {
         super.initGui();
 //        aiChatPanel.init();
-        scaleAnimation.fstart(0.8, 1.0, 0.2f, Type.EASE_IN_OUT_QUAD);
+        animClock.reset();
+        scaleAnimation.start(0.8, 1.0, 0.2f, CLICKGUI_EASE);
+        alphaAnimation.start(0.0, 255.0, 0.2f, CLICKGUI_EASE);
+        maskAlpha.start(0.0, MASK_MAX_ALPHA, 0.2f, CLICKGUI_EASE);
         close = false;
 
 //        if (width == 0f || height == 0f) {
@@ -238,7 +281,7 @@ public class MainPanel extends ScaledGuiScreen {
             categories.add(new CategoryComponent(c));
         }
 
-        selection = y + 70f;
+        selection = y + height / 2f;
     }
 
     @Override
@@ -261,9 +304,11 @@ public class MainPanel extends ScaledGuiScreen {
 //        aiChatPanel.keyTyped(typedChar, keyCode);
 
         if (keyCode == 1) {
-            if (scaleAnimation.end != 0.1) {
+            if (scaleAnimation.isRunning() || scaleAnimation.get() != 0.7) {
                 close = true;
-                scaleAnimation.fstart(scaleAnimation.value, 0.7, 0.1f, Type.EASE_IN_OUT_QUAD);
+                scaleAnimation.animateTo(0.7, 0.1f, CLICKGUI_EASE);
+                alphaAnimation.animateTo(0.0, 0.1f, CLICKGUI_EASE);
+                maskAlpha.animateTo(0.0, 0.1f, CLICKGUI_EASE);
             }
             return;
         }
@@ -280,9 +325,9 @@ public class MainPanel extends ScaledGuiScreen {
     @Override
     public void onClick(int mouseX, int mouseY, int mouseButton) {
 //        aiChatPanel.click(mouseX, mouseY, mouseButton);
-        if (!Render2DUtils.isHovered(x, y, width, height, mouseX, mouseY)) return;
+        if (!Hover.is(x, y, width, height, mouseX, mouseY)) return;
 
-//        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
+//        if (mouseButton == 0 && Hover.isWithoutScale(
 //                x + leftWidth, y, width - leftWidth, 20f, mouseX, mouseY
 //        )) {
 //            drag = true;
@@ -290,7 +335,7 @@ public class MainPanel extends ScaledGuiScreen {
 //            dragY = mouseY - y;
 //        }
 
-//        if (mouseButton == 0 && Render2DUtils.isHoveredWithoutScale(
+//        if (mouseButton == 0 && Hover.isWithoutScale(
 //                x + width - 20, y + height - 20, 20f, 20f, mouseX, mouseY
 //        ) && "null".equals(dragLock)) {
 //            sizeDrag = true;
@@ -300,9 +345,9 @@ public class MainPanel extends ScaledGuiScreen {
 //        }
         if (!dragLock.equals("null"))
             return;
-        float my = y + 60f;
+        float my = getCategoryStartY();
         for (Category c : Category.values()) {
-            if (Render2DUtils.isHovered(x, my - 8, leftWidth, 24f, mouseX, mouseY)) {
+            if (Hover.is(x, my - 8, leftWidth, 24f, mouseX, mouseY)) {
                 wheelTemp = 0f;
                 modsWheel = 0f;
                 if (curType != c) {
@@ -329,3 +374,7 @@ public class MainPanel extends ScaledGuiScreen {
         }
     }
 }
+
+
+
+

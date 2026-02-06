@@ -8,7 +8,7 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BindSetting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 public class SmoothZoom extends Module {
 
@@ -58,3 +58,6 @@ public class SmoothZoom extends Module {
 
     public static NumberSetting speed = new NumberSetting("Speed", 4.0, 0.1, 10.0, 0.1, () -> smoothCamera.getValue());
 }
+
+
+

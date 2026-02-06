@@ -25,3 +25,6 @@ public class FPSDisplayComponent extends Component {
         drawString(18, s, x, y + 2, FPSDisplay.textColor.getRGB());
     }
 }
+
+
+

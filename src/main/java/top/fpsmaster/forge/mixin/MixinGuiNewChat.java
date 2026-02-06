@@ -1,5 +1,7 @@
 package top.fpsmaster.forge.mixin;
 
+import top.fpsmaster.utils.render.draw.Colors;
+
 import com.google.common.collect.Lists;
 import net.minecraft.client.gui.*;
 import net.minecraft.client.renderer.GlStateManager;
@@ -13,13 +15,12 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 @Mixin(GuiNewChat.class)
 public abstract class MixinGuiNewChat {
@@ -157,13 +158,13 @@ public abstract class MixinGuiNewChat {
                                 if (alpha > 3) {
                                     int q = -m * 9;
                                     int alpha1 = (int) ((alpha / 255f) * module.backgroundColor.getColor().getAlpha());
-                                    Gui.drawRect(-2, q - 8, k + 4, q + 1, Render2DUtils.reAlpha(module.backgroundColor.getColor(), alpha1).getRGB());
+                                    Gui.drawRect(-2, q - 8, k + 4, q + 1, Colors.alpha(module.backgroundColor.getColor(), alpha1).getRGB());
                                     String string = chatLine.getChatComponent().getFormattedText();
                                     GlStateManager.enableBlend();
                                     if (module.betterFont.getValue()) {
-                                        FPSMaster.fontManager.s16.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Render2DUtils.reAlpha(new Color(16777215), alpha).getRGB());
+                                        FPSMaster.fontManager.s16.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Colors.alpha(new Color(16777215), alpha).getRGB());
                                     } else {
-                                        mc.fontRendererObj.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Render2DUtils.reAlpha(new Color(16777215), alpha).getRGB());
+                                        mc.fontRendererObj.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Colors.alpha(new Color(16777215), alpha).getRGB());
                                     }
                                     GlStateManager.disableAlpha();
                                     GlStateManager.disableBlend();
@@ -261,3 +262,7 @@ public abstract class MixinGuiNewChat {
         return drawnChatLines;
     }
 }
+
+
+
+

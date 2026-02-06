@@ -12,3 +12,5 @@ public class ArmorDisplay extends InterfaceModule {
         addSettings(rounded, backgroundColor, fontShadow, betterFont, spacing, mode, bg, rounded, roundRadius);
     }
 }
+
+

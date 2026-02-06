@@ -21,3 +21,6 @@ public abstract class MixinEntityPlayer extends MixinEntityLivingBase{
     public abstract int getItemInUseDuration();
 
 }
+
+
+

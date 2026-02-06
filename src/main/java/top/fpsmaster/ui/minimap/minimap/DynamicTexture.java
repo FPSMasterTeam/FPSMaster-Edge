@@ -46,3 +46,6 @@ public class DynamicTexture extends SimpleTexture
         TextureUtil.uploadTextureImageAllocate(this.getGlTextureId(), this.bufferedimage, false, false);
     }
 }
+
+
+

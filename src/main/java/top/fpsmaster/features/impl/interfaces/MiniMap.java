@@ -4,7 +4,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.ui.notification.NotificationManager;
-import top.fpsmaster.utils.OptifineUtil;
+import top.fpsmaster.utils.system.OptifineUtil;
 
 public class MiniMap extends InterfaceModule {
     public MiniMap() {
@@ -33,3 +33,6 @@ public class MiniMap extends InterfaceModule {
         using = false;
     }
 }
+
+
+

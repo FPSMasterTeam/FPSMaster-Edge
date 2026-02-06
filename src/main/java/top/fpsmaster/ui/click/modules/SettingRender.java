@@ -26,3 +26,6 @@ public class SettingRender<T extends Setting<?>> extends ValueRender {
     public void keyTyped(char typedChar, int keyCode) {
     }
 }
+
+
+

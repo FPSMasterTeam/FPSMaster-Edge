@@ -48,3 +48,6 @@ public abstract class AbstractResourcePackMixin_DownscaleImages {
         cir.setReturnValue(downscaledIcon);
     }
 }
+
+
+

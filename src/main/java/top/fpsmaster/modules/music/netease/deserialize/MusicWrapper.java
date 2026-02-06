@@ -6,7 +6,7 @@ import top.fpsmaster.modules.music.*;
 import top.fpsmaster.modules.music.netease.Music;
 import top.fpsmaster.modules.music.netease.NeteaseApi;
 import top.fpsmaster.modules.music.netease.NeteaseProfile;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -252,3 +252,6 @@ public class MusicWrapper {
         return trackList;
     }
 }
+
+
+

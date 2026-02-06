@@ -6,7 +6,7 @@ import top.fpsmaster.features.impl.interfaces.FPSDisplay;
 import top.fpsmaster.ui.custom.Component;
 import net.minecraft.util.EnumChatFormatting;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class CoordsDisplayComponent extends Component {
 
@@ -55,3 +55,6 @@ public class CoordsDisplayComponent extends Component {
         return yStr;
     }
 }
+
+
+

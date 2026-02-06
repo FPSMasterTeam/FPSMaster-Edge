@@ -9,3 +9,6 @@ public class PlayerDisplay extends InterfaceModule {
         addSettings(betterFont, rounded, fontShadow, backgroundColor, bg, rounded, roundRadius);
     }
 }
+
+
+

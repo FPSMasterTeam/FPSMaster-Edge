@@ -1,5 +1,7 @@
 package top.fpsmaster.forge.mixin;
 
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
@@ -9,7 +11,6 @@ import org.lwjgl.opengl.Display;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
@@ -37,7 +38,7 @@ public class MixinSplashScreen {
         GlStateManager.disableFog();
         GlStateManager.disableDepth();
 
-        Render2DUtils.drawRect(0, 0, scaledresolution.getScaledWidth(), scaledresolution.getScaledHeight(), new Color(20,20,20));
+        Rects.fill(0, 0, scaledresolution.getScaledWidth(), scaledresolution.getScaledHeight(), new Color(20,20,20));
 
         GlStateManager.disableLighting();
         GlStateManager.disableFog();
@@ -54,3 +55,7 @@ public class MixinSplashScreen {
     }
 
 }
+
+
+
+

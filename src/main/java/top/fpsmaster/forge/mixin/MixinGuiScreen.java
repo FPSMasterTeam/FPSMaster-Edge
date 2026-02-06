@@ -1,5 +1,7 @@
 package top.fpsmaster.forge.mixin;
 
+import top.fpsmaster.utils.render.draw.Colors;
+
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
@@ -15,12 +17,12 @@ import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventSendChatMessage;
 import top.fpsmaster.features.impl.interfaces.BetterScreen;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.render.effects.Blur;
 
 import java.awt.*;
 import java.io.IOException;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 @Mixin(GuiScreen.class)
 public abstract class MixinGuiScreen extends Gui {
@@ -71,7 +73,7 @@ public abstract class MixinGuiScreen extends Gui {
                     } else {
                         arch$alpha = 170;
                     }
-                    this.drawGradientRect(0, 0, this.width, this.height, Render2DUtils.reAlpha(Render2DUtils.intToColor(-1072689136), ((int) arch$alpha)).getRGB(), Render2DUtils.reAlpha(Render2DUtils.intToColor(-804253680), ((int) arch$alpha)).getRGB());
+                    this.drawGradientRect(0, 0, this.width, this.height, Colors.alpha(Colors.toColor(-1072689136), ((int) arch$alpha)).getRGB(), Colors.alpha(Colors.toColor(-804253680), ((int) arch$alpha)).getRGB());
                 } else {
                     GlStateManager.disableBlend();
                     GlStateManager.enableAlpha();
@@ -79,7 +81,7 @@ public abstract class MixinGuiScreen extends Gui {
                 }
                 if (BetterScreen.blur.getValue()) {
                     v1_8_9$iteration = Math.min(++v1_8_9$iteration, 3);
-                    Render2DUtils.drawBlurArea(0, 0, width, height, 1, new Color(255, 255, 255), v1_8_9$iteration, v1_8_9$iteration);
+                    Blur.area(0, 0, width, height, 1, new Color(255, 255, 255), v1_8_9$iteration, v1_8_9$iteration);
                 }
             } else {
                 this.drawGradientRect(0, 0, this.width, this.height, -1072689136, -804253680);
@@ -98,3 +100,7 @@ public abstract class MixinGuiScreen extends Gui {
         }
     }
 }
+
+
+
+

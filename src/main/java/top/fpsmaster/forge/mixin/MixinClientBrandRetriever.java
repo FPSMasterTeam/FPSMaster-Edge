@@ -3,7 +3,7 @@ package top.fpsmaster.forge.mixin;
 import net.minecraft.client.ClientBrandRetriever;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
-import top.fpsmaster.utils.GitInfo;
+import top.fpsmaster.utils.git.GitInfo;
 
 @Mixin(ClientBrandRetriever.class)
 public class MixinClientBrandRetriever {
@@ -18,3 +18,6 @@ public class MixinClientBrandRetriever {
 //        return "fpsmaster:" + GitInfo.getBranch() + ":" + GitInfo.getCommitIdAbbrev();
 //    }
 }
+
+
+

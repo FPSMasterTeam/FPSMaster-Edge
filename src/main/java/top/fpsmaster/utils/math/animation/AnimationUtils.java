@@ -1,7 +1,7 @@
 package top.fpsmaster.utils.math.animation;
 
 import net.minecraft.client.Minecraft;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 public class AnimationUtils extends Utility {
 
@@ -119,3 +119,5 @@ public class AnimationUtils extends Utility {
         return start + (rest * percent);
     }
 }
+
+

@@ -13,3 +13,6 @@ public class GlobalTextFilter {
 //        return text;
     }
 }
+
+
+

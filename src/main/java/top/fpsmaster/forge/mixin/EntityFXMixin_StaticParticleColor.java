@@ -13,3 +13,6 @@ public class EntityFXMixin_StaticParticleColor {
         return Performance.staticParticleColor.getValue() ? 15728880 : entityFX.getBrightnessForRender(partialTicks);
     }
 }
+
+
+

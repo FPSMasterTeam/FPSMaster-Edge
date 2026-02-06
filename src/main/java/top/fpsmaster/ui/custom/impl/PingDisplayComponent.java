@@ -33,3 +33,6 @@ public class PingDisplayComponent extends Component {
         drawString(16, text, x, y + 2, PingDisplay.textColor.getRGB());
     }
 }
+
+
+

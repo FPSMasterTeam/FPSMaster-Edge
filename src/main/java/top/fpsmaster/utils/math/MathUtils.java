@@ -25,3 +25,5 @@ public class MathUtils {
         return current + (k * (current - start) + speed) * (start > target ? -1 : 1);
     }
 }
+
+

@@ -29,3 +29,6 @@ public class NumberSetting extends Setting<Number> {
         super.setValue(Math.max(min.doubleValue(), Math.min(max.doubleValue(), closestMultipleOfInc)));
     }
 }
+
+
+

@@ -5,7 +5,7 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 import java.awt.*;
 
@@ -99,3 +99,5 @@ public class GradientUtils extends Utility {
         GL11.glColor4f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f, c.getAlpha() / 255f);
     }
 }
+
+

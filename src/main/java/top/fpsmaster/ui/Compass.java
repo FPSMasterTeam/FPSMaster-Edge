@@ -7,7 +7,8 @@ import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import net.minecraft.client.Minecraft;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.render.gui.GuiScale;
+import top.fpsmaster.utils.render.gui.Scissor;
 
 import java.awt.*;
 import java.util.List;
@@ -58,13 +59,13 @@ public class Compass {
         if (Minecraft.getMinecraft().thePlayer == null)
             return;
         preRender(sr);
-        float center = Render2DUtils.getFixedBounds()[0] / 2;
+        float center = GuiScale.getFixedBounds()[0] / 2;
         int count = 0;
         float yaaahhrewindTime = (Minecraft.getMinecraft().thePlayer.rotationYaw % 360) * 2 + 360 * 3;
         GL11.glPushMatrix();
         GL11.glEnable(3089);
-        int scaleFactor = Render2DUtils.fixScale();
-        Render2DUtils.doGlScissor(Render2DUtils.getFixedBounds()[0] / 2f - 100, 25, 200, 25, scaleFactor);
+        int scaleFactor = GuiScale.fixScale();
+        Scissor.apply(GuiScale.getFixedBounds()[0] / 2f - 100, 25, 200, 25, scaleFactor);
         for (Degree d : degrees) {
             float location = center + (count * 30) - yaaahhrewindTime;
             float completeLocation = d.type == 1 ? (location - FPSMaster.fontManager.s28.getStringWidth(d.text) / 2f)
@@ -169,7 +170,7 @@ public class Compass {
 
     public static int opacity(ScaledResolution sr, float offset) {
         int op = 0;
-        float offs = 255 - Math.abs(Render2DUtils.getFixedBounds()[0] / 2f - offset) * 1.8f;
+        float offs = 255 - Math.abs(GuiScale.getFixedBounds()[0] / 2f - offset) * 1.8f;
         Color c = new Color(255, 255, 255, (int) Math.min(Math.max(0, offs), 255));
         return c.getRGB();
     }
@@ -186,3 +187,6 @@ public class Compass {
     }
 
 }
+
+
+

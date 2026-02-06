@@ -27,3 +27,6 @@ public class MultipleItemSetting extends Setting<ArrayList<ItemStack>> {
     }
 
 }
+
+
+

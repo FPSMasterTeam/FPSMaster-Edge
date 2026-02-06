@@ -22,14 +22,13 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import top.fpsmaster.features.impl.interfaces.TabOverlay;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.Iterator;
 import java.util.List;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 @Mixin(GuiPlayerTabOverlay.class)
 public abstract class MixinGuiPlayerOverlay {
@@ -204,3 +203,6 @@ public abstract class MixinGuiPlayerOverlay {
 
 
 }
+
+
+

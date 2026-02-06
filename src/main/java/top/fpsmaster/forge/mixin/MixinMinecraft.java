@@ -1,5 +1,7 @@
 package top.fpsmaster.forge.mixin;
 
+import top.fpsmaster.utils.render.draw.Images;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.*;
@@ -29,7 +31,6 @@ import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventMouseClick;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import javax.annotation.Nullable;
 import java.awt.*;
@@ -135,11 +136,11 @@ public abstract class MixinMinecraft implements IMinecraft {
 
         Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), new Color(20, 20, 20).getRGB());
 
-        Render2DUtils.drawImage(new ResourceLocation("client/gui/logo.png"), sr.getScaledWidth() / 2f - 153 / 4f, sr.getScaledHeight() / 2f - 30, 153 / 2f, 67f, -1);
+        Images.draw(new ResourceLocation("client/gui/logo.png"), sr.getScaledWidth() / 2f - 153 / 4f, sr.getScaledHeight() / 2f - 30, 153 / 2f, 67f, -1);
 
 //        float width = 400;
 //        float height = 250;
-//        Render2DUtils.drawImage(new ResourceLocation("client/textures/ui/splash.png"), sr.getScaledWidth() / 2f - width / 2, sr.getScaledHeight() / 2f - height / 2, width, height, -1);
+//        Images.draw(new ResourceLocation("client/textures/ui/splash.png"), sr.getScaledWidth() / 2f - width / 2, sr.getScaledHeight() / 2f - height / 2, width, height, -1);
         GlStateManager.disableLighting();
         GlStateManager.disableFog();
         framebuffer.unbindFramebuffer();
@@ -266,3 +267,7 @@ public abstract class MixinMinecraft implements IMinecraft {
         return running;
     }
 }
+
+
+
+

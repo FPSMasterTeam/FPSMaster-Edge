@@ -29,3 +29,6 @@ public class CPSDisplayComponent extends Component {
         drawString(16, text, x, y + 2, CPSDisplay.textColor.getRGB());
     }
 }
+
+
+

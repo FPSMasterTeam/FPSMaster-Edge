@@ -17,15 +17,15 @@ public class FontManager {
     public UFontRenderer s40;
 
     public void load(){
-        s14 = new UFontRenderer("harmony_bold",14);
-        s16 = new UFontRenderer("harmony_bold",16);
-        s18 = new UFontRenderer("harmony_bold",18);
-        s20 = new UFontRenderer("harmony_bold",20);
-        s22 = new UFontRenderer("harmony_bold",22);
-        s24 = new UFontRenderer("harmony_bold",24);
-        s28 = new UFontRenderer("harmony_bold",28);
-        s36 = new UFontRenderer("harmony_bold",36);
-        s40 = new UFontRenderer("harmony_bold",40);
+        s14 = new UFontRenderer("NotoSansSC-Regular",14);
+        s16 = new UFontRenderer("NotoSansSC-Regular",16);
+        s18 = new UFontRenderer("NotoSansSC-Regular",18);
+        s20 = new UFontRenderer("NotoSansSC-Regular",20);
+        s22 = new UFontRenderer("NotoSansSC-Regular",22);
+        s24 = new UFontRenderer("NotoSansSC-Regular",24);
+        s28 = new UFontRenderer("NotoSansSC-Regular",28);
+        s36 = new UFontRenderer("NotoSansSC-Regular",36);
+        s40 = new UFontRenderer("NotoSansSC-Regular",40);
     }
 
     HashMap<Integer, UFontRenderer> fonts = new HashMap<>();
@@ -34,8 +34,11 @@ public class FontManager {
         if (fonts.containsKey(size)) {
             return fonts.get(size);
         }
-        UFontRenderer harmonyBold = new UFontRenderer("harmony_bold", size);
+        UFontRenderer harmonyBold = new UFontRenderer("NotoSansSC-Regular", size);
         fonts.put(size, harmonyBold);
         return harmonyBold;
     }
 }
+
+
+

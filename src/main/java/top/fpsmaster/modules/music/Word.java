@@ -11,3 +11,6 @@ public class Word {
         this.duration = duration;
     }
 }
+
+
+

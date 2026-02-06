@@ -17,3 +17,6 @@ public class BooleanSetting extends Setting<Boolean> {
         setValue(!getValue());
     }
 }
+
+
+

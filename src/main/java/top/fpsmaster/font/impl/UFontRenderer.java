@@ -5,7 +5,8 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.modules.client.GlobalTextFilter;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.utils.os.FileUtils;
+import top.fpsmaster.utils.io.FileUtils;
+import top.fpsmaster.utils.render.draw.Colors;
 
 import java.awt.*;
 import java.io.File;
@@ -13,6 +14,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 
 import static top.fpsmaster.utils.render.Render2DUtils.intToColor;
+import static top.fpsmaster.utils.render.state.Alpha.apply;
+import static top.fpsmaster.utils.render.draw.Colors.toColor;
+import top.fpsmaster.utils.render.state.Alpha;
 
 public class UFontRenderer extends FontRenderer {
     private final int FONT_HEIGHT = 8;
@@ -148,6 +152,7 @@ public class UFontRenderer extends FontRenderer {
      */
     @Override
     public int drawString(String text, float x, float y, int color, boolean dropShadow) {
+        color = apply(color);
         int i;
         if (dropShadow) {
             if (intToColor(color).getAlpha() > 50) {
@@ -187,3 +192,8 @@ public class UFontRenderer extends FontRenderer {
         return drawStringWithShadow(text, x, y, color);
     }
 }
+
+
+
+
+

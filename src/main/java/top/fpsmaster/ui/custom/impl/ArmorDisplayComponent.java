@@ -10,7 +10,7 @@ import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class ArmorDisplayComponent extends Component {
 
@@ -99,3 +99,6 @@ public class ArmorDisplayComponent extends Component {
         }
     }
 }
+
+
+

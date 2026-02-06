@@ -92,11 +92,6 @@ dependencies {
     shadowImpl("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
         isTransitive = false
     }
-    shadowImpl("party.iroiro.luajava:luajava:4.0.2") {
-        exclude("org.jetbrains", "annotations")
-    }
-    shadowImpl("party.iroiro.luajava:lua53-platform:4.0.2:natives-desktop")
-    shadowImpl("party.iroiro.luajava:lua53:4.0.2")
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
     shadowImpl("javazoom:jlayer:1.0.1") {
         isTransitive = false
@@ -120,14 +115,11 @@ dependencies {
     shadowImpl("net.sourceforge.jtransforms:jtransforms:2.4.0") {
         isTransitive = true
     }
-    implementation("com.github.FPSMasterTeam:JLuaParser:master-SNAPSHOT")
-    shadowImpl("com.github.FPSMasterTeam:JLuaParser:master-SNAPSHOT") {
-        isTransitive = true
-    }
     compileOnly("org.projectlombok:lombok:1.18.38")
     annotationProcessor("org.projectlombok:lombok:1.18.38")
     compileOnly("org.jetbrains:annotations:26.0.2")
     annotationProcessor("org.jetbrains:annotations:26.0.2")
+
 }
 
 // Tasks:

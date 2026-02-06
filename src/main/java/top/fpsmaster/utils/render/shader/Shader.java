@@ -3,7 +3,7 @@ package top.fpsmaster.utils.render.shader;
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.opengl.*;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -111,3 +111,5 @@ public abstract class Shader extends Utility {
         return program;
     }
 }
+
+

@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.optimizes.WavyCape;
-import top.fpsmaster.utils.render.PoseStack;
+import top.fpsmaster.utils.render.types.PoseStack;
 
 import javax.vecmath.Matrix4f;
 import javax.vecmath.Vector4f;
@@ -291,3 +291,5 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         return q;
     }
 }
+
+

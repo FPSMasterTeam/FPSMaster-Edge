@@ -1,8 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package top.fpsmaster.ui.mc;
 
 import com.google.common.base.Charsets;
@@ -27,7 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.render.draw.Hover;
 
 import java.awt.image.BufferedImage;
 import java.net.UnknownHostException;
@@ -166,7 +161,7 @@ public class ServerListEntry {
 //            this.owner.setHoveringText(s);
 //        }
 
-        if (Render2DUtils.isHovered(x + listWidth - text.getStringWidth(s1), y + 4, 10, 10, mouseX, mouseY)) {
+        if (Hover.is(x + listWidth - text.getStringWidth(s1), y + 4, 10, 10, mouseX, mouseY)) {
             text.drawString(s1, x + listWidth - text.getStringWidth(s1) + 12, y + 4, -1);
         }
 
@@ -259,3 +254,7 @@ public class ServerListEntry {
         return this.server;
     }
 }
+
+
+
+

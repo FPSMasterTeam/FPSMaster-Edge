@@ -1,5 +1,7 @@
 package top.fpsmaster.ui.custom.impl;
 
+import top.fpsmaster.utils.render.draw.Images;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -9,7 +11,7 @@ import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.minimap.XaeroMinimap;
 import top.fpsmaster.ui.minimap.animation.MinimapAnimation;
 import top.fpsmaster.ui.minimap.interfaces.InterfaceHandler;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.render.gui.GuiScale;
 
 import java.io.IOException;
 
@@ -29,7 +31,7 @@ public class MiniMapComponent extends Component {
     public void draw(float x, float y) {
         super.draw(x, y);
 
-        Render2DUtils.drawImage(
+        Images.draw(
                 new ResourceLocation("client/gui/minimapbg.png"),
                 x + width / 2 - 179 / 4f,
                 y + width / 2 - 179 / 4f,
@@ -53,6 +55,10 @@ public class MiniMapComponent extends Component {
         InterfaceHandler.drawInterfaces(width, height, partialTicks);
         MinimapAnimation.tick();
         GL11.glPopMatrix();
-        Render2DUtils.fixScale();
+        GuiScale.fixScale();
     }
 }
+
+
+
+

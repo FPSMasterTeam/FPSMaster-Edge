@@ -1,5 +1,7 @@
 package top.fpsmaster.features.impl.render;
 
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
@@ -14,7 +16,6 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
@@ -84,13 +85,13 @@ public class Crosshair extends Module {
         // Center dot
         if (dotValue) {
             if (outlineValue) {
-                Render2DUtils.drawRect(sr.getScaledWidth() / 2f - 1 - outlineWidth.getValue().floatValue(),
+                Rects.fill(sr.getScaledWidth() / 2f - 1 - outlineWidth.getValue().floatValue(),
                         sr.getScaledHeight() / 2f - 1 - outlineWidth.getValue().floatValue(),
                         2 + outlineWidth.getValue().floatValue() * 2,
                         2 + outlineWidth.getValue().floatValue() * 2,
                         outlineColor.getColor());
             }
-            Render2DUtils.drawRect(sr.getScaledWidth() / 2f - 1, sr.getScaledHeight() / 2f - 1, 2f, 2f, col);
+            Rects.fill(sr.getScaledWidth() / 2f - 1, sr.getScaledHeight() / 2f - 1, 2f, 2f, col);
         }
 
         GlStateManager.disableBlend();
@@ -98,8 +99,8 @@ public class Crosshair extends Module {
     }
 
     private void drawOutlineRect(float x, float y, float width, float height, float outlineWidth, Color color) {
-        Render2DUtils.drawRect(x - outlineWidth, y - outlineWidth, width + outlineWidth * 2, height + outlineWidth * 2, outlineColor.getColor());
-        Render2DUtils.drawRect(x, y, width, height, color);
+        Rects.fill(x - outlineWidth, y - outlineWidth, width + outlineWidth * 2, height + outlineWidth * 2, outlineColor.getColor());
+        Rects.fill(x, y, width, height, color);
     }
 
     private boolean isFriend(Object entity) {
@@ -134,3 +135,7 @@ public class Crosshair extends Module {
 
     public static boolean using = false;
 }
+
+
+
+

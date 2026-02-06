@@ -1,5 +1,8 @@
 package top.fpsmaster.ui.click.modules.impl;
 
+import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import org.lwjgl.input.Keyboard;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
@@ -8,7 +11,6 @@ import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.ui.click.modules.SettingRender;
 import top.fpsmaster.utils.math.animation.ColorAnimation;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 import java.util.Locale;
@@ -30,8 +32,8 @@ public class BindSettingRender extends SettingRender<BindSetting> {
         String keyName = Keyboard.getKeyName(setting.getValue());
         UFontRenderer s16b = FPSMaster.fontManager.s16;
         float width1 = 10 + s16b.getStringWidth(keyName);
-        if (Render2DUtils.isHovered(x + 15 + fw, y, width1, 14f, (int) mouseX, (int) mouseY)) {
-            Render2DUtils.drawOptimizedRoundedRect(
+        if (Hover.is(x + 15 + fw, y, width1, 14f, (int) mouseX, (int) mouseY)) {
+            Rects.rounded(
                 x + 14.5f + fw,
                 y - 0.5f,
                 width1 + 1,
@@ -39,7 +41,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
                 new Color(0,0,0,80)
             );
         }
-        Render2DUtils.drawOptimizedRoundedRect(x + 15 + fw, y, width1, 12f, colorAnimation.getColor());
+        Rects.rounded(x + 15 + fw, y, width1, 12f, colorAnimation.getColor());
         s16b.drawString(keyName, x + 18 + fw, y + 2, new Color(234, 234, 234).getRGB());
         if (MainPanel.bindLock.equals(setting.name)) {
             colorAnimation.base(new Color(255,255,255,80));
@@ -56,7 +58,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
         );
         String keyName = Keyboard.getKeyName(setting.getValue());
         UFontRenderer s16b = FPSMaster.fontManager.s16;
-        if (Render2DUtils.isHovered(
+        if (Hover.is(
                 x + 25 + fw,
                 y,
                 10f + s16b.getStringWidth(keyName),
@@ -78,3 +80,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
         }
     }
 }
+
+
+
+

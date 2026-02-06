@@ -1,6 +1,7 @@
 package top.fpsmaster.utils.math.animation;
 
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.render.draw.Colors;
+
 
 import java.awt.*;
 
@@ -54,10 +55,10 @@ public class ColorAnimation {
 
     public Color getColor() {
         return new Color(
-                Render2DUtils.limit(r.value),
-        Render2DUtils.limit(g.value),
-        Render2DUtils.limit(b.value),
-        Render2DUtils.limit(a.value)
+                Colors.clamp(r.value),
+        Colors.clamp(g.value),
+        Colors.clamp(b.value),
+        Colors.clamp(a.value)
         );
     }
 
@@ -83,3 +84,6 @@ public class ColorAnimation {
         a.value = AnimationUtils.base(a.value, color.getAlpha(), 0.1);
     }
 }
+
+
+

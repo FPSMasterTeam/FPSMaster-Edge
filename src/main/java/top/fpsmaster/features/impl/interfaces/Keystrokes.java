@@ -16,3 +16,5 @@ public class Keystrokes extends InterfaceModule {
         addSettings(fontShadow, betterFont, pressedColor, fontColor, pressedFontColor, spacing, bg, backgroundColor, rounded, roundRadius);
     }
 }
+
+

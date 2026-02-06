@@ -9,3 +9,6 @@ public class InventoryDisplay extends InterfaceModule {
         addSettings(backgroundColor, bg, rounded, roundRadius);
     }
 }
+
+
+

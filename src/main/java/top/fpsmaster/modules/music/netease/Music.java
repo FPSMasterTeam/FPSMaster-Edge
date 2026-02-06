@@ -7,8 +7,8 @@ import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.music.AbstractMusic;
 import top.fpsmaster.modules.music.MusicPlayer;
 import top.fpsmaster.modules.music.netease.deserialize.MusicWrapper;
-import top.fpsmaster.utils.os.FileUtils;
-import top.fpsmaster.utils.os.HttpRequest;
+import top.fpsmaster.utils.io.FileUtils;
+import top.fpsmaster.utils.io.HttpRequest;
 
 import java.io.File;
 
@@ -83,3 +83,6 @@ public class Music extends AbstractMusic {
         }
     }
 }
+
+
+

@@ -1,11 +1,12 @@
 package top.fpsmaster.ui.click.modules.impl;
 
+import top.fpsmaster.utils.render.draw.Hover;
+
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.TextSetting;
 import top.fpsmaster.ui.click.modules.SettingRender;
 import top.fpsmaster.ui.common.TextField;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 import java.util.Locale;
@@ -37,7 +38,7 @@ public class TextSettingRender extends SettingRender<TextSetting> {
 
     @Override
     public void mouseClick(float x, float y, float width, float height, float mouseX, float mouseY, int btn) {
-        if (Render2DUtils.isHovered(x, y, width, height, (int) mouseX, (int) mouseY)) {
+        if (Hover.is(x, y, width, height, (int) mouseX, (int) mouseY)) {
             inputBox.mouseClicked((int) mouseX, (int) mouseY, btn);
         } else {
             inputBox.setFocused(false);
@@ -50,3 +51,7 @@ public class TextSettingRender extends SettingRender<TextSetting> {
         setting.setValue(inputBox.getText());
     }
 }
+
+
+
+

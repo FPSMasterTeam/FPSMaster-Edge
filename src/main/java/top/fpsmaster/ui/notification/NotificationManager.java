@@ -1,7 +1,7 @@
 package top.fpsmaster.ui.notification;
 
 import org.lwjgl.opengl.GL11;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.render.gui.GuiScale;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -22,7 +22,7 @@ public class NotificationManager {
     // Draw all active notifications on the screen
     public static void drawNotifications() {
         GL11.glPushMatrix();
-        Render2DUtils.fixScale();
+        GuiScale.fixScale();
 
         float yPosition = 20f;
 
@@ -31,7 +31,7 @@ public class NotificationManager {
             notification.draw(0f, yPosition);
 
             // Remove notifications that are fully animated (i.e., animation value is 100)
-            if (notification.animation.end == 100.0 && notification.animation.value == 100.0) {
+            if (notification.isFinished()) {
                 notifications.remove(notification);
             }
 
@@ -46,3 +46,6 @@ public class NotificationManager {
         return notifications;
     }
 }
+
+
+

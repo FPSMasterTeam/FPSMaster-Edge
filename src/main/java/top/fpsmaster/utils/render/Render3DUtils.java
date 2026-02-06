@@ -4,7 +4,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.AxisAlignedBB;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 public class Render3DUtils extends Utility {
     private static void posBoundingBoxLeftHalf(AxisAlignedBB boundingBox, WorldRenderer bufferBuilder) {
@@ -95,3 +95,5 @@ public class Render3DUtils extends Utility {
         tessellator.draw();
     }
 }
+
+

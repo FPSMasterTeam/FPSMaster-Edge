@@ -1,8 +1,10 @@
 package top.fpsmaster.ui.common;
 
+import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.utils.math.animation.ColorAnimation;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
@@ -37,13 +39,13 @@ public class GuiButton {
         this.width = width;
         this.height = height;
 
-        if (Render2DUtils.isHovered(x, y, width, height, (int) mouseX, (int) mouseY)) {
+        if (Hover.is(x, y, width, height, (int) mouseX, (int) mouseY)) {
             btnColor.base(hoverColor);
         } else {
             btnColor.base(color);
         }
 
-        Render2DUtils.drawOptimizedRoundedRect(x, y, width, height, btnColor.getColor());
+        Rects.rounded(x, y, width, height, btnColor.getColor());
         FPSMaster.fontManager.s18.drawCenteredString(
                 FPSMaster.i18n.get(text),
                 x + width / 2,
@@ -53,8 +55,12 @@ public class GuiButton {
     }
 
     public void mouseClick(float mouseX, float mouseY, int btn) {
-        if (Render2DUtils.isHovered(x, y, width, height, (int) mouseX, (int) mouseY) && btn == 0) {
+        if (Hover.is(x, y, width, height, (int) mouseX, (int) mouseY) && btn == 0) {
             runnable.run();
         }
     }
 }
+
+
+
+

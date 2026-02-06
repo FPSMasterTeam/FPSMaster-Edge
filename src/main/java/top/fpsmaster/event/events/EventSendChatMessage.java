@@ -9,3 +9,6 @@ public class EventSendChatMessage extends CancelableEvent {
         this.msg = msg;
     }
 }
+
+
+

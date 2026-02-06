@@ -5,7 +5,7 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 public class NameProtect extends Module {
     private static boolean using = false;
@@ -48,3 +48,6 @@ public class NameProtect extends Module {
         }
     }
 }
+
+
+

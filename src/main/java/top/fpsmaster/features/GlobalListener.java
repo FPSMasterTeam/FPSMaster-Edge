@@ -17,11 +17,11 @@ import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.ui.notification.NotificationManager;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.render.StencilUtil;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class GlobalListener {
     public void init() {
@@ -91,3 +91,6 @@ public class GlobalListener {
     }
 
 }
+
+
+

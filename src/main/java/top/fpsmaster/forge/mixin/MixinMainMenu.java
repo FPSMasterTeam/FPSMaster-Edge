@@ -18,3 +18,6 @@ public class MixinMainMenu {
         Minecraft.getMinecraft().displayGuiScreen(new MainMenu());
     }
 }
+
+
+

@@ -13,7 +13,7 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class MoreParticles extends Module {
     private Entity target = null;
@@ -130,3 +130,6 @@ public class MoreParticles extends Module {
         }
     }
 }
+
+
+

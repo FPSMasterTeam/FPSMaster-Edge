@@ -24,7 +24,7 @@ import top.fpsmaster.features.impl.render.FireModifier;
 
 import java.awt.*;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 @Mixin(ItemRenderer.class)
 public abstract class MixinItemRenderer {
@@ -313,3 +313,6 @@ public abstract class MixinItemRenderer {
         RenderHelper.disableStandardItemLighting();
     }
 }
+
+
+

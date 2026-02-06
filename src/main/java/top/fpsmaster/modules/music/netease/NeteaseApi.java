@@ -3,8 +3,8 @@ package top.fpsmaster.modules.music.netease;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import top.fpsmaster.utils.os.CryptUtils;
-import top.fpsmaster.utils.os.HttpRequest;
+import top.fpsmaster.utils.crypto.CryptUtils;
+import top.fpsmaster.utils.io.HttpRequest;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -183,3 +183,6 @@ public class NeteaseApi {
         }
     }
 }
+
+
+

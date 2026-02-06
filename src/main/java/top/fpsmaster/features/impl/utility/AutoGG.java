@@ -13,7 +13,7 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.math.MathTimer;
 
 public class AutoGG extends Module {
@@ -87,3 +87,6 @@ public class AutoGG extends Module {
         }
     }
 }
+
+
+

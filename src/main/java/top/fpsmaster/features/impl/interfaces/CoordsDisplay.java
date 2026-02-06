@@ -16,3 +16,6 @@ public class CoordsDisplay extends InterfaceModule {
         addSettings(limitDisplay, limitDisplayY);
     }
 }
+
+
+

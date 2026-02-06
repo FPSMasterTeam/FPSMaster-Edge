@@ -6,7 +6,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemPotion;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 import java.util.List;
 
@@ -65,3 +65,5 @@ public class ItemsUtil {
         GlStateManager.popMatrix();
     }
 }
+
+

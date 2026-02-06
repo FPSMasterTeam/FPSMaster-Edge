@@ -1,16 +1,17 @@
 package top.fpsmaster.ui.custom.impl;
 
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.PlayerDisplay;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.ui.custom.Component;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class PlayerDisplayComponent extends Component {
 
@@ -32,8 +33,8 @@ public class PlayerDisplayComponent extends Component {
                 float hX = s16.getStringWidth(healthText);
                 float nX = s16.getStringWidth(entity.getDisplayName().getFormattedText());
 
-                Render2DUtils.drawOptimizedRoundedRect(x, y + i * 16, 10 + hX + nX, 14f, new Color(0, 0, 0, 60));
-                Render2DUtils.drawOptimizedRoundedRect(
+                Rects.rounded(x, y + i * 16, 10 + hX + nX, 14f, new Color(0, 0, 0, 60));
+                Rects.rounded(
                         x,
                         y + i * 16,
                         (10 + hX + nX) * ((EntityPlayer) entity).getHealth() / ((EntityPlayer) entity).getMaxHealth(),
@@ -61,3 +62,7 @@ public class PlayerDisplayComponent extends Component {
         height = (18 * i);
     }
 }
+
+
+
+

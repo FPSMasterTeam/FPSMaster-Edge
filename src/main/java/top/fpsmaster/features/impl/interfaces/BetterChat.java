@@ -14,7 +14,7 @@ import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class BetterChat extends InterfaceModule {
     public static boolean using = false;
@@ -108,3 +108,6 @@ public class BetterChat extends InterfaceModule {
         }
     }
 }
+
+
+

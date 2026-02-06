@@ -3,7 +3,7 @@ package top.fpsmaster.ui.custom.impl;
 import top.fpsmaster.features.impl.utility.Sprint;
 import top.fpsmaster.ui.custom.Component;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class SprintComponent extends Component{
     public SprintComponent() {
@@ -31,3 +31,6 @@ public class SprintComponent extends Component{
         this.height = 12;
     }
 }
+
+
+

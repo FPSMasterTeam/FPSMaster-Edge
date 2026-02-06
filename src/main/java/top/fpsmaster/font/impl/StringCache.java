@@ -1,5 +1,7 @@
 package top.fpsmaster.font.impl;
 
+import top.fpsmaster.utils.render.draw.Colors;
+
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -10,6 +12,7 @@ import net.minecraft.client.renderer.WorldRenderer;
 
 import java.awt.*;
 import java.awt.font.GlyphVector;
+import java.awt.image.BufferedImage;
 import java.lang.ref.WeakReference;
 import java.text.Bidi;
 import java.util.ArrayList;
@@ -421,9 +424,9 @@ public class StringCache {
         
         GlStateManager.disableBlend();
         
-        // 文字位置整数化，如果有小数可能会出现一些显示问题 不知道为什么
-        startX = (float) (Math.round(startX * 10) / 10.0);
-        startY = (float) (Math.round(startY * 10) / 10.0);
+        // 文字位置像素对齐，避免纹理采样模糊
+        startX = Math.round(startX);
+        startY = Math.round(startY);
 
         // 检查无效参数
         if (str.isEmpty()) {
@@ -495,9 +498,9 @@ public class StringCache {
              */
             char c = str.charAt(glyph.stringIndex);
             if (c >= '0' && c <= '9') {
-                int oldWidth = texture.width;
+                int oldWidth = texture.width - (texture.offsetX * 2);
                 texture = digitGlyphs[fontStyle][c - '0'].texture;
-                int newWidth = texture.width;
+                int newWidth = texture.width - (texture.offsetX * 2);
                 glyphX += (oldWidth - newWidth) >> 1;
             }
             if (texture.height > this.height) {
@@ -517,10 +520,10 @@ public class StringCache {
 
 
             /* The divide by 2.0F is needed to align with the scaled GUI coordinate system; startX/startY are already scaled */
-            float x1 = startX + (glyphX) / 2.0F;
-            float x2 = startX + (glyphX + texture.width) / 2.0F;
-            float y1 = startY + (glyph.y) / 2.0F + this.height / 2f;
-            float y2 = startY + (glyph.y + texture.height) / 2.0F + this.height / 2f;
+            float x1 = startX + (glyphX - texture.offsetX) / 2.0F;
+            float x2 = startX + (glyphX - texture.offsetX + texture.width) / 2.0F;
+            float y1 = startY + (glyph.y - texture.offsetY) / 2.0F + this.height / 2f;
+            float y2 = startY + (glyph.y - texture.offsetY + texture.height) / 2.0F + this.height / 2f;
 
             int a = color >> 24 & 0xff;
             int r = color >> 16 & 0xff;
@@ -1163,3 +1166,7 @@ public class StringCache {
         return advance;
     }
 }
+
+
+
+

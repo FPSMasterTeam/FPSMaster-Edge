@@ -15,3 +15,6 @@ public class PingDisplay extends InterfaceModule {
 
     public static ColorSetting textColor = new ColorSetting("TextColor", new Color(255, 255, 255));
 }
+
+
+

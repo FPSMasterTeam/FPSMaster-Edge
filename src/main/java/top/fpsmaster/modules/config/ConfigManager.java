@@ -14,7 +14,7 @@ import top.fpsmaster.features.settings.impl.*;
 import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
-import top.fpsmaster.utils.os.FileUtils;
+import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.world.ItemsUtil;
 
 import java.util.*;
@@ -178,3 +178,6 @@ public class ConfigManager {
         FPSMaster.moduleManager.getModule(ItemPhysics.class).set(true);
     }
 }
+
+
+

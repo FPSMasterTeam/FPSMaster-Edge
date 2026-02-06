@@ -8,7 +8,7 @@ import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 import static top.fpsmaster.utils.render.shader.GradientUtils.interpolateColorC;
 
 public class RoundedUtil {
@@ -111,3 +111,5 @@ public class RoundedUtil {
         shader.setUniformf("radius", radius * sr.getScaleFactor());
     }
 }
+
+

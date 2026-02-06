@@ -10,7 +10,7 @@ import top.fpsmaster.features.settings.impl.ColorSetting;
 import java.awt.*;
 import java.util.List;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class ReachDisplay extends InterfaceModule {
     public static double reach = 0.0;
@@ -32,3 +32,6 @@ public class ReachDisplay extends InterfaceModule {
         }
     }
 }
+
+
+

@@ -1,5 +1,7 @@
 package top.fpsmaster.features.impl.utility;
 
+import top.fpsmaster.utils.render.draw.Images;
+
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
@@ -12,9 +14,8 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
-import top.fpsmaster.utils.render.Render2DUtils;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class LevelTag extends Module {
 
@@ -109,7 +110,7 @@ public class LevelTag extends Module {
             tessellator.draw();
             GlStateManager.enableTexture2D();
             if (isMate) {
-                Render2DUtils.drawImage(new ResourceLocation("client/textures/mate.png"), -fontRenderer.getStringWidth(str) / 2f - 4f, i - 1, 8, 8, -1, true);
+                Images.draw(new ResourceLocation("client/textures/mate.png"), -fontRenderer.getStringWidth(str) / 2f - 4f, i - 1, 8, 8, -1, true);
                 fontRenderer.drawString(str, -fontRenderer.getStringWidth(str) / 2 + 6, i, 553648127);
             }else{
                 fontRenderer.drawString(str, -fontRenderer.getStringWidth(str) / 2, i, 553648127);
@@ -144,3 +145,7 @@ public class LevelTag extends Module {
         return using;
     }
 }
+
+
+
+

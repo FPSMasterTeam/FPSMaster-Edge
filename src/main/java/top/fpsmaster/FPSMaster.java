@@ -11,12 +11,11 @@ import top.fpsmaster.modules.client.thread.ClientThreadPool;
 import top.fpsmaster.modules.config.ConfigManager;
 import top.fpsmaster.modules.i18n.Language;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.modules.lua.LuaManager;
 import top.fpsmaster.modules.music.MusicPlayer;
 import top.fpsmaster.modules.music.netease.NeteaseApi;
 import top.fpsmaster.ui.custom.ComponentsManager;
-import top.fpsmaster.utils.GitInfo;
-import top.fpsmaster.utils.os.FileUtils;
+import top.fpsmaster.utils.git.GitInfo;
+import top.fpsmaster.utils.io.FileUtils;
 
 import java.io.File;
 
@@ -24,9 +23,7 @@ public class FPSMaster {
 
     public boolean hasOptifine;
 
-    public static final String phase = "pre-release";
-
-    public static final String EDITION = Constants.EDITION;
+    public static final String EDITION = "Edge";
     public static final String COPYRIGHT = "Copyright ©2020-2025  FPSMaster Team  All Rights Reserved.";
 
     public static FPSMaster INSTANCE = new FPSMaster();
@@ -40,7 +37,6 @@ public class FPSMaster {
     public static GlobalListener submitter = new GlobalListener();
     public static CommandManager commandManager = new CommandManager();
     public static ComponentsManager componentsManager = new ComponentsManager();
-    public static LuaManager luaManager = new LuaManager();
     public static Language i18n = new Language();
     public static ClientThreadPool async = new ClientThreadPool(100);
     public static boolean development = false;
@@ -58,16 +54,11 @@ public class FPSMaster {
 
     public static String getClientTitle() {
         checkDevelopment();
-        return CLIENT_NAME + " Client (" + phase + ") " + Constants.VERSION + " (" + GitInfo.getBranch() + " - " + GitInfo.getCommitIdAbbrev() + ")" + (development ? " - dev" : "");
+        return CLIENT_NAME + " " + EDITION + " (" + GitInfo.getBranch() + " - " + GitInfo.getCommitIdAbbrev() + ")" + (development ? " - dev" : "");
     }
 
     private void initializeFonts() {
         ClientLogger.info("Initializing Fonts...");
-        // add more fonts and add fallback font
-        File file = new File(FileUtils.fonts, "harmony_bold.ttf");
-        if (!file.exists()) {
-            ClientLogger.warn("Missing font file: " + file.getAbsolutePath());
-        }
 
         fontManager.load();
     }
@@ -125,9 +116,6 @@ public class FPSMaster {
         submitter.init();
     }
 
-    private void initializePlugins() throws FileException {
-        luaManager.init();
-    }
 
     private void checkOptifine() {
         try {
@@ -151,7 +139,6 @@ public class FPSMaster {
             initializeComponents();
             initializeConfigures();
             initializeCommands();
-            initializePlugins();
             initializeLang();
             checkUpdate();
             checkOptifine();
@@ -170,3 +157,6 @@ public class FPSMaster {
         }
     }
 }
+
+
+

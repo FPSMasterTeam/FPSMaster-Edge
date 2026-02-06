@@ -21,3 +21,6 @@ public class ModsList extends InterfaceModule {
         addSettings(showLogo, text, english, color, rainbow, betterFont, spacing, backgroundColor, bg);
     }
 }
+
+
+

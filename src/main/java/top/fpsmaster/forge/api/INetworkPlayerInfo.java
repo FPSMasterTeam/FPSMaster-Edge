@@ -11,3 +11,6 @@ public interface INetworkPlayerInfo {
     void setCape(ResourceLocation cape);
     void setType(String skinType);
 }
+
+
+

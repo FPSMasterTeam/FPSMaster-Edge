@@ -50,3 +50,5 @@ abstract class AbstractHash {
             return this.hash;
         }
     }
+
+

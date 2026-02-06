@@ -18,7 +18,6 @@ import top.fpsmaster.features.impl.render.FreeLook;
 import top.fpsmaster.forge.api.IRenderManager;
 import top.fpsmaster.features.impl.optimizes.CheckEntity;
 import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.modules.dev.DevMode;
 
 @Mixin(value = RenderManager.class, priority = 999)
 @Implements(@Interface(iface = IRenderManager.class, prefix = "fpsmaster$"))
@@ -50,11 +49,7 @@ public class MixinRenderManager implements IRenderManager {
     public void preRender(Entity entity, double x, double y, double z, float entityYaw, float partialTicks, boolean p_147939_10_, CallbackInfoReturnable<Boolean> cir) {
         if (Performance.using && entity != Minecraft.getMinecraft().thePlayer) {
             if (Performance.entitiesOptimize.getValue()) {
-                if (Performance.isVisible(new CheckEntity(entity))) {
-                    if (DevMode.INSTACE.dev) {
-                        Performance.addCulledEntity(entity);
-                    }
-                } else {
+                if (!Performance.isVisible(new CheckEntity(entity))) {
                     cir.setReturnValue(false);
                 }
             }
@@ -122,3 +117,6 @@ public class MixinRenderManager implements IRenderManager {
     }
 
 }
+
+
+

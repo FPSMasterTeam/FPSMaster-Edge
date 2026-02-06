@@ -4,14 +4,13 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventSendChatMessage;
-import top.fpsmaster.features.command.impl.Dev;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class CommandManager {
 
@@ -19,7 +18,6 @@ public class CommandManager {
 
     public void init() {
         // add commands
-        commands.add(new Dev());
         EventDispatcher.registerListener(this);
     }
 
@@ -57,3 +55,6 @@ public class CommandManager {
         Utility.sendClientMessage(FPSMaster.i18n.get("command.notfound"));
     }
 }
+
+
+

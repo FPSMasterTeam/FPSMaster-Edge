@@ -15,7 +15,7 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class OldAnimations extends Module {
 
@@ -116,3 +116,6 @@ public class OldAnimations extends Module {
         return mc.thePlayer.isPotionActive(Potion.digSpeed) ? 6 - (1 + mc.thePlayer.getActivePotionEffect(Potion.digSpeed).getAmplifier()) : (mc.thePlayer.isPotionActive(Potion.digSlowdown) ? 6 + (1 + mc.thePlayer.getActivePotionEffect(Potion.digSlowdown).getAmplifier()) * 2 : 6);
     }
 }
+
+
+

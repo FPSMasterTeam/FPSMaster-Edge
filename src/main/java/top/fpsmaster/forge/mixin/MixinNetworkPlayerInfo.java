@@ -46,3 +46,6 @@ public class MixinNetworkPlayerInfo implements INetworkPlayerInfo {
         this.skinType = skinType;
     }
 }
+
+
+

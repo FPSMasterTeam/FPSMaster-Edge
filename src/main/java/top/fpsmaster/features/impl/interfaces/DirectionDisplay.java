@@ -6,7 +6,7 @@ import top.fpsmaster.event.events.EventRender2D;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.ui.Compass;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 
 public class DirectionDisplay extends Module {
 
@@ -22,3 +22,6 @@ public class DirectionDisplay extends Module {
         compass.draw(scaledResolution);
     }
 }
+
+
+

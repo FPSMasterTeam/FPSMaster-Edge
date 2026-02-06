@@ -1,6 +1,7 @@
 package top.fpsmaster.features.settings.impl.utils;
 
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.render.draw.Colors;
+
 
 import java.awt.*;
 
@@ -17,9 +18,9 @@ public class CustomColor {
         this.brightness = brightness;
         this.saturation = saturation;
         this.alpha = alpha;
-        this.color = Render2DUtils.reAlpha(
+        this.color = Colors.alpha(
             Color.getHSBColor(hue, saturation, brightness),
-            Render2DUtils.limit((alpha * 255))
+            Colors.clamp((alpha * 255))
         );
     }
 
@@ -46,9 +47,9 @@ public class CustomColor {
         this.saturation = saturation;
         this.brightness = brightness;
         this.alpha = alpha;
-        this.color = Render2DUtils.reAlpha(
+        this.color = Colors.alpha(
             Color.getHSBColor(hue, saturation, brightness),
-            Render2DUtils.limit((alpha * 255))
+            Colors.clamp((alpha * 255))
         );
     }
 
@@ -62,3 +63,7 @@ public class CustomColor {
         this.alpha = color.getAlpha() / 255f;
     }
 }
+
+
+
+

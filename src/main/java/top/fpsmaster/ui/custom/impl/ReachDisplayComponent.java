@@ -20,3 +20,6 @@ public class ReachDisplayComponent extends Component {
         drawString(18, s, x, y + 2, ReachDisplay.textColor.getRGB());
     }
 }
+
+
+

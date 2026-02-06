@@ -13,7 +13,7 @@ import top.fpsmaster.features.impl.optimizes.FixedInventory;
 
 import java.util.Iterator;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 @Mixin(InventoryEffectRenderer.class)
 public class MixinInventoryEffectRenderer extends MixinGuiContainer{
@@ -46,3 +46,6 @@ public class MixinInventoryEffectRenderer extends MixinGuiContainer{
         }
     }
 }
+
+
+

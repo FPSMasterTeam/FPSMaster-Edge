@@ -10,11 +10,9 @@ import top.fpsmaster.features.impl.interfaces.*;
 import top.fpsmaster.features.impl.optimizes.*;
 import top.fpsmaster.features.impl.render.*;
 import top.fpsmaster.features.impl.utility.*;
-import top.fpsmaster.modules.dev.DevMode;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.ui.click.modules.ModuleRenderer;
-import top.fpsmaster.ui.devspace.DevSpace;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,9 +47,6 @@ public class ModuleManager {
 //        if (e.key == Keyboard.KEY_INSERT) {
 //            Minecraft.getMinecraft().displayGuiScreen(new CosmeticScreen());
 //        }
-        if (e.key == Keyboard.KEY_INSERT && DevMode.INSTACE.dev) {
-            Minecraft.getMinecraft().displayGuiScreen(new DevSpace());
-        }
     }
 
     public void addModule(Module module) {
@@ -130,3 +125,6 @@ public class ModuleManager {
         }
     }
 }
+
+
+

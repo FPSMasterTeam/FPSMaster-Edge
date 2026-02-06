@@ -4,15 +4,15 @@ import net.minecraft.client.renderer.ThreadDownloadImageData;
 import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.modules.music.netease.Music;
 import top.fpsmaster.modules.music.netease.deserialize.MusicWrapper;
-import top.fpsmaster.utils.awt.KMeansUtil;
-import top.fpsmaster.utils.os.HttpRequest;
+import top.fpsmaster.utils.imaging.KMeansUtil;
+import top.fpsmaster.utils.io.HttpRequest;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class Track {
     Long id;
@@ -121,3 +121,6 @@ public class Track {
         this.picUrl = picUrl;
     }
 }
+
+
+

@@ -31,3 +31,6 @@ public class NoHurtCam extends Module {
         NoHurtCam.using = using;
     }
 }
+
+
+

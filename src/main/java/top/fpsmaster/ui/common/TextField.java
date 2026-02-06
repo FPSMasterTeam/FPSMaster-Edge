@@ -1,5 +1,7 @@
 package top.fpsmaster.ui.common;
 
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
@@ -9,7 +11,6 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ChatAllowedCharacters;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.utils.math.MathUtils;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -437,7 +438,7 @@ public class TextField extends Gui {
             this.height = height;
             this.xPosition = x;
             this.yPosition = y;
-            Render2DUtils.drawOptimizedRoundedRect(this.xPosition, this.yPosition, this.width, this.height, backGroundColor);
+            Rects.rounded(this.xPosition, this.yPosition, this.width, this.height, backGroundColor);
             int i = fontColor;
             int j = this.cursorPosition - this.lineScrollOffset;
             int k = this.selectionEnd - this.lineScrollOffset;
@@ -483,7 +484,7 @@ public class TextField extends Gui {
 
             if (isFocus) {
                 if (isSub) {
-                    Render2DUtils.drawRect(k1, i1 - 1, 1, this.fontRendererInstance.getHeight(), -3092272);
+                    Rects.fill(k1, i1 - 1, 1, this.fontRendererInstance.getHeight(), -3092272);
                 } else {
                     this.fontRendererInstance.drawString("_", k1, i1, i);
                 }
@@ -654,3 +655,7 @@ public class TextField extends Gui {
         this.visible = p_146189_1_;
     }
 }
+
+
+
+

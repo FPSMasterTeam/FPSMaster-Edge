@@ -1,5 +1,7 @@
 package top.fpsmaster.forge.mixin;
 
+import top.fpsmaster.utils.render.draw.Images;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -12,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.render.gui.GuiScale;
 
 @Mixin(GuiContainer.class)
 public class MixinGuiContainer {
@@ -30,13 +32,17 @@ public class MixinGuiContainer {
     public void logo(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
         GL11.glPushMatrix();
-        Render2DUtils.fixScale();
+        GuiScale.fixScale();
         if (ClientSettings.fixedScale.getValue()) {
-            Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/logo.png"), 0, (float) sr.getScaledHeight() * sr.getScaleFactor() / 2 - 32, 163 / 2f, 32, -1);
+            Images.draw(new ResourceLocation("client/gui/settings/logo.png"), 0, (float) sr.getScaledHeight() * sr.getScaleFactor() / 2 - 32, 163 / 2f, 32, -1);
         } else {
-            Render2DUtils.drawImage(new ResourceLocation("client/gui/settings/logo.png"), 0, (float) sr.getScaledHeight() - 32, 163 / 2f, 32, -1);
+            Images.draw(new ResourceLocation("client/gui/settings/logo.png"), 0, (float) sr.getScaledHeight() - 32, 163 / 2f, 32, -1);
         }
         GL11.glPopMatrix();
     }
 
 }
+
+
+
+

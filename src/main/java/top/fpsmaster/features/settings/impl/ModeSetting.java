@@ -42,3 +42,6 @@ public class ModeSetting extends Setting<Integer> {
         return modes.length;
     }
 }
+
+
+

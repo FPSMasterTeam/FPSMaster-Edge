@@ -1,17 +1,18 @@
 package top.fpsmaster.utils.render.shader;
 
+import top.fpsmaster.utils.render.state.Blend;
+
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.shader.Framebuffer;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL14;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class KawaseBloom {
 
@@ -94,11 +95,11 @@ public class KawaseBloom {
         mc.getFramebuffer().bindFramebuffer(false);
         glBindTexture(GL_TEXTURE_2D, framebufferList.get(0).framebufferTexture);
         setAlphaLimit(0);
-        Render2DUtils.beginBlend();
+        Blend.begin();
         ShaderUtil.drawQuads();
         GlStateManager.bindTexture(0);
         setAlphaLimit(0);
-        Render2DUtils.endBlend();
+        Blend.end();
     }
 
     private static void renderFBO(Framebuffer framebuffer, int framebufferTexture, ShaderUtil shader, float offset) {
@@ -135,3 +136,6 @@ public class KawaseBloom {
     }
 
 }
+
+
+

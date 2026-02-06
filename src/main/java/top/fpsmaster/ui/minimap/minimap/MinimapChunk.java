@@ -15,3 +15,6 @@ public class MinimapChunk
         this.chunkGrid = ((X & 0x1) == (Z & 0x1));
     }
 }
+
+
+

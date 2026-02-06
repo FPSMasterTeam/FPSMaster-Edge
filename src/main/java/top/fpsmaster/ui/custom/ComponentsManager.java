@@ -5,8 +5,8 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.ui.custom.impl.*;
-import top.fpsmaster.utils.Utility;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.core.Utility;
+import top.fpsmaster.utils.render.gui.GuiScale;
 
 import java.util.ArrayList;
 
@@ -60,7 +60,7 @@ public class ComponentsManager {
             mouseX = mouseX * scaleFactor / 2;
             mouseY = mouseY * scaleFactor / 2;
 
-            Render2DUtils.fixScale();
+            GuiScale.fixScale();
         }
 
         // Draw all components that should be displayed
@@ -79,3 +79,6 @@ public class ComponentsManager {
         GL11.glPopMatrix();
     }
 }
+
+
+

@@ -3,8 +3,8 @@ package top.fpsmaster.utils.render.shader;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.utils.OptifineUtil;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.system.OptifineUtil;
+import top.fpsmaster.utils.core.Utility;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -134,3 +134,5 @@ public class ShaderUtil extends Utility {
         return shader;
     }
 }
+
+

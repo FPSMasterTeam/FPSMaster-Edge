@@ -11,3 +11,6 @@ public interface IMinecraft {
     void arch$setRightClickDelayTimer(int c);
     boolean arch$getRunning();
 }
+
+
+

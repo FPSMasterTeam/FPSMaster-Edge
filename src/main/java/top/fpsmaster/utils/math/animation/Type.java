@@ -12,3 +12,5 @@ public enum Type {
     EASE_OUT_BACK,
     EASE_OUT_QUINT
 }
+
+

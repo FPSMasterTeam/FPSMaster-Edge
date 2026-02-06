@@ -22,3 +22,5 @@ public class HideIndicator extends InterfaceModule {
         using = false;
     }
 }
+
+

@@ -31,3 +31,6 @@ public class MixinParticleManager {
         this.particleEmitters.add(new EntityParticleEmitter(Minecraft.getMinecraft().theWorld, entityIn, particleTypes));
     }
 }
+
+
+

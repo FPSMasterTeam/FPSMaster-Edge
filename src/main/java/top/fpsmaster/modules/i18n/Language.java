@@ -1,7 +1,7 @@
 package top.fpsmaster.modules.i18n;
 
 import top.fpsmaster.exception.FileException;
-import top.fpsmaster.utils.os.FileUtils;
+import top.fpsmaster.utils.io.FileUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,3 +46,6 @@ public class Language {
         prompts.put(name, content);
     }
 }
+
+
+

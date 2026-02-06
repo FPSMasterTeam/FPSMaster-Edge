@@ -40,7 +40,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 public class Minimap {
     public Interface screen;
@@ -965,3 +965,6 @@ public class Minimap {
         }
     }
 }
+
+
+

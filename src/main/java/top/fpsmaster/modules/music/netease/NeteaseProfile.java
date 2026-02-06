@@ -11,3 +11,6 @@ public class NeteaseProfile {
         this.avatarUrl = avatarUrl;
     }
 }
+
+
+

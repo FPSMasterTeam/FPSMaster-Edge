@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.utility.LevelTag;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 @Mixin(Render.class)
 public abstract class MixinRender {
@@ -52,3 +52,6 @@ public abstract class MixinRender {
     }
 
 }
+
+
+

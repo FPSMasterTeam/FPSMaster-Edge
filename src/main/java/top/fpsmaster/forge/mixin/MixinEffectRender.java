@@ -41,3 +41,6 @@ public class MixinEffectRender {
         this.fxLayers[i][j].add(effect);
     }
 }
+
+
+

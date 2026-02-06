@@ -197,10 +197,12 @@ public class PotionMetadata {
         splashPotionMetadataMap.put(Potion.weakness.id, splashWeaknessMap);
 
         Map<Boolean, Integer> splashLeapingMap = new HashMap<>();
-        leapingMap.put(false, SPLASH_LEAPING_I);
-        leapingMap.put(true, SPLASH_LEAPING_II);
+        splashLeapingMap.put(false, SPLASH_LEAPING_I);
+        splashLeapingMap.put(true, SPLASH_LEAPING_II);
         splashPotionMetadataMap.put(Potion.jump.id, splashLeapingMap);
     }
 
 
 }
+
+

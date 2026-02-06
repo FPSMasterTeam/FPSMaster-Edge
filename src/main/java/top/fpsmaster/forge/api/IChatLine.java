@@ -4,3 +4,6 @@ public interface IChatLine {
     void setAnimation(float a);
     float getAnimation();
 }
+
+
+

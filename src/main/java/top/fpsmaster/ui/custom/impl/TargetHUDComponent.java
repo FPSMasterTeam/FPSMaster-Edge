@@ -1,13 +1,16 @@
 package top.fpsmaster.ui.custom.impl;
 
+import net.minecraft.client.entity.AbstractClientPlayer;
+import top.fpsmaster.utils.render.draw.Images;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.entity.player.EntityPlayer;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.TargetDisplay;
 import top.fpsmaster.ui.custom.Component;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.math.animation.ColorAnimation;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
@@ -62,10 +65,10 @@ public class TargetHUDComponent extends Component {
 
             // Draw elements if animation is greater than 1
             if (animation > 0.05) {
-                Render2DUtils.drawOptimizedRoundedRect(x, y, width, height, new Color(0, 0, 0, (int) animation * 80));
-                Render2DUtils.drawOptimizedRoundedRect(x, y, healthPer * width, height, colorAnimation.getColor());
+                Rects.rounded(x, y, width, height, new Color(0, 0, 0, (int) animation * 80));
+                Rects.rounded(x, y, healthPer * width, height, colorAnimation.getColor());
                 FPSMaster.fontManager.s16.drawStringWithShadow(name, x + 27, y + 5, -1);
-                Render2DUtils.drawPlayerHead(target1, x + 5, y + 5, 20, 20);
+                Images.playerHead((AbstractClientPlayer) target1, x + 5, y + 5, 20, 20);
             }
         } else if (TargetDisplay.targetHUD.getValue() == 1) {
             width = (50 + FPSMaster.fontManager.s16.getStringWidth(name));
@@ -82,11 +85,15 @@ public class TargetHUDComponent extends Component {
 
             // Draw elements if animation is greater than 1
             if (animation > 0.05) {
-                Render2DUtils.drawRoundedRectImage(x, y, width, height, 8, new Color(0, 0, 0, (int) (animation * 120)));
-                Render2DUtils.drawRoundedRectImage(x + 10, y + 30, healthPer * (width - 20), 4, 2, colorAnimation.getColor());
+                Rects.roundedImage(x, y, width, height, 8, new Color(0, 0, 0, (int) (animation * 120)));
+                Rects.roundedImage(x + 10, y + 30, healthPer * (width - 20), 4, 2, colorAnimation.getColor());
                 FPSMaster.fontManager.s18.drawStringWithShadow(name, x + 24, y + 8, new Color(255, 255, 255, (int) (animation * 255)).getRGB());
-                Render2DUtils.drawPlayerHead(target1, x + 10, y + 8, 12, 12);
+                Images.playerHead((AbstractClientPlayer) target1, x + 10, y + 8, 12, 12);
             }
         }
     }
 }
+
+
+
+

@@ -9,3 +9,6 @@ public interface WorldRendererAccessor {
     @Accessor("isDrawing")
     boolean isDrawing();
 }
+
+
+

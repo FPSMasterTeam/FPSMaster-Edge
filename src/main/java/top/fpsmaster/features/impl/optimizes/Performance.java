@@ -1,13 +1,11 @@
 package top.fpsmaster.features.impl.optimizes;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 
-import java.util.ArrayList;
 
 public class Performance extends Module {
 
@@ -30,15 +28,6 @@ public class Performance extends Module {
     public Performance() {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, entitiesOptimize, fastLoad, batchModelRendering, lowAnimationTick, entityLimit, fpsLimit, particlesLimit, fontOptimize, staticParticleColor,limitChunks,chunkUpdateLimit);
-    }
-
-
-    static ArrayList<Integer> culledEntities = new ArrayList<>();
-
-    public static void addCulledEntity(Entity entity) {
-        if (!culledEntities.contains(entity.hashCode())) {
-            culledEntities.add(entity.hashCode());
-        }
     }
 
 
@@ -74,3 +63,6 @@ public class Performance extends Module {
         return true;
     }
 }
+
+
+

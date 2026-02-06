@@ -31,3 +31,6 @@ public class ColorSetting extends Setting<CustomColor> {
         return getValue().getColor();
     }
 }
+
+
+

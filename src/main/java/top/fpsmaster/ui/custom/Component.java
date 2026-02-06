@@ -1,5 +1,8 @@
 package top.fpsmaster.ui.custom;
 
+import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
@@ -11,9 +14,8 @@ import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.font.impl.UFontRenderer;
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.ui.click.MainPanel;
-import top.fpsmaster.utils.Utility;
+import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
-import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
 
@@ -93,16 +95,16 @@ public class Component {
             float scaledHeight = height * scale;
             boolean drag = FPSMaster.componentsManager.dragLock.equals(mod.name);
 
-            alpha = (float) ((Render2DUtils.isHovered(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) ?
+            alpha = (float) ((Hover.is(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) ?
                     AnimationUtils.base(alpha, 1f, 0.2f) : AnimationUtils.base(alpha, 0.0f, 0.2f));
 
-            Render2DUtils.drawRect(rX - 2, rY - 2, scaledWidth + 4, scaledHeight + 4, new Color(0, 0, 0, (int) (alpha * 80)));
+            Rects.fill(rX - 2, rY - 2, scaledWidth + 4, scaledHeight + 4, new Color(0, 0, 0, (int) (alpha * 80)));
             draw(rX, rY);
             GL11.glColor4f(1, 1, 1, 1);
             if (!Mouse.isButtonDown(0)) {
                 FPSMaster.componentsManager.dragLock = "";
             }
-            if (Render2DUtils.isHovered(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) {
+            if (Hover.is(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) {
                 if (!MainPanel.dragLock.equals("null"))
                     return;
                 if (allowScale) {
@@ -206,9 +208,9 @@ public class Component {
 
         if (mod.bg.getValue()) {
             if (mod.rounded.getValue()) {
-                Render2DUtils.drawRoundedRectImage(x, y, scaledWidth, scaledHeight, mod.roundRadius.getValue().intValue(), color);
+                Rects.roundedImage(x, y, scaledWidth, scaledHeight, mod.roundRadius.getValue().intValue(), color);
             } else {
-                Render2DUtils.drawRect(x, y, scaledWidth, scaledHeight, color);
+                Rects.fill(x, y, scaledWidth, scaledHeight, color);
             }
         }
     }
@@ -248,3 +250,7 @@ public class Component {
         return mod.betterFont.getValue() ? font.getHeight() : Minecraft.getMinecraft().fontRendererObj.FONT_HEIGHT;
     }
 }
+
+
+
+

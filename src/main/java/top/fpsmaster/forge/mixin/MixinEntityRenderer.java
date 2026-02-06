@@ -40,7 +40,7 @@ import top.fpsmaster.utils.math.MathUtils;
 
 import java.util.List;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 @Mixin(EntityRenderer.class)
 public abstract class MixinEntityRenderer {
@@ -391,3 +391,6 @@ public abstract class MixinEntityRenderer {
     }
 
 }
+
+
+

@@ -5,3 +5,5 @@ public class StringHash extends AbstractHash {
             super(text, red, green, blue, alpha, shadow);
         }
     }
+
+

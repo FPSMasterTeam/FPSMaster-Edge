@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.utility.SoundModifier;
 
-import static top.fpsmaster.utils.Utility.mc;
+import static top.fpsmaster.utils.core.Utility.mc;
 
 @Mixin(WorldClient.class)
 public class WorldClientMixin {
@@ -46,3 +46,5 @@ public class WorldClientMixin {
 //        }
 //    }
 }
+
+

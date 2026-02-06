@@ -30,3 +30,6 @@ public class FullBright extends Module {
         super.onDisable();
     }
 }
+
+
+

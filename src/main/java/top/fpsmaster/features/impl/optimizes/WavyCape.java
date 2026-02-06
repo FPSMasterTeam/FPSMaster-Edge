@@ -9,3 +9,6 @@ public class WavyCape extends Module {
         super("WavyCape", Category.RENDER);
     }
 }
+
+
+

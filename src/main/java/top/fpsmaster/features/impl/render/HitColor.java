@@ -44,3 +44,6 @@ public class HitColor extends Module {
         return color.getColor().getAlpha() / 255f;
     }
 }
+
+
+

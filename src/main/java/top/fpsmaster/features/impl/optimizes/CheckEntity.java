@@ -61,3 +61,6 @@ public class CheckEntity {
         isLastCullingVisible = lastCullingVisible;
     }
 }
+
+
+

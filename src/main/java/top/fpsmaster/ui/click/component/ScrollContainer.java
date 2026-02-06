@@ -1,9 +1,13 @@
 package top.fpsmaster.ui.click.component;
 
+import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Rects;
+
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.ui.click.MainPanel;
-import top.fpsmaster.utils.math.animation.AnimationUtils;
-import top.fpsmaster.utils.render.Render2DUtils;
+import top.fpsmaster.utils.math.anim.AnimClock;
+import top.fpsmaster.utils.math.anim.Animator;
+import top.fpsmaster.utils.math.anim.Easings;
 
 import java.awt.*;
 
@@ -11,12 +15,16 @@ public class ScrollContainer {
     private float wheel = 0f;
     private float wheel_anim = 0f;
     private float height = 0f;
+    private final Animator wheelAnimator = new Animator();
+    private final AnimClock animClock = new AnimClock();
+    private float lastTarget = Float.NaN;
 
     private double scrollExpand = 0.0;
     private float scrollStart = 0f;
     private boolean isScrolling = false;
 
     public void draw(float x, float y, float width, float height, int mouseX, int mouseY, Runnable runnable) {
+        double dt = animClock.tick();
         runnable.run();
 
         // if the scroll bar needs to be render
@@ -27,7 +35,7 @@ public class ScrollContainer {
             float scrollPercent = (getScroll() / (this.height - height));
             float sY = y - scrollPercent * (height - sHeight);
             float sX = x + width + 1 - (float) scrollExpand;
-            Render2DUtils.drawOptimizedRoundedRect(
+            Rects.rounded(
                 sX,
                 sY,
                 1f + (float) scrollExpand,
@@ -35,7 +43,7 @@ public class ScrollContainer {
                 1,
                 new Color(255, 255, 255, 100).getRGB()
             );
-            if (Render2DUtils.isHovered(
+            if (Hover.is(
                     sX - 1,
                     sY,
                     2f + (float) scrollExpand,
@@ -66,7 +74,7 @@ public class ScrollContainer {
             wheel_anim = 0f;
         }
 
-        if (Render2DUtils.isHovered(x,y,width,height, mouseX, mouseY)) {
+        if (Hover.is(x,y,width,height, mouseX, mouseY)) {
             if (this.height > height) {
                 // mods list scroll
                 int mouseDWheel = Mouse.getDWheel();
@@ -80,7 +88,12 @@ public class ScrollContainer {
         }
         float maxUp = this.height - height;
         wheel_anim = Math.min(Math.max(wheel_anim, -maxUp), 0f);
-        wheel = (float) AnimationUtils.base(wheel, wheel_anim, 0.2);
+        if (Float.isNaN(lastTarget) || wheel_anim != lastTarget) {
+            wheelAnimator.animateTo(wheel_anim, 0.12f, Easings.QUAD_OUT);
+            lastTarget = wheel_anim;
+        }
+        wheelAnimator.update(dt);
+        wheel = (float) wheelAnimator.get();
     }
 
     public void setHeight(float height) {
@@ -99,3 +112,7 @@ public class ScrollContainer {
         return wheel_anim;
     }
 }
+
+
+
+
