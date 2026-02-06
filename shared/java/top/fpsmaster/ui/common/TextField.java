@@ -4,12 +4,12 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ChatAllowedCharacters;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.utils.math.MathUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
-import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -521,7 +521,7 @@ public class TextField extends Gui {
         }
 
         Tessellator tessellator = Tessellator.getInstance();
-        WrapperBufferBuilder bufferbuilder = new WrapperBufferBuilder(tessellator);
+        WorldRenderer bufferbuilder = tessellator.getWorldRenderer();
         GlStateManager.color(0.0F, 0.0F, 255.0F, 255.0F);
         GlStateManager.disableTexture2D();
         GlStateManager.enableColorLogic();

@@ -5,11 +5,12 @@ import net.minecraft.entity.player.EntityPlayer;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.PlayerDisplay;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import java.awt.*;
+
+import static top.fpsmaster.utils.Utility.mc;
 
 public class PlayerDisplayComponent extends Component {
 
@@ -23,9 +24,9 @@ public class PlayerDisplayComponent extends Component {
         width = 40f;
         int i = 0;
 
-        for (Entity entity : Wrappers.world().getWorld().loadedEntityList) {
+        for (Entity entity : mc.theWorld.loadedEntityList) {
             if (entity instanceof EntityPlayer && !entity.isInvisible()) {
-                if (i > 10 || entity == Wrappers.minecraft().getPlayer()) continue;
+                if (i > 10 || entity == mc.thePlayer) continue;
                 UFontRenderer s16 = FPSMaster.fontManager.s16;
                 String healthText = (int) (((EntityPlayer) entity).getHealth() * 10 / 10) + " hp";
                 float hX = s16.getStringWidth(healthText);

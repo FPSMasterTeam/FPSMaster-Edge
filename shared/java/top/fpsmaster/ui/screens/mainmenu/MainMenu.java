@@ -2,21 +2,17 @@ package top.fpsmaster.ui.screens.mainmenu;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiOptions;
+import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.mc.GuiMultiplayer;
-import top.fpsmaster.ui.screens.account.GuiWaiting;
-import top.fpsmaster.ui.screens.oobe.GuiLogin;
 import top.fpsmaster.utils.math.animation.Animation;
 import top.fpsmaster.utils.math.animation.Type;
 import top.fpsmaster.utils.render.Render2DUtils;
 import top.fpsmaster.utils.render.ScaledGuiScreen;
-import top.fpsmaster.wrapper.TextFormattingProvider;
+import net.minecraft.util.EnumChatFormatting;
 
 import java.awt.*;
-import java.net.URI;
 
 public class MainMenu extends ScaledGuiScreen {
     private static int firstBoot = 0;
@@ -27,15 +23,14 @@ public class MainMenu extends ScaledGuiScreen {
     private final MenuButton options;
     private final MenuButton exit;
 
-    private String info = "Failed to get version update";
-    private boolean needUpdate = false;
+    private String info = "离线模式";
 
     private static final Animation startAnimation = new Animation();
     private static final Animation backgroundAnimation = new Animation();
 
 
     public MainMenu() {
-        singlePlayer = new MenuButton("mainmenu.single", () -> Wrappers.mainMenu().showSinglePlayer(this));
+        singlePlayer = new MenuButton("mainmenu.single", () -> mc.displayGuiScreen(new GuiSelectWorld(this)));
         multiPlayer = new MenuButton("mainmenu.multi", () -> mc.displayGuiScreen(new GuiMultiplayer()));
         options = new MenuButton("mainmenu.settings", () -> mc.displayGuiScreen(new GuiOptions(this, mc.gameSettings)));
         exit = new MenuButton("X", () -> mc.shutdown());
@@ -43,7 +38,7 @@ public class MainMenu extends ScaledGuiScreen {
 
     @Override
     public void initGui() {
-        Wrappers.mainMenu().initGui();
+        super.initGui();
         if (firstBoot == 0) {
             // Check Java Version
             String version = System.getProperty("java.version");
@@ -82,14 +77,7 @@ public class MainMenu extends ScaledGuiScreen {
 
         // Display user info and avatar
         float stringWidth = FPSMaster.fontManager.s16.getStringWidth(mc.getSession().getUsername());
-        if (Render2DUtils.isHovered(10f, 10f, 80f, 20f, mouseX, mouseY)) {
-            Render2DUtils.drawOptimizedRoundedRect(10f, 10f, 30 + stringWidth, 20f, new Color(0, 0, 0, 100));
-            if (Mouse.isButtonDown(0)) {
-                Minecraft.getMinecraft().displayGuiScreen(new GuiWaiting());
-            }
-        } else {
-            Render2DUtils.drawOptimizedRoundedRect(10f, 10f, 30 + stringWidth, 20f, new Color(0, 0, 0, 60));
-        }
+        Render2DUtils.drawOptimizedRoundedRect(10f, 10f, 30 + stringWidth, 20f, new Color(0, 0, 0, 60));
         Render2DUtils.drawImage(new ResourceLocation("client/gui/screen/avatar.png"), 14f, 15f, 10f, 10f, -1);
         FPSMaster.fontManager.s16.drawString(mc.getSession().getUsername(), 28, 16, Color.WHITE.getRGB());
 
@@ -112,20 +100,9 @@ public class MainMenu extends ScaledGuiScreen {
         FPSMaster.fontManager.s16.drawString("Copyright Mojang AB. Do not distribute!", guiWidth - w - 4, guiHeight - 14, Color.WHITE.getRGB());
 
         // Display welcome message
-        String welcome = FPSMaster.INSTANCE.loggedIn ? TextFormattingProvider.getGreen() + String.format(FPSMaster.i18n.get("mainmenu.welcome"), FPSMaster.accountManager.getUsername()) : TextFormattingProvider.getRed().toString() + TextFormattingProvider.getBold().toString() + FPSMaster.i18n.get("mainmenu.notlogin");
+        String welcome = EnumChatFormatting.GREEN + FPSMaster.i18n.get("mainmenu.single");
         FPSMaster.fontManager.s16.drawString(welcome, 4, guiHeight - 52, Color.WHITE.getRGB());
 
-        // Version info
-        if (FPSMaster.updateFailed) {
-            info = TextFormattingProvider.getGreen() + FPSMaster.i18n.get("mainmenu.failed");
-        } else {
-            if (FPSMaster.isLatest) {
-                info = TextFormattingProvider.getGreen() + FPSMaster.i18n.get("mainmenu.latest");
-            } else {
-                info = TextFormattingProvider.getRed().toString() + TextFormattingProvider.getBold().toString() + FPSMaster.i18n.get("mainmenu.notlatest");
-                needUpdate = true;
-            }
-        }
         FPSMaster.fontManager.s16.drawString(info, 4, guiHeight - 40, Color.WHITE.getRGB());
 
         // Render client info
@@ -147,27 +124,12 @@ public class MainMenu extends ScaledGuiScreen {
         options.mouseClick(mouseX, mouseY, mouseButton);
         exit.mouseClick(mouseX, mouseY, mouseButton);
 
-        float uw = FPSMaster.fontManager.s16.getStringWidth(info);
-        float nw = FPSMaster.fontManager.s16.getStringWidth(info);
-
         if (mouseButton == 0) {
             if (Render2DUtils.isHovered(guiWidth - 22, 13, 12, 12, mouseX, mouseY)) {
                 if (FPSMaster.configManager.configure.getOrCreate("background", "new").equals("classic")) {
                     FPSMaster.configManager.configure.set("background", "new");
                 } else {
                     FPSMaster.configManager.configure.set("background", "classic");
-                }
-            }
-
-            if (Render2DUtils.isHovered(4f, guiHeight - 52, nw, 14f, mouseX, mouseY)) {
-                Minecraft.getMinecraft().displayGuiScreen(new GuiLogin());
-            }
-
-            if (Render2DUtils.isHovered(4f, guiHeight - 40, uw, 14f, mouseX, mouseY) && needUpdate) {
-                try {
-                    Desktop.getDesktop().browse(new URI("https://fpsmaster.top"));
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
         }

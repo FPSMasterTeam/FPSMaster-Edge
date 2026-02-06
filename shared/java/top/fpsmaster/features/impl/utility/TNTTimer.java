@@ -7,8 +7,8 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.api.Wrappers;
-import top.fpsmaster.wrapper.entities.EntityTNTPrimedUtil;
+import top.fpsmaster.forge.api.IMinecraft;
+import top.fpsmaster.forge.api.IRenderManager;
 
 import java.awt.*;
 import java.text.DecimalFormat;
@@ -46,10 +46,11 @@ public class TNTTimer extends Module {
         GlStateManager.enableBlend();
         GL11.glBlendFunc(770, 771);
         GL11.glDisable(3553);
-        float partialTicks = Wrappers.timer().getRenderPartialTicks();
-        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - Wrappers.renderManager().renderPosX();
-        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks - Wrappers.renderManager().renderPosY();
-        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks - Wrappers.renderManager().renderPosZ();
+        float partialTicks = ((IMinecraft) mc).arch$getTimer().renderPartialTicks;
+        IRenderManager renderManager = (IRenderManager) mc.getRenderManager();
+        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - renderManager.renderPosX();
+        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks - renderManager.renderPosY();
+        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks - renderManager.renderPosZ();
         float scale = 0.065f;
         GlStateManager.translate(x, y + entity.height + 0.5f - entity.height / 2.0f, z);
         GL11.glNormal3f(0.0f, 1.0f, 0.0f);
@@ -72,20 +73,20 @@ public class TNTTimer extends Module {
     }
 
     private static void drawTime(EntityTNTPrimed entity) {
-        float width = Wrappers.minecraft().getFontRenderer().getStringWidth("0.00") / 2.0f + 6.0f;
+        float width = Minecraft.getMinecraft().fontRendererObj.getStringWidth("0.00") / 2.0f + 6.0f;
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
         GlStateManager.disableLighting();
         DecimalFormat df = new DecimalFormat("0.00");
         Color color = new Color(255, 255, 255);
-        float time = (float) (EntityTNTPrimedUtil.getFuse(entity) / 20.0 + duration.getValue().doubleValue() - 4);
+        float time = (float) (entity.fuse / 20.0 + duration.getValue().doubleValue() - 4);
         if (time < 2.5) {
             color = new Color(255, 255, 0);
         }
         if (time < 1.0) {
             color = new Color(255, 0, 0);
         }
-        Wrappers.minecraft().getFontRenderer().drawStringWithShadow(df.format(time), -width + 5, -20f, color.getRGB());
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(df.format(time), -width + 5, -20f, color.getRGB());
         GlStateManager.enableLighting();
         GlStateManager.enableBlend();
         GlStateManager.enableDepth();

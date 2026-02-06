@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.interfaces;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -12,8 +13,8 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
-import top.fpsmaster.api.MinecraftAPI;
-import top.fpsmaster.api.Wrappers;
+import top.fpsmaster.forge.api.IMinecraft;
+import top.fpsmaster.forge.api.IRenderManager;
 
 import java.awt.*;
 
@@ -55,9 +56,12 @@ public class TargetDisplay extends InterfaceModule {
         if (shade) GL11.glShadeModel(GL11.GL_SMOOTH);
         GlStateManager.disableCull();
         GL11.glBegin(GL11.GL_TRIANGLE_STRIP);
-        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * MinecraftAPI.render().getPartialTicks() - MinecraftAPI.render().getRenderManager().getRenderPosX();
-        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * MinecraftAPI.render().getPartialTicks() - MinecraftAPI.render().getRenderManager().getRenderPosY() + Math.sin(System.currentTimeMillis() / 2E+2) + 1;
-        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * MinecraftAPI.render().getPartialTicks() - MinecraftAPI.render().getRenderManager().getRenderPosZ();
+        Minecraft mc = Minecraft.getMinecraft();
+        float partialTicks = ((IMinecraft) mc).arch$getTimer().renderPartialTicks;
+        IRenderManager renderManager = (IRenderManager) mc.getRenderManager();
+        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - renderManager.renderPosX();
+        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks - renderManager.renderPosY() + Math.sin(System.currentTimeMillis() / 2E+2) + 1;
+        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks - renderManager.renderPosZ();
         Color c;
         GL11.glColor4f(1f, 0f, 0f, 0f);
         float i = 0f;

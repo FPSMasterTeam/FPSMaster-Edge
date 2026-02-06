@@ -6,7 +6,6 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.wrapper.mods.WrapperPerformance;
 
 import java.util.ArrayList;
 
@@ -64,7 +63,7 @@ public class Performance extends Module {
     }
 
     public static boolean isVisible(CheckEntity entity) {
-        return WrapperPerformance.isVisible(entity);
+        return true;
     }
 
     public static boolean isVisible(
@@ -72,6 +71,6 @@ public class Performance extends Module {
             double minX, double minY, double minZ,
             double maxX, double maxY, double maxZ,
             double cameraX, double cameraY, double cameraZ) {
-        return WrapperPerformance.isVisible(world, minX, minY, minZ, maxX, maxY, maxZ, cameraX, cameraY, cameraZ);
+        return true;
     }
 }

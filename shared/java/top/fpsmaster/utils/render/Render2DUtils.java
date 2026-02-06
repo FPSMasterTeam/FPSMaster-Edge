@@ -6,6 +6,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.ThreadDownloadImageData;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -16,7 +17,6 @@ import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL20;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.awt.AWTUtils;
@@ -27,7 +27,6 @@ import top.fpsmaster.utils.os.OSUtil;
 import top.fpsmaster.utils.render.shader.GLSLSandboxShader;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
 import top.fpsmaster.utils.render.shader.RoundedUtil;
-import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
 
 import java.awt.*;
 import java.io.File;
@@ -178,7 +177,7 @@ public class Render2DUtils extends Utility {
         float f = 1.0F / textureWidth;
         float f1 = 1.0F / textureHeight;
         Tessellator tessellator = Tessellator.getInstance();
-        WrapperBufferBuilder bufferbuilder = new WrapperBufferBuilder(tessellator);
+        WorldRenderer bufferbuilder = tessellator.getWorldRenderer();
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
         bufferbuilder.pos(x, y + height, 0.0D).tex(u * f, (v + height) * f1).endVertex();
         bufferbuilder.pos(x + width, y + height, 0.0D).tex((u + width) * f, (v + height) * f1).endVertex();
@@ -348,7 +347,7 @@ public class Render2DUtils extends Utility {
                 GL11.glEnable(GL11.GL_ALPHA_TEST);
                 Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(26, 59, 109, 60));
             } else {
-                Wrappers.mainMenu().renderSkybox(mouseX, mouseY, partialTicks, guiWidth, guiHeight, zLevel);
+                Render2DUtils.drawRect(0f, 0f, guiWidth, guiHeight, new Color(0, 0, 0, 255));
             }
         }
     }

@@ -5,7 +5,7 @@ import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.api.Wrappers;
+import top.fpsmaster.utils.Utility;
 
 public class NameProtect extends Module {
     private static boolean using = false;
@@ -32,14 +32,14 @@ public class NameProtect extends Module {
 
     @Subscribe
     public void onTick(EventTick e) {
-        if (Wrappers.minecraft().getPlayer() != null) {
-            playerName = Wrappers.minecraft().getPlayer().getName();
+        if (Utility.mc.thePlayer != null) {
+            playerName = Utility.mc.thePlayer.getName();
             replacement = name.getValue().replace("&", "§");
         }
     }
 
     public static String filter(String s) {
-        if (using && Wrappers.minecraft().getPlayer() != null) {
+        if (using && Utility.mc.thePlayer != null) {
             if (playerName == null) return s;
             if (replacement == null) return s;
             return s.replaceAll(playerName, replacement);

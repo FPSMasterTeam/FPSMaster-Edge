@@ -8,11 +8,12 @@ import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.PotionDisplay;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.Utility;
 
 import java.awt.*;
+
+import static top.fpsmaster.utils.Utility.mc;
 
 public class PotionDisplayComponent extends Component {
 
@@ -29,7 +30,7 @@ public class PotionDisplayComponent extends Component {
         float dY = y - mod.spacing.getValue().intValue();
         GlStateManager.pushMatrix();
         int index = 0;
-        for (PotionEffect effect : Wrappers.minecraft().getPlayer().getActivePotionEffects()) {
+        for (PotionEffect effect : mc.thePlayer.getActivePotionEffects()) {
             String title = I18n.format(effect.getEffectName()) + " lv." + (effect.getAmplifier() + 1);
             String duration = (effect.getDuration() / 20 / 60) + "min" + effect.getDuration() / 20 % 60 + "s";
             float width = Math.max(getStringWidth(18, title), getStringWidth(16, duration)) + 36;

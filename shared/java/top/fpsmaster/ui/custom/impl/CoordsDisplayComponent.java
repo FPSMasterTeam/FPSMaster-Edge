@@ -3,9 +3,10 @@ package top.fpsmaster.ui.custom.impl;
 import org.jetbrains.annotations.NotNull;
 import top.fpsmaster.features.impl.interfaces.CoordsDisplay;
 import top.fpsmaster.features.impl.interfaces.FPSDisplay;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
-import top.fpsmaster.wrapper.TextFormattingProvider;
+import net.minecraft.util.EnumChatFormatting;
+
+import static top.fpsmaster.utils.Utility.mc;
 
 public class CoordsDisplayComponent extends Component {
 
@@ -18,18 +19,18 @@ public class CoordsDisplayComponent extends Component {
     public void draw(float x, float y) {
         super.draw(x, y);
         String s = String.format("X:%d Y:%d Z:%d",
-                (int) Wrappers.minecraft().getPlayer().posX,
-                (int) Wrappers.minecraft().getPlayer().posY,
-                (int) Wrappers.minecraft().getPlayer().posZ);
+                (int) mc.thePlayer.posX,
+                (int) mc.thePlayer.posY,
+                (int) mc.thePlayer.posZ);
 
         if (((CoordsDisplay) mod).limitDisplay.getValue()) {
             String yStr = getString();
 
             s = String.format("X:%d Y:%d(%s) Z:%d", 
-                    (int) Wrappers.minecraft().getPlayer().posX, 
-                    (int) Wrappers.minecraft().getPlayer().posY, 
+                    (int) mc.thePlayer.posX, 
+                    (int) mc.thePlayer.posY, 
                     yStr, 
-                    (int) Wrappers.minecraft().getPlayer().posZ);
+                    (int) mc.thePlayer.posZ);
         }
 
         width = getStringWidth(18, s) + 4;
@@ -40,16 +41,16 @@ public class CoordsDisplayComponent extends Component {
     }
 
     private @NotNull String getString() {
-        int restHeight = ((CoordsDisplay) mod).limitDisplayY.getValue().intValue() - (int) Wrappers.minecraft().getPlayer().posY;
+        int restHeight = ((CoordsDisplay) mod).limitDisplayY.getValue().intValue() - (int) mc.thePlayer.posY;
         String yStr;
 
         // color
         if (restHeight < 5) {
-            yStr = TextFormattingProvider.getRed() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
+            yStr = EnumChatFormatting.RED + String.valueOf(restHeight) + EnumChatFormatting.RESET;
         } else if (restHeight < 10) {
-            yStr = TextFormattingProvider.getYellow() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
+            yStr = EnumChatFormatting.YELLOW + String.valueOf(restHeight) + EnumChatFormatting.RESET;
         } else {
-            yStr = TextFormattingProvider.getGreen() + String.valueOf(restHeight) + TextFormattingProvider.getReset();
+            yStr = EnumChatFormatting.GREEN + String.valueOf(restHeight) + EnumChatFormatting.RESET;
         }
         return yStr;
     }

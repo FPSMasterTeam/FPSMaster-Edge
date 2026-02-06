@@ -5,7 +5,6 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.*;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.notification.NotificationManager;
 
@@ -64,7 +63,7 @@ public class Module {
             if (state && !isEnabled) {
                 isEnabled = true;
                 onEnable();
-                if (Minecraft.getMinecraft() != null && Wrappers.minecraft().getPlayer() != null) {
+                if (Minecraft.getMinecraft() != null && Minecraft.getMinecraft().thePlayer != null) {
                     NotificationManager.addNotification(
                             FPSMaster.i18n.get("notification.module.enable"),
                             String.format(
@@ -77,7 +76,7 @@ public class Module {
             } else if (!state && isEnabled){
                 isEnabled = false;
                 onDisable();
-                if (Minecraft.getMinecraft() != null && Wrappers.minecraft().getPlayer() != null) {
+                if (Minecraft.getMinecraft() != null && Minecraft.getMinecraft().thePlayer != null) {
                     NotificationManager.addNotification(
                             FPSMaster.i18n.get("notification.module.disable"),
                             String.format(

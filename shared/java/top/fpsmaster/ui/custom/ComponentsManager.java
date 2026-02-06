@@ -21,14 +21,12 @@ public class ComponentsManager {
     public void init() {
         components.add(new FPSDisplayComponent());
         components.add(new ArmorDisplayComponent());
-        components.add(new MusicComponent());
         components.add(new ScoreboardComponent());
         components.add(new PotionDisplayComponent());
         components.add(new CPSDisplayComponent());
         components.add(new KeystrokesComponent());
         components.add(new ReachDisplayComponent());
         components.add(new ComboDisplayComponent());
-        components.add(new LyricsComponent());
         components.add(new InventoryDisplayComponent());
         components.add(new TargetHUDComponent());
         components.add(new PlayerDisplayComponent());

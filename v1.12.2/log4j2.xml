@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
-    <!-- Filter out Hypixel scoreboard and sound errors -->
-    <RegexFilter regex="Error executing task.*|Unable to play unknown soundEvent.*" onMatch="DENY" onMismatch="NEUTRAL"/>
-</Configuration>

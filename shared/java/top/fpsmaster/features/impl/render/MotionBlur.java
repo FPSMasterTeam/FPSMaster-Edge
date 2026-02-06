@@ -6,9 +6,11 @@ import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.Shader;
+import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
@@ -18,11 +20,8 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.forge.api.IShaderGroup;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.OptifineUtil;
 import top.fpsmaster.utils.Utility;
-import top.fpsmaster.wrapper.renderEngine.bufferbuilder.WrapperBufferBuilder;
 
 import java.util.List;
 
@@ -67,7 +66,7 @@ public class MotionBlur extends Module {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, filter);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, filter);
         Tessellator tessellator = Tessellator.getInstance();
-        WrapperBufferBuilder worldrenderer = new WrapperBufferBuilder(tessellator);
+        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
         worldrenderer.begin(7, DefaultVertexFormats.POSITION_TEX);
         worldrenderer.pos(x, y + height, 0.0).tex(uMin, vMax).endVertex();
         worldrenderer.pos(x + width, y + height, 0.0).tex(uMax, vMax).endVertex();
@@ -80,7 +79,7 @@ public class MotionBlur extends Module {
 
     @Subscribe
     public void renderOverlay(EventMotionBlur event) {
-        if (Wrappers.minecraft().getWorld() == null)
+        if (mc.theWorld == null)
             return;
 
         if (mode.isMode("Old")) {
@@ -97,10 +96,16 @@ public class MotionBlur extends Module {
                 mc.entityRenderer.loadShader(new ResourceLocation("shaders/post/motionblur_core.json"));
             }
             float strength = 0.7f + multiplier.getValue().floatValue() / 100.0f * 3.0f - 0.01f;
-            IShaderGroup shaderGroup = (IShaderGroup) mc.entityRenderer.getShaderGroup();
+            ShaderGroup shaderGroup = mc.entityRenderer.getShaderGroup();
             if (shaderGroup == null)
                 return;
-            List<Shader> listShaders = shaderGroup.getListShaders();
+            List<Shader> listShaders = null;
+            try {
+                java.lang.reflect.Field field = ShaderGroup.class.getDeclaredField("listShaders");
+                field.setAccessible(true);
+                listShaders = (List<Shader>) field.get(shaderGroup);
+            } catch (NoSuchFieldException | IllegalAccessException ignored) {
+            }
             if (listShaders == null)
                 return;
             listShaders.forEach(it -> {

@@ -1,11 +1,16 @@
 package top.fpsmaster.features.impl.render;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.AxisAlignedBB;
+import org.lwjgl.opengl.GL11;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.ColorSetting;
-import top.fpsmaster.wrapper.mods.WrapperHitboxes;
+import top.fpsmaster.forge.api.IRenderManager;
+import top.fpsmaster.utils.render.Render3DUtils;
 
 import java.awt.*;
 
@@ -31,6 +36,36 @@ public class Hitboxes extends Module {
 
     @Subscribe
     public void onRender(EventRender3D event) {
-        WrapperHitboxes.render(event, color);
+        if (!using) {
+            return;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null) {
+            return;
+        }
+        GL11.glPushMatrix();
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glLineWidth(1.0f);
+        Color outline = color.getColor();
+        GL11.glColor4f(
+                outline.getRed() / 255f,
+                outline.getGreen() / 255f,
+                outline.getBlue() / 255f,
+                outline.getAlpha() / 255f
+        );
+        IRenderManager renderManager = (IRenderManager) mc.getRenderManager();
+        for (Entity entity : mc.theWorld.loadedEntityList) {
+            if (entity == mc.thePlayer) {
+                continue;
+            }
+            AxisAlignedBB bb = entity.getEntityBoundingBox()
+                    .offset(-renderManager.renderPosX(), -renderManager.renderPosY(), -renderManager.renderPosZ());
+            Render3DUtils.drawBoundingBoxOutline(bb);
+        }
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glPopMatrix();
     }
 }

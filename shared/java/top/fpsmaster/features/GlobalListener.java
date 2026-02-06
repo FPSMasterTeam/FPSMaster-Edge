@@ -1,17 +1,14 @@
 package top.fpsmaster.features;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.event.ClickEvent;
 import net.minecraft.event.HoverEvent;
 import net.minecraft.network.play.client.C01PacketChatMessage;
 import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
-import org.java_websocket.enums.ReadyState;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
@@ -19,24 +16,10 @@ import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
-import top.fpsmaster.api.MinecraftAPI;
-import top.fpsmaster.api.Wrappers;
-import top.fpsmaster.api.provider.gui.IGuiNewChatProvider;
-import top.fpsmaster.modules.account.AccountManager;
-import top.fpsmaster.modules.account.Cosmetic;
-import top.fpsmaster.modules.client.ClientUser;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.render.StencilUtil;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
-import top.fpsmaster.websocket.client.WsClient;
-
-import java.net.URISyntaxException;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static top.fpsmaster.utils.Utility.mc;
 
@@ -62,15 +45,10 @@ public class GlobalListener {
     }
 
 
-    PlayerInformation playerInformation = null;
-
-
-    Map<UUID, NetworkPlayerInfo> playerInfos = new ConcurrentHashMap<>();
     Thread tickThread;
-    Thread accThread;
 
     @Subscribe
-    public void onTick(EventTick e) throws URISyntaxException {
+    public void onTick(EventTick e) {
         if (tickThread == null || !tickThread.isAlive()) {
             tickThread = new Thread(() -> {
                 try {
@@ -86,111 +64,11 @@ public class GlobalListener {
 //                        throw new RuntimeException(ex);
 //                    }
 //                }
-                if (MinecraftAPI.client().getMinecraft() != null && MinecraftAPI.world().getWorld() != null) {
+                if (mc != null && mc.theWorld != null) {
                     Utility.flush();
                 }
             });
             tickThread.start();
-        }
-
-
-        if (accThread == null || !accThread.isAlive()) {
-            accThread = new Thread(() -> {
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-                if (FPSMaster.INSTANCE.loggedIn) {
-                    if (FPSMaster.INSTANCE.wsClient == null) {
-                        try {
-                            FPSMaster.INSTANCE.wsClient = WsClient.start("wss://service.fpsmaster.top/");
-                        } catch (URISyntaxException ex) {
-                            throw new RuntimeException(ex);
-                        }
-                        Utility.sendClientDebug("尝试连接");
-                    } else if (FPSMaster.INSTANCE.wsClient.isClosed() || FPSMaster.INSTANCE.wsClient.getReadyState() != ReadyState.OPEN) {
-                        FPSMaster.INSTANCE.wsClient.close();
-                        FPSMaster.INSTANCE.wsClient.connect();
-                        playerInformation = null;
-                        playerInfos.clear();
-                        Utility.sendClientDebug("尝试重连");
-                    } else {
-                        FPSMaster.INSTANCE.wsClient.sendPing();
-                    }
-                    if (mc.getNetHandler() == null)
-                        return;
-                    if (mc.getNetHandler().getPlayerInfoMap() == null)
-                        return;
-
-                    Set<UUID> currentPlayers = mc.getNetHandler().getPlayerInfoMap().stream()
-                            .map(info -> info.getGameProfile().getId())
-                            .collect(Collectors.toSet());
-
-                    playerInfos.keySet().retainAll(currentPlayers);
-
-
-                    if (FPSMaster.INSTANCE.wsClient.getReadyState() != ReadyState.OPEN)
-                        return;
-
-                    for (NetworkPlayerInfo info : mc.getNetHandler().getPlayerInfoMap()) {
-                        UUID uuid = info.getGameProfile().getId();
-                        if (!playerInfos.containsKey(uuid)) {
-                            playerInfos.put(uuid, info);
-                            FPSMaster.INSTANCE.wsClient.fetchPlayer(uuid.toString(), info.getGameProfile().getName());
-                        }
-                    }
-
-                    for (ClientUser user : FPSMaster.clientUsersManager.users) {
-                        FPSMaster.INSTANCE.wsClient.fetchPlayer(user.uuid, user.name);
-                    }
-
-                    if (playerInformation == null) {
-                        playerInformation = new PlayerInformation(MinecraftAPI.client().getPlayer().getName(), MinecraftAPI.client().getPlayer().getUUID(), MinecraftAPI.client().getServerAddress(), AccountManager.cosmeticsUsing, AccountManager.skin);
-                        FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, MinecraftAPI.client().getPlayer().getName(), MinecraftAPI.client().getServerAddress());
-                    } else if (!playerInformation.serverAddress.equals(MinecraftAPI.client().getServerAddress()) || !playerInformation.name.equals(MinecraftAPI.client().getPlayer().getName()) || !playerInformation.skin.equals(AccountManager.skin) || !playerInformation.uuid.equals(MinecraftAPI.client().getPlayer().getUUID()) || !playerInformation.cosmetics.equals(AccountManager.cosmeticsUsing)) {
-                        playerInformation = new PlayerInformation(MinecraftAPI.client().getPlayer().getName(), MinecraftAPI.client().getPlayer().getUUID(), MinecraftAPI.client().getServerAddress(), AccountManager.cosmeticsUsing, AccountManager.skin);
-                        FPSMaster.INSTANCE.wsClient.sendInformation(AccountManager.skin, AccountManager.cosmeticsUsing, MinecraftAPI.client().getPlayer().getName(), MinecraftAPI.client().getServerAddress());
-                    }
-                }
-            });
-            accThread.start();
-        }
-    }
-
-    @Subscribe
-    public void onCape(EventCapeLoading e) {
-        String[] cosmetics;
-
-        if (e.player == mc.thePlayer) {
-            if (AccountManager.cosmeticsUsing.isEmpty())
-                return;
-            cosmetics = AccountManager.cosmeticsUsing.split(",");
-        } else {
-            ClientUser clientUser = FPSMaster.clientUsersManager.getClientUser(e.player);
-            if (clientUser == null)
-                return;
-            cosmetics = clientUser.cosmetics.split(",");
-        }
-
-        for (String cosmetic : cosmetics) {
-            if (cosmetic.isEmpty())
-                continue;
-            Cosmetic cosmetic1 = AccountManager.cosmetics.get(Integer.valueOf(cosmetic));
-            if (cosmetic1.resource.endsWith(".gif")) {
-                if (cosmetic1.frame < cosmetic1.frames.size() - 1) {
-                    if (System.currentTimeMillis() - cosmetic1.frameTime > cosmetic1.frames.get(cosmetic1.frame).delay) {
-                        cosmetic1.frame++;
-                        cosmetic1.frameTime = System.currentTimeMillis();
-                    }
-                } else {
-                    cosmetic1.frame = 0;
-                    cosmetic1.frameTime = System.currentTimeMillis();
-                }
-                e.setCachedCape("ornaments/" + cosmetic + "_resource_" + cosmetic1.frame);
-            } else {
-                e.setCachedCape("ornaments/" + cosmetic + "_resource");
-            }
         }
     }
 
@@ -212,19 +90,4 @@ public class GlobalListener {
         NotificationManager.drawNotifications();
     }
 
-    static class PlayerInformation {
-        String name;
-        String uuid;
-        String serverAddress;
-        String cosmetics;
-        String skin;
-
-        public PlayerInformation(String name, String uuid, String serverAddress, String cosmetics, String skin) {
-            this.name = name;
-            this.uuid = uuid;
-            this.serverAddress = serverAddress;
-            this.cosmetics = cosmetics;
-            this.skin = skin;
-        }
-    }
 }

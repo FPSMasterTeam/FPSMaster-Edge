@@ -1,8 +1,8 @@
 name: Java CI with Gradle
 
 on:
-#  push:
-#    branches: [ "master", "v4" ]
+  pull_request:
+    branches: [ "master", "v4" ]
   workflow_dispatch:
 
 jobs:
@@ -36,61 +36,3 @@ jobs:
         with:
           name: v1.8.9
           path: v1.8.9/build/libs/
-
-      - name: Upload artifact
-        run: |
-          cd v1.8.9
-
-          plain_version=$(awk -F'=' '/^version[[:space:]]*=/ {print $2}' gradle.properties | tr -d '[:space:]')
-          sha=$(git rev-parse --short=6 HEAD)
-          version="${plain_version}-${sha}"
-          
-          mkdir -p build/libs
-          cd build/libs
-
-          export JAR=$(find . -name "*.jar")
-          mkdir -p zip
-          cp "$JAR" zip/fpsmaster.jar
-          cd zip
-          zip -r fpsmaster.zip *
-
-          # 创建存储目录
-          RESPONSE=$(curl --location --request POST "https://api.kstore.space/api/v1/file/create" \
-            --header "X-GitHub-Event: workflow_run" \
-            --header "User-Agent: Apifox/1.0.0 (https://apifox.com)" \
-            --form "access_token=${{ secrets.OSS }}" \
-            --form "fileId=0" \
-            --form "name=action-${{ github.event.head_commit.id }}")
-
-          DIR_ID=$(echo "$RESPONSE" | jq -r '.data.id')
-          echo "DirectoryId: $DIR_ID"
-
-          # 上传文件
-          UPLOAD_RESPONSE=$(curl --location --request POST "https://upload.kstore.space/upload/$DIR_ID?access_token=${{ secrets.OSS }}" \
-            -F "file=@fpsmaster.zip")
-
-          DOWNLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.downloadUrl')
-          FILE_ID=$(echo "$UPLOAD_RESPONSE" | jq -r '.data.id')
-
-          echo "FileId: $FILE_ID"
-          echo "URL: $DOWNLOAD_URL"
-
-          # 设为直接下载
-          RESPONSE=$(curl --location --request POST "https://api.kstore.cc/api/v1/file/direct?access_token=${{ secrets.OSS }}" \
-            --form "fileId=$FILE_ID" \
-            --form "isDirect=1")
-
-          echo "$RESPONSE"
-        
-          echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          
-          # 版本推送
-          curl --get \
-          --data-urlencode "key=${{ secrets.API_KEY }}" \
-          --data-urlencode "commit=${{ github.sha }}" \
-          --data-urlencode "branch=${{ github.ref }}" \
-          --data-urlencode "version=$version" \
-          --data-urlencode "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          --data-urlencode "link=$DOWNLOAD_URL" \
-          --data-urlencode "release=false" \
-          "https://service.fpsmaster.top/api/github/push"

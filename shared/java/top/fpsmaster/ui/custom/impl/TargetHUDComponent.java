@@ -3,7 +3,6 @@ package top.fpsmaster.ui.custom.impl;
 import net.minecraft.entity.player.EntityPlayer;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.TargetDisplay;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
@@ -30,7 +29,7 @@ public class TargetHUDComponent extends Component {
         // Get the target or player if chat is open
         EntityPlayer target1 = TargetDisplay.target;
         if (Utility.mc.ingameGUI.getChatGUI().getChatOpen()) {
-            target1 = Wrappers.minecraft().getPlayer();
+            target1 = Utility.mc.thePlayer;
         }
         if (target1 == null) return;
         // Set width and height
@@ -39,7 +38,7 @@ public class TargetHUDComponent extends Component {
             name = name.substring(0, 20) + "..";
         }
 
-        animation = (TargetDisplay.target.isDead || (System.currentTimeMillis() - TargetDisplay.lastHit > 5000 && target1 != Wrappers.minecraft().getPlayer()))
+        animation = (TargetDisplay.target.isDead || (System.currentTimeMillis() - TargetDisplay.lastHit > 5000 && target1 != Utility.mc.thePlayer))
                 ? (float) AnimationUtils.base(animation, 0.0, 0.1)
                 : (float) AnimationUtils.base(animation, 1, 0.1);
 

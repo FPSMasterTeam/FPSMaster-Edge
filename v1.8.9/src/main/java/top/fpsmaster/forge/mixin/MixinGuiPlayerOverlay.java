@@ -21,10 +21,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.TabOverlay;
-import top.fpsmaster.modules.account.AccountManager;
-import top.fpsmaster.modules.client.ClientUser;
 import top.fpsmaster.utils.render.Render2DUtils;
 
 import javax.annotation.Nullable;
@@ -164,14 +161,7 @@ public abstract class MixinGuiPlayerOverlay {
                     v += 9;
                 }
 
-                ClientUser clientUser = FPSMaster.clientUsersManager.getClientUser(networkPlayerInfo2.getGameProfile().getName(), networkPlayerInfo2.getGameProfile().getId().toString());
-                boolean isSelf = networkPlayerInfo2.getGameProfile().getName().equals(mc.thePlayer.getName()) && networkPlayerInfo2.getGameProfile().getId().equals(mc.thePlayer.getUniqueID());
-
                 int clientOffset = 0;
-                if (clientUser != null || isSelf) {
-                    Render2DUtils.drawImage(new ResourceLocation("client/textures/mate.png"), v, w, 8, 8, -1, true);
-                    clientOffset = 10;
-                }
 
                 if (networkPlayerInfo2.getGameType() == WorldSettings.GameType.SPECTATOR) {
                     string2 = EnumChatFormatting.ITALIC + string2;

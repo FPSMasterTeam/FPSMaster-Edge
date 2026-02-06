@@ -1,6 +1,7 @@
 package top.fpsmaster.features.impl.utility;
 
 import net.minecraft.event.ClickEvent;
+import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
 import top.fpsmaster.FPSMaster;
@@ -12,7 +13,6 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.api.Wrappers;
 import top.fpsmaster.utils.Utility;
 import top.fpsmaster.utils.math.MathTimer;
 
@@ -32,8 +32,9 @@ public class AutoGG extends Module {
 
     @Subscribe
     public void onPacket(EventPacket event) {
-        if (event.type == EventPacket.PacketType.RECEIVE && Wrappers.chatPacket().isPacket(event.packet)) {
-            IChatComponent componentValue = Wrappers.chatPacket().getChatComponent(event.packet);
+        if (event.type == EventPacket.PacketType.RECEIVE && event.packet instanceof S02PacketChat) {
+            S02PacketChat packet = (S02PacketChat) event.packet;
+            IChatComponent componentValue = packet.getChatComponent();
             String chatMessage = componentValue.getUnformattedText();
             switch (servers.getValue()) {
                 case 0:

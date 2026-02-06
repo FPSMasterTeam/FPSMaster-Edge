@@ -11,9 +11,7 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import top.fpsmaster.FPSMaster;
-import top.fpsmaster.forge.api.IChatLine;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
-import top.fpsmaster.api.wrapper.GuiNewChatWrap;
 import top.fpsmaster.utils.math.animation.AnimationUtils;
 import top.fpsmaster.utils.render.Render2DUtils;
 
@@ -24,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static top.fpsmaster.utils.Utility.mc;
 
 @Mixin(GuiNewChat.class)
-public abstract class MixinGuiNewChat implements GuiNewChatWrap {
+public abstract class MixinGuiNewChat {
 
     @Unique
     private boolean v1_8_9$isChatOpenAnimationNeed = true;
@@ -146,10 +144,6 @@ public abstract class MixinGuiNewChat implements GuiNewChatWrap {
                         ChatLine chatLine = drawnChatLines.get(m + this.scrollPos);
                         if (chatLine != null) {
                             if (getChatOpen() && v1_8_9$isChatOpenAnimationNeed) {
-                                for (int i1 = 0; i1 + this.scrollPos < drawnChatLines.size() && i1 < i.get(); ++i1) {
-                                    ChatLine chatline = drawnChatLines.get(i1 + this.scrollPos);
-                                    ((IChatLine) chatline).setAnimation(100);
-                                }
                                 v1_8_9$isChatOpenAnimationNeed = false;
                             }
                             if (!getChatOpen()) {
@@ -158,12 +152,7 @@ public abstract class MixinGuiNewChat implements GuiNewChatWrap {
 
                             n = updateCounter - chatLine.getUpdatedCounter();
                             if (n < 200 || bl) {
-                                if (n < 150 || getChatOpen()) {
-                                    ((IChatLine) chatLine).setAnimation((float) AnimationUtils.base(((IChatLine) chatLine).getAnimation(), 255, 0.1f));
-                                } else {
-                                    ((IChatLine) chatLine).setAnimation((float) AnimationUtils.base(((IChatLine) chatLine).getAnimation(), 0, 0.1f));
-                                }
-                                int alpha = (int) (((IChatLine) chatLine).getAnimation() * f);
+                                int alpha = (int) (255f * f);
 
                                 if (alpha > 3) {
                                     int q = -m * 9;
@@ -264,12 +253,10 @@ public abstract class MixinGuiNewChat implements GuiNewChatWrap {
         }
     }
 
-    @Override
     public List<ChatLine> getChatLines() {
         return chatLines;
     }
 
-    @Override
     public List<ChatLine> getDrawnChatLines() {
         return drawnChatLines;
     }

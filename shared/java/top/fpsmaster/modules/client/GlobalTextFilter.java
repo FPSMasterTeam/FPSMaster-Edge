@@ -1,6 +1,5 @@
 package top.fpsmaster.modules.client;
 
-import top.fpsmaster.features.impl.utility.IRC;
 import top.fpsmaster.features.impl.utility.NameProtect;
 
 public class GlobalTextFilter {
