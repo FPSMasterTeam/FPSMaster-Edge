@@ -1,14 +1,19 @@
 package top.fpsmaster.ui.custom.impl;
 
+import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
+import top.fpsmaster.features.impl.interfaces.CPSDisplay;
 import top.fpsmaster.features.impl.interfaces.Keystrokes;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.ColorAnimator;
 import top.fpsmaster.utils.render.StencilUtil;
 import top.fpsmaster.utils.render.draw.Circles;
+import top.fpsmaster.utils.render.draw.Colors;
 import top.fpsmaster.utils.render.draw.Rects;
+import top.fpsmaster.utils.render.state.Alpha;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -27,7 +32,7 @@ public class KeystrokesComponent extends Component {
         keys.add(new Key("D", Keyboard.KEY_D, 40, 20, 18f, 18f));
         keys.add(new Key("LMB", -1, 0, 40, 28f, 18f));
         keys.add(new Key("RMB", -2, 30, 40, 28f, 18f));
-        keys.add(new Key("SPACE", Keyboard.KEY_SPACE, 1, 60, 58f, 12f));
+        keys.add(new Key("SPACE", Keyboard.KEY_SPACE, 0, 60, 58f, 12f));
         allowScale = true;
     }
 
@@ -55,7 +60,8 @@ public class KeystrokesComponent extends Component {
                     key.yOffset = key.defaultYOffset + mod.spacing.getValue().intValue();
                     break;
                 case Keyboard.KEY_SPACE:
-                    key.yOffset = key.defaultYOffset + mod.spacing.getValue().intValue();
+                    key.xOffset = key.defaultXOffset - mod.spacing.getValue().intValue();
+                    key.yOffset = key.defaultYOffset + mod.spacing.getValue().intValue() * 2;
                     break;
             }
             key.render(x, y, (float) dt, mod.backgroundColor.getColor(), Keystrokes.pressedColor.getColor());
@@ -118,7 +124,7 @@ public class KeystrokesComponent extends Component {
             }
             if (keyCode == Keyboard.KEY_SPACE) {
                 keyW = baseWidth + spacing * 2f;
-                keyX = x + (xOffset - spacing) * scale;
+                keyX = x + xOffset * scale;
             }
 
             this.color.base(pressed ? color1 : color);
@@ -139,15 +145,68 @@ public class KeystrokesComponent extends Component {
             drawPressAnimation(keyX, keyY, keyW, keyH, pressed);
 
             int textColor = resolveTextColor(keyX, keyY, pressed);
-            if (keyCode == -1) {
-                drawString(16, name, keyX + 7 * scale, keyY + 4 * scale, textColor);
-            } else if (keyCode == -2) {
-                drawString(16, name, keyX + 6 * scale, keyY + 4 * scale, textColor);
+            if (keyCode == -1 || keyCode == -2) {
+                long cps = keyCode == -1 ? CPSDisplay.lcps : CPSDisplay.rcps;
+                if (Keystrokes.cpsMode.isMode("Below")) {
+                    float labelY = keyY + 2 * scale;
+                    float cpsY = keyY + (keyH - 8f) * scale;
+                    drawCenteredString(12, name, keyX, keyW, labelY, textColor);
+                    drawCenteredString(12, String.valueOf(cps), keyX, keyW, cpsY, textColor);
+                } else if (Keystrokes.cpsMode.isMode("ClickOnly") && cps > 0) {
+                    drawCenteredString(16, String.valueOf(cps), keyX, keyW, keyY + 4 * scale, textColor);
+                } else {
+                    if (keyCode == -1) {
+                        drawString(16, name, keyX + 7 * scale, keyY + 4 * scale, textColor);
+                    } else {
+                        drawString(16, name, keyX + 6 * scale, keyY + 4 * scale, textColor);
+                    }
+                }
+            } else if (keyCode == Keyboard.KEY_SPACE && Keystrokes.spaceStyle.isMode("Bar")) {
+                drawSpaceBar(keyX, keyY, keyW, keyH, textColor);
+            } else if (isWASDKey() && Keystrokes.wasdStyle.isMode("Triangle")) {
+                drawTriangleGlyph(keyX, keyY, keyW, keyH, resolveTriangleDirection(), textColor);
             } else {
                 drawString(16, name, keyX + ((keyW - getStringWidth(16, name)) / 2f) * scale, keyY + 4 * scale, textColor);
             }
 
             lastPressed = pressed;
+        }
+
+        private void drawCenteredString(int fontSize, String text, float keyX, float keyW, float drawY, int color) {
+            float textX = keyX + ((keyW - getStringWidth(fontSize, text)) / 2f) * scale;
+            drawString(fontSize, text, textX, drawY, color);
+        }
+
+        private boolean isWASDKey() {
+            return keyCode == Keyboard.KEY_W || keyCode == Keyboard.KEY_A || keyCode == Keyboard.KEY_S || keyCode == Keyboard.KEY_D;
+        }
+
+        private TriangleDirection resolveTriangleDirection() {
+            if (keyCode == Keyboard.KEY_W) {
+                return TriangleDirection.UP;
+            }
+            if (keyCode == Keyboard.KEY_A) {
+                return TriangleDirection.LEFT;
+            }
+            if (keyCode == Keyboard.KEY_S) {
+                return TriangleDirection.DOWN;
+            }
+            return TriangleDirection.RIGHT;
+        }
+
+        private void drawTriangleGlyph(float keyX, float keyY, float keyW, float keyH, TriangleDirection direction, int color) {
+            float size = Math.min(keyW, keyH) * 0.5f;
+            float triX = keyX + ((keyW - size) / 2f) * scale;
+            float triY = keyY + ((keyH - size) / 2f) * scale;
+            drawTriangle(triX, triY, size, size, direction, color);
+        }
+
+        private void drawSpaceBar(float keyX, float keyY, float keyW, float keyH, int color) {
+            float barW = keyW * 0.6f;
+            float barH = Math.max(2f, keyH * 0.2f);
+            float barX = keyX + ((keyW - barW) / 2f) * scale;
+            float barY = keyY + ((keyH - barH) / 2f) * scale;
+            Rects.fill(barX, barY, barW * scale, barH * scale, color);
         }
 
         private void drawKeyBase(float x, float y, float width, float height, Color bg) {
@@ -297,6 +356,55 @@ public class KeystrokesComponent extends Component {
         float progress = 0f;
         float alpha = 1f;
     }
+
+    private enum TriangleDirection {
+        UP,
+        LEFT,
+        DOWN,
+        RIGHT
+    }
+
+    private void drawTriangle(float x, float y, float width, float height, TriangleDirection direction, int color) {
+        float scaledW = width * scale;
+        float scaledH = height * scale;
+        Color c = Colors.toColor(Alpha.apply(color));
+        boolean cullEnabled = GL11.glIsEnabled(GL11.GL_CULL_FACE);
+        GlStateManager.enableBlend();
+        GlStateManager.disableTexture2D();
+        GlStateManager.enableAlpha();
+        if (cullEnabled) {
+            GL11.glDisable(GL11.GL_CULL_FACE);
+        }
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glColor4f(c.getRed() / 255.0F, c.getGreen() / 255.0F, c.getBlue() / 255.0F, c.getAlpha() / 255.0F);
+        GL11.glBegin(GL11.GL_TRIANGLES);
+        switch (direction) {
+            case UP:
+                GL11.glVertex2f(x, y + scaledH);
+                GL11.glVertex2f(x + scaledW, y + scaledH);
+                GL11.glVertex2f(x + scaledW / 2f, y);
+                break;
+            case DOWN:
+                GL11.glVertex2f(x, y);
+                GL11.glVertex2f(x + scaledW / 2f, y + scaledH);
+                GL11.glVertex2f(x + scaledW, y);
+                break;
+            case LEFT:
+                GL11.glVertex2f(x + scaledW, y);
+                GL11.glVertex2f(x, y + scaledH / 2f);
+                GL11.glVertex2f(x + scaledW, y + scaledH);
+                break;
+            case RIGHT:
+                GL11.glVertex2f(x, y);
+                GL11.glVertex2f(x + scaledW, y + scaledH / 2f);
+                GL11.glVertex2f(x, y + scaledH);
+                break;
+        }
+        GL11.glEnd();
+        GlStateManager.enableTexture2D();
+        GlStateManager.disableBlend();
+        if (cullEnabled) {
+            GL11.glEnable(GL11.GL_CULL_FACE);
+        }
+    }
 }
-
-

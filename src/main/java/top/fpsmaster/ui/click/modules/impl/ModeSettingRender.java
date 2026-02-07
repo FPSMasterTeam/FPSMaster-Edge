@@ -86,17 +86,15 @@ public class ModeSettingRender extends SettingRender<ModeSetting> {
 
     @Override
     public void mouseClick(float x, float y, float width, float height, float mouseX, float mouseY, int btn) {
-        float fw = FPSMaster.fontManager.s16.drawString(
-                FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault())),
-                x + 10, y + 8, new Color(162, 162, 162).getRGB()
-        );
-        float maxWidth = 80f;
+        String label = FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault()));
+        float fw = FPSMaster.fontManager.s16.getStringWidth(label);
+        float maxWidth = Math.max(80f, fw + 10);
         if (Hover.is(x + 16 + fw, y + 4, maxWidth, 16f, (int) mouseX, (int) mouseY)) {
             expand = !expand;
         }
         if (expand) {
             for (int i = 1; i <= setting.getModesSize(); i++) {
-                if (Hover.is(x + 20 + fw, y + 7 + i * 14, maxWidth, 16f, (int) mouseX, (int) mouseY)) {
+                if (Hover.is(x + 20 + fw, y + 4 + i * 14, maxWidth, 16f, (int) mouseX, (int) mouseY)) {
                     setting.setValue(i - 1);
                     expand = false;
                 }

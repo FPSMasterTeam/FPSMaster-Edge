@@ -145,6 +145,16 @@ keystrokes.pressanimmode.stack=Stack
 keystrokes.pressanimcolor=Press Animation Color
 keystrokes.pressanimduration=Press Animation Duration
 keystrokes.showspace=Show Space
+keystrokes.cpsmode=CPS Mode
+keystrokes.cpsmode.below=Below
+keystrokes.cpsmode.clickonly=Click Only
+keystrokes.cpsmode.off=Off
+keystrokes.wasdstyle=WASD Style
+keystrokes.wasdstyle.text=Text
+keystrokes.wasdstyle.triangle=Triangle
+keystrokes.spacestyle=Space Style
+keystrokes.spacestyle.text=Text
+keystrokes.spacestyle.bar=Bar
 
 potiondisplay=Potion HUD
 potiondisplay.desc=Displays active potion effects

@@ -145,6 +145,16 @@ keystrokes.pressanimmode.stack=堆叠
 keystrokes.pressanimcolor=按下动画颜色
 keystrokes.pressanimduration=按下动画时长
 keystrokes.showspace=显示空格键
+keystrokes.cpsmode=CPS显示
+keystrokes.cpsmode.below=下方
+keystrokes.cpsmode.clickonly=仅点击显示
+keystrokes.cpsmode.off=关闭
+keystrokes.wasdstyle=WASD样式
+keystrokes.wasdstyle.text=文字
+keystrokes.wasdstyle.triangle=三角形
+keystrokes.spacestyle=空格样式
+keystrokes.spacestyle.text=文字
+keystrokes.spacestyle.bar=条形
 
 potiondisplay=药水显示
 potiondisplay.desc=显示玩家的药水效果

@@ -46,16 +46,20 @@ public class Keystrokes extends InterfaceModule {
     public static NumberSetting pressAnimDuration = new NumberSetting("PressAnimDuration", 0.25, 0.05, 1.0, 0.05, () -> !pressAnimMode.isMode("Color"));
 
     public static BooleanSetting showSpace = new BooleanSetting("ShowSpace", true);
+    public static ModeSetting cpsMode = new ModeSetting("CPSMode", 0, "Below", "ClickOnly", "Off");
+    public static ModeSetting wasdStyle = new ModeSetting("WASDStyle", 0, "Text", "Triangle");
+    public static ModeSetting spaceStyle = new ModeSetting("SpaceStyle", 0, () -> showSpace.getValue(), "Text", "Bar");
 
     public Keystrokes() {
         super("Keystrokes", Category.Interface);
+        CPSDisplay.ensureTracking();
         addSettings(
                 fontShadow, betterFont,
                 pressedColor, fontColor, pressedFontColor,
                 textColorMode, textColorSpeed, textColorSaturation,
                 borderColorMode, borderColor, borderColorSpeed, borderColorSaturation, borderWidth,
                 pressAnimMode, pressAnimColor, pressAnimDuration,
-                showSpace, spacing, bg, backgroundColor, rounded, roundRadius
+                showSpace, cpsMode, wasdStyle, spaceStyle, spacing, bg, backgroundColor, rounded, roundRadius
         );
     }
 }

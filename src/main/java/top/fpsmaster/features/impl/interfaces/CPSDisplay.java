@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.interfaces;
 
+import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventMouseClick;
 import top.fpsmaster.event.events.EventTick;
@@ -12,47 +13,59 @@ import java.util.LinkedList;
 
 public class CPSDisplay extends InterfaceModule {
 
-    private final LinkedList<Key> keys = new LinkedList<>();
+    private static final LinkedList<Key> KEYS = new LinkedList<>();
+    private static final CPSCounterListener COUNTER_LISTENER = new CPSCounterListener();
+    private static boolean trackingRegistered = false;
 
     public CPSDisplay() {
         super("CPSDisplay", Category.Interface);
+        ensureTracking();
         addSettings(textColor);
         addSettings(rounded, backgroundColor, fontShadow, betterFont, bg, rounded, roundRadius);
     }
 
-    @Subscribe
-    public void onClick(EventMouseClick e) {
-        if (e.button == 0) {
-            keys.add(new Key(0, System.currentTimeMillis()));
-        } else if (e.button == 1) {
-            keys.add(new Key(1, System.currentTimeMillis()));
+    public static void ensureTracking() {
+        if (trackingRegistered) {
+            return;
         }
-    }
-
-    @Subscribe
-    public void onTick(EventTick e) {
-        lcps = keys.stream()
-                .filter(key -> key.key == 0 && System.currentTimeMillis() - key.time < 1000L)
-                .count();
-        rcps = keys.stream()
-                .filter(key -> key.key == 1 && System.currentTimeMillis() - key.time < 1000L)
-                .count();
-        keys.removeIf(key -> System.currentTimeMillis() - key.time > 1000L);
+        EventDispatcher.registerListener(COUNTER_LISTENER);
+        trackingRegistered = true;
     }
 
     public static long lcps = 0;
     public static long rcps = 0;
     public static ColorSetting textColor = new ColorSetting("TextColor", new Color(255, 255, 255));
-}
 
-class Key {
+    public static class CPSCounterListener {
+        @Subscribe
+        public void onClick(EventMouseClick e) {
+            if (e.button == 0) {
+                KEYS.add(new Key(0, System.currentTimeMillis()));
+            } else if (e.button == 1) {
+                KEYS.add(new Key(1, System.currentTimeMillis()));
+            }
+        }
 
-    int key;
-    long time;
+        @Subscribe
+        public void onTick(EventTick e) {
+            lcps = KEYS.stream()
+                    .filter(key -> key.key == 0 && System.currentTimeMillis() - key.time < 1000L)
+                    .count();
+            rcps = KEYS.stream()
+                    .filter(key -> key.key == 1 && System.currentTimeMillis() - key.time < 1000L)
+                    .count();
+            KEYS.removeIf(key -> System.currentTimeMillis() - key.time > 1000L);
+        }
+    }
 
-    public Key(int key, long time) {
-        this.key = key;
-        this.time = time;
+    private static class Key {
+        int key;
+        long time;
+
+        Key(int key, long time) {
+            this.key = key;
+            this.time = time;
+        }
     }
 }
 
