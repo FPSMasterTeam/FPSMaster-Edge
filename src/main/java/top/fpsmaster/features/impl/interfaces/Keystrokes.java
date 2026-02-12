@@ -10,35 +10,22 @@ import top.fpsmaster.features.settings.impl.NumberSetting;
 import java.awt.*;
 
 public class Keystrokes extends InterfaceModule {
-    public static ColorSetting pressedColor = new ColorSetting("PressedColor", new Color(255, 255, 255, 120));
-    public static ColorSetting fontColor = new ColorSetting("FontColor", new Color(255, 255, 255));
-    public static ColorSetting pressedFontColor = new ColorSetting("PressedFontColor", new Color(201, 201, 201));
-    public static ModeSetting textColorMode = new ModeSetting("TextColorMode", 0, "Static", "Rainbow", "Chroma");
-    public static NumberSetting textColorSpeed = new NumberSetting("TextColorSpeed", 1.0, 0.1, 5.0, 0.1, () -> !textColorMode.isMode("Static"));
-    public static NumberSetting textColorSaturation = new NumberSetting("TextColorSaturation", 0.7, 0.0, 1.0, 0.05, () -> !textColorMode.isMode("Static"));
+    private static final ColorSetting.ColorType[] KEYSTROKE_COLOR_TYPES = new ColorSetting.ColorType[] {
+            ColorSetting.ColorType.STATIC,
+            ColorSetting.ColorType.RAINBOW,
+            ColorSetting.ColorType.CHROMA
+    };
+
+    public static ColorSetting pressedColor = new ColorSetting("PressedColor", new Color(255, 255, 255, 120), KEYSTROKE_COLOR_TYPES);
+    public static ColorSetting fontColor = new ColorSetting("FontColor", new Color(255, 255, 255), KEYSTROKE_COLOR_TYPES);
+    public static ColorSetting pressedFontColor = new ColorSetting("PressedFontColor", new Color(201, 201, 201), KEYSTROKE_COLOR_TYPES);
 
     public static NumberSetting borderWidth = new NumberSetting("BorderWidth", 1.0, 0.0, 4.0, 0.5);
-    public static ModeSetting borderColorMode = new ModeSetting("BorderColorMode", 0, () -> borderWidth.getValue().floatValue() > 0, "Static", "Rainbow", "Chroma");
     public static ColorSetting borderColor = new ColorSetting(
             "BorderColor",
             new Color(255, 255, 255, 80),
-            () -> borderWidth.getValue().floatValue() > 0 && borderColorMode.isMode("Static")
-    );
-    public static NumberSetting borderColorSpeed = new NumberSetting(
-            "BorderColorSpeed",
-            1.0,
-            0.1,
-            5.0,
-            0.1,
-            () -> borderWidth.getValue().floatValue() > 0 && !borderColorMode.isMode("Static")
-    );
-    public static NumberSetting borderColorSaturation = new NumberSetting(
-            "BorderColorSaturation",
-            0.7,
-            0.0,
-            1.0,
-            0.05,
-            () -> borderWidth.getValue().floatValue() > 0 && !borderColorMode.isMode("Static")
+            () -> borderWidth.getValue().floatValue() > 0,
+            KEYSTROKE_COLOR_TYPES
     );
 
     public static ModeSetting pressAnimMode = new ModeSetting("PressAnimMode", 0, "Color", "Pulse", "Ripple", "Bloom", "Stack");
@@ -56,8 +43,7 @@ public class Keystrokes extends InterfaceModule {
         addSettings(
                 fontShadow, betterFont,
                 pressedColor, fontColor, pressedFontColor,
-                textColorMode, textColorSpeed, textColorSaturation,
-                borderColorMode, borderColor, borderColorSpeed, borderColorSaturation, borderWidth,
+                borderColor, borderWidth,
                 pressAnimMode, pressAnimColor, pressAnimDuration,
                 showSpace, cpsMode, wasdStyle, spaceStyle, spacing, bg, backgroundColor, rounded, roundRadius
         );

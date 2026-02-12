@@ -221,37 +221,13 @@ public class KeystrokesComponent extends Component {
         }
 
         private int resolveTextColor(float x, float y, boolean pressed) {
-            if (Keystrokes.textColorMode.isMode("Static")) {
-                return pressed ? Keystrokes.pressedFontColor.getRGB() : Keystrokes.fontColor.getRGB();
-            }
-            float speed = Keystrokes.textColorSpeed.getValue().floatValue();
-            float sat = Keystrokes.textColorSaturation.getValue().floatValue();
-            float bright = 1.0f;
-            float base = (System.currentTimeMillis() % 10000L) / 10000f;
-            float hue = base * speed;
-            if (Keystrokes.textColorMode.isMode("Chroma")) {
-                hue += (x + y) * 0.002f;
-            }
-            hue = hue - (float) Math.floor(hue);
-            return Color.getHSBColor(hue, sat, bright).getRGB();
+            float offset = (x + y) * 0.002f;
+            return pressed ? Keystrokes.pressedFontColor.updateAndGetRGB(offset) : Keystrokes.fontColor.updateAndGetRGB(offset);
         }
 
         private Color resolveBorderColor(float x, float y) {
-            if (Keystrokes.borderColorMode.isMode("Static")) {
-                return Keystrokes.borderColor.getColor();
-            }
-            float speed = Keystrokes.borderColorSpeed.getValue().floatValue();
-            float sat = Keystrokes.borderColorSaturation.getValue().floatValue();
-            float bright = 1.0f;
-            float base = (System.currentTimeMillis() % 10000L) / 10000f;
-            float hue = base * speed;
-            if (Keystrokes.borderColorMode.isMode("Chroma")) {
-                hue += (x + y) * 0.002f;
-            }
-            hue = hue - (float) Math.floor(hue);
-            Color hsb = Color.getHSBColor(hue, sat, bright);
-            int alpha = Keystrokes.borderColor.getColor().getAlpha();
-            return new Color(hsb.getRed(), hsb.getGreen(), hsb.getBlue(), alpha);
+            float offset = (x + y) * 0.002f;
+            return Keystrokes.borderColor.updateAndGetColor(offset);
         }
 
         private void drawBorderRect(float x, float y, float width, float height, float borderWidth) {

@@ -14,6 +14,8 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.util.glu.Project;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.features.settings.impl.ColorSetting;
+import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
 import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.math.anim.AnimMath;
@@ -65,6 +67,19 @@ public class Backgrounds {
         String backgroundMode = FPSMaster.configManager.configure.background;
         if ("custom".equals(backgroundMode)) {
             drawCustom(scaledGuiWidth, scaledGuiHeight);
+        } else if ("classic".equals(backgroundMode)) {
+            CustomColor base = new CustomColor(
+                    FPSMaster.configManager.configure.classicBackgroundHue,
+                    FPSMaster.configManager.configure.classicBackgroundBrightness,
+                    FPSMaster.configManager.configure.classicBackgroundSaturation,
+                    FPSMaster.configManager.configure.classicBackgroundAlpha
+            );
+            ColorSetting.ColorType mode = ColorSetting.ColorType.STATIC;
+            try {
+                mode = ColorSetting.ColorType.valueOf(FPSMaster.configManager.configure.classicBackgroundMode);
+            } catch (IllegalArgumentException ignored) {
+            }
+            Rects.fill(0f, 0f, scaledGuiWidth, scaledGuiHeight, ColorSetting.resolveColor(base, mode, 0f).getRGB());
         } else if (isPanoramaMode(backgroundMode)) {
             renderSkybox(guiWidth, guiHeight, normalizePanoramaStyle(backgroundMode), partialTicks, zLevel);
             Rects.fill(0f, 0f, scaledGuiWidth, scaledGuiHeight, new Color(22, 22, 22, 30));

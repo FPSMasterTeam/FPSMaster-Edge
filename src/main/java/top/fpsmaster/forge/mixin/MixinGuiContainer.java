@@ -36,7 +36,7 @@ public class MixinGuiContainer {
         ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
         GL11.glPushMatrix();
         GuiScale.fixScale();
-        Images.draw(new ResourceLocation("client/gui/settings/logo.png"), 0, (float) mc.displayHeight /  GuiScale.getFixedScale() - 32, 163 / 2f, 32, -1);
+        Images.draw(new ResourceLocation("client/gui/settings/logo.png"), 0, GuiScale.getFixedBounds()[1] - 32, 163 / 2f, 32, -1);
         GL11.glPopMatrix();
     }
 

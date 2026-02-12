@@ -3,7 +3,11 @@ package top.fpsmaster.ui.screens.mainmenu;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.features.manager.Category;
+import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.ui.click.component.ScrollContainer;
+import top.fpsmaster.ui.click.modules.impl.ColorSettingRender;
 import top.fpsmaster.ui.common.GuiButton;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
@@ -28,10 +32,21 @@ public class BackgroundSelector extends ScaledGuiScreen {
     private static final float CARD_GAP = 8f;
     private static final float LIST_TOP_PADDING = 6f;
     private static final float LIST_BOTTOM_PADDING = 6f;
+    private static final float CLASSIC_EDITOR_BOTTOM_GAP = CARD_GAP;
 
     private final Animator openAnimation = new Animator();
     private final AnimClock animClock = new AnimClock();
     private final ScrollContainer scrollContainer = new ScrollContainer();
+    private final Module classicColorModule = new Module("backgroundselector", Category.Interface);
+    private final ColorSetting classicColorSetting = new ColorSetting(
+            "classiccolor",
+            new Color(0, 0, 0, 255),
+            ColorSetting.ColorType.STATIC,
+            ColorSetting.ColorType.WAVE,
+            ColorSetting.ColorType.CHROMA,
+            ColorSetting.ColorType.RAINBOW
+    );
+    private final ColorSettingRender classicColorRender = new ColorSettingRender(classicColorModule, classicColorSetting);
 
     private static final BackgroundOption[] OPTIONS = {
             new BackgroundOption("classic", "backgroundselector.option.classic.name", "backgroundselector.option.classic.desc", Color.BLACK),
@@ -50,6 +65,17 @@ public class BackgroundSelector extends ScaledGuiScreen {
         super.initGui();
         animClock.reset();
         scrollContainer.setHeight(0f);
+        classicColorSetting.setColor(
+                FPSMaster.configManager.configure.classicBackgroundHue,
+                FPSMaster.configManager.configure.classicBackgroundSaturation,
+                FPSMaster.configManager.configure.classicBackgroundBrightness,
+                FPSMaster.configManager.configure.classicBackgroundAlpha
+        );
+        try {
+            classicColorSetting.setColorType(ColorSetting.ColorType.valueOf(FPSMaster.configManager.configure.classicBackgroundMode));
+        } catch (IllegalArgumentException ignored) {
+            classicColorSetting.setColorType(ColorSetting.ColorType.STATIC);
+        }
     }
 
     @Override
@@ -93,11 +119,23 @@ public class BackgroundSelector extends ScaledGuiScreen {
             for (BackgroundOption option : OPTIONS) {
                 float cardY = contentY + listY;
                 renderCard(contentX, cardY, contentWidth, option, mouseX, mouseY, alpha);
-                listY += CARD_HEIGHT + CARD_GAP;
+                listY += CARD_HEIGHT;
+                if ("classic".equals(option.id) && isOptionSelected("classic")) {
+                    float editorY = contentY + listY;
+                    renderClassicColorEditor(contentX, editorY, contentWidth, mouseX, mouseY, alpha);
+                    listY += getClassicEditorHeight() + CLASSIC_EDITOR_BOTTOM_GAP;
+                } else {
+                    listY += CARD_GAP;
+                }
             }
             float totalHeight = LIST_TOP_PADDING + OPTIONS.length * CARD_HEIGHT + (OPTIONS.length - 1) * CARD_GAP + LIST_BOTTOM_PADDING;
+            if (isOptionSelected("classic")) {
+                totalHeight += getClassicEditorHeight();
+            }
             scrollContainer.setHeight(totalHeight);
         });
+
+        syncClassicBackgroundConfig();
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
         GL11.glPopMatrix();
@@ -135,7 +173,7 @@ public class BackgroundSelector extends ScaledGuiScreen {
 
     private void renderPreview(float x, float y, float w, float h, BackgroundOption option) {
         if ("classic".equals(option.id)) {
-            Rects.rounded(Math.round(x), Math.round(y), Math.round(w), Math.round(h), 5, option.previewColor);
+            Rects.rounded(Math.round(x), Math.round(y), Math.round(w), Math.round(h), 5, classicColorSetting.updateAndGetColor());
             return;
         }
         if ("shader".equals(option.id)) {
@@ -168,6 +206,27 @@ public class BackgroundSelector extends ScaledGuiScreen {
         Color bg = hovered ? new Color(100, 181, 246, (int) (180 * alpha)) : new Color(66, 133, 244, (int) (160 * alpha));
         Rects.rounded(Math.round(x), Math.round(y), Math.round(w), Math.round(h), 4, bg);
         FPSMaster.fontManager.s14.drawCenteredString(FPSMaster.i18n.get("backgroundselector.pick"), x + w / 2f, y + h / 2f - 4f, new Color(255, 255, 255, (int) (255 * alpha)).getRGB());
+    }
+
+    private void renderClassicColorEditor(float x, float y, float width, int mouseX, int mouseY, float alpha) {
+        float editorHeight = getClassicEditorHeight();
+        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(editorHeight), 10,
+                new Color(35, 35, 40, (int) (180 * alpha)));
+        classicColorRender.render(x + 4f, y + 4f, width - 8f, 12f, mouseX, mouseY, true);
+    }
+
+    private void syncClassicBackgroundConfig() {
+        Color resolved = classicColorSetting.updateAndGetColor();
+        FPSMaster.configManager.configure.classicBackgroundColor = resolved.getRGB();
+        FPSMaster.configManager.configure.classicBackgroundHue = classicColorSetting.getValue().hue;
+        FPSMaster.configManager.configure.classicBackgroundSaturation = classicColorSetting.getValue().saturation;
+        FPSMaster.configManager.configure.classicBackgroundBrightness = classicColorSetting.getValue().brightness;
+        FPSMaster.configManager.configure.classicBackgroundAlpha = classicColorSetting.getValue().alpha;
+        FPSMaster.configManager.configure.classicBackgroundMode = classicColorSetting.getColorType().name();
+    }
+
+    private float getClassicEditorHeight() {
+        return Math.max(32f, classicColorRender.height + 8f);
     }
 
     private void handlePendingClick(float panelX, float panelY, float panelWidth, float panelHeight) {
@@ -206,7 +265,12 @@ public class BackgroundSelector extends ScaledGuiScreen {
                 consumePendingClick();
                 return;
             }
-            listY += CARD_HEIGHT + CARD_GAP;
+            listY += CARD_HEIGHT;
+            if ("classic".equals(option.id) && isOptionSelected("classic")) {
+                listY += getClassicEditorHeight() + CLASSIC_EDITOR_BOTTOM_GAP;
+            } else {
+                listY += CARD_GAP;
+            }
         }
     }
 

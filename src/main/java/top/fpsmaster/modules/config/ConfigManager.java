@@ -39,6 +39,12 @@ public class ConfigManager {
         JsonObject client = new JsonObject();
         client.addProperty("volume", configure.volume);
         client.addProperty("background", configure.background);
+        client.addProperty("classicBackgroundColor", configure.classicBackgroundColor);
+        client.addProperty("classicBackgroundHue", configure.classicBackgroundHue);
+        client.addProperty("classicBackgroundSaturation", configure.classicBackgroundSaturation);
+        client.addProperty("classicBackgroundBrightness", configure.classicBackgroundBrightness);
+        client.addProperty("classicBackgroundAlpha", configure.classicBackgroundAlpha);
+        client.addProperty("classicBackgroundMode", configure.classicBackgroundMode);
         json.add("client", client);
 
         JsonArray components = new JsonArray();
@@ -68,6 +74,7 @@ public class ConfigManager {
                     color.addProperty("s", value.saturation);
                     color.addProperty("b", value.brightness);
                     color.addProperty("a", value.alpha);
+                    color.addProperty("mode", colorSetting.getColorType().name());
                     JsonObject settingJson = new JsonObject();
                     settingJson.addProperty("type", "color");
                     settingJson.add("value", color);
@@ -142,6 +149,32 @@ public class ConfigManager {
             if (client.has("background")) {
                 configure.background = client.get("background").getAsString();
             }
+            if (client.has("classicBackgroundColor")) {
+                configure.classicBackgroundColor = client.get("classicBackgroundColor").getAsInt();
+            }
+            if (client.has("classicBackgroundHue")) {
+                configure.classicBackgroundHue = client.get("classicBackgroundHue").getAsFloat();
+            }
+            if (client.has("classicBackgroundSaturation")) {
+                configure.classicBackgroundSaturation = client.get("classicBackgroundSaturation").getAsFloat();
+            }
+            if (client.has("classicBackgroundBrightness")) {
+                configure.classicBackgroundBrightness = client.get("classicBackgroundBrightness").getAsFloat();
+            }
+            if (client.has("classicBackgroundAlpha")) {
+                configure.classicBackgroundAlpha = client.get("classicBackgroundAlpha").getAsFloat();
+            }
+            if (client.has("classicBackgroundMode")) {
+                configure.classicBackgroundMode = client.get("classicBackgroundMode").getAsString();
+            }
+
+            if (!client.has("classicBackgroundHue") || !client.has("classicBackgroundSaturation") || !client.has("classicBackgroundBrightness") || !client.has("classicBackgroundAlpha")) {
+                CustomColor converted = new CustomColor(new java.awt.Color(configure.classicBackgroundColor, true));
+                configure.classicBackgroundHue = converted.hue;
+                configure.classicBackgroundSaturation = converted.saturation;
+                configure.classicBackgroundBrightness = converted.brightness;
+                configure.classicBackgroundAlpha = converted.alpha;
+            }
         }
 
         JsonArray components = json.getAsJsonArray("components");
@@ -186,12 +219,19 @@ public class ConfigManager {
                             ((TextSetting) setting).setValue(value.getAsString());
                         } else if (setting instanceof ColorSetting && "color".equals(type)) {
                             JsonObject color = value.getAsJsonObject();
-                            ((ColorSetting) setting).getValue().setColor(
+                            ColorSetting colorSetting = (ColorSetting) setting;
+                            colorSetting.getValue().setColor(
                                     color.get("h").getAsFloat(),
                                     color.get("s").getAsFloat(),
                                     color.get("b").getAsFloat(),
                                     color.get("a").getAsFloat()
                             );
+                            if (color.has("mode")) {
+                                try {
+                                    colorSetting.setColorType(ColorSetting.ColorType.valueOf(color.get("mode").getAsString()));
+                                } catch (IllegalArgumentException ignored) {
+                                }
+                            }
                         } else if (setting instanceof BindSetting && "bind".equals(type)) {
                             ((BindSetting) setting).setValue(value.getAsInt());
                         } else if (setting instanceof MultipleItemSetting && "multiItem".equals(type)) {
@@ -215,6 +255,3 @@ public class ConfigManager {
         FPSMaster.moduleManager.getModule(ItemPhysics.class).set(true);
     }
 }
-
-
-

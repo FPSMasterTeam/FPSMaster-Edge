@@ -1,8 +1,5 @@
 package top.fpsmaster.ui.mc;
 
-import top.fpsmaster.utils.render.draw.Hover;
-import top.fpsmaster.utils.render.draw.Rects;
-
 import com.google.common.collect.Lists;
 import net.minecraft.client.gui.GuiScreenAddServer;
 import net.minecraft.client.gui.GuiScreenServerList;
@@ -16,16 +13,12 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.common.GuiButton;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
-import top.fpsmaster.utils.math.MathTimer;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.utils.render.gui.Backgrounds;
-import top.fpsmaster.utils.render.gui.Scissor;
 
 import java.awt.*;
 import java.io.File;
@@ -36,34 +29,38 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     private ServerData selectedServer;
     private static final Logger logger = LogManager.getLogger();
     private final List<ServerData> servers = Lists.newArrayList();
-    private final List<ServerListEntry> serverListDisplay = Lists.newArrayList();
-    private final List<ServerListEntry> serverListInternet = Lists.newArrayList();
     public final OldServerPinger oldServerPinger = new OldServerPinger();
 
     String action = "";
 
-    MathTimer timer = new MathTimer();
-
-    GuiButton join = new GuiButton("加入服务器", () -> {
+    GuiButton join = new GuiButton("multiplayer.join", () -> {
         if (selectedServer == null)
             return;
         FMLClientHandler.instance().connectToServer(this, selectedServer);
-    }, new Color(0, 0, 0, 140), new Color(113, 127, 254));
-    GuiButton connect = new GuiButton("直接连接", () -> {
+    }, new Color(0, 0, 0, 140), new Color(113, 127, 254))
+            .setBackgroundColors(new Color(0, 0, 0, 140), new Color(113, 127, 254), new Color(128, 140, 255))
+            .setClickEffect(GuiButton.ClickEffect.STACK, new Color(255, 255, 255, 120), 0.22f);
+    GuiButton connect = new GuiButton("multiplayer.direct", () -> {
         this.mc.displayGuiScreen(new GuiScreenServerList(this, this.selectedServer = new ServerData(I18n.format("selectServer.defaultName"), "", false)));
         action = "connect";
-    }, new Color(0, 0, 0, 140), new Color(113, 127, 254));
-    GuiButton add = new GuiButton("添加服务器", () -> {
+    }, new Color(0, 0, 0, 140), new Color(113, 127, 254))
+            .setBackgroundColors(new Color(0, 0, 0, 140), new Color(113, 127, 254), new Color(128, 140, 255))
+            .setClickEffect(GuiButton.ClickEffect.STACK, new Color(255, 255, 255, 120), 0.22f);
+    GuiButton add = new GuiButton("multiplayer.add", () -> {
         action = "add";
         this.mc.displayGuiScreen(new GuiScreenAddServer(this, this.selectedServer = new ServerData(I18n.format("selectServer.defaultName"), "", false)));
-    }, new Color(0, 0, 0, 140), new Color(113, 127, 254));
-    GuiButton edit = new GuiButton("编辑", () -> {
+    }, new Color(0, 0, 0, 140), new Color(113, 127, 254))
+            .setBackgroundColors(new Color(0, 0, 0, 140), new Color(113, 127, 254), new Color(128, 140, 255))
+            .setClickEffect(GuiButton.ClickEffect.STACK, new Color(255, 255, 255, 120), 0.22f);
+    GuiButton edit = new GuiButton("multiplayer.edit", () -> {
         if (selectedServer == null)
             return;
         action = "edit";
         mc.displayGuiScreen(new GuiScreenAddServer(this, selectedServer));
-    }, new Color(0, 0, 0, 140), new Color(113, 127, 254));
-    GuiButton remove = new GuiButton("删除", () -> {
+    }, new Color(0, 0, 0, 140), new Color(113, 127, 254))
+            .setBackgroundColors(new Color(0, 0, 0, 140), new Color(113, 127, 254), new Color(128, 140, 255))
+            .setClickEffect(GuiButton.ClickEffect.STACK, new Color(255, 255, 255, 120), 0.22f);
+    GuiButton remove = new GuiButton("multiplayer.delete", () -> {
         if (selectedServer == null)
             return;
         action = "remove";
@@ -76,21 +73,22 @@ public class GuiMultiplayer extends ScaledGuiScreen {
             GuiYesNo guiyesno = new GuiYesNo(this, s, s1, s2, s3, servers.indexOf(selectedServer));
             this.mc.displayGuiScreen(guiyesno);
         }
-    }, new Color(0, 0, 0, 140), new Color(113, 127, 254));
-    GuiButton refresh = new GuiButton("刷新", () -> mc.displayGuiScreen(new GuiMultiplayer()), new Color(0, 0, 0, 140), new Color(113, 127, 254));
-    GuiButton back = new GuiButton("返回", () -> mc.displayGuiScreen(new MainMenu()), new Color(0, 0, 0, 140), new Color(113, 127, 254));
+    }, new Color(0, 0, 0, 140), new Color(113, 127, 254))
+            .setBackgroundColors(new Color(0, 0, 0, 140), new Color(113, 127, 254), new Color(128, 140, 255))
+            .setClickEffect(GuiButton.ClickEffect.STACK, new Color(255, 255, 255, 120), 0.22f);
+    GuiButton refresh = new GuiButton("multiplayer.refresh", () -> mc.displayGuiScreen(new GuiMultiplayer()), new Color(0, 0, 0, 140), new Color(113, 127, 254))
+            .setBackgroundColors(new Color(0, 0, 0, 140), new Color(113, 127, 254), new Color(128, 140, 255))
+            .setClickEffect(GuiButton.ClickEffect.STACK, new Color(255, 255, 255, 120), 0.22f);
+    GuiButton back = new GuiButton("multiplayer.back", () -> mc.displayGuiScreen(new MainMenu()), new Color(0, 0, 0, 140), new Color(113, 127, 254))
+            .setBackgroundColors(new Color(0, 0, 0, 140), new Color(113, 127, 254), new Color(128, 140, 255))
+            .setClickEffect(GuiButton.ClickEffect.STACK, new Color(255, 255, 255, 120), 0.22f);
 
 
     @Override
     public void initGui() {
         super.initGui();
         loadServerList();
-        serverListInternet.clear();
-        for (ServerData server : servers) {
-            this.serverListInternet.add(new ServerListEntry(this, server));
-        }
-        serverListDisplay.clear();
-        serverListDisplay.addAll(serverListInternet);
+        selectedServer = servers.isEmpty() ? null : servers.get(0);
     }
 
     @Override
@@ -138,45 +136,13 @@ public class GuiMultiplayer extends ScaledGuiScreen {
 
     }
 
-    ScrollContainer scrollContainer = new ScrollContainer();
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         super.render(mouseX, mouseY, partialTicks);
         Backgrounds.draw((int) (guiWidth * scaleFactor), (int) (guiHeight * scaleFactor), mouseX, mouseY, partialTicks, (int) zLevel);
 
         UFontRenderer title = FPSMaster.fontManager.s22;
-        UFontRenderer font = FPSMaster.fontManager.s18;
-        title.drawCenteredString("多人游戏", guiWidth / 2f, 16, -1);
-
-        Rects.rounded(Math.round((guiWidth - 180) / 2f), 30, 180, 24, 3, new Color(0, 0, 0, 80).getRGB());
-        Rects.rounded(Math.round((guiWidth - 176) / 2f), 32, 176, 20, 3, -1);
-        FPSMaster.fontManager.s16.drawCenteredString("服务器列表", guiWidth / 2f, 36, new Color(50, 50, 50).getRGB());
-
-        GL11.glPushMatrix();
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        Scissor.apply((guiWidth - 400) / 2f, 60f, 400f, guiHeight - 120);
-        scrollContainer.draw((guiWidth - 400) / 2f, 60, 396, guiHeight - 120, mouseX, mouseY, () -> {
-            float y = 70 + scrollContainer.getScroll();
-            Rects.rounded(Math.round((guiWidth - 400) / 2f), Math.round(y - 10), 400, Math.round(guiHeight - y), 5, new Color(0, 0, 0, 100).getRGB());
-            for (ServerListEntry server : serverListDisplay) {
-                if (server.getServerData() == null) {
-                    return;
-                }
-                Rects.rounded(Math.round((guiWidth - 340) / 2f), Math.round(y), 340, 54, new Color(0, 0, 0, 120));
-                if (Hover.is((guiWidth - 340) / 2f, y, 340, 54, mouseX, mouseY)) {
-                    Rects.rounded(Math.round((guiWidth - 340) / 2f), Math.round(y), 340, 54, new Color(0, 0, 0, 50));
-                }
-
-                if (selectedServer != null && selectedServer == server.getServerData()) {
-                    Rects.rounded(Math.round((guiWidth - 340) / 2f), Math.round(y), 340, 54, new Color(255, 255, 255, 50));
-                }
-                server.drawEntry(0, (int) ((guiWidth - 340) / 2), (int) y, 340, 54, mouseX, mouseY, false);
-                y += 58;
-            }
-            scrollContainer.setHeight(y - 50 - scrollContainer.getScroll());
-        });
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
-        GL11.glPopMatrix();
+        title.drawCenteredString(FPSMaster.i18n.get("multiplayer.title"), guiWidth / 2f, 16, -1);
 
 
         join.renderInScreen(this, (guiWidth - 400) / 2f + 20, guiHeight - 56, 380f / 3 - 20, 20, mouseX, mouseY);
@@ -187,8 +153,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         remove.renderInScreen(this, (guiWidth - 400) / 2f + 20 + 380f / 4, guiHeight - 26, 380f / 4 - 20, 20, mouseX, mouseY);
         refresh.renderInScreen(this, (guiWidth - 400) / 2f + 20 + 380f / 4 * 2, guiHeight - 26, 380f / 4 - 20, 20, mouseX, mouseY);
         back.renderInScreen(this, (guiWidth - 400) / 2f + 20 + 380f / 4 * 3, guiHeight - 26, 380f / 4 - 20, 20, mouseX, mouseY);
-
-        handlePendingClick();
     }
 
 
@@ -205,40 +169,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         super.onGuiClosed();
         this.oldServerPinger.clearPendingNetworks();
     }
-
-    private void handlePendingClick() {
-        if (!hasPendingClick(0) && !hasPendingClick(1) && !hasPendingClick(2)) {
-            return;
-        }
-
-        int mouseX = getPendingClickX();
-        int mouseY = getPendingClickY();
-        int mouseButton = getPendingClickButton();
-
-        float y = 70 + scrollContainer.getScroll();
-        for (ServerListEntry server : serverListDisplay) {
-            if (server.getServerData() == null) {
-                consumePendingClick();
-                return;
-            }
-            if (Hover.is((guiWidth - 340) / 2f, y, 340, 54, mouseX, mouseY)) {
-                if (selectedServer != server.getServerData()) {
-                    selectedServer = server.getServerData();
-                    timer.reset();
-                } else {
-                    if (timer.delay(200)) {
-                        selectedServer = null;
-                    } else {
-                        FMLClientHandler.instance().connectToServer(this, selectedServer);
-                    }
-                }
-            }
-            y += 58;
-        }
-
-        consumePendingClick();
-    }
-
 
     public void loadServerList() {
         try {
