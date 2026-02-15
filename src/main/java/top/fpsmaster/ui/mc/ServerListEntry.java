@@ -20,9 +20,13 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Images;
+import top.fpsmaster.utils.render.draw.Rects;
+import top.fpsmaster.utils.render.gui.UiScale;
 
 import java.awt.image.BufferedImage;
 import java.net.UnknownHostException;
@@ -84,7 +88,6 @@ public class ServerListEntry {
         UFontRenderer title = FPSMaster.fontManager.s18;
         UFontRenderer text = FPSMaster.fontManager.s16;
 
-
         boolean flag = this.server.version > 47;
         boolean flag1 = this.server.version < 47;
         boolean flag2 = flag || flag1;
@@ -135,9 +138,10 @@ public class ServerListEntry {
             s1 = "Pinging...";
         }
 
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        this.mc.getTextureManager().bindTexture(Gui.icons);
-        Gui.drawModalRectWithCustomSizedTexture(x + listWidth - 15 - 5, y + 5, (float) (k * 10), (float) (176 + l * 8), 10, 8, 256.0F, 256.0F);
+//        this.mc.getTextureManager().bindTexture(Gui.icons);
+        Images.drawUV(Gui.icons, x + listWidth - 15 - 5, y + 5, k * 10, 176 + l * 8, 10, 8, 256, 256,-1,false);
+
+//        Gui.drawModalRectWithCustomSizedTexture(UiScale.scale(x + listWidth - 15 - 5), UiScale.scale(y + 5), (float) (k * 10), (float) (176 + l * 8), 10, 8, 256.0F, 256.0F);
         if (this.server.getBase64EncodedIconData() != null && !this.server.getBase64EncodedIconData().equals(this.field_148299_g)) {
             this.field_148299_g = this.server.getBase64EncodedIconData();
             this.prepareServerIcon();
@@ -149,9 +153,10 @@ public class ServerListEntry {
         } else {
             this.drawTextureAt(x + 10, y + 10, UNKNOWN_SERVER);
         }
-
-        int i1 = mouseX - x;
-        int j1 = mouseY - y;
+        GlStateManager.enableTexture2D();
+        GlStateManager.disableBlend();
+//        int i1 = mouseX - x;
+//        int j1 = mouseY - y;
 //        String tooltip = FMLClientHandler.instance().enhanceServerListEntry(this, this.server, x, listWidth, y, i1, j1);
 //        if (tooltip != null) {
 //            this.owner.setHoveringText(tooltip);
@@ -161,48 +166,13 @@ public class ServerListEntry {
 //            this.owner.setHoveringText(s);
 //        }
 
-        if (Hover.is(x + listWidth - text.getStringWidth(s1), y + 4, 10, 10, mouseX, mouseY)) {
-            text.drawString(s1, x + listWidth - text.getStringWidth(s1) + 12, y + 4, -1);
+        if (Hover.is(x + listWidth - 16, y + 4, 16, 12, mouseX, mouseY)) {
+            text.drawString(s1, x + listWidth - 8, y + 4, -1);
         }
-
-        if (this.mc.gameSettings.touchscreen || isSelected) {
-            this.mc.getTextureManager().bindTexture(SERVER_SELECTION_BUTTONS);
-            Gui.drawRect(x, y, x + 32, y + 32, -1601138544);
-            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-            int k1 = mouseX - x;
-            int l1 = mouseY - y;
-            if (this.func_178013_b()) {
-                if (k1 < 32 && k1 > 16) {
-                    Gui.drawModalRectWithCustomSizedTexture(x, y, 0.0F, 32.0F, 32, 32, 256.0F, 256.0F);
-                } else {
-                    Gui.drawModalRectWithCustomSizedTexture(x, y, 0.0F, 0.0F, 32, 32, 256.0F, 256.0F);
-                }
-            }
-
-//            if (this.owner.func_175392_a(this, slotIndex)) {
-//                if (k1 < 16 && l1 < 16) {
-//                    Gui.drawModalRectWithCustomSizedTexture(x, y, 96.0F, 32.0F, 32, 32, 256.0F, 256.0F);
-//                } else {
-//                    Gui.drawModalRectWithCustomSizedTexture(x, y, 96.0F, 0.0F, 32, 32, 256.0F, 256.0F);
-//                }
-//            }
-//
-//            if (this.owner.func_175394_b(this, slotIndex)) {
-//                if (k1 < 16 && l1 > 16) {
-//                    Gui.drawModalRectWithCustomSizedTexture(x, y, 64.0F, 32.0F, 32, 32, 256.0F, 256.0F);
-//                } else {
-//                    Gui.drawModalRectWithCustomSizedTexture(x, y, 64.0F, 0.0F, 32, 32, 256.0F, 256.0F);
-//                }
-//            }
-        }
-
     }
 
     protected void drawTextureAt(int p_178012_1_, int p_178012_2_, ResourceLocation p_178012_3_) {
-        this.mc.getTextureManager().bindTexture(p_178012_3_);
-        GlStateManager.enableBlend();
-        Gui.drawModalRectWithCustomSizedTexture(p_178012_1_, p_178012_2_, 0.0F, 0.0F, 32, 32, 32.0F, 32.0F);
-        GlStateManager.disableBlend();
+        Images.draw(p_178012_3_, p_178012_1_, p_178012_2_, 32, 32);
     }
 
     private boolean func_178013_b() {

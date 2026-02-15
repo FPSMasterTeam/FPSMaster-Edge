@@ -1,5 +1,6 @@
 package top.fpsmaster.utils.render.draw;
 
+import org.lwjgl.opengl.GL11;
 import top.fpsmaster.utils.render.draw.Colors;
 
 import net.minecraft.client.Minecraft;
@@ -82,6 +83,31 @@ public class Images {
         }
         Minecraft.getMinecraft().getTextureManager().bindTexture(res);
         Gui.drawModalRectWithCustomSizedTexture(x, y, 0, 0, width, height, width, height);
+        if (!rawImage) {
+            glDepthMask(true);
+            glDisable(GL_BLEND);
+            glEnable(GL_DEPTH_TEST);
+        }
+    }
+
+    public static void drawUV(ResourceLocation res, int x, int y, int u, int v, int width, int height,int tw, int th, int color, boolean rawImage) {
+        x = UiScale.scale(x);
+        y = UiScale.scale(y);
+//        width = UiScale.scale(width);
+//        height = UiScale.scale(height);
+        if (!rawImage) {
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glDepthMask(false);
+            GL14.glBlendFuncSeparate(org.lwjgl.opengl.GL11.GL_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE, org.lwjgl.opengl.GL11.GL_ZERO);
+            glColor(color);
+        }
+        Minecraft.getMinecraft().getTextureManager().bindTexture(res);
+        GL11.glTranslatef(x, y, 0);
+        GL11.glScalef(UiScale.getScale(), UiScale.getScale(), 0);
+        Gui.drawModalRectWithCustomSizedTexture(0, 0, u, v, width, height, tw, th);
+        GL11.glScalef(1 / UiScale.getScale(), 1 / UiScale.getScale(), 0);
+        GL11.glTranslatef(-x, -y, 0);
         if (!rawImage) {
             glDepthMask(true);
             glDisable(GL_BLEND);
