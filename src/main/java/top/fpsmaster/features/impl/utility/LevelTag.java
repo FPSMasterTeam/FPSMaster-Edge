@@ -1,5 +1,7 @@
 package top.fpsmaster.features.impl.utility;
 
+import top.fpsmaster.features.settings.Setting;
+import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.utils.render.draw.Images;
 
 import net.minecraft.client.gui.FontRenderer;
@@ -15,6 +17,8 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 
+import java.awt.*;
+
 import static top.fpsmaster.utils.core.Utility.mc;
 
 public class LevelTag extends Module {
@@ -22,10 +26,12 @@ public class LevelTag extends Module {
     public static boolean using = false;
     public static final BooleanSetting showSelf = new BooleanSetting("ShowSelf", true);
     public static final BooleanSetting health = new BooleanSetting("Health", true);
+    public static final BooleanSetting diableBackground = new BooleanSetting("DisableBackground", false);
+    public static final ColorSetting backgroundColor = new ColorSetting("BackgroundColor", new Color(0, 0, 0, 50), () -> !diableBackground.getValue());
 
     public LevelTag() {
         super("Nametags", Category.Utility);
-        addSettings(showSelf, health);
+        addSettings(showSelf, health,diableBackground, backgroundColor);
     }
 
     public static void renderHealth(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
@@ -101,12 +107,15 @@ public class LevelTag extends Module {
                 j += 6;
             }
 
+
+
             GlStateManager.disableTexture2D();
             worldRenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
-            worldRenderer.pos(-j - 1, -1 + i, 0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
-            worldRenderer.pos(-j - 1, 8 + i, 0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
-            worldRenderer.pos(j + 1, 8 + i, 0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
-            worldRenderer.pos(j + 1, -1 + i, 0.0F).color(0.0F, 0.0F, 0.0F, 0.25F).endVertex();
+            GL11.glColor4f(backgroundColor.getColor().getRed(), backgroundColor.getColor().getGreen(), backgroundColor.getColor().getBlue(), backgroundColor.getColor().getAlpha());
+            worldRenderer.pos(-j - 1, -1 + i, 0.0F).endVertex();
+            worldRenderer.pos(-j - 1, 8 + i, 0.0F).endVertex();
+            worldRenderer.pos(j + 1, 8 + i, 0.0F).endVertex();
+            worldRenderer.pos(j + 1, -1 + i, 0.0F).endVertex();
             tessellator.draw();
             GlStateManager.enableTexture2D();
             if (isMate) {
