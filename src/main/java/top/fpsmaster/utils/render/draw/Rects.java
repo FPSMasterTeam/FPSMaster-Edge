@@ -51,6 +51,10 @@ public class Rects {
         rounded(x, y, width, height, radius, color.getRGB());
     }
 
+    public static void rounded(float x, float y, float width, float height, int radius, int color) {
+        rounded(x, y, width, height, radius, color, false);
+    }
+
     public static void rounded(int x, int y, int width, int height, Color color) {
         rounded(x, y, width, height, 3, color.getRGB());
     }
@@ -77,8 +81,8 @@ public class Rects {
         }
     }
 
-    public static void rounded(int x, int y, int width, int height, int radius, int color, boolean rawImage) {
-        radius = Math.min(Math.min(height, width) / 2, radius);
+    public static void rounded(float x, float y, float width, float height, int radius, int color, boolean rawImage) {
+        radius = (int) Math.min(Math.min(height, width) / 2, radius);
         if (width < radius * 2 || radius < 1) {
             fill(x, y, width, height, color);
             return;

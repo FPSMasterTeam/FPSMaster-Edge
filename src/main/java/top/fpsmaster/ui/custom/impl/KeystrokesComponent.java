@@ -242,14 +242,14 @@ public class KeystrokesComponent extends Component {
             Color border = resolveBorderColor(x, y);
 
             StencilUtil.initStencilToWrite();
-            Rects.rounded(Math.round(outerX), Math.round(outerY), Math.round(outerW), Math.round(outerH), radius, new Color(0, 0, 0, 255));
+            Rects.rounded(outerX, outerY, outerW, outerH, radius, new Color(0, 0, 0, 255).getRGB());
             org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_ALWAYS, 0, 0xFF);
             org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE);
-            Rects.rounded(Math.round(x), Math.round(y), Math.round(scaledW), Math.round(scaledH), radius, new Color(0, 0, 0, 255));
+            Rects.rounded(x, y, scaledW, scaledH, radius, new Color(0, 0, 0, 255).getRGB());
             org.lwjgl.opengl.GL11.glColorMask(true, true, true, true);
             org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_EQUAL, 1, 0xFF);
             org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP);
-            Rects.rounded(Math.round(outerX), Math.round(outerY), Math.round(outerW), Math.round(outerH), radius, border);
+            Rects.rounded(outerX, outerY, outerW, outerH, radius, border.getRGB());
             StencilUtil.uninitStencilBuffer();
         }
 
@@ -292,7 +292,7 @@ public class KeystrokesComponent extends Component {
             float scaledH = height * scale;
             if (mode.equals("Pulse") || mode.equals("Bloom")) {
                 StencilUtil.initStencilToWrite();
-                Rects.rounded(Math.round(x), Math.round(y), Math.round(scaledW), Math.round(scaledH), mod.rounded.getValue() ? mod.roundRadius.getValue().intValue() : 0, new Color(0, 0, 0, 255));
+                Rects.rounded(x, y, scaledW, scaledH, mod.rounded.getValue() ? mod.roundRadius.getValue().intValue() : 0, new Color(0, 0, 0, 255).getRGB());
                 StencilUtil.readStencilBuffer(1);
                 for (PressAnim anim : pressAnims) {
                     float progress = Math.min(anim.progress, 1.0f);
@@ -322,7 +322,7 @@ public class KeystrokesComponent extends Component {
                             Keystrokes.pressAnimColor.getColor().getBlue(),
                             (int) (Keystrokes.pressAnimColor.getColor().getAlpha() * alpha)
                     );
-                    Rects.rounded(Math.round(x + scaledW / 2f - sizeW / 2f), Math.round(y + scaledH / 2f - sizeH / 2f), Math.round(sizeW), Math.round(sizeH), mod.rounded.getValue() ? mod.roundRadius.getValue().intValue() : 0, c);
+                    Rects.rounded(x + scaledW / 2f - sizeW / 2f, y + scaledH / 2f - sizeH / 2f, sizeW, sizeH, mod.rounded.getValue() ? mod.roundRadius.getValue().intValue() : 0, c.getRGB());
                 }
             }
         }

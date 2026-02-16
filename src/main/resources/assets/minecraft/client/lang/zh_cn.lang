@@ -422,7 +422,7 @@ nametags=名字标签
 nametags.desc=自定义名字标签
 nametags.showself=显示自己的名字标签
 nametags.health=显示血条
-nametags.diablebackground=禁用背景
+nametags.disablebackground=禁用背景
 nametags.backgroundcolor=背景颜色
 
 taboverlay=Tab显示

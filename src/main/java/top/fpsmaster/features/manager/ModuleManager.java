@@ -44,9 +44,6 @@ public class ModuleManager {
                 module.toggle();
             }
         }
-//        if (e.key == Keyboard.KEY_INSERT) {
-//            Minecraft.getMinecraft().displayGuiScreen(new CosmeticScreen());
-//        }
     }
 
     public void addModule(Module module) {
@@ -110,7 +107,7 @@ public class ModuleManager {
         modules.add(new PingDisplay());
         modules.add(new CoordsDisplay());
         modules.add(new ModsList());
-        modules.add(new MiniMap());
+//        modules.add(new MiniMap());
         modules.add(new DirectionDisplay());
         modules.add(new DamageIndicator());
         modules.add(new TabOverlay());

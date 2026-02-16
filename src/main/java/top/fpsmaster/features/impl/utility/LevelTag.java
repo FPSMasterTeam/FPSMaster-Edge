@@ -109,14 +109,16 @@ public class LevelTag extends Module {
 
 
 
-            GlStateManager.disableTexture2D();
-            worldRenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
-            GL11.glColor4f(backgroundColor.getColor().getRed(), backgroundColor.getColor().getGreen(), backgroundColor.getColor().getBlue(), backgroundColor.getColor().getAlpha());
-            worldRenderer.pos(-j - 1, -1 + i, 0.0F).endVertex();
-            worldRenderer.pos(-j - 1, 8 + i, 0.0F).endVertex();
-            worldRenderer.pos(j + 1, 8 + i, 0.0F).endVertex();
-            worldRenderer.pos(j + 1, -1 + i, 0.0F).endVertex();
-            tessellator.draw();
+            if(!diableBackground.getValue()) {
+                GlStateManager.disableTexture2D();
+                worldRenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
+                worldRenderer.pos(-j - 1, -1 + i, 0.0F).color(backgroundColor.getColor().getRed() / 255f, backgroundColor.getColor().getGreen() / 255f, backgroundColor.getColor().getBlue() / 255f, backgroundColor.getColor().getAlpha() / 255f).endVertex();
+                worldRenderer.pos(-j - 1, 8 + i, 0.0F).color(backgroundColor.getColor().getRed() / 255f, backgroundColor.getColor().getGreen() / 255f, backgroundColor.getColor().getBlue() / 255f, backgroundColor.getColor().getAlpha() / 255f).endVertex();
+                worldRenderer.pos(j + 1, 8 + i, 0.0F).color(backgroundColor.getColor().getRed() / 255f, backgroundColor.getColor().getGreen() / 255f, backgroundColor.getColor().getBlue() / 255f, backgroundColor.getColor().getAlpha() / 255f).endVertex();
+                worldRenderer.pos(j + 1, -1 + i, 0.0F).color(backgroundColor.getColor().getRed() / 255f, backgroundColor.getColor().getGreen() / 255f, backgroundColor.getColor().getBlue() / 255f, backgroundColor.getColor().getAlpha() / 255f).endVertex();
+                tessellator.draw();
+            }
+            GL11.glColor4f(1,1,1,1);
             GlStateManager.enableTexture2D();
             if (isMate) {
                 Images.draw(new ResourceLocation("client/textures/mate.png"), -fontRenderer.getStringWidth(str) / 2f - 4f, i - 1, 8, 8, -1, true);
