@@ -144,9 +144,9 @@ public class MainPanel extends ScaledGuiScreen {
         float centerX = guiWidth / 2f;
         float centerY = guiHeight / 2f;
         float scissorX = centerX + (x - centerX) * scale;
-        float scissorY = centerY + (y + 10 - centerY) * scale;
+        float scissorY = centerY + (y - centerY + 10) * scale;
         float scissorW = width * scale;
-        float scissorH = (height - 18) * scale;
+        float scissorH = (height - 12) * scale;
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         Scissor.apply(
