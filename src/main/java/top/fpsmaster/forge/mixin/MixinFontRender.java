@@ -16,6 +16,7 @@ import top.fpsmaster.modules.client.GlobalTextFilter;
 
 @Mixin(FontRenderer.class)
 public abstract class MixinFontRender {
+
     @Shadow
     protected abstract void resetStyles();
 
@@ -28,49 +29,76 @@ public abstract class MixinFontRender {
     @Unique
     private final FontRendererHook patcher$fontRendererHook = new FontRendererHook((FontRenderer) (Object) this);
 
+    @Unique
+    private FontRenderer fpsmaster$self() {
+        return (FontRenderer) (Object) this;
+    }
+
+    @Unique
+    private int fpsmaster$getVanillaStringWidth(String text) {
+        if (text == null) {
+            return 0;
+        }
+
+        int width = 0;
+        boolean bold = false;
+
+        for (int i = 0; i < text.length(); ++i) {
+            char character = text.charAt(i);
+            int charWidth = this.getCharWidth(character);
+
+            if (charWidth < 0 && i < text.length() - 1) {
+                ++i;
+                character = text.charAt(i);
+
+                if (character == 'l' || character == 'L') {
+                    bold = true;
+                } else if (character == 'r' || character == 'R') {
+                    bold = false;
+                }
+
+                charWidth = 0;
+            }
+
+            width += charWidth;
+
+            if (bold && charWidth > 0) {
+                ++width;
+            }
+        }
+
+        return width;
+    }
 
     @Inject(method = "getStringWidth", at = @At("HEAD"), cancellable = true)
     public void getStringWidth(String text, CallbackInfoReturnable<Integer> cir) {
         text = GlobalTextFilter.filter(text);
-        if (Performance.fontOptimize.getValue()) {
-            cir.setReturnValue(this.patcher$fontRendererHook.getStringWidth(text));
-        } else {
-            int i = 0;
-            boolean flag = false;
 
-            for (int j = 0; j < text.length(); ++j) {
-                char c0 = text.charAt(j);
-                int k = this.getCharWidth(c0);
-                if (k < 0 && j < text.length() - 1) {
-                    ++j;
-                    c0 = text.charAt(j);
-                    if (c0 != 'l' && c0 != 'L') {
-                        if (c0 == 'r' || c0 == 'R') {
-                            flag = false;
-                        }
-                    } else {
-                        flag = true;
-                    }
-
-                    k = 0;
-                }
-
-                i += k;
-                if (flag && k > 0) {
-                    ++i;
-                }
-            }
-
-            cir.setReturnValue(i);
+        if (text == null || text.isEmpty()) {
+            cir.setReturnValue(0);
+            return;
         }
+
+        if (Performance.shouldUseFontOptimize(fpsmaster$self(), text)) {
+            cir.setReturnValue(this.patcher$fontRendererHook.getStringWidth(text));
+            return;
+        }
+
+        cir.setReturnValue(fpsmaster$getVanillaStringWidth(text));
     }
 
     @Inject(method = "renderStringAtPos", at = @At("HEAD"), cancellable = true)
     private void patcher$useOptimizedRendering(String text, boolean shadow, CallbackInfo ci) {
-        if (Performance.fontOptimize.getValue()) {
-            if (this.patcher$fontRendererHook.renderStringAtPos(text, shadow)) {
-                ci.cancel();
-            }
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+
+        if (!Performance.shouldUseFontOptimize(fpsmaster$self(), text)) {
+            return;
+        }
+
+        if (this.patcher$fontRendererHook.renderStringAtPos(text, shadow)) {
+            ci.cancel();
         }
     }
 
@@ -86,19 +114,23 @@ public abstract class MixinFontRender {
     @Overwrite
     public int drawString(String text, float x, float y, int color, boolean dropShadow) {
         text = GlobalTextFilter.filter(text);
-        GlStateManager.enableAlpha();
-        this.resetStyles();
-        int i;
-        if (dropShadow) {
-            i = this.renderString(text, x + 1.0F, y + 1.0F, color, true);
-            i = Math.max(i, this.renderString(text, x, y, color, false));
-        } else {
-            i = this.renderString(text, x, y, color, false);
+
+        if (text == null) {
+            return 0;
         }
 
-        return i;
+        GlStateManager.enableAlpha();
+        this.resetStyles();
+
+        int width;
+
+        if (dropShadow) {
+            width = this.renderString(text, x + 1.0F, y + 1.0F, color, true);
+            width = Math.max(width, this.renderString(text, x, y, color, false));
+        } else {
+            width = this.renderString(text, x, y, color, false);
+        }
+
+        return width;
     }
 }
-
-
-
