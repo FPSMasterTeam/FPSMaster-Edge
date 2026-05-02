@@ -1,6 +1,5 @@
 package top.fpsmaster.features.impl.utility;
 
-import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.utils.render.draw.Images;
 
@@ -31,28 +30,38 @@ public class LevelTag extends Module {
 
     public LevelTag() {
         super("Nametags", Category.Utility);
-        addSettings(showSelf, health,diableBackground, backgroundColor);
+        addSettings(showSelf, health, diableBackground, backgroundColor);
     }
 
     public static void renderHealth(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
-        if (!using)
+        if (!using) {
             return;
-        if(!str.contains(entityIn.getName()) || !(entityIn instanceof EntityPlayer))
+        }
+
+        if (!str.contains(entityIn.getName()) || !(entityIn instanceof EntityPlayer)) {
             return;
-        if (str.contains("[NPC]"))
+        }
+
+        if (str.contains("[NPC]")) {
             return;
+        }
+
         double d = entityIn.getDistanceSqToEntity(mc.getRenderManager().livingPlayer);
+
         if (d < 100) {
             float f = 1.6F;
             float g = 0.016666668F * f;
+
             GlStateManager.pushMatrix();
             GlStateManager.translate((float) x + 0.0F, (float) y + entityIn.height + 0.5F, (float) z);
             GL11.glNormal3f(0.0F, 1.0F, 0.0F);
+
+            /*
+             * Nametag billboard rotation.
+             * Make the tag always face the current camera.
+             */
             GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0F, 1.0F, 0.0F);
-            if (mc.gameSettings.thirdPersonView == 2)
-                GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
-            else if (mc.gameSettings.thirdPersonView == 1)
-                GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
+            GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
 
             GlStateManager.scale(-g, -g, g);
             GlStateManager.disableLighting();
@@ -60,8 +69,10 @@ public class LevelTag extends Module {
             GlStateManager.disableDepth();
             GlStateManager.enableBlend();
             GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+
             GlStateManager.disableTexture2D();
             GlStateManager.enableTexture2D();
+
             GlStateManager.enableLighting();
             GlStateManager.disableBlend();
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
@@ -70,21 +81,24 @@ public class LevelTag extends Module {
     }
 
     public static void renderName(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
-        if ((!using || !showSelf.getValue()) && entityIn == mc.thePlayer)
+        if ((!using || !showSelf.getValue()) && entityIn == mc.thePlayer) {
             return;
+        }
+
         double d = entityIn.getDistanceSqToEntity(mc.getRenderManager().livingPlayer);
-        if (!(d > (double)(maxDistance * maxDistance))) {
+
+        if (!(d > (double) (maxDistance * maxDistance))) {
             FontRenderer fontRenderer = mc.fontRendererObj;
+
             float f = 1.6F;
             float g = 0.016666668F * f;
+
             GlStateManager.pushMatrix();
-            GlStateManager.translate((float)x + 0.0F, (float)y + entityIn.height + 0.5F, (float)z);
+            GlStateManager.translate((float) x + 0.0F, (float) y + entityIn.height + 0.5F, (float) z);
             GL11.glNormal3f(0.0F, 1.0F, 0.0F);
+
             GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0F, 1.0F, 0.0F);
-            if (mc.gameSettings.thirdPersonView == 2)
-                GlStateManager.rotate(-mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
-            else if (mc.gameSettings.thirdPersonView == 1)
-                GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
+            GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
 
             GlStateManager.scale(-g, -g, g);
             GlStateManager.disableLighting();
@@ -92,9 +106,12 @@ public class LevelTag extends Module {
             GlStateManager.disableDepth();
             GlStateManager.enableBlend();
             GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+
             Tessellator tessellator = Tessellator.getInstance();
             WorldRenderer worldRenderer = tessellator.getWorldRenderer();
+
             int i = 0;
+
             if (str.equals("deadmau5")) {
                 i = -10;
             }
@@ -107,32 +124,102 @@ public class LevelTag extends Module {
                 j += 6;
             }
 
-
-
-            if(!diableBackground.getValue()) {
+            if (!diableBackground.getValue()) {
                 GlStateManager.disableTexture2D();
+
                 worldRenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
-                worldRenderer.pos(-j - 1, -1 + i, 0.0F).color(backgroundColor.getColor().getRed() / 255f, backgroundColor.getColor().getGreen() / 255f, backgroundColor.getColor().getBlue() / 255f, backgroundColor.getColor().getAlpha() / 255f).endVertex();
-                worldRenderer.pos(-j - 1, 8 + i, 0.0F).color(backgroundColor.getColor().getRed() / 255f, backgroundColor.getColor().getGreen() / 255f, backgroundColor.getColor().getBlue() / 255f, backgroundColor.getColor().getAlpha() / 255f).endVertex();
-                worldRenderer.pos(j + 1, 8 + i, 0.0F).color(backgroundColor.getColor().getRed() / 255f, backgroundColor.getColor().getGreen() / 255f, backgroundColor.getColor().getBlue() / 255f, backgroundColor.getColor().getAlpha() / 255f).endVertex();
-                worldRenderer.pos(j + 1, -1 + i, 0.0F).color(backgroundColor.getColor().getRed() / 255f, backgroundColor.getColor().getGreen() / 255f, backgroundColor.getColor().getBlue() / 255f, backgroundColor.getColor().getAlpha() / 255f).endVertex();
+
+                worldRenderer
+                        .pos(-j - 1, -1 + i, 0.0F)
+                        .color(
+                                backgroundColor.getColor().getRed() / 255f,
+                                backgroundColor.getColor().getGreen() / 255f,
+                                backgroundColor.getColor().getBlue() / 255f,
+                                backgroundColor.getColor().getAlpha() / 255f
+                        )
+                        .endVertex();
+
+                worldRenderer
+                        .pos(-j - 1, 8 + i, 0.0F)
+                        .color(
+                                backgroundColor.getColor().getRed() / 255f,
+                                backgroundColor.getColor().getGreen() / 255f,
+                                backgroundColor.getColor().getBlue() / 255f,
+                                backgroundColor.getColor().getAlpha() / 255f
+                        )
+                        .endVertex();
+
+                worldRenderer
+                        .pos(j + 1, 8 + i, 0.0F)
+                        .color(
+                                backgroundColor.getColor().getRed() / 255f,
+                                backgroundColor.getColor().getGreen() / 255f,
+                                backgroundColor.getColor().getBlue() / 255f,
+                                backgroundColor.getColor().getAlpha() / 255f
+                        )
+                        .endVertex();
+
+                worldRenderer
+                        .pos(j + 1, -1 + i, 0.0F)
+                        .color(
+                                backgroundColor.getColor().getRed() / 255f,
+                                backgroundColor.getColor().getGreen() / 255f,
+                                backgroundColor.getColor().getBlue() / 255f,
+                                backgroundColor.getColor().getAlpha() / 255f
+                        )
+                        .endVertex();
+
                 tessellator.draw();
             }
-            GL11.glColor4f(1,1,1,1);
+
+            GL11.glColor4f(1, 1, 1, 1);
             GlStateManager.enableTexture2D();
+
             if (isMate) {
-                Images.draw(new ResourceLocation("client/textures/mate.png"), -fontRenderer.getStringWidth(str) / 2f - 4f, i - 1, 8, 8, -1, true);
-                fontRenderer.drawString(str, -fontRenderer.getStringWidth(str) / 2 + 6, i, 553648127);
-            }else{
-                fontRenderer.drawString(str, -fontRenderer.getStringWidth(str) / 2, i, 553648127);
+                Images.draw(
+                        new ResourceLocation("client/textures/mate.png"),
+                        -fontRenderer.getStringWidth(str) / 2f - 4f,
+                        i - 1,
+                        8,
+                        8,
+                        -1,
+                        true
+                );
+
+                fontRenderer.drawString(
+                        str,
+                        -fontRenderer.getStringWidth(str) / 2 + 6,
+                        i,
+                        553648127
+                );
+            } else {
+                fontRenderer.drawString(
+                        str,
+                        -fontRenderer.getStringWidth(str) / 2,
+                        i,
+                        553648127
+                );
             }
+
             GlStateManager.enableDepth();
             GlStateManager.depthMask(true);
+
             if (isMate) {
-                fontRenderer.drawString(str, -fontRenderer.getStringWidth(str) / 2 + 6, i, -1);
-            }else{
-                fontRenderer.drawString(str, -fontRenderer.getStringWidth(str) / 2, i, -1);
+                fontRenderer.drawString(
+                        str,
+                        -fontRenderer.getStringWidth(str) / 2 + 6,
+                        i,
+                        -1
+                );
+            } else {
+                fontRenderer.drawString(
+                        str,
+                        -fontRenderer.getStringWidth(str) / 2,
+                        i,
+                        -1
+                );
             }
+
             GlStateManager.enableLighting();
             GlStateManager.disableBlend();
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
@@ -156,7 +243,3 @@ public class LevelTag extends Module {
         return using;
     }
 }
-
-
-
-
