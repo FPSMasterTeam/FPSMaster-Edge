@@ -1,11 +1,12 @@
 package top.fpsmaster.features.impl.optimizes;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.world.World;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
-
 
 public class Performance extends Module {
 
@@ -27,9 +28,8 @@ public class Performance extends Module {
 
     public Performance() {
         super("Performance", Category.OPTIMIZE);
-        addSettings(ignoreStands, entitiesOptimize, fastLoad, batchModelRendering, lowAnimationTick, entityLimit, fpsLimit, particlesLimit, fontOptimize, staticParticleColor,limitChunks,chunkUpdateLimit);
+        addSettings(ignoreStands, entitiesOptimize, fastLoad, batchModelRendering, lowAnimationTick, entityLimit, fpsLimit, particlesLimit, fontOptimize, staticParticleColor, limitChunks, chunkUpdateLimit);
     }
-
 
     @Override
     public void onEnable() {
@@ -62,7 +62,73 @@ public class Performance extends Module {
             double cameraX, double cameraY, double cameraZ) {
         return true;
     }
+
+    public static boolean shouldUseFontOptimize(FontRenderer fontRenderer, String text) {
+        if (!using) {
+            return false;
+        }
+
+        if (!fontOptimize.getValue()) {
+            return false;
+        }
+
+        if (fontRenderer == null) {
+            return false;
+        }
+
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+
+        if (fontRenderer.getUnicodeFlag()) {
+            return false;
+        }
+
+        Minecraft mc = Minecraft.getMinecraft();
+
+        if (mc == null) {
+            return false;
+        }
+
+        if (mc.getLanguageManager() != null && mc.getLanguageManager().isCurrentLocaleUnicode()) {
+            return false;
+        }
+
+        boolean hasRenderableCharacter = false;
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+
+            if (c == '\u00A7') {
+                if (i + 1 >= text.length()) {
+                    return false;
+                }
+
+                char code = Character.toLowerCase(text.charAt(i + 1));
+
+                if ("0123456789abcdefklmnor".indexOf(code) == -1) {
+                    return false;
+                }
+
+                i++;
+                continue;
+            }
+
+            if (Character.isHighSurrogate(c) || Character.isLowSurrogate(c)) {
+                return false;
+            }
+
+            if (c > 255) {
+                return false;
+            }
+
+            if (c < 32 && c != '\n' && c != '\r' && c != '\t') {
+                return false;
+            }
+
+            hasRenderableCharacter = true;
+        }
+
+        return hasRenderableCharacter;
+    }
 }
-
-
-
