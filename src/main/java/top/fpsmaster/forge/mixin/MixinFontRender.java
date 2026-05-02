@@ -72,6 +72,11 @@ public abstract class MixinFontRender {
 
     @Inject(method = "getStringWidth", at = @At("HEAD"), cancellable = true)
     public void getStringWidth(String text, CallbackInfoReturnable<Integer> cir) {
+        if (text == null) {
+            cir.setReturnValue(0);
+            return;
+        }
+
         text = GlobalTextFilter.filter(text);
 
         if (text == null || text.isEmpty()) {
@@ -79,7 +84,7 @@ public abstract class MixinFontRender {
             return;
         }
 
-        if (Performance.shouldUseFontOptimize(fpsmaster$self(), text)) {
+        if (Performance.shouldUseFontOptimize(fpsmaster$self())) {
             cir.setReturnValue(this.patcher$fontRendererHook.getStringWidth(text));
             return;
         }
@@ -93,7 +98,7 @@ public abstract class MixinFontRender {
             return;
         }
 
-        if (!Performance.shouldUseFontOptimize(fpsmaster$self(), text)) {
+        if (!Performance.shouldUseFontOptimize(fpsmaster$self())) {
             return;
         }
 
@@ -105,6 +110,7 @@ public abstract class MixinFontRender {
     @Inject(method = "onResourceManagerReload", at = @At("HEAD"))
     private void patcher$markFontRefresh(CallbackInfo ci) {
         FontRendererHook.forceRefresh = true;
+        Performance.markFontOptimizeDirty();
     }
 
     /**
@@ -113,6 +119,10 @@ public abstract class MixinFontRender {
      */
     @Overwrite
     public int drawString(String text, float x, float y, int color, boolean dropShadow) {
+        if (text == null) {
+            return 0;
+        }
+
         text = GlobalTextFilter.filter(text);
 
         if (text == null) {
