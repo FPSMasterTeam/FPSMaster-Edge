@@ -18,12 +18,12 @@ public class CategoryComponent {
 
     public CategoryComponent(Category category) {
         this.category = category;
-        animationName.set(new Color(234, 234, 234));
+        animationName.set(ClickGuiTheme.categoryTextUnselected());
     }
 
     public void render(float x, float y, float width, float height, float mouseX, float mouseY, boolean selected, double dt) {
         animationName.animateTo(
-                selected ? new Color(0, 0, 0) : new Color(255, 255, 255),
+                selected ? ClickGuiTheme.categoryTextSelected() : ClickGuiTheme.categoryTextUnselected(),
                 0.2f,
                 Easings.QUAD_IN_OUT
         );

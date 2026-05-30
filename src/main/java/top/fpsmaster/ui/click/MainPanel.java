@@ -10,6 +10,7 @@ import top.fpsmaster.utils.render.draw.Rects;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
@@ -24,6 +25,7 @@ import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.BezierEasing;
 import top.fpsmaster.utils.math.anim.Easings;
+import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.utils.render.gui.Scissor;
 
@@ -39,6 +41,7 @@ public class MainPanel extends ScaledGuiScreen {
     LinkedList<CategoryComponent> categories = new LinkedList<>();
     float modsWheel = 0f;
     float wheelTemp = 0f;
+    private boolean zoomModifierHeld = false;
 
     private final Animator scaleAnimation = new Animator();
     private final Animator alphaAnimation = new Animator();
@@ -93,6 +96,7 @@ public class MainPanel extends ScaledGuiScreen {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
+        updateZoomModifierState();
         //aiChatPanel.render(mouseX, mouseY, scaleFactor);
         x = (int) ( guiWidth - width) / 2;
         y = (int) (guiHeight - height) / 2;
@@ -122,7 +126,7 @@ public class MainPanel extends ScaledGuiScreen {
         alphaAnimation.update(dt);
         maskAlpha.update(dt);
         Alpha.set(1f);
-        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(0, 0, 0, (int) maskAlpha.get()));
+        Rects.fill(0f, 0f, guiWidth, guiHeight, ClickGuiTheme.mask((int) maskAlpha.get()));
         Alpha.set((float) alphaAnimation.get() / 255f);
 
         GlStateManager.translate(guiWidth / 2.0, guiHeight / 2.0, 0.0);
@@ -137,6 +141,12 @@ public class MainPanel extends ScaledGuiScreen {
                 height + 12,
                 -1
         );
+
+        if (ClickGuiTheme.isLight()) {
+            Rects.rounded(Math.round(x + leftWidth - 8), Math.round(y - 2),
+                    Math.round(width - leftWidth + 16), Math.round(height + 12),
+                    8, ClickGuiTheme.panelBg());
+        }
 
         moduleListAlpha = (float) AnimMath.base(moduleListAlpha, 255.0, 0.1f);
 
@@ -199,7 +209,7 @@ public class MainPanel extends ScaledGuiScreen {
                 Math.round(categoryAnimation),
                 Math.round(categoryBgHeight),
                 10,
-                new Color(0, 0, 0, 200)
+                ClickGuiTheme.categoryBg()
         );
 
         float my = categoryStartY;
@@ -209,7 +219,7 @@ public class MainPanel extends ScaledGuiScreen {
                 Math.round(categoryAnimation - 8),
                 22,
                 10,
-                new Color(255, 255, 255)
+                ClickGuiTheme.categorySelection()
         );
 
 
@@ -225,9 +235,9 @@ public class MainPanel extends ScaledGuiScreen {
 
         for (CategoryComponent m : categories) {
             if (Hover.is(x, my - 6, leftWidth - 10, 20f, mouseX, mouseY)) {
-                m.categorySelectionColor.animateTo(new Color(70, 70, 70), 0.15f, Easings.QUAD_OUT);
+                m.categorySelectionColor.animateTo(ClickGuiTheme.categoryHover(), 0.15f, Easings.QUAD_OUT);
             } else {
-                m.categorySelectionColor.animateTo(Colors.alpha(new Color(70, 70, 70), 0), 0.15f, Easings.QUAD_OUT);
+                m.categorySelectionColor.animateTo(Colors.alpha(ClickGuiTheme.categoryHover(), 0), 0.15f, Easings.QUAD_OUT);
             }
             m.categorySelectionColor.update(dt);
 
@@ -250,6 +260,27 @@ public class MainPanel extends ScaledGuiScreen {
             my += 27f;
         }
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
+
+        // Theme toggle button (bottom-left)
+        float themeBtnX = x + 4 + categoryAnimation / 50f;
+        float themeBtnY = y + height - 18;
+        float themeBtnW = categoryAnimation - 8;
+        float themeBtnH = 14;
+        boolean isLightTheme = ClickGuiTheme.isLight();
+        Rects.rounded(Math.round(themeBtnX), Math.round(themeBtnY),
+                Math.round(themeBtnW), Math.round(themeBtnH), 4,
+                ClickGuiTheme.themeBtnBg().getRGB());
+        FPSMaster.fontManager.s14.drawString(
+                FPSMaster.i18n.get(isLightTheme ? "theme.light" : "theme.dark"),
+                themeBtnX + (themeBtnW - FPSMaster.fontManager.s14.getStringWidth(
+                        FPSMaster.i18n.get(isLightTheme ? "theme.light" : "theme.dark"))) / 2f,
+                themeBtnY + 3,
+                ClickGuiTheme.themeBtnText().getRGB()
+        );
+        if (consumePressInBounds(themeBtnX, themeBtnY, themeBtnW, themeBtnH) != null) {
+            ClientSettings.theme.setValue(isLightTheme ? 0 : 1);
+        }
+
         Alpha.set(1f);
 
         handlePointerPress();
@@ -349,6 +380,35 @@ public class MainPanel extends ScaledGuiScreen {
 
         if (mouseButton == 0) {
             consumePressInBounds(x, y, width, height, mouseButton);
+        }
+    }
+
+    private void updateZoomModifierState() {
+        int zoomKey = ClientSettings.zoomBind.getValue();
+        if (zoomKey != 0) {
+            zoomModifierHeld = Keyboard.isKeyDown(zoomKey);
+            if (!zoomModifierHeld) {
+                if (zoomKey == Keyboard.KEY_LCONTROL || zoomKey == Keyboard.KEY_RCONTROL)
+                    zoomModifierHeld = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL);
+                else if (zoomKey == Keyboard.KEY_LSHIFT || zoomKey == Keyboard.KEY_RSHIFT)
+                    zoomModifierHeld = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+                else if (zoomKey == Keyboard.KEY_LMENU || zoomKey == Keyboard.KEY_RMENU)
+                    zoomModifierHeld = Keyboard.isKeyDown(Keyboard.KEY_LMENU) || Keyboard.isKeyDown(Keyboard.KEY_RMENU);
+            }
+        } else {
+            zoomModifierHeld = false;
+        }
+    }
+
+    @Override
+    protected void mouseScrolled(int mouseX, int mouseY, int wheelDelta) {
+        super.mouseScrolled(mouseX, mouseY, wheelDelta);
+        if (zoomModifierHeld) {
+            if (wheelDelta > 0) {
+                ClientSettings.fixedScale.setValue(ClientSettings.fixedScale.getValue() + 1);
+            } else if (wheelDelta < 0) {
+                ClientSettings.fixedScale.setValue(ClientSettings.fixedScale.getValue() - 1);
+            }
         }
     }
 

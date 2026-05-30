@@ -6,6 +6,7 @@ import top.fpsmaster.utils.render.draw.Rects;
 import org.lwjgl.input.Keyboard;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.features.settings.impl.BindSetting;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.ui.click.MainPanel;
@@ -31,7 +32,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
     public void render(ScaledGuiScreen screen, float x, float y, float width, float height, float mouseX, float mouseY, boolean custom) {
         float fw = FPSMaster.fontManager.s16.drawString(
             FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault())),
-            x + 10, y + 2, new Color(234, 234, 234).getRGB()
+            x + 10, y + 2, ClickGuiTheme.textPrimary().getRGB()
         );
         String keyName = Keyboard.getKeyName(binding.get());
         UFontRenderer s16b = FPSMaster.fontManager.s16;
@@ -42,11 +43,11 @@ public class BindSettingRender extends SettingRender<BindSetting> {
                 Math.round(y - 0.5f),
                 Math.round(width1 + 1),
                 13,
-                new Color(0,0,0,80)
+                ClickGuiTheme.bindBgInactive().getRGB()
             );
         }
         Rects.rounded(Math.round(x + 15 + fw), Math.round(y), Math.round(width1), 12, colorAnimation.getColor());
-        s16b.drawString(keyName, x + 18 + fw, y + 2, new Color(234, 234, 234).getRGB());
+        s16b.drawString(keyName, x + 18 + fw, y + 2, ClickGuiTheme.textPrimary().getRGB());
         if (MainPanel.bindLock.equals(setting.name)) {
             colorAnimation.base(new Color(255,255,255,80));
         } else {

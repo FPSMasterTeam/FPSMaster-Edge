@@ -18,6 +18,7 @@ import top.fpsmaster.event.events.EventSendChatMessage;
 import top.fpsmaster.features.impl.interfaces.BetterScreen;
 import top.fpsmaster.utils.math.anim.AnimMath;
 import top.fpsmaster.utils.render.effects.Blur;
+import top.fpsmaster.utils.system.OptifineUtil;
 
 import java.awt.*;
 import java.io.IOException;
@@ -79,7 +80,7 @@ public abstract class MixinGuiScreen extends Gui {
                     GlStateManager.enableAlpha();
                     GlStateManager.enableTexture2D();
                 }
-                if (BetterScreen.blur.getValue()) {
+                if (BetterScreen.blur.getValue() && !OptifineUtil.isFastRender()) {
                     v1_8_9$iteration = Math.min(++v1_8_9$iteration, 3);
                     Blur.area(0, 0, width, height, 1, new Color(255, 255, 255), v1_8_9$iteration, v1_8_9$iteration);
                 }

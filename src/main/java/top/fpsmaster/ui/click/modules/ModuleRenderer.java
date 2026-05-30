@@ -11,6 +11,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.*;
+import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.ui.click.modules.impl.*;
 import top.fpsmaster.utils.math.anim.AnimMath;
@@ -34,7 +35,7 @@ public class ModuleRenderer extends ValueRender {
 
     public ModuleRenderer(Module module) {
         this.mod = module;
-        content = new ColorAnimator(module.isEnabled() ? new Color(66, 66, 66) : new Color(40, 40, 40));
+        content = new ColorAnimator(module.isEnabled() ? ClickGuiTheme.moduleContentEnabled() : ClickGuiTheme.moduleContentDisabled());
         module.settings.forEach(setting -> {
             if (setting instanceof BooleanSetting) {
                 settingsRenderers.add(new BooleanSettingRender(module, (BooleanSetting) setting));
@@ -64,12 +65,12 @@ public class ModuleRenderer extends ValueRender {
         option.update();
 
         if (mod.isEnabled()) {
-            content.animateTo(new Color(255, 255, 255), 0.2f, Easings.QUAD_IN_OUT);
-            option.animateTo(new Color(89, 101, 241), 0.2f, Easings.QUAD_IN_OUT);
+            content.animateTo(ClickGuiTheme.moduleContentEnabled(), 0.2f, Easings.QUAD_IN_OUT);
+            option.animateTo(ClickGuiTheme.toggleEnabled(), 0.2f, Easings.QUAD_IN_OUT);
             optionX = (float) AnimMath.base(optionX, 10, 0.2f);
         } else {
-            content.animateTo(new Color(156, 156, 156), 0.2f, Easings.QUAD_IN_OUT);
-            option.animateTo(new Color(255, 255, 255), 0.2f, Easings.QUAD_IN_OUT);
+            content.animateTo(ClickGuiTheme.moduleContentDisabled(), 0.2f, Easings.QUAD_IN_OUT);
+            option.animateTo(ClickGuiTheme.toggleDisabled(), 0.2f, Easings.QUAD_IN_OUT);
             optionX = (float) AnimMath.base(optionX, 0, 0.2f);
         }
 
@@ -89,7 +90,7 @@ public class ModuleRenderer extends ValueRender {
                 Math.round(width - 10),
                 Math.round(settingHeight),
                 10,
-                new Color(100, 100, 100, 60).getRGB()
+                ClickGuiTheme.settingsBg().getRGB()
         );
 
 //        Rects.roundedBorder(
@@ -146,7 +147,7 @@ public class ModuleRenderer extends ValueRender {
                 FPSMaster.i18n.get(mod.name.toLowerCase(Locale.getDefault()) + ".desc"),
                 x + 40,
                 y + 20,
-                new Color(162, 162, 162).getRGB()
+                ClickGuiTheme.textDescription().getRGB()
         );
 
         float settingsHeight = 0f;

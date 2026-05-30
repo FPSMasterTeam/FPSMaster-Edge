@@ -6,6 +6,7 @@ import top.fpsmaster.utils.render.draw.Rects;
 import net.minecraft.item.ItemStack;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.features.settings.impl.MultipleItemSetting;
 import top.fpsmaster.ui.click.modules.SettingRender;
 import top.fpsmaster.ui.common.binding.MultipleItemSettingBinding;
@@ -33,27 +34,27 @@ public class MultipleItemSettingRender extends SettingRender<MultipleItemSetting
     public void render(ScaledGuiScreen screen, float x, float y, float width, float height, float mouseX, float mouseY, boolean custom) {
         FPSMaster.fontManager.s16.drawString(
                 FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault())),
-                x + xOffset, y + 1, new Color(162, 162, 162).getRGB()
+                x + xOffset, y + 1, ClickGuiTheme.textSecondary().getRGB()
         );
-        Rects.rounded(Math.round(x + xOffset), Math.round(y + FPSMaster.fontManager.s16.getHeight() + 5), Math.round(itemWidth + padding), Math.round(this.height - 7), 3, new Color(80, 80, 80, 160).getRGB());
+        Rects.rounded(Math.round(x + xOffset), Math.round(y + FPSMaster.fontManager.s16.getHeight() + 5), Math.round(itemWidth + padding), Math.round(this.height - 7), 3, ClickGuiTheme.itemContainerBg().getRGB());
         int textWidth = FPSMaster.fontManager.s14.getStringWidth(FPSMaster.i18n.get(FPSMaster.i18n.get("ItemsSetting.heldItem".toLowerCase(Locale.getDefault()))));
-        FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get("ItemsSetting.heldItem".toLowerCase(Locale.getDefault())), x + xOffset + itemWidth - 30 - textWidth, y + 1, -1) ;
-        FPSMaster.fontManager.s22.drawString("+", x + xOffset + itemWidth - 12, y + 1, -1);
+        FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get("ItemsSetting.heldItem".toLowerCase(Locale.getDefault())), x + xOffset + itemWidth - 30 - textWidth, y + 1, ClickGuiTheme.textPrimary().getRGB());
+        FPSMaster.fontManager.s22.drawString("+", x + xOffset + itemWidth - 12, y + 1, ClickGuiTheme.textPrimary().getRGB());
 
-        Rects.rounded(Math.round(x + xOffset), Math.round(y + FPSMaster.fontManager.s16.getHeight() + 5), Math.round(itemWidth + padding), Math.round(this.height - 7), 3, new Color(80, 80, 80, 160).getRGB());
+        Rects.rounded(Math.round(x + xOffset), Math.round(y + FPSMaster.fontManager.s16.getHeight() + 5), Math.round(itemWidth + padding), Math.round(this.height - 7), 3, ClickGuiTheme.itemContainerBg().getRGB());
 
         int index = 0;
         this.itemWidth = width - (xOffset * 2);
         for (ItemStack itemStack : binding.get()) {
-            Rects.rounded(Math.round(x + xOffset + padding), Math.round(y + FPSMaster.fontManager.s16.getHeight() + 5 + padding + (index * (itemHeight + padding))), Math.round(itemWidth - padding), itemHeight, new Color(50, 50, 50, 120));
+            Rects.rounded(Math.round(x + xOffset + padding), Math.round(y + FPSMaster.fontManager.s16.getHeight() + 5 + padding + (index * (itemHeight + padding))), Math.round(itemWidth - padding), itemHeight, ClickGuiTheme.itemBg());
             ItemsUtil.renderItem(itemStack, x + (padding * 2) + 20f, (y + FPSMaster.fontManager.s16.getHeight() + 5 + padding * 2) + (index * (itemHeight + padding)));
             renderButton(x + xOffset + itemWidth - (padding * 2) - buttonSize, (y + FPSMaster.fontManager.s16.getHeight() + 5 + padding * 2) + (index * (buttonSize + (padding * 3))), mouseX,mouseY ,"-");
-            FPSMaster.fontManager.s14.drawString(itemStack.getDisplayName(), x + (padding * 2) + 45f, (y + FPSMaster.fontManager.s16.getHeight() + 5 + padding * 2) + (index * (buttonSize + (padding * 3))) + 5, -1);
+            FPSMaster.fontManager.s14.drawString(itemStack.getDisplayName(), x + (padding * 2) + 45f, (y + FPSMaster.fontManager.s16.getHeight() + 5 + padding * 2) + (index * (buttonSize + (padding * 3))) + 5, ClickGuiTheme.textPrimary().getRGB());
             index++;
         }
         if (binding.get().isEmpty()) {
             this.height = itemHeight + 10;
-            FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get("ItemsSetting.isEmpty".toLowerCase(Locale.getDefault())), x + ((itemWidth - (padding * 2)) / 2), (y + FPSMaster.fontManager.s16.getHeight() + 5 + padding * 2) + 5, -1);
+            FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get("ItemsSetting.isEmpty".toLowerCase(Locale.getDefault())), x + ((itemWidth - (padding * 2)) / 2), (y + FPSMaster.fontManager.s16.getHeight() + 5 + padding * 2) + 5, ClickGuiTheme.textSecondary().getRGB());
         }else{
             this.height = (index * (itemHeight + padding)) + 10;
         }
@@ -79,12 +80,12 @@ public class MultipleItemSettingRender extends SettingRender<MultipleItemSetting
     }
 
     public void renderButton(float x, float y, float mouseX, float mouseY, String icon) {
-        Color color = new Color(70, 70, 70, 140);
+        Color color = ClickGuiTheme.buttonBg();
         if(Hover.is(x,y,buttonSize,buttonSize,(int) mouseX,(int) mouseY)){
-            color = new Color(120, 120, 120, 140);
+            color = ClickGuiTheme.buttonHoverBg();
         }
         Rects.rounded(Math.round(x), Math.round(y), buttonSize, buttonSize, color);
-        FPSMaster.fontManager.s16.drawString(icon, x + (buttonSize / 2.0f) - 2, y + (buttonSize / 2.0f) - 6, -1);
+        FPSMaster.fontManager.s16.drawString(icon, x + (buttonSize / 2.0f) - 2, y + (buttonSize / 2.0f) - 6, ClickGuiTheme.textPrimary().getRGB());
     }
 
 }

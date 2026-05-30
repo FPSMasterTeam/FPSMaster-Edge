@@ -7,8 +7,8 @@ import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventValueChange;
 import top.fpsmaster.exception.FileException;
-import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
+import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BindSetting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
@@ -20,7 +20,7 @@ import java.util.Locale;
 
 import static top.fpsmaster.utils.core.Utility.mc;
 
-public class ClientSettings extends InterfaceModule {
+public class ClientSettings extends Module {
     public static ModeSetting language = new ModeSetting("Language", 1, "English", "Chinese");
     public static BooleanSetting blur = new BooleanSetting("blur", false);
     public static BindSetting keyBind = new BindSetting("ClickGuiKey", Keyboard.KEY_RSHIFT);
@@ -33,8 +33,10 @@ public class ClientSettings extends InterfaceModule {
             2,
             "0.5x", "0.75x", "1x", "1.25x", "1.5x", "2x", "2.5x", "3x"
     );
+    public static ModeSetting theme = new ModeSetting("Theme", 0, "Dark", "Light");
     public static BooleanSetting clientCommand = new BooleanSetting("Command", true);
-    public static final TextSetting prefix = new TextSetting("prefix", "#", () -> clientCommand.getValue());
+    public static BindSetting zoomBind = new BindSetting("ZoomBind", Keyboard.KEY_LCONTROL);
+    public static final TextSetting prefix = new TextSetting("prefix", ".", () -> clientCommand.getValue());
     
     public static boolean isFollowGameScaleEnabled() {
         return followGameScale.getValue();
@@ -68,7 +70,7 @@ public class ClientSettings extends InterfaceModule {
 
     public ClientSettings() {
         super("ClientSettings", Category.Utility);
-        addSettings(language, keyBind, followGameScale, fixedScale, blur, clientCommand, prefix);
+        addSettings(language, keyBind, followGameScale, fixedScale, blur, theme, zoomBind, clientCommand, prefix);
         EventDispatcher.registerListener(this);
         // get system language
         Locale locale = Locale.getDefault();

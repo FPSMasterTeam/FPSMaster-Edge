@@ -2,6 +2,7 @@ package top.fpsmaster.ui.click.component;
 
 import lombok.Getter;
 import lombok.Setter;
+import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.Easings;
@@ -66,7 +67,7 @@ public class ScrollContainer {
                     Math.round(1f + (float) scrollExpand),
                     Math.round(trackHeight),
                     1,
-                    new Color(255, 255, 255, 100).getRGB()
+                    ClickGuiTheme.scrollbar().getRGB()
             );
 
             if (Hover.is(trackX - 1, trackY, 2f + (float) scrollExpand, trackHeight, mouseX, mouseY)) {

@@ -2,6 +2,7 @@ package top.fpsmaster.ui.click.modules.impl;
 
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.features.settings.impl.TextSetting;
 import top.fpsmaster.ui.click.modules.SettingRender;
 import top.fpsmaster.ui.common.TextField;
@@ -18,7 +19,7 @@ public class TextSettingRender extends SettingRender<TextSetting> {
     public TextSettingRender(Module mod, TextSetting setting) {
         super(setting);
         this.mod = mod;
-        TextField inputBox = new TextField(FPSMaster.fontManager.s16, false, "输入名称", -1, new Color(50, 50, 50).getRGB(), 1500);
+        TextField inputBox = new TextField(FPSMaster.fontManager.s16, false, "输入名称", -1, ClickGuiTheme.textFieldBg().getRGB(), 1500);
         inputBox.setText(setting.getValue());
         input = new BoundTextFieldControl(inputBox, new SettingBinding<>(setting));
     }
@@ -26,10 +27,10 @@ public class TextSettingRender extends SettingRender<TextSetting> {
     @Override
     public void render(ScaledGuiScreen screen, float x, float y, float width, float height, float mouseX, float mouseY, boolean custom) {
         TextField inputBox = input.getTextField();
-        inputBox.backGroundColor = new Color(58, 58, 58).getRGB();
-        inputBox.fontColor = new Color(234, 234, 234).getRGB();
+        inputBox.backGroundColor = ClickGuiTheme.textFieldBg().getRGB();
+        inputBox.fontColor = ClickGuiTheme.textFieldText().getRGB();
         String text = FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault()));
-        FPSMaster.fontManager.s16.drawString(text, x + 18, y + 6, new Color(162, 162, 162).getRGB());
+        FPSMaster.fontManager.s16.drawString(text, x + 18, y + 6, ClickGuiTheme.textSecondary().getRGB());
         input.renderInScreen(
                 screen,
                 x + Math.max(FPSMaster.fontManager.s16.getStringWidth(inputBox.placeHolder), FPSMaster.fontManager.s16.getStringWidth(text)) + 20,

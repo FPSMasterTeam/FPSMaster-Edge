@@ -5,6 +5,7 @@ import top.fpsmaster.utils.render.draw.Rects;
 
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.ui.click.modules.SettingRender;
 import top.fpsmaster.utils.math.anim.AnimMath;
@@ -34,17 +35,17 @@ public class NumberSettingRender extends SettingRender<NumberSetting> {
     public void render(ScaledGuiScreen screen, float x, float y, float width, float height, float mouseX, float mouseY, boolean custom) {
         float fw = FPSMaster.fontManager.s16.drawString(
                 FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(Locale.getDefault())),
-                x + 10, y + 2, new Color(162, 162, 162).getRGB()
+                x + 10, y + 2, ClickGuiTheme.textSecondary().getRGB()
         );
-        Rects.rounded(Math.round(x + 16 + fw), Math.round(y + 3), Math.round(SLIDER_WIDTH), 6, new Color(0,0,0,80));
+        Rects.rounded(Math.round(x + 16 + fw), Math.round(y + 3), Math.round(SLIDER_WIDTH), 6, ClickGuiTheme.inputBg().getRGB());
         float percent = (setting.getValue().floatValue() - setting.min.floatValue()) / (setting.max.floatValue() - setting.min.floatValue());
         aWidth = (float) AnimMath.base(aWidth, SLIDER_WIDTH * percent, 0.2);
-        Rects.rounded(Math.round(x + 16 + fw), Math.round(y + 3), Math.round(aWidth), 6, -1);
+        Rects.rounded(Math.round(x + 16 + fw), Math.round(y + 3), Math.round(aWidth), 6, ClickGuiTheme.sliderFill().getRGB());
         FPSMaster.fontManager.s16.drawString(
                 df.format(setting.getValue()),
                 x + fw + 20 + SLIDER_WIDTH,
                 y + 2,
-                new Color(128, 128, 128).getRGB()
+                ClickGuiTheme.textSecondary().getRGB()
         );
 
         float labelWidth = FPSMaster.fontManager.s16.getStringWidth(
