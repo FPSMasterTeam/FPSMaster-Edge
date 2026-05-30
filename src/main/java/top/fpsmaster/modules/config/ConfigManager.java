@@ -1,6 +1,7 @@
 package top.fpsmaster.modules.config;
 
 import com.google.gson.*;
+import lombok.Getter;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import top.fpsmaster.FPSMaster;
@@ -21,33 +22,24 @@ import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.modules.config.migration.ConfigMigration;
 import top.fpsmaster.modules.config.migration.ConfigMigrationRegistry;
 import top.fpsmaster.modules.logger.ClientLogger;
+import top.fpsmaster.modules.shortcut.Shortcut;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
 import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.world.ItemsUtil;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class ConfigManager {
-
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final int SCHEMA_VERSION = 1;
+    @Getter
     private boolean loadingConfig;
+    @Getter
     private boolean configLoaded;
 
     public Configure configure = new Configure();
-
-    public boolean isLoadingConfig() {
-        return loadingConfig;
-    }
-
-    public boolean isConfigLoaded() {
-        return configLoaded;
-    }
 
     public void saveConfigQuietly(String name) {
         if (loadingConfig) {
@@ -152,6 +144,24 @@ public class ConfigManager {
             modulesJson.add(module.name, moduleJson);
         }
         json.add("modules", modulesJson);
+
+        JsonArray shortcutsJson = new JsonArray();
+        for (Shortcut shortcut : Shortcut.shortcuts) {
+            JsonObject shortcutJson = new JsonObject();
+            shortcutJson.addProperty("name", shortcut.name);
+            shortcutJson.addProperty("key", shortcut.key);
+            JsonArray actions = new JsonArray();
+            for (Shortcut.Action action : shortcut.actions) {
+                JsonObject actionJson = new JsonObject();
+                actionJson.addProperty("type", action.type.name());
+                actionJson.addProperty("Context", action.context);
+                actions.add(actionJson);
+            }
+            shortcutJson.add("actions", actions);
+            shortcutsJson.add(shortcutJson);
+        }
+
+        json.add("shortcuts", shortcutsJson);
 
         FileUtils.saveFile(name + ".json", gson.toJson(json));
     }
@@ -317,6 +327,25 @@ public class ConfigManager {
                     }
                 } catch (Throwable throwable) {
                     ClientLogger.error("Failed to load module from config: " + module.name);
+                }
+            }
+
+            JsonArray shortcutsJson = Optional.ofNullable(json.getAsJsonArray("shortcuts")).orElse(new JsonArray());
+            for (JsonElement element : shortcutsJson) {
+                if (element.isJsonObject()) {
+                    JsonObject shortcutJson = element.getAsJsonObject();
+                    ArrayList<Shortcut.Action> actions = new ArrayList<>();
+                    JsonArray actionsJson = shortcutJson.getAsJsonArray("actions");
+                    for (JsonElement actionElement : actionsJson) {
+                        if (actionElement.isJsonObject()) {
+                            JsonObject actionJson = actionElement.getAsJsonObject();
+                            actions.add(new Shortcut.Action(Shortcut.Action.Type.valueOf(actionJson.get("type").getAsString()), actionJson.get("context").getAsString()));
+                        }
+                    }
+                    Shortcut.shortcuts.add(new Shortcut(shortcutJson.get("name").getAsString(),
+                            shortcutJson.get("key").getAsInt(),
+                            actions
+                    ));
                 }
             }
         } finally {

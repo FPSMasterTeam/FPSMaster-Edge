@@ -55,53 +55,71 @@ public abstract class MixinGuiScreen extends Gui {
         mc.dispatchKeypresses();
     }
 
-    @Unique
-    float arch$alpha = 0;
-    @Unique
-    int v1_8_9$iteration = 0;
+@Unique
+float arch$alpha = 0;
 
-    /**
-     * @author SuperSkidder
-     * @reason 自定义背景
-     */
-    @Overwrite
-    public void drawWorldBackground(int tint) {
-        if (mc.theWorld != null) {
-            if (BetterScreen.using) {
-                if (BetterScreen.useBG.getValue()) {
-                    if (BetterScreen.backgroundAnimation.getValue()) {
-                        arch$alpha = (float) AnimMath.base(arch$alpha, 170, 0.2f);
-                    } else {
-                        arch$alpha = 170;
-                    }
-                    this.drawGradientRect(0, 0, this.width, this.height, Colors.alpha(Colors.toColor(-1072689136), ((int) arch$alpha)).getRGB(), Colors.alpha(Colors.toColor(-804253680), ((int) arch$alpha)).getRGB());
+@Unique
+int v1_8_9$iteration = 0;
+
+/**
+ * @author SuperSkidder
+ * @reason 自定义背景
+ */
+@Overwrite
+public void drawWorldBackground(int tint) {
+    if (mc.theWorld != null) {
+        if (BetterScreen.using) {
+            if (BetterScreen.useBG.getValue()) {
+                if (BetterScreen.backgroundAnimation.getValue()) {
+                    arch$alpha = (float) AnimMath.base(arch$alpha, 170, 0.2f);
                 } else {
-                    GlStateManager.disableBlend();
-                    GlStateManager.enableAlpha();
-                    GlStateManager.enableTexture2D();
+                    arch$alpha = 170;
                 }
-                if (BetterScreen.blur.getValue() && !OptifineUtil.isFastRender()) {
-                    v1_8_9$iteration = Math.min(++v1_8_9$iteration, 3);
-                    Blur.area(0, 0, width, height, 1, new Color(255, 255, 255), v1_8_9$iteration, v1_8_9$iteration);
-                }
+
+                this.drawGradientRect(
+                        0,
+                        0,
+                        this.width,
+                        this.height,
+                        Colors.alpha(Colors.toColor(-1072689136), ((int) arch$alpha)).getRGB(),
+                        Colors.alpha(Colors.toColor(-804253680), ((int) arch$alpha)).getRGB()
+                );
             } else {
-                this.drawGradientRect(0, 0, this.width, this.height, -1072689136, -804253680);
+                GlStateManager.disableBlend();
+                GlStateManager.enableAlpha();
+                GlStateManager.enableTexture2D();
+            }
+
+            if (BetterScreen.blur.getValue() && !OptifineUtil.isFastRender()) {
+                v1_8_9$iteration = Math.min(++v1_8_9$iteration, 3);
+                Blur.area(
+                        0,
+                        0,
+                        width,
+                        height,
+                        1,
+                        new Color(255, 255, 255),
+                        v1_8_9$iteration,
+                        v1_8_9$iteration
+                );
             }
         } else {
-            this.drawBackground(tint);
+            this.drawGradientRect(0, 0, this.width, this.height, -1072689136, -804253680);
         }
-    }
-
-    @Inject(method = "sendChatMessage(Ljava/lang/String;Z)V", at = @At("HEAD"), cancellable = true)
-    public void sendChat(String msg, boolean addToChat, CallbackInfo ci) {
-        EventSendChatMessage eventSendChatMessage = new EventSendChatMessage(msg);
-        EventDispatcher.dispatchEvent(eventSendChatMessage);
-        if (eventSendChatMessage.isCanceled()) {
-            ci.cancel();
-        }
+    } else {
+        this.drawBackground(tint);
     }
 }
 
+@Inject(method = "sendChatMessage(Ljava/lang/String;Z)V", at = @At("HEAD"), cancellable = true)
+public void sendChat(String msg, boolean addToChat, CallbackInfo ci) {
+    EventSendChatMessage eventSendChatMessage = new EventSendChatMessage(msg);
+    EventDispatcher.dispatchEvent(eventSendChatMessage);
+    if (eventSendChatMessage.isCanceled()) {
+        ci.cancel();
+    }
+}
+}
 
 
 

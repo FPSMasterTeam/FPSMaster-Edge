@@ -97,15 +97,6 @@ public class LevelTag extends Module {
             GlStateManager.translate((float) x + 0.0F, (float) y + entityIn.height + 0.5F, (float) z);
             GL11.glNormal3f(0.0F, 1.0F, 0.0F);
 
-            /*
-             * 原版 1.8.9 nametag 朝向逻辑：
-             *
-             * playerViewY 控制左右方向，前面需要负号；
-             * playerViewX 控制上下俯仰方向，直接使用正值；
-             *
-             * 不要根据 first person / third person 分支处理，
-             * RenderManager.playerViewX / playerViewY 本身就应该代表当前相机方向。
-             */
             GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0F, 1.0F, 0.0F);
             GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
 
@@ -184,9 +175,6 @@ public class LevelTag extends Module {
             GL11.glColor4f(1, 1, 1, 1);
             GlStateManager.enableTexture2D();
 
-            /*
-             * 第一遍绘制：关闭深度时绘制暗色文字。
-             */
             if (isMate) {
                 Images.draw(
                         new ResourceLocation("client/textures/mate.png"),
@@ -213,9 +201,6 @@ public class LevelTag extends Module {
                 );
             }
 
-            /*
-             * 第二遍绘制：开启深度后绘制正常白色文字。
-             */
             GlStateManager.enableDepth();
             GlStateManager.depthMask(true);
 
@@ -257,4 +242,3 @@ public class LevelTag extends Module {
     public static boolean isUsing() {
         return using;
     }
-}
