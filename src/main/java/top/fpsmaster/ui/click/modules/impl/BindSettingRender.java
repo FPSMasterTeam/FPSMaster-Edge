@@ -51,7 +51,7 @@ public class BindSettingRender extends SettingRender<BindSetting> {
         if (MainPanel.bindLock.equals(setting.name)) {
             colorAnimation.base(new Color(255,255,255,80));
         } else {
-            colorAnimation.base(new Color(0,0,0,80));
+            colorAnimation.base(ClickGuiTheme.textFieldBg());
         }
 
         ScaledGuiScreen.PointerEvent click = screen.consumePressInBounds(x + 25 + fw, y, 10f + s16b.getStringWidth(keyName), 12f, 0);

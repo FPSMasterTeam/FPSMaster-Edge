@@ -143,7 +143,7 @@ public class MainPanel extends ScaledGuiScreen {
         );
 
         if (ClickGuiTheme.isLight()) {
-            Rects.rounded(Math.round(x + leftWidth), Math.round(y),
+            Rects.rounded(Math.round(x + leftWidth), Math.round(y + 4),
                     Math.round(width - leftWidth), Math.round(height),
                     8, ClickGuiTheme.panelBg());
         }
