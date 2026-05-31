@@ -23,7 +23,6 @@ public class AutoGG extends Module {
 
     private final ModeSetting servers = new ModeSetting("Servers", 0, "hypixel", "普通");
 
-
     private final String[] hypixelTrigger = new String[]{
             "Reward Summary",
             "1st Killer",
@@ -114,3 +113,4 @@ public class AutoGG extends Module {
             }
         }
     }
+}
