@@ -63,7 +63,7 @@ public class ClickGuiTheme {
     }
 
     public static Color moduleContentDisabled() {
-        return isLight() ? new Color(200, 200, 200) : new Color(156, 156, 156);
+        return isLight() ? new Color(0, 0, 0) : new Color(156, 156, 156);
     }
 
     public static Color toggleEnabled() {

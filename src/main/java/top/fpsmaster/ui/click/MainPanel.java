@@ -142,12 +142,6 @@ public class MainPanel extends ScaledGuiScreen {
                 -1
         );
 
-        if (ClickGuiTheme.isLight()) {
-            Rects.rounded(Math.round(x + leftWidth - 8), Math.round(y - 2),
-                    Math.round(width - leftWidth + 16), Math.round(height + 12),
-                    8, ClickGuiTheme.panelBg());
-        }
-
         moduleListAlpha = (float) AnimMath.base(moduleListAlpha, 255.0, 0.1f);
 
         float scale = (float) scaleAnimation.get();
