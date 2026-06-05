@@ -33,7 +33,7 @@ set APP_HOME=%DIRNAME%
 @rem Resolve any "." and ".." in APP_HOME to make it shorter.
 for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 
-@rem Add default JVM options here.
+@rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
 @rem Find java.exe
@@ -70,10 +70,7 @@ goto fail
 
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
-@rem Download gradle-wrapper.jar if not present
-if not exist "%CLASSPATH%" goto download
 
-:run
 @rem Execute Gradle
 "%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
 
@@ -93,55 +90,3 @@ exit /b %EXIT_CODE%
 if "%OS%"=="Windows_NT" endlocal
 
 :omega
-
-goto :EOF
-
-@rem --------------------------------------------------------------------------
-@rem Download gradle-wrapper.jar using PowerShell (bypasses SSL certificate errors)
-@rem --------------------------------------------------------------------------
-:download
-echo.
-echo gradle-wrapper.jar not found, downloading...
-echo.
-
-set GRADLE_VERSION=8.6
-set WRAPPER_JAR_URL=https://raw.githubusercontent.com/gradle/gradle/v%GRADLE_VERSION%/gradle/wrapper/gradle-wrapper.jar
-set WRAPPER_JAR_DIR=%APP_HOME%\gradle\wrapper
-
-echo Attempting to download gradle-wrapper.jar...
-echo.
-
-REM Try PowerShell with SSL callback bypass (handles certificate errors in China)
-PowerShell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};" ^
-    "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12;" ^
-    "try { " ^
-        "$wc = New-Object System.Net.WebClient;" ^
-        "$wc.DownloadFile('%WRAPPER_JAR_URL%', '%CLASSPATH%');" ^
-        "Write-Host 'Downloaded gradle-wrapper.jar successfully'; " ^
-        "exit 0; " ^
-    "} catch { " ^
-        "Write-Host 'Failed to download gradle-wrapper.jar: ' + $_.Exception.Message; " ^
-        "Write-Host 'You may need to manually place gradle-wrapper.jar in %WRAPPER_JAR_DIR%'; " ^
-        "exit 1; " ^
-    "}"
-
-if %ERRORLEVEL% neq 0 (
-    echo.
-    echo WARNING: Could not download gradle-wrapper.jar due to SSL/network issues.
-    echo You can manually download it from:
-    echo   https://github.com/gradle/gradle/raw/v%GRADLE_VERSION%/gradle/wrapper/gradle-wrapper.jar
-    echo And place it in: %WRAPPER_JAR_DIR%
-    echo.
-    echo Alternatively, run this script again after setting JAVA_HOME properly,
-    echo or use a VPN/proxy if you are behind a restricted network.
-    goto fail
-)
-
-if exist "%CLASSPATH%" (
-    echo gradle-wrapper.jar is ready.
-    goto run
-) else (
-    echo Failed to download gradle-wrapper.jar.
-    goto fail
-)

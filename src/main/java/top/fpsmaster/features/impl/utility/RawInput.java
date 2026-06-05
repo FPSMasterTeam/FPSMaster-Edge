@@ -13,6 +13,7 @@ public class RawInput extends Module {
     @Override
     public void onEnable() {
         rawInputMod.start();
+        RawInputMod.setAcceptingInput(true);
     }
 
     @Override
@@ -20,6 +21,3 @@ public class RawInput extends Module {
         rawInputMod.stop();
     }
 }
-
-
-

@@ -9,11 +9,14 @@ import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RawInputMod {
     public static final AtomicInteger dx = new AtomicInteger(0);
     public static final AtomicInteger dy = new AtomicInteger(0);
+
+    private static final AtomicBoolean acceptingInput = new AtomicBoolean(false);
 
     private Thread inputThread;
 
@@ -33,14 +36,13 @@ public class RawInputMod {
                 return;
             }
 
-            Minecraft.getMinecraft().mouseHelper = new RawMouseHelper();
-
             String environment;
             if (checkLibrary("jinput-dx8")) {
                 environment = "DirectInputEnvironmentPlugin";
                 hasDx8 = true;
             } else if (checkLibrary("jinput-raw")) {
                 environment = "DirectAndRawInputEnvironmentPlugin";
+                hasDx8 = false;
             } else {
                 return;
             }
@@ -49,75 +51,69 @@ public class RawInputMod {
             aClass.getDeclaredConstructor().setAccessible(true);
             controllers = (((ControllerEnvironment) aClass.newInstance())).getControllers();
 
+            clearDeltas();
+            acceptingInput.set(false);
+            Minecraft.getMinecraft().mouseHelper = new RawMouseHelper();
+
             inputThread = new Thread(() -> {
                 try {
                     while (!Thread.currentThread().isInterrupted()) {
                         initMouses();
 
-                        if (Minecraft.getMinecraft().currentScreen != null) {
-                            dx.set(0);
-                            dy.set(0);
-
-                            pollActiveOrAll(false);
-
-                            try {
-                                Thread.sleep(5L);
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                            }
-
-                            continue;
-                        }
-
                         int totalDx = 0;
                         int totalDy = 0;
 
-                        long now = System.currentTimeMillis();
-                        boolean needFullScan = activeMouse == null || now - lastFullScanTime >= FULL_SCAN_INTERVAL;
+                        if (!mouses.isEmpty()) {
+                            long now = System.currentTimeMillis();
+                            boolean needFullScan = activeMouse == null || now - lastFullScanTime >= FULL_SCAN_INTERVAL;
 
-                        if (needFullScan) {
-                            lastFullScanTime = now;
+                            if (needFullScan) {
+                                lastFullScanTime = now;
 
-                            for (Mouse mouse : mouses) {
-                                mouse.poll();
+                                for (Mouse mouse : mouses) {
+                                    mouse.poll();
 
-                                int mouseDx = (int) mouse.getX().getPollData();
-                                int mouseDy = (int) mouse.getY().getPollData();
+                                    int mouseDx = (int) mouse.getX().getPollData();
+                                    int mouseDy = (int) mouse.getY().getPollData();
 
-                                if (mouseDx != 0 || mouseDy != 0) {
-                                    activeMouse = mouse;
+                                    if (mouseDx != 0 || mouseDy != 0) {
+                                        activeMouse = mouse;
+                                    }
+
+                                    totalDx += mouseDx;
+                                    totalDy += mouseDy;
+
+                                    if (hasDx8) {
+                                        break;
+                                    }
                                 }
+                            } else {
+                                activeMouse.poll();
 
-                                totalDx += mouseDx;
-                                totalDy += mouseDy;
-
-                                if (hasDx8) {
-                                    break;
-                                }
+                                totalDx = (int) activeMouse.getX().getPollData();
+                                totalDy = (int) activeMouse.getY().getPollData();
                             }
-                        } else {
-                            activeMouse.poll();
-
-                            totalDx = (int) activeMouse.getX().getPollData();
-                            totalDy = (int) activeMouse.getY().getPollData();
                         }
 
-                        if (totalDx != 0) {
-                            dx.addAndGet(totalDx);
-                        }
+                        if (acceptingInput.get() && shouldAcceptGameInput()) {
+                            if (totalDx != 0) {
+                                dx.addAndGet(totalDx);
+                            }
 
-                        if (totalDy != 0) {
-                            dy.addAndGet(totalDy);
-                        }
+                            if (totalDy != 0) {
+                                dy.addAndGet(totalDy);
+                            }
 
-                        try {
                             Thread.sleep(1L);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
+                        } else {
+                            clearDeltas();
+                            Thread.sleep(5L);
                         }
                     }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
-                    ClientLogger.error("Failed to start raw input");
+                    ClientLogger.error("Failed to poll raw input");
                 }
             });
 
@@ -143,32 +139,6 @@ public class RawInputMod {
         }
     }
 
-    private static void pollActiveOrAll(boolean readMovement) {
-        if (activeMouse != null) {
-            activeMouse.poll();
-
-            if (readMovement) {
-                activeMouse.getX().getPollData();
-                activeMouse.getY().getPollData();
-            }
-
-            return;
-        }
-
-        for (Mouse mouse : mouses) {
-            mouse.poll();
-
-            if (readMovement) {
-                mouse.getX().getPollData();
-                mouse.getY().getPollData();
-            }
-
-            if (hasDx8) {
-                break;
-            }
-        }
-    }
-
     public void stop() {
         try {
             if (inputThread != null && inputThread.isAlive()) {
@@ -183,8 +153,8 @@ public class RawInputMod {
             lastFullScanTime = 0L;
             hasDx8 = false;
 
-            dx.set(0);
-            dy.set(0);
+            acceptingInput.set(false);
+            clearDeltas();
 
             Minecraft.getMinecraft().mouseHelper = new MouseHelper();
         } catch (InterruptedException e) {
@@ -192,6 +162,28 @@ public class RawInputMod {
         } catch (Exception e) {
             ClientLogger.error("Failed to stop raw input");
         }
+    }
+
+    public static void setAcceptingInput(boolean value) {
+        acceptingInput.set(value);
+
+        if (!value) {
+            clearDeltas();
+        }
+    }
+
+    public static boolean shouldAcceptGameInput() {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            return mc != null && mc.currentScreen == null && mc.inGameHasFocus;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static void clearDeltas() {
+        dx.set(0);
+        dy.set(0);
     }
 
     public static boolean checkLibrary(String name) {

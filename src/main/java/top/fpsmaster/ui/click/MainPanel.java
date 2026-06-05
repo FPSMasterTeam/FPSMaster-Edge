@@ -10,8 +10,6 @@ import top.fpsmaster.utils.render.draw.Rects;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
@@ -384,20 +382,7 @@ public class MainPanel extends ScaledGuiScreen {
     }
 
     private void updateZoomModifierState() {
-        int zoomKey = ClientSettings.zoomBind.getValue();
-        if (zoomKey != 0) {
-            zoomModifierHeld = Keyboard.isKeyDown(zoomKey);
-            if (!zoomModifierHeld) {
-                if (zoomKey == Keyboard.KEY_LCONTROL || zoomKey == Keyboard.KEY_RCONTROL)
-                    zoomModifierHeld = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL);
-                else if (zoomKey == Keyboard.KEY_LSHIFT || zoomKey == Keyboard.KEY_RSHIFT)
-                    zoomModifierHeld = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
-                else if (zoomKey == Keyboard.KEY_LMENU || zoomKey == Keyboard.KEY_RMENU)
-                    zoomModifierHeld = Keyboard.isKeyDown(Keyboard.KEY_LMENU) || Keyboard.isKeyDown(Keyboard.KEY_RMENU);
-            }
-        } else {
-            zoomModifierHeld = false;
-        }
+        zoomModifierHeld = ClientSettings.isZoomBindDown();
     }
 
     @Override

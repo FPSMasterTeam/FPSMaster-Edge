@@ -129,7 +129,7 @@ public class Component {
             if (Hover.is(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) {
                 if (Utility.mc.currentScreen instanceof MainPanel && ((MainPanel) Utility.mc.currentScreen).hasPointerCapture())
                     return;
-                if (allowScale) {
+                if (allowScale && ClientSettings.isZoomBindDown()) {
                     int dWheel = Mouse.getDWheel();
                     if (dWheel > 0) scaleUp();
                     else if (dWheel < 0) scaleDown();

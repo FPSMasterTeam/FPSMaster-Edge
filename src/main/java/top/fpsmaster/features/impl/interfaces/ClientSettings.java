@@ -68,6 +68,29 @@ public class ClientSettings extends Module {
         return (float) (getUiScale() / vanillaGuiScaleFactor);
     }
 
+    public static boolean isZoomBindDown() {
+        int zoomKey = zoomBind.getValue();
+        if (zoomKey == 0) {
+            return false;
+        }
+
+        if (Keyboard.isKeyDown(zoomKey)) {
+            return true;
+        }
+
+        if (zoomKey == Keyboard.KEY_LCONTROL || zoomKey == Keyboard.KEY_RCONTROL) {
+            return Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL);
+        }
+        if (zoomKey == Keyboard.KEY_LSHIFT || zoomKey == Keyboard.KEY_RSHIFT) {
+            return Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+        }
+        if (zoomKey == Keyboard.KEY_LMENU || zoomKey == Keyboard.KEY_RMENU) {
+            return Keyboard.isKeyDown(Keyboard.KEY_LMENU) || Keyboard.isKeyDown(Keyboard.KEY_RMENU);
+        }
+
+        return false;
+    }
+
     public ClientSettings() {
         super("ClientSettings", Category.Utility);
         addSettings(language, keyBind, followGameScale, fixedScale, blur, theme, zoomBind, clientCommand, prefix);
