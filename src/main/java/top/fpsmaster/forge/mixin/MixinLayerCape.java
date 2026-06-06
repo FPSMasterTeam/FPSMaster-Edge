@@ -47,6 +47,7 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         if (!FPSMaster.moduleManager.getModule(WavyCape.class).isEnabled()) return;
         if (shouldSkipRender(player)) return;
 
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         playerRenderer.bindTexture(player.getLocationCape());
         renderWavyCape(player, partialTicks);
         ci.cancel();
@@ -172,10 +173,10 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         float maxU = 0.171875F;
         float[] texCoords = getVerticalTexCoords(segment, 0.03125F, 0.53125F);
 
-        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yTop, -CAPE_DEPTH, minU, texCoords[0]);
-        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yTop, -CAPE_DEPTH, maxU, texCoords[0]);
-        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, maxU, texCoords[1]);
-        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, minU, texCoords[1]);
+        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yTop, -CAPE_DEPTH, minU, texCoords[0], 0.0F, 0.0F, -1.0F);
+        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yTop, -CAPE_DEPTH, maxU, texCoords[0], 0.0F, 0.0F, -1.0F);
+        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, maxU, texCoords[1], 0.0F, 0.0F, -1.0F);
+        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, minU, texCoords[1], 0.0F, 0.0F, -1.0F);
     }
 
     @Unique
@@ -185,10 +186,10 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         float maxU = 0.34375F;
         float[] texCoords = getVerticalTexCoords(segment, 0.03125F, 0.53125F);
 
-        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yBottom, 0, minU, texCoords[1]);
-        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yBottom, 0, maxU, texCoords[1]);
-        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yTop, 0, maxU, texCoords[0]);
-        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yTop, 0, minU, texCoords[0]);
+        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yBottom, 0, minU, texCoords[1], 0.0F, 0.0F, 1.0F);
+        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yBottom, 0, maxU, texCoords[1], 0.0F, 0.0F, 1.0F);
+        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yTop, 0, maxU, texCoords[0], 0.0F, 0.0F, 1.0F);
+        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yTop, 0, minU, texCoords[0], 0.0F, 0.0F, 1.0F);
     }
 
     @Unique
@@ -198,10 +199,10 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         float maxU = 0.015625F;
         float[] texCoords = getVerticalTexCoords(segment, 0.03125F, 0.53125F);
 
-        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yTop, 0, maxU, texCoords[0]);
-        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yTop, -CAPE_DEPTH, minU, texCoords[0]);
-        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, minU, texCoords[1]);
-        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yBottom, 0, maxU, texCoords[1]);
+        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yTop, 0, maxU, texCoords[0], -1.0F, 0.0F, 0.0F);
+        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yTop, -CAPE_DEPTH, minU, texCoords[0], -1.0F, 0.0F, 0.0F);
+        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, minU, texCoords[1], -1.0F, 0.0F, 0.0F);
+        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yBottom, 0, maxU, texCoords[1], -1.0F, 0.0F, 0.0F);
     }
 
     @Unique
@@ -211,10 +212,10 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         float maxU = 0.1875F;
         float[] texCoords = getVerticalTexCoords(segment, 0.03125F, 0.53125F);
 
-        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yTop, -CAPE_DEPTH, minU, texCoords[0]);
-        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yTop, 0, maxU, texCoords[0]);
-        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yBottom, 0, maxU, texCoords[1]);
-        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, minU, texCoords[1]);
+        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yTop, -CAPE_DEPTH, minU, texCoords[0], 1.0F, 0.0F, 0.0F);
+        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yTop, 0, maxU, texCoords[0], 1.0F, 0.0F, 0.0F);
+        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yBottom, 0, maxU, texCoords[1], 1.0F, 0.0F, 0.0F);
+        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, minU, texCoords[1], 1.0F, 0.0F, 0.0F);
     }
 
     @Unique
@@ -224,10 +225,10 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         float minV = 0.0F;
         float maxV = 0.03125F;
 
-        addVertex(buffer, matrix, -CAPE_WIDTH/2, 0, 0, minU, maxV);
-        addVertex(buffer, matrix, CAPE_WIDTH/2, 0, 0, maxU, maxV);
-        addVertex(buffer, matrix, CAPE_WIDTH/2, 0, -CAPE_DEPTH, maxU, minV);
-        addVertex(buffer, matrix, -CAPE_WIDTH/2, 0, -CAPE_DEPTH, minU, minV);
+        addVertex(buffer, matrix, -CAPE_WIDTH/2, 0, 0, minU, maxV, 0.0F, 1.0F, 0.0F);
+        addVertex(buffer, matrix, CAPE_WIDTH/2, 0, 0, maxU, maxV, 0.0F, 1.0F, 0.0F);
+        addVertex(buffer, matrix, CAPE_WIDTH/2, 0, -CAPE_DEPTH, maxU, minV, 0.0F, 1.0F, 0.0F);
+        addVertex(buffer, matrix, -CAPE_WIDTH/2, 0, -CAPE_DEPTH, minU, minV, 0.0F, 1.0F, 0.0F);
     }
 
     @Unique
@@ -238,10 +239,10 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         float minV = 0.0F;
         float maxV = 0.03125F;
 
-        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, minU, minV);
-        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, maxU, minV);
-        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yTop, 0, maxU, maxV);
-        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yTop, 0, minU, maxV);
+        addVertex(buffer, prevMatrix, -CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, minU, minV, 0.0F, -1.0F, 0.0F);
+        addVertex(buffer, prevMatrix, CAPE_WIDTH/2, yBottom, -CAPE_DEPTH, maxU, minV, 0.0F, -1.0F, 0.0F);
+        addVertex(buffer, currentMatrix, CAPE_WIDTH/2, yTop, 0, maxU, maxV, 0.0F, -1.0F, 0.0F);
+        addVertex(buffer, currentMatrix, -CAPE_WIDTH/2, yTop, 0, minU, maxV, 0.0F, -1.0F, 0.0F);
     }
 
     @Unique
@@ -255,12 +256,13 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
     }
 
     @Unique
-    private void addVertex(WorldRenderer buffer, Matrix4f matrix, float x, float y, float z, float u, float v) {
+    private void addVertex(WorldRenderer buffer, Matrix4f matrix, float x, float y, float z, float u, float v,
+                           float normalX, float normalY, float normalZ) {
         Vector4f pos = new Vector4f(x, y, z, 1.0F);
         matrix.transform(pos);
         buffer.pos(pos.x, pos.y, pos.z)
                 .tex(u, v)
-                .normal(0, 1, 0) // 实际法线应根据面调整，此处简化为(0,1,0)
+                .normal(normalX, normalY, normalZ)
                 .endVertex();
     }
 
