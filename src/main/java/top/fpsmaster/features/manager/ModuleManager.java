@@ -92,6 +92,7 @@ public class ModuleManager {
         modules.add(new FPSDisplay());
         modules.add(new ArmorDisplay());
         modules.add(new BetterChat());
+        modules.add(new BlockIndicator());
         modules.add(new BetterFishingRod());
         modules.add(new ComboDisplay());
         modules.add(new CPSDisplay());

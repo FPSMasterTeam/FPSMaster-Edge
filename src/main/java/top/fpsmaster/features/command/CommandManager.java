@@ -4,7 +4,9 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventSendChatMessage;
+import top.fpsmaster.features.impl.interfaces.BlockIndicator;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
+import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.utils.core.Utility;
 
 import java.util.ArrayList;
@@ -18,6 +20,18 @@ public class CommandManager {
 
     public void init() {
         // add commands
+        commands.add(new Command("blockindicator") {
+            @Override
+            public void execute(String[] args) {
+                toggleModule(BlockIndicator.class);
+            }
+        });
+        commands.add(new Command("bi") {
+            @Override
+            public void execute(String[] args) {
+                toggleModule(BlockIndicator.class);
+            }
+        });
         EventDispatcher.registerListener(this);
     }
 
@@ -57,6 +71,13 @@ public class CommandManager {
             }
         }
         Utility.sendClientMessage(FPSMaster.i18n.get("command.notfound"));
+    }
+
+    private void toggleModule(Class<? extends Module> moduleClass) {
+        Module module = FPSMaster.moduleManager.getModule(moduleClass);
+        module.toggle();
+        Utility.sendClientNotify(FPSMaster.i18n.get(module.name.toLowerCase()) + ": " +
+                FPSMaster.i18n.get(module.isEnabled() ? "command.module.enabled" : "command.module.disabled"));
     }
 }
 

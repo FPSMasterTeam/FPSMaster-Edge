@@ -35,6 +35,7 @@ public class ComponentsManager {
         addComponentSafely("ModsListComponent", ModsListComponent::new);
         addComponentSafely("MiniMapComponent", MiniMapComponent::new);
         addComponentSafely("SprintComponent", SprintComponent::new);
+        addComponentSafely("BlockIndicatorComponent", BlockIndicatorComponent::new);
         addComponentSafely("ItemCountDisplayComponent", ItemCountDisplayComponent::new);
     }
 

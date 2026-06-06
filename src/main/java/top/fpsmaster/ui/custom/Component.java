@@ -104,6 +104,8 @@ public class Component {
                 rY = guiHeight - (y * guiHeight / 2f + height);
                 break;
             case CT:
+                rX = guiWidth / 2f - width * scale / 2f;
+                rY = y * guiHeight / 2f;
                 break;
         }
         return new float[]{rX, rY};
@@ -208,9 +210,9 @@ public class Component {
                 break;
             }
 
-            case CT: {
-
-            }
+            case CT:
+                position = Position.CT;
+                break;
         }
 
         if (changeX < 0f || changeX + width * scale > guiWidth) {

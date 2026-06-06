@@ -487,6 +487,18 @@ tnttimer=TNT Timer
 tnttimer.desc=Displays time before TNT explodes
 tnttimer.duration=TNT Duration
 
+blockindicator=Block Indicator
+blockindicator.desc=Shows details for the block under your crosshair
+blockindicator.showid=Show ID
+blockindicator.showcoords=Show Coordinates
+blockindicator.yoffset=Y Offset
+blockindicator.background=Background
+blockindicator.round=Rounded
+blockindicator.roundradius=Round Radius
+blockindicator.backgroundcolor=Background Color
+blockindicator.panelcolor=Block Panel Color
+blockindicator.accentcolor=Accent Color
+
 hitboxes=Hitboxes
 hitboxes.desc=Show hitboxes
 hitboxes.color=Color
@@ -735,6 +747,8 @@ special.under_dev=Under development. Wait for future updates.
 translate.hover=Click to Translate
 copy.hover=Click to copy
 command.notfound=Command not found. If the client command affects your chat, disable ClientSettings -> Client Command.
+command.module.enabled=Enabled
+command.module.disabled=Disabled
 blur.fast_render=UI blur is not compatible with Fast Render. Please disable Fast Render first.
 blur.performance=Blur may reduce performance. Disable on low-end PCs!
 motionblur.fast_render=Motion Blur is not compatible with Fast Render. Fast Render has been disabled.

@@ -490,6 +490,18 @@ tnttimer=TNT时间显示
 tnttimer.desc=显示TNT爆炸的时间
 tnttimer.duration=TNT爆炸时间
 
+blockindicator=方块指示器
+blockindicator.desc=显示准星指向方块的详细信息
+blockindicator.showid=显示ID
+blockindicator.showcoords=显示坐标
+blockindicator.yoffset=纵向偏移
+blockindicator.background=背景
+blockindicator.round=圆角
+blockindicator.roundradius=圆角半径
+blockindicator.backgroundcolor=背景颜色
+blockindicator.panelcolor=方块面板颜色
+blockindicator.accentcolor=强调色
+
 hitboxes=碰撞箱
 hitboxes.desc=显示碰撞箱
 hitboxes.color=颜色
@@ -738,6 +750,8 @@ special.under_dev=正在开发中，请等待版本更新
 translate.hover=点此翻译
 copy.hover=点此复制
 command.notfound=未找到命令，如果客户端命令影响了您的消息，请在客户端设置中关闭客户端命令功能。
+command.module.enabled=已开启
+command.module.disabled=已关闭
 blur.fast_render=组件模糊与快速渲染不兼容，如要使用模糊效果，请先在设置中关闭快速渲染。
 blur.performance=组件模糊会极大影响性能，若您的配置较低则不建议开启！
 motionblur.fast_render=快速渲染与运动模糊不兼容，已为您自动关闭快速渲染。
