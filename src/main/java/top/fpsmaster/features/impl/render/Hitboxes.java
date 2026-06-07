@@ -2,6 +2,7 @@ package top.fpsmaster.features.impl.render;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.event.Subscribe;
@@ -59,7 +60,7 @@ public class Hitboxes extends Module {
             );
             IRenderManager renderManager = (IRenderManager) mc.getRenderManager();
             for (Entity entity : mc.theWorld.loadedEntityList) {
-                if (entity == mc.thePlayer) {
+                if (entity == mc.thePlayer || !(entity instanceof EntityPlayer) && entity.isInvisible()) {
                     continue;
                 }
                 AxisAlignedBB bb = entity.getEntityBoundingBox()
