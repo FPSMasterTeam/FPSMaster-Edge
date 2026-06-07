@@ -13,15 +13,12 @@ public class CustomColor {
     public float alpha;
     public Color color;
 
-    public CustomColor(float hue, float brightness, float saturation, float alpha) {
-        this.hue = hue;
-        this.brightness = brightness;
-        this.saturation = saturation;
-        this.alpha = alpha;
-        this.color = Colors.alpha(
-            Color.getHSBColor(hue, saturation, brightness),
-            Colors.clamp((alpha * 255))
-        );
+    public CustomColor(float hue, float saturation, float brightness, float alpha) {
+        setColor(hue, saturation, brightness, alpha);
+    }
+
+    public CustomColor copy() {
+        return new CustomColor(hue, saturation, brightness, alpha);
     }
 
     public CustomColor(Color color) {

@@ -110,11 +110,11 @@ public class ColorSetting extends Setting<CustomColor> {
         switch (type) {
             case WAVE:
                 float alphaWave = value.alpha * (0.35f + 0.65f * (float) ((Math.sin(now / 450_000_000.0) + 1.0) * 0.5));
-                return new CustomColor(value.hue, value.brightness, value.saturation, alphaWave).getColor();
+                return new CustomColor(value.hue, value.saturation, value.brightness, alphaWave).getColor();
             case CHROMA:
-                return new CustomColor((value.hue + dynamicHue + normalizedOffset) % 1.0f, value.brightness, value.saturation, value.alpha).getColor();
+                return new CustomColor((value.hue + dynamicHue + normalizedOffset) % 1.0f, value.saturation, value.brightness, value.alpha).getColor();
             case RAINBOW:
-                return new CustomColor((dynamicHue + normalizedOffset) % 1.0f, value.brightness, value.saturation, value.alpha).getColor();
+                return new CustomColor((dynamicHue + normalizedOffset) % 1.0f, value.saturation, value.brightness, value.alpha).getColor();
             case STATIC:
             default:
                 return value.getColor();
@@ -143,7 +143,7 @@ public class ColorSetting extends Setting<CustomColor> {
             return;
         }
         CustomColor current = getValue();
-        CustomColor oldSnapshot = new CustomColor(current.hue, current.brightness, current.saturation, current.alpha);
+        CustomColor oldSnapshot = current.copy();
         if (!fireValueChangeEvent(oldSnapshot, oldSnapshot)) {
             return;
         }
@@ -164,8 +164,8 @@ public class ColorSetting extends Setting<CustomColor> {
 
     public void setColor(float hue, float saturation, float brightness, float alpha) {
         CustomColor v = getValue();
-        CustomColor oldSnapshot = new CustomColor(v.hue, v.brightness, v.saturation, v.alpha);
-        CustomColor newSnapshot = new CustomColor(hue, brightness, saturation, alpha);
+        CustomColor oldSnapshot = v.copy();
+        CustomColor newSnapshot = new CustomColor(hue, saturation, brightness, alpha);
         if (!fireValueChangeEvent(oldSnapshot, newSnapshot)) {
             return;
         }
@@ -175,7 +175,7 @@ public class ColorSetting extends Setting<CustomColor> {
 
     public void setColor(Color color) {
         CustomColor v = getValue();
-        CustomColor oldSnapshot = new CustomColor(v.hue, v.brightness, v.saturation, v.alpha);
+        CustomColor oldSnapshot = v.copy();
         CustomColor newSnapshot = new CustomColor(color);
         if (!fireValueChangeEvent(oldSnapshot, newSnapshot)) {
             return;

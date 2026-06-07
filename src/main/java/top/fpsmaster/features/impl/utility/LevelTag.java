@@ -126,12 +126,16 @@ public class LevelTag extends Module {
             }
 
             boolean isMate = entityIn == mc.thePlayer && str.contains(entityIn.getName());
-
-            int j = fontRenderer.getStringWidth(str) / 2;
+            int textWidth = fontRenderer.getStringWidth(str);
+            int textX = -textWidth / 2;
+            float iconX = textX - 4f;
 
             if (isMate) {
-                j += 6;
+                textX += 6;
             }
+
+            float backgroundLeft = isMate ? Math.min(iconX, textX) - 1f : textX - 1f;
+            float backgroundRight = textX + textWidth + 1f;
 
             if (!diableBackground.getValue()) {
                 GlStateManager.disableTexture2D();
@@ -139,7 +143,7 @@ public class LevelTag extends Module {
                 worldRenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
 
                 worldRenderer
-                        .pos(-j - 1, -1 + i, 0.0F)
+                        .pos(backgroundLeft, -1 + i, 0.0F)
                         .color(
                                 backgroundColor.getColor().getRed() / 255f,
                                 backgroundColor.getColor().getGreen() / 255f,
@@ -149,7 +153,7 @@ public class LevelTag extends Module {
                         .endVertex();
 
                 worldRenderer
-                        .pos(-j - 1, 8 + i, 0.0F)
+                        .pos(backgroundLeft, 8 + i, 0.0F)
                         .color(
                                 backgroundColor.getColor().getRed() / 255f,
                                 backgroundColor.getColor().getGreen() / 255f,
@@ -159,7 +163,7 @@ public class LevelTag extends Module {
                         .endVertex();
 
                 worldRenderer
-                        .pos(j + 1, 8 + i, 0.0F)
+                        .pos(backgroundRight, 8 + i, 0.0F)
                         .color(
                                 backgroundColor.getColor().getRed() / 255f,
                                 backgroundColor.getColor().getGreen() / 255f,
@@ -169,7 +173,7 @@ public class LevelTag extends Module {
                         .endVertex();
 
                 worldRenderer
-                        .pos(j + 1, -1 + i, 0.0F)
+                        .pos(backgroundRight, -1 + i, 0.0F)
                         .color(
                                 backgroundColor.getColor().getRed() / 255f,
                                 backgroundColor.getColor().getGreen() / 255f,
@@ -190,7 +194,7 @@ public class LevelTag extends Module {
             if (isMate) {
                 Images.draw(
                         new ResourceLocation("client/textures/mate.png"),
-                        -fontRenderer.getStringWidth(str) / 2f - 4f,
+                        iconX,
                         i - 1,
                         8,
                         8,
@@ -200,14 +204,14 @@ public class LevelTag extends Module {
 
                 fontRenderer.drawString(
                         str,
-                        -fontRenderer.getStringWidth(str) / 2 + 6,
+                        textX,
                         i,
                         553648127
                 );
             } else {
                 fontRenderer.drawString(
                         str,
-                        -fontRenderer.getStringWidth(str) / 2,
+                        textX,
                         i,
                         553648127
                 );
@@ -222,14 +226,14 @@ public class LevelTag extends Module {
             if (isMate) {
                 fontRenderer.drawString(
                         str,
-                        -fontRenderer.getStringWidth(str) / 2 + 6,
+                        textX,
                         i,
                         -1
                 );
             } else {
                 fontRenderer.drawString(
                         str,
-                        -fontRenderer.getStringWidth(str) / 2,
+                        textX,
                         i,
                         -1
                 );

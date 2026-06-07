@@ -72,8 +72,8 @@ public class Backgrounds {
         } else if ("classic".equals(backgroundMode)) {
             CustomColor base = new CustomColor(
                     FPSMaster.configManager.configure.classicBackgroundHue,
-                    FPSMaster.configManager.configure.classicBackgroundBrightness,
                     FPSMaster.configManager.configure.classicBackgroundSaturation,
+                    FPSMaster.configManager.configure.classicBackgroundBrightness,
                     FPSMaster.configManager.configure.classicBackgroundAlpha
             );
             ColorSetting.ColorType mode = ColorSetting.ColorType.STATIC;

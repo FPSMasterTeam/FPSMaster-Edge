@@ -14,6 +14,7 @@ import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.utils.render.gui.UiScale;
 import top.fpsmaster.utils.render.shader.GradientUtils;
 import top.fpsmaster.utils.system.OSUtil;
 
@@ -115,10 +116,10 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
 
         if (OSUtil.supportShader()) {
             GradientUtils.applyGradient(
-                    pickerX,
-                    pickerY,
-                    PICKER_W,
-                    pickerHeight,
+                    UiScale.toPixel(pickerX),
+                    UiScale.toPixel(pickerY),
+                    UiScale.toPixel(PICKER_W),
+                    UiScale.toPixel(pickerHeight),
                     1f,
                     Color.getHSBColor(customColor.hue, 0.0f, 0f),
                     Color.getHSBColor(customColor.hue, 0f, 1f),
@@ -142,30 +143,30 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
         screen.beginPointerCapture(paletteCaptureId, 0, pickerX, pickerY, PICKER_W, pickerHeight);
         if (screen.isPointerCapturedBy(paletteCaptureId, 0)) {
             saturation = max(min((mouseX - pickerX) / PICKER_W, 1f), 0f);
-            brightness = max(min(1f - (mouseY - (y + 15)) / pickerHeight, 1f), 0f);
+            brightness = max(min(1f - (mouseY - pickerY) / pickerHeight, 1f), 0f);
         }
 
         float cursorX = saturation * PICKER_W;
         float cursorY = (1 - brightness) * pickerHeight;
-        Images.draw(new ResourceLocation("client/gui/settings/values/color.png"), pickerX + cursorX - 2.5f, y + 15 + cursorY - 2.5f, 5f, 5f, -1);
+        Images.draw(new ResourceLocation("client/gui/settings/values/color.png"), pickerX + cursorX - 2.5f, pickerY + cursorY - 2.5f, 5f, 5f, -1);
 
         float hue = customColor.hue;
-        Gradients.hue(x + labelW + 110, y + 16, 10, pickerHeight);
-        Images.draw(new ResourceLocation("client/gui/settings/values/color.png"), x + labelW + 112.5f, y + 14 + pickerHeight * customColor.hue, 5f, 5f, -1);
-        screen.beginPointerCapture(hueCaptureId, 0, x + labelW + 110, y + 16, 10f, pickerHeight);
+        Gradients.hue(x + labelW + 110, pickerY, 10, pickerHeight);
+        Images.draw(new ResourceLocation("client/gui/settings/values/color.png"), x + labelW + 112.5f, pickerY + pickerHeight * customColor.hue - 2.5f, 5f, 5f, -1);
+        screen.beginPointerCapture(hueCaptureId, 0, x + labelW + 110, pickerY, 10f, pickerHeight);
         if (screen.isPointerCapturedBy(hueCaptureId, 0)) {
-            hue = max(min((mouseY - (y + 15)) / pickerHeight, 1f), 0f);
+            hue = max(min((mouseY - pickerY) / pickerHeight, 1f), 0f);
         }
 
         float alpha = customColor.alpha;
-        Images.draw(new ResourceLocation("client/gui/settings/values/alpha.png"), x + labelW + 122, y + 16, 10f, pickerHeight, -1);
+        Images.draw(new ResourceLocation("client/gui/settings/values/alpha.png"), x + labelW + 122, pickerY, 10f, pickerHeight, -1);
         if (OSUtil.supportShader()) {
-            GradientUtils.drawGradientVertical(x + labelW + 122, y + 16, 10f, pickerHeight, new Color(255, 255, 255), new Color(255, 255, 255, 0));
+            GradientUtils.drawGradientVertical(x + labelW + 122, pickerY, 10f, pickerHeight, new Color(255, 255, 255), new Color(255, 255, 255, 0));
         }
-        Images.draw(new ResourceLocation("client/gui/settings/values/color.png"), x + labelW + 124.5f, y + 13.5f + pickerHeight * (1 - alpha), 5f, 5f, -1);
-        screen.beginPointerCapture(alphaCaptureId, 0, x + labelW + 122, y + 16, 10f, pickerHeight);
+        Images.draw(new ResourceLocation("client/gui/settings/values/color.png"), x + labelW + 124.5f, pickerY + pickerHeight * (1 - alpha) - 2.5f, 5f, 5f, -1);
+        screen.beginPointerCapture(alphaCaptureId, 0, x + labelW + 122, pickerY, 10f, pickerHeight);
         if (screen.isPointerCapturedBy(alphaCaptureId, 0)) {
-            alpha = max(min(1f - (mouseY - (y + 15)) / pickerHeight, 1f), 0f);
+            alpha = max(min(1f - (mouseY - pickerY) / pickerHeight, 1f), 0f);
         }
 
         if (hue != customColor.hue || saturation != customColor.saturation || brightness != customColor.brightness || alpha != customColor.alpha) {
