@@ -128,12 +128,26 @@ public class Images {
     }
 
     public static void playerHead(AbstractClientPlayer player, float x, float y, int w, int h) {
-        Minecraft.getMinecraft().getTextureManager().bindTexture(player.getLocationSkin());
+        playerHead(player.getLocationSkin(), x, y, w, h);
+    }
+
+    public static void playerHead(ResourceLocation skin, float x, float y, int w, int h) {
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glDepthMask(false);
+        GL14.glBlendFuncSeparate(org.lwjgl.opengl.GL11.GL_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE, org.lwjgl.opengl.GL11.GL_ZERO);
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        Minecraft.getMinecraft().getTextureManager().bindTexture(skin);
         int sx = UiScale.scale(Math.round(x));
         int sy = UiScale.scale(Math.round(y));
         int sw = UiScale.scale(w);
         int sh = UiScale.scale(h);
         Gui.drawScaledCustomSizeModalRect(sx, sy, 8, 8, 8, 8, sw, sh, 64, 64);
+        Gui.drawScaledCustomSizeModalRect(sx, sy, 40, 8, 8, 8, sw, sh, 64, 64);
+        glDepthMask(true);
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     private static void glColor(int color) {

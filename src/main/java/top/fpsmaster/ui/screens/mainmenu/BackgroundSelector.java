@@ -1,14 +1,17 @@
 package top.fpsmaster.ui.screens.mainmenu;
 
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.ColorSetting;
+import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.click.modules.impl.ColorSettingRender;
 import top.fpsmaster.ui.common.GuiButton;
+import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.Easings;
@@ -19,7 +22,9 @@ import top.fpsmaster.utils.render.gui.Backgrounds;
 import top.fpsmaster.utils.render.gui.Scissor;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.awt.FileDialog;
 import java.io.IOException;
@@ -59,6 +64,11 @@ public class BackgroundSelector extends ScaledGuiScreen {
             new BackgroundOption("custom", "backgroundselector.option.custom.name", "backgroundselector.option.custom.desc", new Color(100, 150, 100))
     };
 
+    private ResourceLocation customPreviewTexture;
+    private long customPreviewLastModified = -1L;
+    private float customPreviewWidth = 1f;
+    private float customPreviewHeight = 1f;
+
     private final GuiButton backButton = new GuiButton("mainmenu.back", () -> mc.displayGuiScreen(new MainMenu()),
             new Color(0, 0, 0, 140), new Color(113, 127, 254));
 
@@ -84,7 +94,7 @@ public class BackgroundSelector extends ScaledGuiScreen {
     public void onGuiClosed() {
         super.onGuiClosed();
         try {
-            FPSMaster.configManager.saveConfig("default");
+            FPSMaster.configManager.saveConfig(ConfigProfileUtils.getActiveProfileName());
         } catch (FileException e) {
             throw new RuntimeException(e);
         }
@@ -207,8 +217,49 @@ public class BackgroundSelector extends ScaledGuiScreen {
             Images.draw(new ResourceLocation("client/background/" + option.id + "/panorama_0.png"), x, y, w, h, -1);
             return;
         }
+        if ("custom".equals(option.id) && renderCustomPreview(x, y, w, h)) {
+            return;
+        }
         Rects.rounded(Math.round(x), Math.round(y), Math.round(w), Math.round(h), 5, option.previewColor);
         FPSMaster.fontManager.s14.drawCenteredString(FPSMaster.i18n.get("backgroundselector.preview.image"), x + w / 2f, y + h / 2f - 4f, Color.WHITE.getRGB());
+    }
+
+    private boolean renderCustomPreview(float x, float y, float w, float h) {
+        File file = FileUtils.background;
+        if (file == null || !file.exists()) {
+            return false;
+        }
+        long modified = file.lastModified();
+        if (customPreviewTexture == null || customPreviewLastModified != modified) {
+            loadCustomPreview(file, modified);
+        }
+        if (customPreviewTexture == null) {
+            return false;
+        }
+
+        float scale = Math.min(w / customPreviewWidth, h / customPreviewHeight);
+        float drawWidth = customPreviewWidth * scale;
+        float drawHeight = customPreviewHeight * scale;
+        Images.draw(customPreviewTexture, x + (w - drawWidth) * 0.5f, y + (h - drawHeight) * 0.5f, drawWidth, drawHeight, -1);
+        return true;
+    }
+
+    private void loadCustomPreview(File file, long modified) {
+        try {
+            BufferedImage image = ImageIO.read(file);
+            if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0) {
+                customPreviewTexture = null;
+                customPreviewLastModified = modified;
+                return;
+            }
+            customPreviewWidth = image.getWidth();
+            customPreviewHeight = image.getHeight();
+            customPreviewTexture = mc.getTextureManager().getDynamicTextureLocation("fpsmaster_custom_bg_preview", new DynamicTexture(image));
+            customPreviewLastModified = modified;
+        } catch (IOException exception) {
+            customPreviewTexture = null;
+            customPreviewLastModified = modified;
+        }
     }
 
     private void renderPickButton(float x, float y, int mouseX, int mouseY, float alpha) {

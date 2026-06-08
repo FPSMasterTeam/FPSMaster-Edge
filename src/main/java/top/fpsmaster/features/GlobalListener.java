@@ -17,6 +17,7 @@ import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.font.EnhancedFontRenderer;
+import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.render.StencilUtil;
@@ -51,7 +52,7 @@ public class GlobalListener {
     @Subscribe
     public void onValueChange(EventValueChange e) {
         if (FPSMaster.configManager.isConfigLoaded() && !FPSMaster.configManager.isLoadingConfig()) {
-            FPSMaster.configManager.saveConfigQuietly("default");
+            ConfigProfileUtils.saveActiveProfileQuietly();
         }
     }
     @Subscribe

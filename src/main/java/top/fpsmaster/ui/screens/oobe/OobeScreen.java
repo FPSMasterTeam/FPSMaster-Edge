@@ -147,6 +147,7 @@ public class OobeScreen extends ScaledGuiScreen {
     @Override
     public void initGui() {
         super.initGui();
+        MainMenu.preloadPlayerSkinTexture();
         animClock.reset();
         introStartedAt = System.currentTimeMillis();
         introProgress = 0f;
@@ -857,7 +858,7 @@ public class OobeScreen extends ScaledGuiScreen {
         }
 
         try {
-            FPSMaster.configManager.saveConfig("default");
+            FPSMaster.configManager.saveConfig(top.fpsmaster.modules.config.ConfigProfileUtils.getActiveProfileName());
         } catch (FileException e) {
             e.printStackTrace();
             System.err.println("Failed to save OOBE configuration: " + e.getMessage());

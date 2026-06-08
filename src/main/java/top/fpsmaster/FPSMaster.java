@@ -11,6 +11,7 @@ import top.fpsmaster.modules.client.api.AuthService;
 import top.fpsmaster.modules.client.thread.ClientThreadPool;
 import top.fpsmaster.modules.client.telemetry.EdgeTelemetryReporter;
 import top.fpsmaster.modules.config.ConfigManager;
+import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.i18n.Language;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.music.MusicPlayer;
@@ -89,9 +90,11 @@ public class FPSMaster {
 
     private void initializeConfigures() throws Exception {
         ClientLogger.info("Initializing Config...");
-        File defaultConfig = new File(FileUtils.dir, "default.json");
+        File defaultConfig = ConfigProfileUtils.getCurrentConfigFile();
+        ConfigProfileUtils.migrateLegacyDefaultIfNeeded();
         defaultConfigExistedBeforeLoad = defaultConfig.exists();
-        configManager.loadConfig("default");
+        String activeProfile = ConfigProfileUtils.loadActiveProfileName();
+        configManager.loadConfig(activeProfile);
         MusicPlayer.setVolume((float) configManager.configure.volume);
     }
 
@@ -142,7 +145,7 @@ public class FPSMaster {
         async.close();
         try {
             ClientLogger.info("Saving configs");
-            configManager.saveConfig("default");
+            configManager.saveConfig(ConfigProfileUtils.getActiveProfileName());
         } catch (FileException e) {
             ExceptionHandler.handleFileException(e, "Failed to save default config during shutdown");
         }

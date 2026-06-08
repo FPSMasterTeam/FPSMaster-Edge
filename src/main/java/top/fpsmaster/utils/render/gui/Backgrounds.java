@@ -144,15 +144,14 @@ public class Backgrounds {
             }
         }
 
-        float scale = Math.min(guiWidth / customImageWidth, guiHeight / customImageHeight);
+        float scale = Math.max(guiWidth / customImageWidth, guiHeight / customImageHeight);
         float drawWidth = customImageWidth * scale;
         float drawHeight = customImageHeight * scale;
         float drawX = (guiWidth - drawWidth) * 0.5f;
         float drawY = (guiHeight - drawHeight) * 0.5f;
 
-        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(0, 0, 0, 255));
         Images.draw(CUSTOM_BG_LOCATION, drawX, drawY, drawWidth, drawHeight, -1);
-        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(22, 22, 22, 40));
+        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(0, 0, 0, 58));
     }
 
     private static boolean isPanoramaMode(String backgroundMode) {

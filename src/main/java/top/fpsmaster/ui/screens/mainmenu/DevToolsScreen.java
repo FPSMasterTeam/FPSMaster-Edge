@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiScreen;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.minimap.Minimap;
+import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.config.Configure;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.common.GuiButton;
@@ -74,7 +75,7 @@ public class DevToolsScreen extends ScaledGuiScreen {
 
     private void recreateDefaultConfig() {
         try {
-            File configFile = new File(top.fpsmaster.utils.io.FileUtils.dir, "default.json");
+            File configFile = ConfigProfileUtils.getCurrentConfigFile();
             if (configFile.exists() && !configFile.delete()) {
                 throw new FileException("Failed to delete config: " + configFile.getAbsolutePath());
             }

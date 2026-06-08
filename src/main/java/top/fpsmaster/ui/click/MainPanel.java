@@ -15,6 +15,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.click.modules.ModuleRenderer;
@@ -259,29 +260,34 @@ public class MainPanel extends ScaledGuiScreen {
         }
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
-        // Theme toggle button (bottom-left)
-        float themeBtnX = x + 4 + categoryAnimation / 50f;
-        float themeBtnY = y + height - 18;
-        float themeBtnW = categoryAnimation - 8;
-        float themeBtnH = 14;
+        // Theme / config buttons (bottom-left)
+        float sideBtnX = x + 4 + categoryAnimation / 50f;
+        float sideBtnW = categoryAnimation - 8;
+        float sideBtnH = 14;
         boolean isLightTheme = ClickGuiTheme.isLight();
-        Rects.rounded(Math.round(themeBtnX), Math.round(themeBtnY),
-                Math.round(themeBtnW), Math.round(themeBtnH), 4,
-                ClickGuiTheme.themeBtnBg().getRGB());
-        FPSMaster.fontManager.s14.drawString(
-                FPSMaster.i18n.get(isLightTheme ? "theme.light" : "theme.dark"),
-                themeBtnX + (themeBtnW - FPSMaster.fontManager.s14.getStringWidth(
-                        FPSMaster.i18n.get(isLightTheme ? "theme.light" : "theme.dark"))) / 2f,
-                themeBtnY + 3,
-                ClickGuiTheme.themeBtnText().getRGB()
-        );
-        if (consumePressInBounds(themeBtnX, themeBtnY, themeBtnW, themeBtnH) != null) {
+        if (renderSideButton(sideBtnX, y + height - 34, sideBtnW, sideBtnH, FPSMaster.i18n.get(isLightTheme ? "theme.light" : "theme.dark"))) {
             ClientSettings.theme.setValue(isLightTheme ? 0 : 1);
+        }
+        if (renderSideButton(sideBtnX, y + height - 18, sideBtnW, sideBtnH, FPSMaster.i18n.get("configprofiles.button"))) {
+            mc.displayGuiScreen(new ConfigProfilesScreen(this));
         }
 
         Alpha.set(1f);
 
         handlePointerPress();
+    }
+
+    private boolean renderSideButton(float x, float y, float width, float height, String text) {
+        Rects.rounded(Math.round(x), Math.round(y),
+                Math.round(width), Math.round(height), 4,
+                ClickGuiTheme.themeBtnBg().getRGB());
+        FPSMaster.fontManager.s14.drawString(
+                text,
+                x + (width - FPSMaster.fontManager.s14.getStringWidth(text)) / 2f,
+                y + 3,
+                ClickGuiTheme.themeBtnText().getRGB()
+        );
+        return consumePressInBounds(x, y, width, height) != null;
     }
 
     @Override
@@ -410,7 +416,7 @@ public class MainPanel extends ScaledGuiScreen {
             return;
         }
         try {
-            FPSMaster.configManager.saveConfig("default");
+            FPSMaster.configManager.saveConfig(ConfigProfileUtils.getActiveProfileName());
             configSavedOnClose = true;
         } catch (FileException e) {
             ClientLogger.error("Failed to save config when closing MainPanel: " + e.getMessage());

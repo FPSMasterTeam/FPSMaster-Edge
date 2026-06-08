@@ -2,7 +2,9 @@ package top.fpsmaster.features.settings;
 
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventValueChange;
+import top.fpsmaster.features.settings.impl.utils.CustomColor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -11,12 +13,14 @@ public class Setting<T> {
     public String name;
     public T value;
     public VisibleCondition visible;
+    private final T defaultValue;
 
     private final List<ChangeListener<T>> changeListeners = new CopyOnWriteArrayList<>();
 
     public Setting(String name, T value) {
         this.name = name;
         this.value = value;
+        this.defaultValue = copyValue(value);
     }
 
     public Setting(String name, T value, VisibleCondition visible) {
@@ -79,6 +83,21 @@ public class Setting<T> {
                 // Listener failures must not break setting updates.
             }
         }
+    }
+
+    public void resetValue() {
+        setValue(copyValue(defaultValue));
+    }
+
+    @SuppressWarnings("unchecked")
+    private T copyValue(T source) {
+        if (source instanceof CustomColor) {
+            return (T) ((CustomColor) source).copy();
+        }
+        if (source instanceof ArrayList) {
+            return (T) new ArrayList<>((ArrayList<?>) source);
+        }
+        return source;
     }
 }
 

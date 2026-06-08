@@ -6,9 +6,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
-import top.fpsmaster.features.impl.optimizes.OldAnimations;
-import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.features.impl.render.ItemPhysics;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.BindSetting;
@@ -25,7 +22,6 @@ import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.shortcut.Shortcut;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
-import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.world.ItemsUtil;
 
 import java.io.File;
@@ -154,7 +150,7 @@ public class ConfigManager {
             for (Shortcut.Action action : shortcut.actions) {
                 JsonObject actionJson = new JsonObject();
                 actionJson.addProperty("type", action.type.name());
-                actionJson.addProperty("Context", action.context);
+                actionJson.addProperty("context", action.context);
                 actions.add(actionJson);
             }
             shortcutJson.add("actions", actions);
@@ -163,21 +159,28 @@ public class ConfigManager {
 
         json.add("shortcuts", shortcutsJson);
 
-        FileUtils.saveFile(name + ".json", gson.toJson(json));
+        ConfigProfileUtils.saveConfigFile(name, gson.toJson(json));
     }
 
     public void loadConfig(String name) throws Exception {
         loadingConfig = true;
         try {
-            File configFile = new File(FileUtils.dir, name + ".json");
+            File configFile = ConfigProfileUtils.getProfileFile(name);
             ClientLogger.info("Loading config: " + configFile.getAbsolutePath());
-            String jsonStr = FileUtils.readFile(name + ".json");
+            String jsonStr = ConfigProfileUtils.readConfigFile(name);
             if (jsonStr.trim().isEmpty()) {
                 ClientLogger.warn("Config file is empty, creating default config: " + configFile.getAbsolutePath());
                 resetConfigToDefaults(name);
                 return;
             }
-            JsonObject json = gson.fromJson(jsonStr, JsonObject.class);
+            JsonObject json;
+            try {
+                json = gson.fromJson(jsonStr, JsonObject.class);
+            } catch (JsonSyntaxException exception) {
+                ClientLogger.warn("Config file is invalid JSON, resetting: " + name + ".json");
+                resetConfigToDefaults(name);
+                return;
+            }
             if (json == null) {
                 ClientLogger.warn("Config file is empty or invalid JSON, resetting: " + name + ".json");
                 resetConfigToDefaults(name);
@@ -190,6 +193,7 @@ public class ConfigManager {
                 return;
             }
 
+            configure = new Configure();
             JsonObject client = json.getAsJsonObject("client");
             if (client != null) {
                 if (client.has("volume")) {
@@ -274,55 +278,57 @@ public class ConfigManager {
             for (Module module : FPSMaster.moduleManager.modules) {
                 try {
                     JsonObject moduleJson = modulesJson != null ? modulesJson.getAsJsonObject(module.name) : null;
-                    if (moduleJson != null && moduleJson.has("settings")) {
-                        module.set(moduleJson.get("enabled").getAsBoolean());
-                        module.key = moduleJson.get("key").getAsInt();
-                        JsonObject settingsJson = moduleJson.getAsJsonObject("settings");
-                        for (Setting<?> setting : module.settings) {
-                            try {
-                                JsonObject settingJson = settingsJson.getAsJsonObject(setting.name);
-                                if (settingJson != null && settingJson.has("type") && settingJson.has("value")) {
-                                    String type = settingJson.get("type").getAsString();
-                                    JsonElement value = settingJson.get("value");
-                                    if (setting instanceof BooleanSetting && "boolean".equals(type)) {
-                                        ((BooleanSetting) setting).setValue(value.getAsBoolean());
-                                    } else if (setting instanceof NumberSetting && "number".equals(type)) {
-                                        ((NumberSetting) setting).setValue(value.getAsDouble());
-                                    } else if (setting instanceof ModeSetting && "mode".equals(type)) {
-                                        ((ModeSetting) setting).setValue(value.getAsInt());
-                                    } else if (setting instanceof TextSetting && "text".equals(type)) {
-                                        ((TextSetting) setting).setValue(value.getAsString());
-                                    } else if (setting instanceof ColorSetting && "color".equals(type)) {
-                                        JsonObject color = value.getAsJsonObject();
-                                        ColorSetting colorSetting = (ColorSetting) setting;
-                                        colorSetting.getValue().setColor(
-                                                color.get("h").getAsFloat(),
-                                                color.get("s").getAsFloat(),
-                                                color.get("b").getAsFloat(),
-                                                color.get("a").getAsFloat()
-                                        );
-                                        if (color.has("mode")) {
-                                            try {
-                                                colorSetting.setColorType(ColorSetting.ColorType.valueOf(color.get("mode").getAsString()));
-                                            } catch (IllegalArgumentException ignored) {
-                                            }
-                                        }
-                                    } else if (setting instanceof BindSetting && "bind".equals(type)) {
-                                        ((BindSetting) setting).setValue(value.getAsInt());
-                                    } else if (setting instanceof MultipleItemSetting && "multiItem".equals(type)) {
-                                        MultipleItemSetting multipleItemSetting = (MultipleItemSetting) setting;
-                                        multipleItemSetting.getValue().clear();
-                                        for (JsonElement itemElement : value.getAsJsonArray()) {
-                                            JsonObject item = itemElement.getAsJsonObject();
-                                            int id = item.get("id").getAsInt();
-                                            int metadata = item.get("meta").getAsInt();
-                                            multipleItemSetting.addItem(ItemsUtil.getItemStackWithMetadata(Item.getItemById(id), metadata));
+                    resetModuleToDefaults(module);
+                    if (moduleJson == null || !moduleJson.has("settings")) {
+                        continue;
+                    }
+                    module.set(moduleJson.get("enabled").getAsBoolean());
+                    module.key = moduleJson.get("key").getAsInt();
+                    JsonObject settingsJson = moduleJson.getAsJsonObject("settings");
+                    for (Setting<?> setting : module.settings) {
+                        try {
+                            JsonObject settingJson = settingsJson.getAsJsonObject(setting.name);
+                            if (settingJson != null && settingJson.has("type") && settingJson.has("value")) {
+                                String type = settingJson.get("type").getAsString();
+                                JsonElement value = settingJson.get("value");
+                                if (setting instanceof BooleanSetting && "boolean".equals(type)) {
+                                    ((BooleanSetting) setting).setValue(value.getAsBoolean());
+                                } else if (setting instanceof NumberSetting && "number".equals(type)) {
+                                    ((NumberSetting) setting).setValue(value.getAsDouble());
+                                } else if (setting instanceof ModeSetting && "mode".equals(type)) {
+                                    ((ModeSetting) setting).setValue(value.getAsInt());
+                                } else if (setting instanceof TextSetting && "text".equals(type)) {
+                                    ((TextSetting) setting).setValue(value.getAsString());
+                                } else if (setting instanceof ColorSetting && "color".equals(type)) {
+                                    JsonObject color = value.getAsJsonObject();
+                                    ColorSetting colorSetting = (ColorSetting) setting;
+                                    colorSetting.getValue().setColor(
+                                            color.get("h").getAsFloat(),
+                                            color.get("s").getAsFloat(),
+                                            color.get("b").getAsFloat(),
+                                            color.get("a").getAsFloat()
+                                    );
+                                    if (color.has("mode")) {
+                                        try {
+                                            colorSetting.setColorType(ColorSetting.ColorType.valueOf(color.get("mode").getAsString()));
+                                        } catch (IllegalArgumentException ignored) {
                                         }
                                     }
+                                } else if (setting instanceof BindSetting && "bind".equals(type)) {
+                                    ((BindSetting) setting).setValue(value.getAsInt());
+                                } else if (setting instanceof MultipleItemSetting && "multiItem".equals(type)) {
+                                    MultipleItemSetting multipleItemSetting = (MultipleItemSetting) setting;
+                                    multipleItemSetting.getValue().clear();
+                                    for (JsonElement itemElement : value.getAsJsonArray()) {
+                                        JsonObject item = itemElement.getAsJsonObject();
+                                        int id = item.get("id").getAsInt();
+                                        int metadata = item.get("meta").getAsInt();
+                                        multipleItemSetting.addItem(ItemsUtil.getItemStackWithMetadata(Item.getItemById(id), metadata));
+                                    }
                                 }
-                            } catch (Throwable throwable) {
-                                ClientLogger.error("Failed to load setting from config: " + module.name + "/" + setting.name);
                             }
+                        } catch (Throwable throwable) {
+                            ClientLogger.error("Failed to load setting from config: " + module.name + "/" + setting.name);
                         }
                     }
                 } catch (Throwable throwable) {
@@ -330,6 +336,7 @@ public class ConfigManager {
                 }
             }
 
+            Shortcut.shortcuts.clear();
             JsonArray shortcutsJson = Optional.ofNullable(json.getAsJsonArray("shortcuts")).orElse(new JsonArray());
             for (JsonElement element : shortcutsJson) {
                 if (element.isJsonObject()) {
@@ -339,7 +346,10 @@ public class ConfigManager {
                     for (JsonElement actionElement : actionsJson) {
                         if (actionElement.isJsonObject()) {
                             JsonObject actionJson = actionElement.getAsJsonObject();
-                            actions.add(new Shortcut.Action(Shortcut.Action.Type.valueOf(actionJson.get("type").getAsString()), actionJson.get("context").getAsString()));
+                            String context = actionJson.has("context")
+                                    ? actionJson.get("context").getAsString()
+                                    : actionJson.has("Context") ? actionJson.get("Context").getAsString() : "";
+                            actions.add(new Shortcut.Action(Shortcut.Action.Type.valueOf(actionJson.get("type").getAsString()), context));
                         }
                     }
                     Shortcut.shortcuts.add(new Shortcut(shortcutJson.get("name").getAsString(),
@@ -360,6 +370,13 @@ public class ConfigManager {
         if (currentVersion == SCHEMA_VERSION) {
             return json;
         }
+        if (currentVersion == 0) {
+            JsonObject migrated = gson.fromJson(gson.toJson(json), JsonObject.class);
+            migrated.addProperty("schemaVersion", SCHEMA_VERSION);
+            ConfigProfileUtils.saveConfigFile(name, gson.toJson(migrated));
+            ClientLogger.info("Added schemaVersion to legacy config " + name + ".json");
+            return migrated;
+        }
 
         List<ConfigMigration> migrationPath = resolveMigrationPath(currentVersion, SCHEMA_VERSION);
         if (migrationPath.isEmpty()) {
@@ -373,7 +390,7 @@ public class ConfigManager {
             migrated = migration.migrate(migrated);
         }
         migrated.addProperty("schemaVersion", SCHEMA_VERSION);
-        FileUtils.saveFile(name + ".json", gson.toJson(migrated));
+        ConfigProfileUtils.saveConfigFile(name, gson.toJson(migrated));
         ClientLogger.info("Migrated config " + name + ".json from schema " + currentVersion + " to " + SCHEMA_VERSION);
         return migrated;
     }
@@ -411,26 +428,48 @@ public class ConfigManager {
         return version == targetVersion ? path : Collections.emptyList();
     }
 
+    public void resetProfileToDefaults(String name) throws FileException {
+        loadingConfig = true;
+        try {
+            configure = new Configure();
+            Shortcut.shortcuts.clear();
+            resetAllModulesToDefaults();
+            saveConfig(name);
+        } finally {
+            loadingConfig = false;
+            configLoaded = true;
+        }
+    }
+
     private void resetConfigToDefaults(String name) throws FileException, Exception {
-        File configFile = new File(FileUtils.dir, name + ".json");
+        File configFile = ConfigProfileUtils.getProfileFile(name);
         ClientLogger.warn("Resetting config to defaults: " + configFile.getAbsolutePath());
-        openDefaultModules();
-        saveConfig(name);
+        resetProfileToDefaults(name);
         ClientLogger.info("Wrote default config: " + configFile.getAbsolutePath());
         loadConfig(name);
     }
 
     private void deleteConfigFile(String name) throws FileException {
-        File configFile = new File(FileUtils.dir, name + ".json");
+        File configFile = ConfigProfileUtils.getProfileFile(name);
         ClientLogger.warn("Deleting config file: " + configFile.getAbsolutePath());
-        if (configFile.exists() && !configFile.delete()) {
-            throw new FileException("Failed to delete file: " + configFile.getAbsolutePath());
+        ConfigProfileUtils.deleteConfigFile(name);
+    }
+
+    private void resetAllModulesToDefaults() {
+        for (Module module : FPSMaster.moduleManager.modules) {
+            resetModuleToDefaults(module);
         }
     }
 
-    private void openDefaultModules() {
-        FPSMaster.moduleManager.requireModule(Performance.class).set(true);
-        FPSMaster.moduleManager.requireModule(OldAnimations.class).set(true);
-        FPSMaster.moduleManager.requireModule(ItemPhysics.class).set(true);
+    private void resetModuleToDefaults(Module module) {
+        module.set(false);
+        module.key = 0;
+        for (Setting<?> setting : module.settings) {
+            try {
+                setting.resetValue();
+            } catch (Throwable throwable) {
+                ClientLogger.error("Failed to reset setting to default: " + module.name + "/" + setting.name);
+            }
+        }
     }
 }
