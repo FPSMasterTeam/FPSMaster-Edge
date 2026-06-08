@@ -6,6 +6,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
+import top.fpsmaster.features.impl.optimizes.OldAnimations;
+import top.fpsmaster.features.impl.optimizes.Performance;
+import top.fpsmaster.features.impl.render.ItemPhysics;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.BindSetting;
@@ -434,6 +437,20 @@ public class ConfigManager {
             configure = new Configure();
             Shortcut.shortcuts.clear();
             resetAllModulesToDefaults();
+            openDefaultModules();
+            saveConfig(name);
+        } finally {
+            loadingConfig = false;
+            configLoaded = true;
+        }
+    }
+
+    public void resetProfileToAllOff(String name) throws FileException {
+        loadingConfig = true;
+        try {
+            configure = new Configure();
+            Shortcut.shortcuts.clear();
+            resetAllModulesToDefaults();
             saveConfig(name);
         } finally {
             loadingConfig = false;
@@ -459,6 +476,12 @@ public class ConfigManager {
         for (Module module : FPSMaster.moduleManager.modules) {
             resetModuleToDefaults(module);
         }
+    }
+
+    private void openDefaultModules() {
+        FPSMaster.moduleManager.requireModule(Performance.class).set(true);
+        FPSMaster.moduleManager.requireModule(OldAnimations.class).set(true);
+        FPSMaster.moduleManager.requireModule(ItemPhysics.class).set(true);
     }
 
     private void resetModuleToDefaults(Module module) {

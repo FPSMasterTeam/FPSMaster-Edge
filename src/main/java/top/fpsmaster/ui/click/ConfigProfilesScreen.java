@@ -496,7 +496,7 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
     private void applyAllOffPreset() {
         try {
             String profileName = ConfigProfileUtils.getActiveProfileName();
-            ConfigProfileUtils.resetActiveProfile();
+            ConfigProfileUtils.resetActiveProfileToAllOff();
             reloadProfiles();
             setStatus(String.format(FPSMaster.i18n.get("configprofiles.status.alloff"), profileName), successColor());
         } catch (FileException exception) {

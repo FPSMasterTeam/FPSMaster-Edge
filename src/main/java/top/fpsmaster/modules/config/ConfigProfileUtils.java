@@ -259,9 +259,9 @@ public final class ConfigProfileUtils {
         ClientLogger.info("Loaded config profile: " + profileName);
     }
 
-    public static void resetActiveProfile() throws FileException {
+    public static void resetActiveProfileToAllOff() throws FileException {
         String profileName = activeProfileName;
-        FPSMaster.configManager.resetProfileToDefaults(profileName);
+        FPSMaster.configManager.resetProfileToAllOff(profileName);
         ClientLogger.info("Reset config profile: " + profileName);
     }
 
