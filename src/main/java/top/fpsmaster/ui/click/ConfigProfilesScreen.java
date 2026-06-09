@@ -32,7 +32,7 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
         LOAD,
         RENAME,
         DELETE,
-        ALL_OFF
+        DEFAULTS
     }
 
     private final ScaledGuiScreen parent;
@@ -132,7 +132,7 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
             exportCurrentProfile();
         }
         if (renderActionButton(x + (buttonWidth + gap) * 2f, y, buttonWidth, 22f, "configprofiles.preset.alloff", mouseX, mouseY)) {
-            openConfirmDialog(DialogMode.ALL_OFF, "");
+            openConfirmDialog(DialogMode.DEFAULTS, "");
         }
     }
 
@@ -310,7 +310,7 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
                 return String.format(FPSMaster.i18n.get("configprofiles.confirm.load"), dialogProfileName);
             case DELETE:
                 return String.format(FPSMaster.i18n.get("configprofiles.confirm.delete"), dialogProfileName);
-            case ALL_OFF:
+            case DEFAULTS:
                 return FPSMaster.i18n.get("configprofiles.confirm.alloff");
             default:
                 return "";
@@ -398,8 +398,8 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
             case DELETE:
                 deleteProfile(profileName);
                 break;
-            case ALL_OFF:
-                applyAllOffPreset();
+            case DEFAULTS:
+                applyDefaultPreset();
                 break;
             default:
                 break;
@@ -493,10 +493,10 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
         }
     }
 
-    private void applyAllOffPreset() {
+    private void applyDefaultPreset() {
         try {
             String profileName = ConfigProfileUtils.getActiveProfileName();
-            ConfigProfileUtils.resetActiveProfileToAllOff();
+            ConfigProfileUtils.resetActiveProfileToDefaults();
             reloadProfiles();
             setStatus(String.format(FPSMaster.i18n.get("configprofiles.status.alloff"), profileName), successColor());
         } catch (FileException exception) {

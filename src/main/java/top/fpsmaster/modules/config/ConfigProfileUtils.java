@@ -29,7 +29,6 @@ import java.util.Locale;
 
 public final class ConfigProfileUtils {
     public static final String CURRENT_CONFIG = "default";
-    public static final String ALL_OFF_PRESET = "all_off";
     private static final String PROFILE_DIR = "config";
     private static final String JSON_SUFFIX = ".json";
     private static final String ACTIVE_PROFILE_STATE = "active_profile.txt";
@@ -259,10 +258,10 @@ public final class ConfigProfileUtils {
         ClientLogger.info("Loaded config profile: " + profileName);
     }
 
-    public static void resetActiveProfileToAllOff() throws FileException {
+    public static void resetActiveProfileToDefaults() throws FileException {
         String profileName = activeProfileName;
-        FPSMaster.configManager.resetProfileToAllOff(profileName);
-        ClientLogger.info("Reset config profile: " + profileName);
+        FPSMaster.configManager.resetProfileToDefaults(profileName);
+        ClientLogger.info("Reset config profile to defaults: " + profileName);
     }
 
     public static String renameProfile(String oldName, String newName, String author) throws FileException {

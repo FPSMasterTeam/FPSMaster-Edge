@@ -445,19 +445,6 @@ public class ConfigManager {
         }
     }
 
-    public void resetProfileToAllOff(String name) throws FileException {
-        loadingConfig = true;
-        try {
-            configure = new Configure();
-            Shortcut.shortcuts.clear();
-            resetAllModulesToDefaults();
-            saveConfig(name);
-        } finally {
-            loadingConfig = false;
-            configLoaded = true;
-        }
-    }
-
     private void resetConfigToDefaults(String name) throws FileException, Exception {
         File configFile = ConfigProfileUtils.getProfileFile(name);
         ClientLogger.warn("Resetting config to defaults: " + configFile.getAbsolutePath());
