@@ -555,6 +555,7 @@ playtime.fontshadow=Font Shadow
 playtime.defaultlabel=Play Time:
 playtime.background=Show Background
 playtime.backgroundcolor=Background Color
+playtime.round=Rounded Corners
 playtime.roundradius=Corner Radius
 playtime.unit.seconds=s
 playtime.unit.minutes=min

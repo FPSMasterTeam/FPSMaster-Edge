@@ -555,6 +555,7 @@ playtime.fontshadow=字体阴影
 playtime.defaultlabel=游玩时间：
 playtime.background=背景
 playtime.backgroundcolor=背景颜色
+playtime.round=圆角
 playtime.roundradius=圆角半径
 playtime.unit.seconds=秒
 playtime.unit.minutes=分钟
