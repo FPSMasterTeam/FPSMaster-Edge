@@ -16,6 +16,6 @@ public class PlayTime extends InterfaceModule {
     public PlayTime() {
         super("PlayTime", Category.Interface);
         backgroundColor.setColor(new Color(18, 20, 26, 160));
-        addSettings(displayMode, label, textColor, betterFont, fontShadow);
+        addSettings(displayMode, label, textColor, betterFont, fontShadow, bg, rounded, roundRadius, backgroundColor);
     }
 }
