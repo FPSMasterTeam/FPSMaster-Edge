@@ -166,10 +166,16 @@ public abstract class MixinMinecraft implements IMinecraft {
         EventDispatcher.dispatchEvent(new EventTick());
     }
 
-    // Ugly code
+    private boolean lastPerspectiveDown = false;
+    private boolean lastSmoothDown = false;
+
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/settings/KeyBinding;isPressed()Z", ordinal = 3))
     public void chatVis(CallbackInfo ci) {
-        if (this.gameSettings.keyBindTogglePerspective.isPressed()) {
+        // Edge detection: isPressed works for keyboard, isKeyDown works for mouse side buttons
+        boolean perspectiveDown = this.gameSettings.keyBindTogglePerspective.isPressed()
+            || this.gameSettings.keyBindTogglePerspective.isKeyDown();
+        if (perspectiveDown && !lastPerspectiveDown) {
+            lastPerspectiveDown = true;
             ++this.gameSettings.thirdPersonView;
             if (this.gameSettings.thirdPersonView > 2) {
                 this.gameSettings.thirdPersonView = 0;
@@ -182,10 +188,17 @@ public abstract class MixinMinecraft implements IMinecraft {
             }
 
             this.renderGlobal.setDisplayListEntitiesDirty();
+        } else if (!perspectiveDown) {
+            lastPerspectiveDown = false;
         }
 
-        if (this.gameSettings.keyBindSmoothCamera.isPressed()) {
+        boolean smoothDown = this.gameSettings.keyBindSmoothCamera.isPressed()
+            || this.gameSettings.keyBindSmoothCamera.isKeyDown();
+        if (smoothDown && !lastSmoothDown) {
+            lastSmoothDown = true;
             this.gameSettings.smoothCamera = !this.gameSettings.smoothCamera;
+        } else if (!smoothDown) {
+            lastSmoothDown = false;
         }
     }
 
