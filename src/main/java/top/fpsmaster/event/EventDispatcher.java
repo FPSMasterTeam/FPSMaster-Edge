@@ -3,13 +3,15 @@ package top.fpsmaster.event;
 import top.fpsmaster.exception.ExceptionHandler;
 import top.fpsmaster.modules.logger.ClientLogger;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EventDispatcher {
-    private static final Map<Class<? extends Event>, List<Handler>> eventListeners = new HashMap<>();
+    // ConcurrentHashMap so registration (off-thread or concurrent) can't corrupt the map while
+    // dispatch reads it; the per-event lists are CopyOnWriteArrayList (read-heavy, write-rare).
+    private static final Map<Class<? extends Event>, List<Handler>> eventListeners = new ConcurrentHashMap<>();
 
     public static void registerListener(Object listener) {
         Method[] methods = listener.getClass().getDeclaredMethods();
@@ -19,7 +21,7 @@ public class EventDispatcher {
                 if (Event.class.isAssignableFrom(parameterType)) {
                     Class<? extends Event> eventType = (Class<? extends Event>) parameterType;
                     List<Handler> listeners = eventListeners.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>());
-                    listeners.add(ASMHandler.loadHandlerClass(listener, method));
+                    listeners.add(new ReflectHandler(listener, method));
                 }
             }
         }
