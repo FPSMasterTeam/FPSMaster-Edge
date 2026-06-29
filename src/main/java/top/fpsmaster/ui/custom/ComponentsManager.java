@@ -60,8 +60,11 @@ public class ComponentsManager {
     public void draw(int mouseX, int mouseY) {
         GL11.glPushMatrix();
 
-        // Adjust mouse coordinates if fixed scale is enabled
-        int scaleFactor = new net.minecraft.client.gui.ScaledResolution(Utility.mc).getScaleFactor();
+        // Adjust mouse coordinates if fixed scale is enabled.
+        // Build the ScaledResolution once per frame and reuse it for every component's
+        // position math, instead of each component allocating its own (previously twice each).
+        net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(Utility.mc);
+        int scaleFactor = sr.getScaleFactor();
 
         mouseX = mouseX * scaleFactor / 2;
         mouseY = mouseY * scaleFactor / 2;
@@ -74,7 +77,7 @@ public class ComponentsManager {
         components.forEach(component -> {
             if (component.shouldDisplay()) {
                 try {
-                    component.display(finalMouseX, finalMouseY);
+                    component.display(sr, finalMouseX, finalMouseY);
                 } catch (Exception e) {
                     ClientLogger.error("Failed to render component: " + component.mod.name);
                 }

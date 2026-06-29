@@ -73,7 +73,10 @@ public class Component {
     }
 
     public float[] getRealPosition() {
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        return getRealPosition(new ScaledResolution(Minecraft.getMinecraft()));
+    }
+
+    public float[] getRealPosition(ScaledResolution sr) {
         float rX = 0f;
         float rY = 0f;
         x = Math.max(0f, Math.min(1f, x));
@@ -111,9 +114,10 @@ public class Component {
         return new float[]{rX, rY};
     }
 
-    public void display(int mouseX, int mouseY) {
-        float rX = getRealPosition()[0];
-        float rY = getRealPosition()[1];
+    public void display(ScaledResolution sr, int mouseX, int mouseY) {
+        float[] pos = getRealPosition(sr);
+        float rX = pos[0];
+        float rY = pos[1];
         if ((Utility.mc.currentScreen instanceof GuiChat || Utility.mc.currentScreen instanceof MainPanel)) {
             float scaledWidth = width * scale;
             float scaledHeight = height * scale;
