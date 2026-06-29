@@ -31,6 +31,9 @@ public class EdgeTelemetryReporter {
     private static final String OFFLINE_URL = "https://api.fpsmaster.top/api/v1/telemetry/offline";
     private static final String CLIENT_NAME = "FPSMaster-Edge";
     private static final int MAX_SAMPLED_PLAYERS = 8;
+    // Fixed salt so identity hashes are stable across sessions (enables unique-user counting)
+    // while not being trivially reversible via a bare-hash rainbow table.
+    private static final String IDENTITY_SALT = "fpsmaster-edge-telemetry-v1";
 
     private final AtomicBoolean heartbeatInFlight = new AtomicBoolean(false);
     private final AtomicBoolean presenceInFlight = new AtomicBoolean(false);
@@ -175,17 +178,19 @@ public class EdgeTelemetryReporter {
         payload.addProperty("sessionId", sessionId);
         payload.addProperty("clientVersion", FPSMaster.CLIENT_VERSION);
 
+        // Send only de-identified, salted hashes of account identity — never the raw
+        // username or Mojang UUID — so the "anonymous data" toggle actually stays anonymous.
         Session session = Minecraft.getMinecraft().getSession();
         if (session != null) {
             String username = normalize(session.getUsername());
             if (username != null) {
-                payload.addProperty("username", username);
+                payload.addProperty("usernameHash", hashIdentity(username.toLowerCase(Locale.ROOT)));
             }
         }
 
         EntityPlayer player = Minecraft.getMinecraft().thePlayer;
         if (player != null && player.getUniqueID() != null) {
-            payload.addProperty("playerUuid", player.getUniqueID().toString());
+            payload.addProperty("playerUuidHash", hashIdentity(player.getUniqueID().toString().toLowerCase(Locale.ROOT)));
         }
         return payload;
     }
@@ -390,6 +395,13 @@ public class EdgeTelemetryReporter {
             ClientLogger.warn("SHA-256 is unavailable: " + exception.getMessage());
             return null;
         }
+    }
+
+    private String hashIdentity(String value) {
+        if (value == null) {
+            return null;
+        }
+        return sha256Hex(IDENTITY_SALT + ":" + value);
     }
 
     private String shortenHash(String value, int length) {
