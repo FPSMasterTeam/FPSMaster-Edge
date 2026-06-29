@@ -128,7 +128,8 @@ public class InterfaceHandler {
                 GlStateManager.blendFunc(770, 771);
 
                 Component component = FPSMaster.componentsManager.getComponent(MiniMap.class);
-                mc.ingameGUI.drawTexturedModalRect(((int) component.getRealPosition()[0]), ((int) component.getRealPosition()[1]), 0, 0, (int) ((minimapWidth / 2f + 1) / sizeFix), (int) ((minimapWidth / 2f + 1) / sizeFix));
+                float[] pos = component.getRealPosition();
+                mc.ingameGUI.drawTexturedModalRect(((int) pos[0]), ((int) pos[1]), 0, 0, (int) ((minimapWidth / 2f + 1) / sizeFix), (int) ((minimapWidth / 2f + 1) / sizeFix));
                 super.drawInterface(width, height, partial);
             }
         });

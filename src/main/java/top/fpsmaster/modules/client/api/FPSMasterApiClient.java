@@ -42,7 +42,6 @@ public class FPSMasterApiClient {
                 payload.addProperty("password", password);
 
                 ClientLogger.info("Attempting login to: " + FPSMasterConstants.Endpoints.LAUNCHER_LOGIN);
-                ClientLogger.debug("Request payload: " + payload.toString());
 
                 HttpRequest.HttpResponseResult response = HttpRequest.postJson(
                         FPSMasterConstants.Endpoints.LAUNCHER_LOGIN,
@@ -51,7 +50,6 @@ public class FPSMasterApiClient {
                 );
 
                 ClientLogger.info("Login response status: " + response.getStatusCode());
-                ClientLogger.debug("Login response body: " + response.getBody());
 
                 // Try to parse as JSON for detailed error info
                 String responseBody = response.getBody();

@@ -54,11 +54,10 @@ public class BlockIndicatorComponent extends Component {
     }
 
     @Override
-    public float[] getRealPosition() {
+    public float[] getRealPosition(net.minecraft.client.gui.ScaledResolution sr) {
         if (position != Position.CT) {
-            return super.getRealPosition();
+            return super.getRealPosition(sr);
         }
-        net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(Minecraft.getMinecraft());
         float scaleFactor = (float) top.fpsmaster.features.impl.interfaces.ClientSettings.getUiScale();
         if (scaleFactor <= 0) {
             scaleFactor = 1.0f;

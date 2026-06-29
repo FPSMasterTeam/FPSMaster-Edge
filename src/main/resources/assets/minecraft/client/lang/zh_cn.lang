@@ -42,16 +42,6 @@ colorsetting.type.breath=呼吸
 colorsetting.type.chroma=渐变
 colorsetting.type.rainbow=彩虹
 
-music.title=音乐
-music.search=搜索
-music.name=搜索名称
-music.list=搜索歌单ID
-music.daily=日推
-music.notloggedin=未登录账号
-music.scantitle=扫码登陆
-music.waitscan=等待扫码
-music.waitconfirmation=等待确认
-music.loggedin=已登录
 
 theme.title=主题
 theme.dark=暗色
@@ -417,17 +407,6 @@ autogg.message=自定义消息
 autogg.autoplay=自动重开
 autogg.delaytoplay=自动重开延迟
 
-musicdisplay=音乐显示
-musicdisplay.desc=显示你正在播放的音乐
-musicdisplay.backgroundcolor=歌曲显示背景颜色
-musicdisplay.progresscolor=歌曲显示进度条颜色
-musicdisplay.visual=音频可视化颜色
-musicdisplay.amplitude=可视化幅度
-musicdisplay.roundradius=圆角半径
-musicdisplay.round=圆角
-musicdisplay.betterfont=更好的字体
-musicdisplay.background=背景
-musicdisplay.fontshadow=字体阴影
 
 oldanimations=旧动画
 oldanimations.desc=旧动画
@@ -790,7 +769,6 @@ category.optimize=优化
 category.render=视觉
 category.utility=实用
 category.interface=界面
-category.music=音乐
 category.theme=主题
 category.ornament=饰品
 
@@ -799,8 +777,6 @@ notification.module.enable=功能开启
 notification.module.enable.desc=%s已开启
 notification.module.disable=功能关闭
 notification.module.disable.desc=%s已关闭
-notification.music=音乐
-notification.music.next=已播放下一首音乐：%s
 
 # 其他
 irc.not_login=§c[IRC] §r§c您未连接到IRC，请报告本问题或检查网络连接。

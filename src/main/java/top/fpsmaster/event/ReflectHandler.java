@@ -5,8 +5,11 @@ import top.fpsmaster.modules.logger.ClientLogger;
 import java.lang.reflect.Method;
 
 public class ReflectHandler extends Handler {
-    public ReflectHandler(Class<? extends Event> listener, Method method) {
+    public ReflectHandler(Object listener, Method method) {
         super(listener, method);
+        // Disable access checks once so repeated per-frame/per-tick invokes skip them,
+        // and so non-public @Subscribe methods can be dispatched.
+        method.setAccessible(true);
     }
 
     @Override

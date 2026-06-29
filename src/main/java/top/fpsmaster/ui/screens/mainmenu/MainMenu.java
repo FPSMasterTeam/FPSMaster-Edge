@@ -86,11 +86,6 @@ public class MainMenu extends ScaledGuiScreen {
                 firstBoot = 2;
             }
         }
-//        if (!MusicPlayer.playList.getMusics().isEmpty()) {
-//            if (MusicPlayer.isPlaying) {
-//                MusicPlayer.playList.pause();
-//            }
-//        }
     }
 
     @Override
