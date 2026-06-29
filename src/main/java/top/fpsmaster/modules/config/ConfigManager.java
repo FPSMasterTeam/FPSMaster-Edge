@@ -56,7 +56,6 @@ public class ConfigManager {
         JsonObject json = new JsonObject();
         json.addProperty("schemaVersion", SCHEMA_VERSION);
         JsonObject client = new JsonObject();
-        client.addProperty("volume", configure.volume);
         client.addProperty("background", configure.background);
         client.addProperty("oobeCompleted", configure.oobeCompleted);
         client.addProperty("antiCheatEnabled", configure.antiCheatEnabled);
@@ -199,9 +198,6 @@ public class ConfigManager {
             configure = new Configure();
             JsonObject client = json.getAsJsonObject("client");
             if (client != null) {
-                if (client.has("volume")) {
-                    configure.volume = client.get("volume").getAsDouble();
-                }
                 if (client.has("background")) {
                     configure.background = client.get("background").getAsString();
                     if ("new".equals(configure.background)) {

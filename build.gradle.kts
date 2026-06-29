@@ -93,9 +93,6 @@ dependencies {
         isTransitive = false
     }
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
-    shadowImpl("javazoom:jlayer:1.0.1") {
-        isTransitive = false
-    }
     shadowImpl("org.java-websocket:Java-WebSocket:1.5.4") {
         isTransitive = true
     }
@@ -109,12 +106,6 @@ dependencies {
     }
     // If you don't want to log in with your real minecraft account, remove this line
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.1.2")
-    implementation("javazoom:jlayer:1.0.1")
-// https://mvnrepository.com/artifact/net.sourceforge.jtransforms/jtransforms
-    implementation("net.sourceforge.jtransforms:jtransforms:2.4.0")
-    shadowImpl("net.sourceforge.jtransforms:jtransforms:2.4.0") {
-        isTransitive = true
-    }
     compileOnly("org.projectlombok:lombok:1.18.38")
     annotationProcessor("org.projectlombok:lombok:1.18.38")
     compileOnly("org.jetbrains:annotations:26.0.2")

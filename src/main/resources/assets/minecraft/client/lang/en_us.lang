@@ -42,16 +42,6 @@ colorsetting.type.breath=Breath
 colorsetting.type.chroma=Chroma
 colorsetting.type.rainbow=Rainbow
 
-music.title=Music
-music.search=Search
-music.name=Search by Title
-music.list=Search by Playlist ID
-music.daily=Daily Mix
-music.notloggedin=Not Logged In
-music.scantitle=Scan to Log In
-music.waitscan=Waiting for scan
-music.waitconfirmation=Waiting for confirmation
-music.loggedin=Logged In
 
 theme.title=Theme
 theme.dark=Dark
@@ -417,17 +407,6 @@ autogg.message=Custom Message
 autogg.autoplay=Auto Play
 autogg.delaytoplay=Auto Play Delay
 
-musicdisplay=Music HUD
-musicdisplay.desc=Displays current playing music
-musicdisplay.backgroundcolor=Background Color
-musicdisplay.progresscolor=Progress Bar Color
-musicdisplay.visual=Visualizer Color
-musicdisplay.amplitude=Visualizer Strength
-musicdisplay.roundradius=Corner Radius
-musicdisplay.round=Rounded Corners
-musicdisplay.betterfont=Clean Font
-musicdisplay.background=Show Background
-musicdisplay.fontshadow=Font Shadow
 
 
 oldanimations=Old Animations
@@ -790,7 +769,6 @@ category.optimize=Performance
 category.render=Visual
 category.utility=Utility
 category.interface=Interface
-category.music=Music
 category.theme=Theme
 category.ornament=Cosmetics
 
@@ -799,8 +777,6 @@ notification.module.enable=Module Enabled
 notification.module.enable.desc=%s enabled
 notification.module.disable=Module Disabled
 notification.module.disable.desc=%s disabled
-notification.music=Music
-notification.music.next=Now Playing: %s
 
 # Other
 irc.not_login=§c[IRC] §r§cYou're not connected to IRC. Check your connection or report the issue.

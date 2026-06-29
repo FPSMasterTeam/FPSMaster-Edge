@@ -14,8 +14,6 @@ import top.fpsmaster.modules.config.ConfigManager;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.i18n.Language;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.modules.music.MusicPlayer;
-import top.fpsmaster.modules.music.netease.NeteaseApi;
 import top.fpsmaster.modules.statistics.PlayTimeStatistics;
 import top.fpsmaster.ui.custom.ComponentsManager;
 import top.fpsmaster.utils.git.GitInfo;
@@ -96,7 +94,6 @@ public class FPSMaster {
         defaultConfigExistedBeforeLoad = defaultConfig.exists();
         String activeProfile = ConfigProfileUtils.loadActiveProfileName();
         configManager.loadConfig(activeProfile);
-        MusicPlayer.setVolume((float) configManager.configure.volume);
     }
 
 
