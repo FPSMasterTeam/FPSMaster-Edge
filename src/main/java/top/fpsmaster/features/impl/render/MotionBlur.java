@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.Shader;
 import net.minecraft.client.shader.ShaderGroup;
+import net.minecraft.client.shader.ShaderUniform;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
@@ -20,19 +21,30 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
+import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.system.OptifineUtil;
 import top.fpsmaster.utils.core.Utility;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 import static top.fpsmaster.utils.core.Utility.mc;
 
 public class MotionBlur extends Module {
+    // GLSL 120 only: 1.8.9 runs in a legacy/compatibility GL context, where a
+    // #version 150 fragment shader is not guaranteed to compile (it never does on macOS)
+    private static final String SHADER_PATH = "shaders/post/motionblur.json";
+    private static final String SHADER_GROUP_NAME = "minecraft:" + SHADER_PATH;
+
     private static Framebuffer blurBufferMain;
     private static Framebuffer blurBufferInto;
+    private static Field listShadersField;
+    private static boolean listShadersUnavailable;
 
     private final ModeSetting mode = new ModeSetting("Mode", 1, "Old", "New");
     private final NumberSetting multiplier = new NumberSetting("Strength", 2, 0, 10, 0.5);
+
+    private boolean shaderLoadFailed;
 
     public MotionBlur() {
         super("MotionBlur", Category.RENDER);
@@ -42,6 +54,7 @@ public class MotionBlur extends Module {
     @Override
     public void onEnable() {
         super.onEnable();
+        shaderLoadFailed = false;
         if (OptifineUtil.isFastRender()) {
             OptifineUtil.setFastRender(false);
             Utility.sendClientNotify(FPSMaster.i18n.get("motionblur.fast_render"));
@@ -89,36 +102,69 @@ public class MotionBlur extends Module {
                 blur(multiplier.getValue().floatValue());
             }
         } else if (mode.isMode("New")) {
-            if (mc.currentScreen != null)
+            if (mc.currentScreen != null || shaderLoadFailed)
                 return;
             if (!isUsingShader()) {
-                mc.entityRenderer.loadShader(new ResourceLocation("shaders/post/motionblur.json"));
-                mc.entityRenderer.loadShader(new ResourceLocation("shaders/post/motionblur_core.json"));
+                // vanilla loadShader replaces theShaderGroup without deleting the old
+                // one, so any previous group must be freed here or its framebuffers leak
+                mc.entityRenderer.stopUseShader();
+                mc.entityRenderer.loadShader(new ResourceLocation(SHADER_PATH));
+                // loadShader leaves GL framebuffer 0 bound mid-frame
+                mc.getFramebuffer().bindFramebuffer(true);
+                if (!isUsingShader()) {
+                    // never retry: reloading every frame leaks a full ShaderGroup per frame
+                    shaderLoadFailed = true;
+                    ClientLogger.error("MotionBlur", "post shader failed to load, effect disabled");
+                    return;
+                }
             }
             float strength = 0.7f + multiplier.getValue().floatValue() / 100.0f * 3.0f - 0.01f;
             ShaderGroup shaderGroup = mc.entityRenderer.getShaderGroup();
             if (shaderGroup == null)
                 return;
-            List<Shader> listShaders = null;
-            try {
-                java.lang.reflect.Field field = ShaderGroup.class.getDeclaredField("listShaders");
-                field.setAccessible(true);
-                listShaders = (List<Shader>) field.get(shaderGroup);
-            } catch (NoSuchFieldException | IllegalAccessException ignored) {
-            }
+            List<Shader> listShaders = getListShaders(shaderGroup);
             if (listShaders == null)
                 return;
             listShaders.forEach(it -> {
-                if (it.getShaderManager().getShaderUniform("Phosphor") != null) {
-                    it.getShaderManager().getShaderUniform("Phosphor").set(strength, 0, 0);
+                ShaderUniform phosphor = it.getShaderManager().getShaderUniform("Phosphor");
+                if (phosphor != null) {
+                    phosphor.set(strength, 0, 0);
                 }
             });
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static List<Shader> getListShaders(ShaderGroup shaderGroup) {
+        if (listShadersUnavailable)
+            return null;
+        if (listShadersField == null) {
+            try {
+                listShadersField = ShaderGroup.class.getDeclaredField("listShaders");
+            } catch (NoSuchFieldException e) {
+                try {
+                    // searge name in the remapped production jar
+                    listShadersField = ShaderGroup.class.getDeclaredField("field_148031_d");
+                } catch (NoSuchFieldException e2) {
+                    listShadersUnavailable = true;
+                    ClientLogger.error("MotionBlur", "ShaderGroup.listShaders field not found, strength setting will have no effect");
+                    return null;
+                }
+            }
+            listShadersField.setAccessible(true);
+        }
+        try {
+            return (List<Shader>) listShadersField.get(shaderGroup);
+        } catch (IllegalAccessException e) {
+            listShadersUnavailable = true;
+            ClientLogger.error("MotionBlur", "failed to read ShaderGroup.listShaders: " + e.getMessage());
+            return null;
+        }
+    }
+
     private boolean isUsingShader() {
         EntityRenderer entityRenderer = mc.entityRenderer;
-        return entityRenderer.isShaderActive() && entityRenderer.getShaderGroup() != null && entityRenderer.getShaderGroup().getShaderGroupName().equalsIgnoreCase("minecraft:shaders/post/motionblur_core.json");
+        return entityRenderer.isShaderActive() && entityRenderer.getShaderGroup() != null && entityRenderer.getShaderGroup().getShaderGroupName().equalsIgnoreCase(SHADER_GROUP_NAME);
     }
 
     @Override
@@ -132,11 +178,17 @@ public class MotionBlur extends Module {
             ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
             int width = Minecraft.getMinecraft().getFramebuffer().framebufferWidth;
             int height = Minecraft.getMinecraft().getFramebuffer().framebufferHeight;
+            // float division: with integer division the quads come up short by the
+            // remainder pixels, leaving unprocessed rows/columns at the bottom/right edge
+            float scaledWidth = (float) width / sr.getScaleFactor();
+            float scaledHeight = (float) height / sr.getScaleFactor();
 
             GlStateManager.matrixMode(GL11.GL_PROJECTION);
+            GlStateManager.pushMatrix();
             GlStateManager.loadIdentity();
-            GlStateManager.ortho(0.0, (double) width / sr.getScaleFactor(), (double) height / sr.getScaleFactor(), 0.0, 2000.0, 4000.0);
+            GlStateManager.ortho(0.0, scaledWidth, scaledHeight, 0.0, 2000.0, 4000.0);
             GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+            GlStateManager.pushMatrix();
             GlStateManager.loadIdentity();
             GlStateManager.translate(0f, 0f, -2000f);
 
@@ -153,13 +205,13 @@ public class MotionBlur extends Module {
 
             Minecraft.getMinecraft().getFramebuffer().bindFramebufferTexture();
             GlStateManager.color(1f, 1f, 1f, 1f);
-            drawTexturedRectNoBlend(0f, 0f, width / sr.getScaleFactor(), height / sr.getScaleFactor(),
+            drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
                     0f, 1f, 0f, 1f, 9728);
 
             GlStateManager.enableBlend();
             blurBufferMain.bindFramebufferTexture();
             GlStateManager.color(1f, 1f, 1f, multiplier / 10 - 0.1f);
-            drawTexturedRectNoBlend(0f, 0f, width / sr.getScaleFactor(), height / sr.getScaleFactor(),
+            drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
                     0f, 1f, 1f, 0f, 9728);
 
             Minecraft.getMinecraft().getFramebuffer().bindFramebuffer(true);
@@ -168,12 +220,17 @@ public class MotionBlur extends Module {
             GlStateManager.enableBlend();
             OpenGlHelper.glBlendFunc(770, 771, 1, 771);
 
-            drawTexturedRectNoBlend(0f, 0f, width / sr.getScaleFactor(), height / sr.getScaleFactor(),
+            drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
                     0f, 1f, 0f, 1f, 9728);
 
             Framebuffer tempBuff = blurBufferMain;
             blurBufferMain = blurBufferInto;
             blurBufferInto = tempBuff;
+
+            GlStateManager.matrixMode(GL11.GL_PROJECTION);
+            GlStateManager.popMatrix();
+            GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+            GlStateManager.popMatrix();
         }
     }
 }
