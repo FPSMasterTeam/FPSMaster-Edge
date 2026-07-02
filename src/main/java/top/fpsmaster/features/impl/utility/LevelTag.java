@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.utility;
 
+import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.utils.render.draw.Images;
 
@@ -9,7 +10,6 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.manager.Category;
@@ -21,15 +21,16 @@ import java.awt.*;
 import static top.fpsmaster.utils.core.Utility.mc;
 
 public class LevelTag extends Module {
-
-    public static boolean using = false;
     public static final BooleanSetting showSelf = new BooleanSetting("ShowSelf", true);
-    public static final BooleanSetting diableBackground = new BooleanSetting("DisableBackground", false);
-    public static final ColorSetting backgroundColor = new ColorSetting("BackgroundColor", new Color(0, 0, 0, 50), () -> !diableBackground.getValue());
+    public static final BooleanSetting betterFont = new BooleanSetting("BetterFont", false);
+    public static final BooleanSetting fontShadow = new BooleanSetting("FontShadow", true);
+    public static final BooleanSetting bg = new BooleanSetting("Background", true);
+    public static final ColorSetting backgroundColor = new ColorSetting("BackgroundColor", new Color(0, 0, 0, 0), bg::getValue);
+    public static boolean using = false;
 
     public LevelTag() {
         super("Nametags", Category.Utility);
-        addSettings(showSelf, diableBackground, backgroundColor);
+        addSettings(showSelf, backgroundColor, fontShadow, betterFont, bg);
     }
 
     public static void renderName(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
@@ -40,7 +41,7 @@ public class LevelTag extends Module {
         double d = entityIn.getDistanceSqToEntity(mc.getRenderManager().livingPlayer);
 
         if (!(d > (double) (maxDistance * maxDistance))) {
-            FontRenderer fontRenderer = mc.fontRendererObj;
+            FontRenderer fontRenderer = betterFont.getValue() ? FPSMaster.fontManager.s18 : mc.fontRendererObj;
 
             float f = 1.6F;
             float g = 0.016666668F * f;
@@ -77,6 +78,10 @@ public class LevelTag extends Module {
                 i = -10;
             }
 
+            if (betterFont.getValue()) {
+                i -= 2;
+            }
+
             boolean isMate = entityIn == mc.thePlayer && str.contains(entityIn.getName());
             int textWidth = fontRenderer.getStringWidth(str);
             int textX = -textWidth / 2;
@@ -89,7 +94,7 @@ public class LevelTag extends Module {
             float backgroundLeft = isMate ? Math.min(iconX, textX) - 1f : textX - 1f;
             float backgroundRight = textX + textWidth + 1f;
 
-            if (!diableBackground.getValue()) {
+            if (bg.getValue()) {
                 GlStateManager.disableTexture2D();
 
                 worldRenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
@@ -154,19 +159,37 @@ public class LevelTag extends Module {
                         true
                 );
 
-                fontRenderer.drawString(
-                        str,
-                        textX,
-                        i,
-                        553648127
-                );
+                if (fontShadow.getValue()) {
+                    fontRenderer.drawStringWithShadow(
+                            str,
+                            textX,
+                            i,
+                            553648127
+                    );
+                } else {
+                    fontRenderer.drawString(
+                            str,
+                            textX,
+                            i,
+                            553648127
+                    );
+                }
             } else {
-                fontRenderer.drawString(
-                        str,
-                        textX,
-                        i,
-                        553648127
-                );
+                if (fontShadow.getValue()) {
+                    fontRenderer.drawStringWithShadow(
+                            str,
+                            textX,
+                            i,
+                            553648127
+                    );
+                } else {
+                    fontRenderer.drawString(
+                            str,
+                            textX,
+                            i,
+                            553648127
+                    );
+                }
             }
 
             /*
@@ -176,19 +199,37 @@ public class LevelTag extends Module {
             GlStateManager.depthMask(true);
 
             if (isMate) {
-                fontRenderer.drawString(
-                        str,
-                        textX,
-                        i,
-                        -1
-                );
+                if (fontShadow.getValue()) {
+                    fontRenderer.drawStringWithShadow(
+                            str,
+                            textX,
+                            i,
+                            -1
+                    );
+                } else {
+                    fontRenderer.drawString(
+                            str,
+                            textX,
+                            i,
+                            -1
+                    );
+                }
             } else {
-                fontRenderer.drawString(
-                        str,
-                        textX,
-                        i,
-                        -1
-                );
+                if (fontShadow.getValue()) {
+                    fontRenderer.drawStringWithShadow(
+                            str,
+                            textX,
+                            i,
+                            -1
+                    );
+                } else {
+                    fontRenderer.drawString(
+                            str,
+                            textX,
+                            i,
+                            -1
+                    );
+                }
             }
 
             GlStateManager.enableLighting();
@@ -208,9 +249,5 @@ public class LevelTag extends Module {
     public void onDisable() {
         super.onDisable();
         using = false;
-    }
-
-    public static boolean isUsing() {
-        return using;
     }
 }

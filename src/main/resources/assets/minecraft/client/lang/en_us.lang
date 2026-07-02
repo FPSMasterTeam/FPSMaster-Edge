@@ -554,8 +554,10 @@ nametags=Name Tags
 nametags.desc=Custom name tag visuals
 nametags.showself=Show Own Nametag
 nametags.health=Show Health
-nametags.disablebackground=Disable Background
 nametags.backgroundcolor=Background Color
+nametags.fontshadow=Font Shadow
+nametags.betterfont=Clean Font
+nametags.background=Show Background
 
 taboverlay=Tab Overlay
 taboverlay.desc=Customize the tab list

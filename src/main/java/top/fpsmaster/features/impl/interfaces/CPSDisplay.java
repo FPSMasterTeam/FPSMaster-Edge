@@ -21,7 +21,7 @@ public class CPSDisplay extends InterfaceModule {
         super("CPSDisplay", Category.Interface);
         ensureTracking();
         addSettings(textColor);
-        addSettings(rounded, backgroundColor, fontShadow, betterFont, bg, rounded, roundRadius);
+        addSettings(backgroundColor, fontShadow, betterFont, bg, rounded, roundRadius);
     }
 
     public static void ensureTracking() {
