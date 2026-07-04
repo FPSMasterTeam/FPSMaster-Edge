@@ -209,6 +209,7 @@ jobs:
         env:
           FPSMASTER_CI_API_BASE_URL: ${{ secrets.FPSMASTER_CI_API_BASE_URL }}
           FPSMASTER_CI_UPLOAD_TOKEN: ${{ secrets.FPSMASTER_CI_UPLOAD_TOKEN }}
+          CHANGELOG: ${{ needs.build.outputs.changelog }}
         run: |
           if [ -z "$FPSMASTER_CI_API_BASE_URL" ] || [ -z "$FPSMASTER_CI_UPLOAD_TOKEN" ]; then
             echo "Release API secrets are not configured" >&2
@@ -232,7 +233,7 @@ jobs:
           file_bucket="$(printf '%s' "$upload_json" | python -c 'import json,sys; print((json.load(sys.stdin).get("bucket") or ""))')"
           file_key="$(printf '%s' "$upload_json" | python -c 'import json,sys; print((json.load(sys.stdin).get("key") or ""))')"
 
-          changelog_json="$(printf '%s' '${{ needs.build.outputs.changelog }}' | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
+          changelog_json="$(printf '%s' "$CHANGELOG" | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
 
           cat <<EOF > payload.json
           {
