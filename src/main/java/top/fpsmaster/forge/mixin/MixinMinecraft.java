@@ -243,7 +243,7 @@ public abstract class MixinMinecraft implements IMinecraft {
         EventDispatcher.dispatchEvent(new EventMouseClick(0));
     }
 
-    @Inject(method = "rightClickMouse", at = @At("HEAD"))
+    @Inject(method = "rightClickMouse", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/InventoryPlayer;getCurrentItem()Lnet/minecraft/item/ItemStack;", ordinal = 0))
     public void cpsr(CallbackInfo ci) {
         EventDispatcher.dispatchEvent(new EventMouseClick(1));
     }
