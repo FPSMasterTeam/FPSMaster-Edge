@@ -540,6 +540,33 @@ playtime.unit.seconds=s
 playtime.unit.minutes=min
 playtime.unit.hours=h
 
+clockdisplay=Clock Display
+clockdisplay.desc=Display the current system time on screen
+clockdisplay.showseconds=Show Seconds
+clockdisplay.hour24=24-Hour Format
+clockdisplay.label=Display Text
+clockdisplay.textcolor=Text Color
+clockdisplay.betterfont=Better Font
+clockdisplay.fontshadow=Font Shadow
+clockdisplay.defaultlabel=Time:
+clockdisplay.background=Show Background
+clockdisplay.backgroundcolor=Background Color
+clockdisplay.round=Rounded Corners
+clockdisplay.roundradius=Corner Radius
+
+serveraddressdisplay=Server Address
+serveraddressdisplay.desc=Display the current server IP or world name on screen
+serveraddressdisplay.label=Display Text
+serveraddressdisplay.textcolor=Text Color
+serveraddressdisplay.betterfont=Better Font
+serveraddressdisplay.fontshadow=Font Shadow
+serveraddressdisplay.defaultlabel=Server:
+serveraddressdisplay.singleplayer=Singleplayer
+serveraddressdisplay.background=Show Background
+serveraddressdisplay.backgroundcolor=Background Color
+serveraddressdisplay.round=Rounded Corners
+serveraddressdisplay.roundradius=Corner Radius
+
 hitboxes=Hitboxes
 hitboxes.desc=Show hitboxes
 hitboxes.color=Color

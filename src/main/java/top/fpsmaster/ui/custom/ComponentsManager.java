@@ -37,6 +37,8 @@ public class ComponentsManager {
         addComponentSafely("SprintComponent", SprintComponent::new);
         addComponentSafely("BlockIndicatorComponent", BlockIndicatorComponent::new);
         addComponentSafely("PlayTimeComponent", PlayTimeComponent::new);
+        addComponentSafely("ClockDisplayComponent", ClockDisplayComponent::new);
+        addComponentSafely("ServerAddressDisplayComponent", ServerAddressDisplayComponent::new);
         addComponentSafely("ItemCountDisplayComponent", ItemCountDisplayComponent::new);
     }
 
