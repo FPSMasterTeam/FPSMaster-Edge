@@ -81,6 +81,7 @@ public class ModuleManager {
         modules.add(new ClientSettings());
         modules.add(new BetterScreen());
         modules.add(new Sprint());
+        modules.add(new ToggleSneak());
         modules.add(new Performance());
         modules.add(new MotionBlur());
         modules.add(new SmoothZoom());
@@ -93,6 +94,8 @@ public class ModuleManager {
         modules.add(new ArmorDisplay());
         modules.add(new BetterChat());
         modules.add(new BlockIndicator());
+        modules.add(new ClockDisplay());
+        modules.add(new ServerAddressDisplay());
         modules.add(new PlayTime());
         modules.add(new BetterFishingRod());
         modules.add(new ComboDisplay());

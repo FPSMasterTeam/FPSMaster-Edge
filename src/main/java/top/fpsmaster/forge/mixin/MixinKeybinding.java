@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.fpsmaster.features.impl.utility.Sprint;
+import top.fpsmaster.features.impl.utility.ToggleSneak;
 import top.fpsmaster.forge.api.IKeyBinding;
 
 @Mixin(KeyBinding.class)
@@ -29,6 +30,8 @@ public class MixinKeybinding implements IKeyBinding {
     public void keyDown(CallbackInfoReturnable<Boolean> cir) {
         if (Sprint.using && keyCode == net.minecraft.client.Minecraft.getMinecraft().gameSettings.keyBindSprint.getKeyCode())
             cir.setReturnValue(Sprint.sprint);
+        if (ToggleSneak.using && keyCode == net.minecraft.client.Minecraft.getMinecraft().gameSettings.keyBindSneak.getKeyCode())
+            cir.setReturnValue(ToggleSneak.sneak);
     }
 }
 
