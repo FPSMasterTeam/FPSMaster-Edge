@@ -398,6 +398,12 @@ sprint.desc=保持疾跑
 sprint.togglesprint=切换疾跑
 sprint.betterfont=更好的字体
 
+togglesneak=切换潜行
+togglesneak.desc=按下切换键即可保持潜行
+togglesneak.togglesneak=切换潜行
+togglesneak.togglekey=切换按键
+togglesneak.betterfont=更好的字体
+
 autogg=自动GG
 autogg.desc=游戏结束后自动地在发送你自定义的消息
 autogg.servers=服务器列表

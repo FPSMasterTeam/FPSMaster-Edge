@@ -81,6 +81,7 @@ public class ModuleManager {
         modules.add(new ClientSettings());
         modules.add(new BetterScreen());
         modules.add(new Sprint());
+        modules.add(new ToggleSneak());
         modules.add(new Performance());
         modules.add(new MotionBlur());
         modules.add(new SmoothZoom());

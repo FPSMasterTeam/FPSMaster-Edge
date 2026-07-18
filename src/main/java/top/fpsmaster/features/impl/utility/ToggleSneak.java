@@ -7,16 +7,18 @@ import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventUpdate;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
+import top.fpsmaster.features.settings.impl.BindSetting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 
 public class ToggleSneak extends InterfaceModule {
     private final BooleanSetting toggleSneak = new BooleanSetting("ToggleSneak", true);
+    private final BindSetting toggleKey = new BindSetting("ToggleKey", Minecraft.getMinecraft().gameSettings.keyBindSneak.getKeyCode());
     public static boolean using = false;
-    public static boolean sneak = true;
+    public static boolean sneak = false;
 
     public ToggleSneak() {
         super("ToggleSneak", Category.Utility);
-        addSettings(toggleSneak, betterFont);
+        addSettings(toggleSneak, toggleKey, betterFont);
     }
 
     @Override
@@ -28,13 +30,13 @@ public class ToggleSneak extends InterfaceModule {
     @Subscribe
     public void onUpdate(EventUpdate e) {
         if (!toggleSneak.getValue()) {
-            sneak = true;
+            sneak = false;
         }
     }
 
     @Subscribe
     public void onKey(EventKey e) {
-        if (toggleSneak.getValue() && e.key == Minecraft.getMinecraft().gameSettings.keyBindSneak.getKeyCode()) {
+        if (toggleSneak.getValue() && e.key == toggleKey.getValue()) {
             sneak = !sneak;
             if (!sneak) {
                 if (Minecraft.getMinecraft().thePlayer != null) {
@@ -52,5 +54,6 @@ public class ToggleSneak extends InterfaceModule {
             Minecraft.getMinecraft().thePlayer.setSneaking(false);
         }
         using = false;
+        sneak = false;
     }
 }
