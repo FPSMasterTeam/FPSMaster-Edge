@@ -1,17 +1,27 @@
 package top.fpsmaster.ui.click;
 
+import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
+import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.config.ConfigProfileUtils.ConfigProfile;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.common.TextField;
+import top.fpsmaster.utils.math.anim.AnimClock;
+import top.fpsmaster.utils.math.anim.Animator;
+import top.fpsmaster.utils.math.anim.BezierEasing;
+import top.fpsmaster.utils.math.anim.ColorAnimator;
+import top.fpsmaster.utils.math.anim.Easings;
+import top.fpsmaster.utils.render.draw.Colors;
 import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.utils.render.gui.Scissor;
+import top.fpsmaster.utils.render.state.Alpha;
 
 import java.awt.Color;
 import java.awt.FileDialog;
@@ -19,13 +29,18 @@ import java.awt.Frame;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class ConfigProfilesScreen extends ScaledGuiScreen {
-    private static final float CARD_HEIGHT = 31f;
-    private static final float CARD_GAP = 6f;
-    private static final float LIST_PADDING = 5f;
+    private static final float CARD_HEIGHT = 34f;
+    private static final float CARD_GAP = 5f;
+    private static final float LIST_PADDING = 6f;
+    private static final long STATUS_DURATION_MS = 4000L;
+    private static final BezierEasing EASE = BezierEasing.of(0.25, 0.1, 0.25, 1.0);
+    private static final int MASK_MAX_ALPHA = 120;
 
     private enum DialogMode {
         NONE,
@@ -45,12 +60,23 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
             48
     );
 
+    private final Animator scaleAnimation = new Animator();
+    private final Animator alphaAnimation = new Animator();
+    private final Animator maskAlpha = new Animator();
+    private final Animator dialogAnim = new Animator();
+    private final AnimClock animClock = new AnimClock();
+    private final Map<String, ColorAnimator> hoverAnims = new HashMap<>();
+
     private List<ConfigProfile> profiles = new ArrayList<>();
     private DialogMode dialogMode = DialogMode.NONE;
     private String dialogProfileName = "";
     private String status = "";
     private int statusColor = ClickGuiTheme.textSecondary().getRGB();
-    private boolean statusStrong;
+    private long statusTime;
+    private boolean close;
+    private String tooltip;
+    private float tooltipX;
+    private float tooltipY;
 
     public ConfigProfilesScreen(ScaledGuiScreen parent) {
         this.parent = parent;
@@ -61,20 +87,46 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
         super.initGui();
         scrollContainer.setHeight(0f);
         reloadProfiles();
+        animClock.reset();
+        scaleAnimation.start(0.9, 1.0, 0.2f, EASE);
+        alphaAnimation.start(0.0, 255.0, 0.2f, EASE);
+        maskAlpha.start(0.0, MASK_MAX_ALPHA, 0.2f, EASE);
+        close = false;
         setStatus("", ClickGuiTheme.textSecondary().getRGB());
     }
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        Rects.fill(0f, 0f, guiWidth, guiHeight, ClickGuiTheme.mask(120));
+        double dt = animClock.tick();
+        scaleAnimation.update(dt);
+        alphaAnimation.update(dt);
+        maskAlpha.update(dt);
+        dialogAnim.update(dt);
+
+        if (close && !scaleAnimation.isRunning()) {
+            mc.displayGuiScreen(parent);
+            return;
+        }
 
         float panelWidth = MainPanel.width;
         float panelHeight = MainPanel.height;
         float panelX = (guiWidth - panelWidth) / 2f;
         float panelY = (guiHeight - panelHeight) / 2f;
+        float scale = (float) scaleAnimation.get();
 
+        Alpha.set(1f);
+        Rects.fill(0f, 0f, guiWidth, guiHeight, ClickGuiTheme.mask((int) maskAlpha.get()));
+        Alpha.set((float) (alphaAnimation.get() / 255.0));
+
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(guiWidth / 2f, guiHeight / 2f, 0f);
+        GL11.glScaled(scale, scale, 1.0);
+        GlStateManager.translate(-guiWidth / 2f, -guiHeight / 2f, 0f);
+
+        tooltip = null;
         Rects.rounded(Math.round(panelX), Math.round(panelY), Math.round(panelWidth), Math.round(panelHeight), 12, panelBackground().getRGB());
         Rects.rounded(Math.round(panelX), Math.round(panelY), Math.round(panelWidth), 38, 12, headerBackground().getRGB());
+        Rects.fill(panelX + 1f, panelY + 38f, panelWidth - 2f, 1f, ClickGuiTheme.divider().getRGB());
         renderBackButton(panelX + 10f, panelY + 9f, mouseX, mouseY);
         FPSMaster.fontManager.s20.drawCenteredString(
                 FPSMaster.i18n.get("configprofiles.title"),
@@ -82,17 +134,20 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
                 panelY + 15f,
                 ClickGuiTheme.textPrimary().getRGB()
         );
+        renderHeaderActions(panelX, panelY, panelWidth, mouseX, mouseY);
 
         float contentX = panelX + 12f;
-        float contentY = panelY + 48f;
         float contentWidth = panelWidth - 24f;
+        float listY = panelY + 48f;
+        float listHeight = panelY + panelHeight - 28f - listY;
 
-        renderActionBar(contentX, contentY, contentWidth, mouseX, mouseY);
-        renderHint(contentX, contentY + 29f, contentWidth);
-        renderProfileList(contentX, contentY + 46f, contentWidth, panelY + panelHeight - 74f - contentY, mouseX, mouseY);
-
-        FPSMaster.fontManager.s14.drawString(status, contentX, panelY + panelHeight - 19f, statusColor);
+        renderProfileList(contentX, listY, contentWidth, listHeight, scale, mouseX, mouseY);
+        renderStatusBar(contentX, panelY + panelHeight - 19f, contentWidth);
+        renderTooltip(panelX, panelWidth);
         renderDialog(panelX, panelY, panelWidth, panelHeight, mouseX, mouseY);
+
+        GlStateManager.popMatrix();
+        Alpha.set(1f);
     }
 
     @Override
@@ -115,59 +170,103 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
             return;
         }
         if (keyCode == 1) {
-            mc.displayGuiScreen(parent);
+            requestClose();
             return;
         }
         super.keyTyped(typedChar, keyCode);
     }
 
-    private void renderActionBar(float x, float y, float width, int mouseX, int mouseY) {
-        float gap = 8f;
-        float buttonWidth = (width - gap * 2f) / 3f;
+    private void requestClose() {
+        if (close) {
+            return;
+        }
+        close = true;
+        scaleAnimation.animateTo(0.9, 0.12f, EASE);
+        alphaAnimation.animateTo(0.0, 0.12f, EASE);
+        maskAlpha.animateTo(0.0, 0.12f, EASE);
+    }
 
-        if (renderActionButton(x, y, buttonWidth, 22f, "configprofiles.importfile", mouseX, mouseY)) {
+    private void renderHeaderActions(float panelX, float panelY, float panelWidth, int mouseX, int mouseY) {
+        float size = 20f;
+        float gap = 6f;
+        float y = panelY + 9f;
+        float resetX = panelX + panelWidth - 10f - size;
+        float exportX = resetX - size - gap;
+        float importX = exportX - size - gap;
+
+        if (renderIconButton("action.import", importX, y, size, "import", "configprofiles.importfile", false, ClickGuiTheme.buttonBg(), true, mouseX, mouseY)) {
             importSelectedProfile();
         }
-        if (renderActionButton(x + buttonWidth + gap, y, buttonWidth, 22f, "configprofiles.exportfile", mouseX, mouseY)) {
+        if (renderIconButton("action.export", exportX, y, size, "export", "configprofiles.exportfile", false, ClickGuiTheme.buttonBg(), true, mouseX, mouseY)) {
             exportCurrentProfile();
         }
-        if (renderActionButton(x + (buttonWidth + gap) * 2f, y, buttonWidth, 22f, "configprofiles.preset.alloff", mouseX, mouseY)) {
+        if (renderIconButton("action.reset", resetX, y, size, "reset", "configprofiles.preset.alloff", true, ClickGuiTheme.buttonBg(), true, mouseX, mouseY)) {
             openConfirmDialog(DialogMode.DEFAULTS, "");
         }
     }
 
-    private void renderHint(float x, float y, float width) {
-        FPSMaster.fontManager.s14.drawString(
-                FPSMaster.i18n.get("configprofiles.switch.tip"),
-                x,
-                y,
-                ClickGuiTheme.textSecondary().getRGB()
-        );
+    private boolean renderIconButton(String animKey, float x, float y, float size, String icon, String tooltipKey, boolean danger, Color base, boolean enabled, int mouseX, int mouseY) {
+        boolean interactive = enabled && dialogMode == DialogMode.NONE && !close;
+        boolean hovered = interactive && Hover.is(x, y, size, size, mouseX, mouseY);
+        Color hoverColor = danger ? withAlpha(ClickGuiTheme.danger(), 200) : ClickGuiTheme.buttonHoverBg();
+        ColorAnimator bg = anim(animKey, base);
+        bg.animateTo(hovered ? hoverColor : base, 0.12, Easings.QUAD_OUT);
+        bg.update();
+        Rects.rounded(Math.round(x), Math.round(y), Math.round(size), Math.round(size), 6, bg.get().getRGB());
+        int iconColor = danger && hovered ? Color.WHITE.getRGB() : ClickGuiTheme.textPrimary().getRGB();
+        float pad = (size - 12f) / 2f;
+        Icons.draw(icon, x + pad, y + pad, 12f, iconColor);
+        if (hovered && tooltipKey != null) {
+            tooltip = FPSMaster.i18n.get(tooltipKey);
+            tooltipX = x + size / 2f;
+            tooltipY = y + size + 5f;
+        }
+        return interactive && consumePressInBounds(x, y, size, size, 0) != null;
     }
 
-    private void renderProfileList(float x, float y, float width, float height, int mouseX, int mouseY) {
+    private void renderTooltip(float panelX, float panelWidth) {
+        if (tooltip == null || tooltip.isEmpty()) {
+            return;
+        }
+        float width = FPSMaster.fontManager.s14.getStringWidth(tooltip) + 12f;
+        float height = 16f;
+        float x = Math.max(panelX + 6f, Math.min(tooltipX - width / 2f, panelX + panelWidth - 6f - width));
+        Rects.rounded(Math.round(x), Math.round(tooltipY), Math.round(width), Math.round(height), 5, tooltipBackground().getRGB());
+        FPSMaster.fontManager.s14.drawCenteredString(tooltip, x + width / 2f, tooltipY + 4f, ClickGuiTheme.textPrimary().getRGB());
+    }
+
+    private void renderProfileList(float x, float y, float width, float height, float scale, int mouseX, int mouseY) {
         Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 8, ClickGuiTheme.settingsBg().getRGB());
         scrollContainer.draw(this, x, y, width, height, mouseX, mouseY, () -> {
+            float centerX = guiWidth / 2f;
+            float centerY = guiHeight / 2f;
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
-            Scissor.apply(x, y, width, height);
+            Scissor.apply(
+                    centerX + (x - centerX) * scale,
+                    centerY + (y - centerY) * scale,
+                    width * scale,
+                    height * scale
+            );
             try {
-                float rowY = y + LIST_PADDING + scrollContainer.getScroll();
                 if (profiles.isEmpty()) {
-                    FPSMaster.fontManager.s14.drawCenteredString(
+                    int emptyColor = ClickGuiTheme.textDisabled().getRGB();
+                    Icons.draw("folder", x + width / 2f - 11f, y + height / 2f - 26f, 22f, emptyColor);
+                    FPSMaster.fontManager.s16.drawCenteredString(
                             FPSMaster.i18n.get("configprofiles.empty"),
                             x + width / 2f,
-                            rowY + 16f,
-                            ClickGuiTheme.textDisabled().getRGB()
+                            y + height / 2f + 2f,
+                            emptyColor
                     );
                     scrollContainer.setHeight(height);
                     return;
                 }
 
+                float rowY = y + LIST_PADDING + scrollContainer.getScroll();
                 for (ConfigProfile profile : profiles) {
                     renderProfileCard(profile, x + LIST_PADDING, rowY, width - LIST_PADDING * 2f, x, y, width, height, mouseX, mouseY);
                     rowY += CARD_HEIGHT + CARD_GAP;
                 }
-                scrollContainer.setHeight(LIST_PADDING * 2f + profiles.size() * (CARD_HEIGHT + CARD_GAP));
+                scrollContainer.setHeight(LIST_PADDING * 2f + profiles.size() * (CARD_HEIGHT + CARD_GAP) - CARD_GAP);
             } finally {
                 GL11.glDisable(GL11.GL_SCISSOR_TEST);
             }
@@ -175,66 +274,73 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
     }
 
     private void renderProfileCard(ConfigProfile profile, float x, float y, float width, float listX, float listY, float listWidth, float listHeight, int mouseX, int mouseY) {
+        boolean interactive = dialogMode == DialogMode.NONE && !close;
         boolean pointerInsideList = Hover.is(listX, listY, listWidth, listHeight, mouseX, mouseY);
         boolean active = profile.getName().equals(ConfigProfileUtils.getActiveProfileName());
-        boolean hovered = pointerInsideList && Hover.is(x, y, width, CARD_HEIGHT, mouseX, mouseY);
-        Color bg = active
-                ? new Color(89, 101, 241, ClickGuiTheme.isLight() ? 170 : 140)
-                : (hovered ? ClickGuiTheme.buttonHoverBg() : ClickGuiTheme.buttonBg());
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(CARD_HEIGHT), 7, bg.getRGB());
+        boolean cardHovered = interactive && pointerInsideList && Hover.is(x, y, width, CARD_HEIGHT, mouseX, mouseY);
+
+        Color base = active
+                ? withAlpha(ClickGuiTheme.accent(), ClickGuiTheme.isLight() ? 40 : 60)
+                : ClickGuiTheme.cardBg();
+        Color hoverColor = active
+                ? withAlpha(ClickGuiTheme.accent(), ClickGuiTheme.isLight() ? 60 : 85)
+                : ClickGuiTheme.cardHoverBg();
+        ColorAnimator bg = anim("card." + profile.getName(), base);
+        bg.animateTo(cardHovered ? hoverColor : base, 0.12, Easings.QUAD_OUT);
+        bg.update();
+        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(CARD_HEIGHT), 7, bg.get().getRGB());
+        if (active) {
+            Rects.rounded(Math.round(x), Math.round(y + 9f), 3, Math.round(CARD_HEIGHT - 18f), 1, ClickGuiTheme.accent().getRGB());
+        }
 
         boolean manageable = !ConfigProfileUtils.CURRENT_CONFIG.equals(profile.getName());
-        float buttonWidth = 36f;
+        float buttonSize = 20f;
         float buttonGap = 4f;
-        float buttonY = y + 5f;
-        float deleteX = x + width - buttonWidth - 8f;
-        float renameX = deleteX - buttonWidth - buttonGap;
-        float textWidth = manageable ? width - 96f : width - 18f;
+        float buttonY = y + (CARD_HEIGHT - buttonSize) / 2f;
+        float deleteX = x + width - buttonSize - 7f;
+        float renameX = deleteX - buttonSize - buttonGap;
 
-        String title = profile.getName() + (active ? "  " + FPSMaster.i18n.get("configprofiles.badge.current") : "");
-        FPSMaster.fontManager.s16.drawString(trimPath(title, textWidth), x + 9f, y + 11f, ClickGuiTheme.textPrimary().getRGB());
+        float textX = x + 12f;
+        float textMax = (manageable ? renameX : x + width) - textX - 8f;
+        String badge = FPSMaster.i18n.get("configprofiles.current");
+        if (active) {
+            textMax -= FPSMaster.fontManager.s14.getStringWidth(badge) + 18f;
+        }
+        String name = trimText(FPSMaster.fontManager.s16, profile.getName(), textMax);
+        FPSMaster.fontManager.s16.drawString(name, textX, y + CARD_HEIGHT / 2f - 4.5f, ClickGuiTheme.textPrimary().getRGB());
 
-        if (dialogMode == DialogMode.NONE && manageable) {
-            if (renderSmallButton(renameX, buttonY, buttonWidth, 20f, "configprofiles.rename", mouseX, mouseY, pointerInsideList)) {
+        if (active) {
+            float badgeX = textX + FPSMaster.fontManager.s16.getStringWidth(name) + 7f;
+            float badgeWidth = FPSMaster.fontManager.s14.getStringWidth(badge) + 10f;
+            Rects.rounded(Math.round(badgeX), Math.round(y + (CARD_HEIGHT - 13f) / 2f), Math.round(badgeWidth), 13, 6, ClickGuiTheme.accent().getRGB());
+            FPSMaster.fontManager.s14.drawCenteredString(badge, badgeX + badgeWidth / 2f, y + CARD_HEIGHT / 2f - 3.5f, Color.WHITE.getRGB());
+        }
+
+        if (manageable) {
+            if (renderIconButton("rename." + profile.getName(), renameX, buttonY, buttonSize, "rename", "configprofiles.rename", false, ClickGuiTheme.settingsBg(), pointerInsideList, mouseX, mouseY)) {
                 openRenameDialog(profile.getName());
                 return;
             }
-            if (renderSmallButton(deleteX, buttonY, buttonWidth, 20f, "configprofiles.delete", mouseX, mouseY, pointerInsideList)) {
+            if (renderIconButton("delete." + profile.getName(), deleteX, buttonY, buttonSize, "delete", "configprofiles.delete", true, ClickGuiTheme.settingsBg(), pointerInsideList, mouseX, mouseY)) {
                 openConfirmDialog(DialogMode.DELETE, profile.getName());
                 return;
             }
         }
 
-        if (dialogMode == DialogMode.NONE && pointerInsideList && consumePressInBounds(x, y, width, CARD_HEIGHT, 0) != null) {
-            if (!active) {
-                openConfirmDialog(DialogMode.LOAD, profile.getName());
-            }
+        if (interactive && pointerInsideList && consumePressInBounds(x, y, width, CARD_HEIGHT, 0) != null && !active) {
+            openConfirmDialog(DialogMode.LOAD, profile.getName());
         }
     }
 
-    private boolean renderActionButton(float x, float y, float width, float height, String textKey, int mouseX, int mouseY) {
-        boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
-        Color bg = hovered ? ClickGuiTheme.buttonHoverBg() : ClickGuiTheme.buttonBg();
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 5, bg.getRGB());
-        FPSMaster.fontManager.s14.drawCenteredString(
-                FPSMaster.i18n.get(textKey),
-                x + width / 2f,
-                y + height / 2f - 4f,
-                ClickGuiTheme.textPrimary().getRGB()
-        );
-        return dialogMode == DialogMode.NONE && consumePressInBounds(x, y, width, height, 0) != null;
-    }
-
-    private boolean renderSmallButton(float x, float y, float width, float height, String textKey, int mouseX, int mouseY) {
-        return renderSmallButton(x, y, width, height, textKey, mouseX, mouseY, true);
-    }
-
-    private boolean renderSmallButton(float x, float y, float width, float height, String textKey, int mouseX, int mouseY, boolean enabled) {
-        boolean hovered = enabled && Hover.is(x, y, width, height, mouseX, mouseY);
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 5,
-                (hovered ? ClickGuiTheme.buttonHoverBg() : ClickGuiTheme.settingsBg()).getRGB());
-        FPSMaster.fontManager.s14.drawCenteredString(FPSMaster.i18n.get(textKey), x + width / 2f, y + height / 2f - 4f, ClickGuiTheme.textPrimary().getRGB());
-        return enabled && consumePressInBounds(x, y, width, height, 0) != null;
+    private void renderStatusBar(float x, float y, float width) {
+        String text = status;
+        int color = statusColor;
+        if (text.isEmpty() || System.currentTimeMillis() - statusTime > STATUS_DURATION_MS) {
+            text = FPSMaster.i18n.get("configprofiles.switch.tip");
+            color = ClickGuiTheme.textSecondary().getRGB();
+        }
+        drawDot(x + 2.5f, y + 4f, 2f, color);
+        FPSMaster.fontManager.s14.drawString(trimText(FPSMaster.fontManager.s14, text, width - 12f), x + 8f, y, color);
     }
 
     private void renderDialog(float panelX, float panelY, float panelWidth, float panelHeight, int mouseX, int mouseY) {
@@ -242,64 +348,94 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
             return;
         }
 
-        Rects.fill(panelX, panelY, panelWidth, panelHeight, ClickGuiTheme.mask(80));
+        float progress = (float) dialogAnim.get();
+        Rects.rounded(Math.round(panelX), Math.round(panelY), Math.round(panelWidth), Math.round(panelHeight), 12, ClickGuiTheme.mask((int) (90 * progress)).getRGB());
+
+        float dialogWidth = panelWidth - 130f;
+        float dialogHeight = dialogMode == DialogMode.RENAME ? 118f : 92f;
+        float dialogX = panelX + (panelWidth - dialogWidth) / 2f;
+        float dialogY = panelY + (panelHeight - dialogHeight) / 2f - 8f;
+
+        float outerAlpha = (float) (alphaAnimation.get() / 255.0);
+        Alpha.set(outerAlpha * progress);
+        GlStateManager.pushMatrix();
+        float dialogCenterX = dialogX + dialogWidth / 2f;
+        float dialogCenterY = dialogY + dialogHeight / 2f;
+        float dialogScale = 0.92f + 0.08f * progress;
+        GlStateManager.translate(dialogCenterX, dialogCenterY, 0f);
+        GL11.glScaled(dialogScale, dialogScale, 1.0);
+        GlStateManager.translate(-dialogCenterX, -dialogCenterY, 0f);
+
+        Rects.rounded(Math.round(dialogX), Math.round(dialogY), Math.round(dialogWidth), Math.round(dialogHeight), 10, dialogBackground().getRGB());
         if (dialogMode == DialogMode.RENAME) {
-            renderRenameDialog(panelX, panelY, panelWidth, mouseX, mouseY);
+            renderRenameDialog(dialogX, dialogY, dialogWidth, mouseX, mouseY);
         } else {
-            renderConfirmDialog(panelX, panelY, panelWidth, mouseX, mouseY);
+            renderConfirmDialog(dialogX, dialogY, dialogWidth, mouseX, mouseY);
         }
-        consumePressInBounds(panelX, panelY, panelWidth, panelHeight, 0);
+
+        GlStateManager.popMatrix();
+        Alpha.set(outerAlpha);
+
+        ScaledGuiScreen.PointerEvent leftover = consumePressInBounds(panelX, panelY, panelWidth, panelHeight, 0);
+        if (leftover != null && !Hover.is(dialogX, dialogY, dialogWidth, dialogHeight, leftover.x, leftover.y)) {
+            closeDialog();
+        }
     }
 
-    private void renderRenameDialog(float panelX, float panelY, float panelWidth, int mouseX, int mouseY) {
-        float dialogX = panelX + 64f;
-        float dialogY = panelY + 68f;
-        float dialogW = panelWidth - 128f;
-        Rects.rounded(Math.round(dialogX), Math.round(dialogY), Math.round(dialogW), 118, 10, panelBackground().getRGB());
+    private void renderRenameDialog(float dialogX, float dialogY, float dialogWidth, int mouseX, int mouseY) {
         FPSMaster.fontManager.s16.drawCenteredString(
                 FPSMaster.i18n.get("configprofiles.rename.title"),
-                dialogX + dialogW / 2f,
-                dialogY + 16f,
+                dialogX + dialogWidth / 2f,
+                dialogY + 14f,
                 ClickGuiTheme.textPrimary().getRGB()
         );
         FPSMaster.fontManager.s14.drawString(
                 FPSMaster.i18n.get("configprofiles.rename.name"),
                 dialogX + 18f,
-                dialogY + 38f,
+                dialogY + 36f,
                 ClickGuiTheme.textSecondary().getRGB()
         );
 
         renameField.backGroundColor = ClickGuiTheme.textFieldBg().getRGB();
         renameField.fontColor = ClickGuiTheme.textFieldText().getRGB();
         renameField.placeHolder = FPSMaster.i18n.get("configprofiles.name.placeholder");
-        renameField.drawTextBox(dialogX + 18f, dialogY + 52f, dialogW - 36f, 22f);
-        handleRenameFieldClick(dialogX + 18f, dialogY + 52f, dialogW - 36f, 22f);
+        renameField.drawTextBox(dialogX + 18f, dialogY + 50f, dialogWidth - 36f, 22f);
+        handleRenameFieldClick(dialogX + 18f, dialogY + 50f, dialogWidth - 36f, 22f);
 
-        float btnY = dialogY + 86f;
-        float confirmX = dialogX + dialogW / 2f - 72f;
-        float cancelX = dialogX + dialogW / 2f + 8f;
-        if (renderConfirmButton(confirmX, btnY, 64f, 22f, "configprofiles.save", mouseX, mouseY)) {
+        float btnY = dialogY + 84f;
+        float confirmX = dialogX + dialogWidth / 2f - 74f;
+        float cancelX = dialogX + dialogWidth / 2f + 4f;
+        if (renderDialogButton("dialog.save", confirmX, btnY, 70f, 22f, "configprofiles.save",
+                ClickGuiTheme.accent(), accentHover(), Color.WHITE.getRGB(), mouseX, mouseY)) {
             runRenameAction();
         }
-        if (renderConfirmButton(cancelX, btnY, 64f, 22f, "configprofiles.cancel", mouseX, mouseY)) {
+        if (renderDialogButton("dialog.cancel", cancelX, btnY, 70f, 22f, "configprofiles.cancel",
+                ClickGuiTheme.buttonBg(), ClickGuiTheme.buttonHoverBg(), ClickGuiTheme.textPrimary().getRGB(), mouseX, mouseY)) {
             closeDialog();
         }
     }
 
-    private void renderConfirmDialog(float panelX, float panelY, float panelWidth, int mouseX, int mouseY) {
-        float dialogX = panelX + 58f;
-        float dialogY = panelY + 76f;
-        float dialogW = panelWidth - 116f;
-        Rects.rounded(Math.round(dialogX), Math.round(dialogY), Math.round(dialogW), 88, 10, panelBackground().getRGB());
-        FPSMaster.fontManager.s16.drawCenteredString(getConfirmMessage(), panelX + panelWidth / 2f, dialogY + 26f, ClickGuiTheme.textPrimary().getRGB());
+    private void renderConfirmDialog(float dialogX, float dialogY, float dialogWidth, int mouseX, int mouseY) {
+        boolean destructive = dialogMode == DialogMode.DELETE || dialogMode == DialogMode.DEFAULTS;
+        FPSMaster.fontManager.s16.drawCenteredString(
+                trimText(FPSMaster.fontManager.s16, getConfirmMessage(), dialogWidth - 24f),
+                dialogX + dialogWidth / 2f,
+                dialogY + 24f,
+                ClickGuiTheme.textPrimary().getRGB()
+        );
 
-        float btnY = dialogY + 54f;
-        float confirmX = panelX + panelWidth / 2f - 72f;
-        float cancelX = panelX + panelWidth / 2f + 8f;
-        if (renderConfirmButton(confirmX, btnY, 64f, 22f, "configprofiles.confirm", mouseX, mouseY)) {
+        float btnY = dialogY + 56f;
+        float confirmX = dialogX + dialogWidth / 2f - 74f;
+        float cancelX = dialogX + dialogWidth / 2f + 4f;
+        Color confirmBase = destructive ? ClickGuiTheme.danger() : ClickGuiTheme.accent();
+        Color confirmHover = destructive ? dangerHover() : accentHover();
+        String confirmKey = destructive ? "dialog.confirm.danger" : "dialog.confirm.accent";
+        if (renderDialogButton(confirmKey, confirmX, btnY, 70f, 22f, "configprofiles.confirm",
+                confirmBase, confirmHover, Color.WHITE.getRGB(), mouseX, mouseY)) {
             runConfirmAction();
         }
-        if (renderConfirmButton(cancelX, btnY, 64f, 22f, "configprofiles.cancel", mouseX, mouseY)) {
+        if (renderDialogButton("dialog.cancel", cancelX, btnY, 70f, 22f, "configprofiles.cancel",
+                ClickGuiTheme.buttonBg(), ClickGuiTheme.buttonHoverBg(), ClickGuiTheme.textPrimary().getRGB(), mouseX, mouseY)) {
             closeDialog();
         }
     }
@@ -317,37 +453,38 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
         }
     }
 
-    private boolean renderConfirmButton(float x, float y, float width, float height, String textKey, int mouseX, int mouseY) {
+    private boolean renderDialogButton(String animKey, float x, float y, float width, float height, String textKey, Color base, Color hoverColor, int textColor, int mouseX, int mouseY) {
         boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
-        Color bg = hovered ? ClickGuiTheme.buttonHoverBg() : ClickGuiTheme.buttonBg();
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 5, bg.getRGB());
-        FPSMaster.fontManager.s14.drawCenteredString(FPSMaster.i18n.get(textKey), x + width / 2f, y + height / 2f - 4f, ClickGuiTheme.textPrimary().getRGB());
+        ColorAnimator bg = anim(animKey, base);
+        bg.animateTo(hovered ? hoverColor : base, 0.12, Easings.QUAD_OUT);
+        bg.update();
+        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 6, bg.get().getRGB());
+        FPSMaster.fontManager.s14.drawCenteredString(FPSMaster.i18n.get(textKey), x + width / 2f, y + height / 2f - 4f, textColor);
         return consumePressInBounds(x, y, width, height, 0) != null;
     }
 
     private void renderBackButton(float x, float y, int mouseX, int mouseY) {
-        boolean hovered = Hover.is(x, y, 20f, 20f, mouseX, mouseY);
-        Rects.rounded(Math.round(x), Math.round(y), 20, 20, 5,
-                (hovered ? ClickGuiTheme.buttonHoverBg() : ClickGuiTheme.buttonBg()).getRGB());
-        drawBackArrow(x + 10f, y + 10f, ClickGuiTheme.textPrimary().getRGB());
-        if (dialogMode == DialogMode.NONE && consumePressInBounds(x, y, 20f, 20f, 0) != null) {
-            mc.displayGuiScreen(parent);
+        if (renderIconButton("back", x, y, 20f, "back", null, false, ClickGuiTheme.buttonBg(), true, mouseX, mouseY)) {
+            requestClose();
         }
     }
 
-    private void drawBackArrow(float centerX, float centerY, int color) {
-        Color c = new Color(color, true);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glLineWidth(2f);
+    private void drawDot(float cx, float cy, float r, int color) {
+        Color c = Colors.toColor(Alpha.apply(color));
+        GlStateManager.enableBlend();
+        GlStateManager.disableTexture2D();
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glColor4f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f, c.getAlpha() / 255f);
-        GL11.glBegin(GL11.GL_LINE_STRIP);
-        GL11.glVertex2f(centerX + 3f, centerY - 5f);
-        GL11.glVertex2f(centerX - 3f, centerY);
-        GL11.glVertex2f(centerX + 3f, centerY + 5f);
+        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
+        GL11.glVertex2f(cx, cy);
+        int steps = 16;
+        for (int i = 0; i <= steps; i++) {
+            double angle = Math.PI * 2 * i / steps;
+            GL11.glVertex2f(cx + (float) (Math.cos(angle) * r), cy + (float) (Math.sin(angle) * r));
+        }
         GL11.glEnd();
-        GL11.glLineWidth(1f);
+        GlStateManager.enableTexture2D();
         GL11.glColor4f(1f, 1f, 1f, 1f);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
     }
 
     private void handleRenameFieldClick(float x, float y, float width, float height) {
@@ -364,6 +501,7 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
     private void openRenameDialog(String profileName) {
         dialogMode = DialogMode.RENAME;
         dialogProfileName = profileName;
+        dialogAnim.start(0.0, 1.0, 0.18f, Easings.CUBIC_OUT);
         renameField.setText(profileName);
         renameField.setCursorPositionEnd();
         renameField.setFocused(true);
@@ -372,6 +510,7 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
     private void openConfirmDialog(DialogMode mode, String profileName) {
         dialogMode = mode;
         dialogProfileName = profileName == null ? "" : profileName;
+        dialogAnim.start(0.0, 1.0, 0.18f, Easings.CUBIC_OUT);
     }
 
     private void closeDialog() {
@@ -512,20 +651,42 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
     private void setStatus(String status, int color) {
         this.status = status == null ? "" : status;
         this.statusColor = color;
+        this.statusTime = System.currentTimeMillis();
     }
 
-    private String trimPath(String path, float maxWidth) {
-        if (path == null) {
+    private ColorAnimator anim(String key, Color base) {
+        ColorAnimator animator = hoverAnims.get(key);
+        if (animator == null) {
+            animator = new ColorAnimator(base);
+            hoverAnims.put(key, animator);
+        }
+        return animator;
+    }
+
+    private String trimText(UFontRenderer font, String text, float maxWidth) {
+        if (text == null) {
             return "";
         }
-        if (FPSMaster.fontManager.s14.getStringWidth(path) <= maxWidth) {
-            return path;
+        if (font.getStringWidth(text) <= maxWidth) {
+            return text;
         }
-        String value = path;
-        while (value.length() > 4 && FPSMaster.fontManager.s14.getStringWidth("..." + value) > maxWidth) {
-            value = value.substring(1);
+        String value = text;
+        while (value.length() > 1 && font.getStringWidth(value + "...") > maxWidth) {
+            value = value.substring(0, value.length() - 1);
         }
-        return "..." + value;
+        return value + "...";
+    }
+
+    private static Color withAlpha(Color color, int alpha) {
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
+    }
+
+    private Color accentHover() {
+        return new Color(108, 119, 245);
+    }
+
+    private Color dangerHover() {
+        return ClickGuiTheme.isLight() ? new Color(190, 50, 50) : new Color(255, 110, 110);
     }
 
     private Color panelBackground() {
@@ -534,6 +695,14 @@ public class ConfigProfilesScreen extends ScaledGuiScreen {
 
     private Color headerBackground() {
         return ClickGuiTheme.isLight() ? new Color(255, 255, 255, 180) : new Color(30, 30, 36, 210);
+    }
+
+    private Color dialogBackground() {
+        return ClickGuiTheme.isLight() ? new Color(248, 249, 253, 250) : new Color(28, 28, 34, 250);
+    }
+
+    private Color tooltipBackground() {
+        return ClickGuiTheme.isLight() ? new Color(255, 255, 255, 245) : new Color(40, 40, 48, 245);
     }
 
     private int successColor() {

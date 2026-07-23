@@ -5,6 +5,7 @@ import top.fpsmaster.utils.render.state.Alpha;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Colors;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Rects;
 
 import net.minecraft.client.Minecraft;
@@ -23,6 +24,7 @@ import top.fpsmaster.utils.math.anim.AnimMath;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.BezierEasing;
+import top.fpsmaster.utils.math.anim.ColorAnimator;
 import top.fpsmaster.utils.math.anim.Easings;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
@@ -45,6 +47,10 @@ public class MainPanel extends ScaledGuiScreen {
     private final Animator scaleAnimation = new Animator();
     private final Animator alphaAnimation = new Animator();
     private final Animator maskAlpha = new Animator();
+    private final Animator themeSwitchAnim = new Animator();
+    private final ColorAnimator themeBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
+    private final ColorAnimator configBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
+    private final ColorAnimator musicBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
     private final AnimClock animClock = new AnimClock();
     private static final BezierEasing CLICKGUI_EASE = BezierEasing.of(0.25, 0.1, 0.25, 1.0);
     private static final int MASK_MAX_ALPHA = 110;
@@ -261,14 +267,20 @@ public class MainPanel extends ScaledGuiScreen {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
         // Theme / config buttons (bottom-left)
+        themeSwitchAnim.update(dt);
         float sideBtnX = x + 4 + categoryAnimation / 50f;
         float sideBtnW = categoryAnimation - 8;
-        float sideBtnH = 14;
+        float sideBtnH = 15;
         boolean isLightTheme = ClickGuiTheme.isLight();
-        if (renderSideButton(sideBtnX, y + height - 34, sideBtnW, sideBtnH, FPSMaster.i18n.get(isLightTheme ? "theme.light" : "theme.dark"))) {
-            ClientSettings.theme.setValue(isLightTheme ? 0 : 1);
+        if (renderMusicButton(sideBtnX, y + height - 53, sideBtnW, sideBtnH, "Music", musicBtnAnim, mouseX, mouseY)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.screens.music.MusicScreen());
         }
-        if (renderSideButton(sideBtnX, y + height - 18, sideBtnW, sideBtnH, FPSMaster.i18n.get("configprofiles.button"))) {
+        String themeLabel = FPSMaster.i18n.get(isLightTheme ? "theme.light" : "theme.dark");
+        if (renderSideButton(sideBtnX, y + height - 36, sideBtnW, sideBtnH, themeLabel, themeBtnAnim, true, mouseX, mouseY)) {
+            ClientSettings.theme.setValue(isLightTheme ? 0 : 1);
+            themeSwitchAnim.animateTo(isLightTheme ? 0.0 : 1.0, 0.35, Easings.CUBIC_OUT);
+        }
+        if (renderSideButton(sideBtnX, y + height - 19, sideBtnW, sideBtnH, FPSMaster.i18n.get("configprofiles.button"), configBtnAnim, false, mouseX, mouseY)) {
             mc.displayGuiScreen(new ConfigProfilesScreen(this));
         }
 
@@ -277,17 +289,62 @@ public class MainPanel extends ScaledGuiScreen {
         handlePointerPress();
     }
 
-    private boolean renderSideButton(float x, float y, float width, float height, String text) {
-        Rects.rounded(Math.round(x), Math.round(y),
-                Math.round(width), Math.round(height), 4,
-                ClickGuiTheme.themeBtnBg().getRGB());
-        FPSMaster.fontManager.s14.drawString(
-                text,
-                x + (width - FPSMaster.fontManager.s14.getStringWidth(text)) / 2f,
-                y + 3,
-                ClickGuiTheme.themeBtnText().getRGB()
-        );
+    private boolean renderSideButton(float x, float y, float width, float height, String text, ColorAnimator bgAnim, boolean themeIcon, int mouseX, int mouseY) {
+        boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
+        bgAnim.animateTo(hovered ? ClickGuiTheme.sideBtnHoverBg() : ClickGuiTheme.themeBtnBg(), 0.15, Easings.QUAD_OUT);
+        bgAnim.update();
+        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 4, bgAnim.get().getRGB());
+
+        int contentColor = ClickGuiTheme.themeBtnText().getRGB();
+        float iconSize = 10f;
+        float textWidth = FPSMaster.fontManager.s14.getStringWidth(text);
+        boolean showText = width >= iconSize + textWidth + 16f;
+        float contentWidth = showText ? iconSize + 4f + textWidth : iconSize;
+        float contentX = x + (width - contentWidth) / 2f;
+        float iconY = y + (height - iconSize) / 2f;
+        if (themeIcon) {
+            float progress = (float) themeSwitchAnim.get();
+            if (progress < 0.999f) {
+                Icons.draw("moon", contentX, iconY, iconSize, fade(contentColor, 1f - progress));
+            }
+            if (progress > 0.001f) {
+                Icons.draw("sun", contentX, iconY, iconSize, fade(contentColor, progress));
+            }
+        } else {
+            Icons.draw("sliders", contentX, iconY, iconSize, contentColor);
+        }
+        if (showText) {
+            FPSMaster.fontManager.s14.drawString(text, contentX + iconSize + 4f, y + height / 2f - 4f, contentColor);
+        }
         return consumePressInBounds(x, y, width, height) != null;
+    }
+
+    private boolean renderMusicButton(float x, float y, float width, float height, String text, ColorAnimator bgAnim, int mouseX, int mouseY) {
+        boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
+        bgAnim.animateTo(hovered ? ClickGuiTheme.sideBtnHoverBg() : ClickGuiTheme.themeBtnBg(), 0.15, Easings.QUAD_OUT);
+        bgAnim.update();
+        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 4, bgAnim.get().getRGB());
+
+        int contentColor = ClickGuiTheme.themeBtnText().getRGB();
+        float iconSize = 10f;
+        float textWidth = FPSMaster.fontManager.s14.getStringWidth(text);
+        boolean showText = width >= iconSize + textWidth + 16f;
+        float contentWidth = showText ? iconSize + 4f + textWidth : iconSize;
+        float contentX = x + (width - contentWidth) / 2f;
+        float iconY = y + (height - iconSize) / 2f;
+        // 简单的八分音符图标（符头 + 符干）
+        Rects.rounded(Math.round(contentX + 1), Math.round(iconY + 5), 5, 4, 2, contentColor);
+        Rects.fill(contentX + 5, iconY, 1.4f, 8f, contentColor);
+        Rects.fill(contentX + 5, iconY, 3f, 1.4f, contentColor);
+        if (showText) {
+            FPSMaster.fontManager.s14.drawString(text, contentX + iconSize + 4f, y + height / 2f - 4f, contentColor);
+        }
+        return consumePressInBounds(x, y, width, height) != null;
+    }
+
+    private int fade(int color, float alpha) {
+        Color c = new Color(color, true);
+        return new Color(c.getRed(), c.getGreen(), c.getBlue(), Colors.clamp((int) (c.getAlpha() * alpha))).getRGB();
     }
 
     @Override
@@ -300,6 +357,7 @@ public class MainPanel extends ScaledGuiScreen {
         super.initGui();
 //        aiChatPanel.init();
         animClock.reset();
+        themeSwitchAnim.set(ClickGuiTheme.isLight() ? 1.0 : 0.0);
         scaleAnimation.start(0.8, 1.0, 0.2f, CLICKGUI_EASE);
         alphaAnimation.start(0.0, 255.0, 0.2f, CLICKGUI_EASE);
         maskAlpha.start(0.0, MASK_MAX_ALPHA, 0.2f, CLICKGUI_EASE);

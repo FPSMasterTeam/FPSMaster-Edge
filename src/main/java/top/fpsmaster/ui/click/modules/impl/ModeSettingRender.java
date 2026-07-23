@@ -1,10 +1,9 @@
 package top.fpsmaster.ui.click.modules.impl;
 
-import top.fpsmaster.utils.render.draw.Images;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Rects;
 
-import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Module;
@@ -58,14 +57,7 @@ public class ModeSettingRender extends SettingRender<ModeSetting> {
         GL11.glTranslatef(x + 16 + fw + maxWidth - 12, y + 12, 0f);
         GL11.glRotatef(rotatePercent * 180, 0f, 0f, 1f);
         GL11.glTranslatef(-(x + 16 + fw + maxWidth - 12), -(y + 12), 0f);
-        Images.draw(
-                new ResourceLocation("client/gui/settings/icons/arrow.png"),
-                x + 16 + fw + maxWidth - 16,
-                y + 8,
-                8f,
-                8f,
-                ClickGuiTheme.modeText()
-        );
+        Icons.draw("arrow", x + 16 + fw + maxWidth - 16, y + 8, 8f, ClickGuiTheme.modeText().getRGB());
         GL11.glPopMatrix();
         if (expand) {
             expandH = (float) AnimMath.base(expandH, setting.getModesSize() * 14, 0.2);
