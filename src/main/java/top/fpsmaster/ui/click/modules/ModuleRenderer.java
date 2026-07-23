@@ -3,6 +3,7 @@ package top.fpsmaster.ui.click.modules;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Colors;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Rects;
 
 import net.minecraft.client.renderer.GlStateManager;
@@ -107,14 +108,7 @@ public class ModuleRenderer extends ValueRender {
                 option.getColor()
         );
 
-        Images.draw(
-                new ResourceLocation("client/gui/settings/window/option_circle.png"),
-                x + width - 38 + optionX,
-                y + 17.5f,
-                7,
-                7,
-                -1
-        );
+        Icons.draw("toggle-knob", x + width - 38 + optionX, y + 17.5f, 7f, -1);
 
 
         if (mod.category == Category.Interface) {
