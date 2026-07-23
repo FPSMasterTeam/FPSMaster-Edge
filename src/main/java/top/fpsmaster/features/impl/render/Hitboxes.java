@@ -62,8 +62,11 @@ public class Hitboxes extends Module {
                 if (entity == mc.thePlayer || entity.isInvisibleToPlayer(mc.thePlayer)) {
                     continue;
                 }
-                AxisAlignedBB bb = entity.getEntityBoundingBox()
-                        .offset(-renderManager.renderPosX(), -renderManager.renderPosY(), -renderManager.renderPosZ());
+                double d_0 = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) event.partialTicks;
+                double d_1 = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) event.partialTicks;
+                double d_2 = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) event.partialTicks;
+                double x = d_0 - renderManager.renderPosX() - entity.posX, y = d_1 - renderManager.renderPosY() - entity.posY, z = d_2 - renderManager.renderPosZ() - entity.posZ;
+                AxisAlignedBB bb = entity.getEntityBoundingBox().offset(x, y, z);
                 Render3DUtils.drawBoundingBoxOutline(bb);
             }
         } finally {
