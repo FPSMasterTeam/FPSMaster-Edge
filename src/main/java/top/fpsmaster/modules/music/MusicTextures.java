@@ -8,12 +8,10 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
-import top.fpsmaster.FPSMaster;
 import top.fpsmaster.modules.logger.ClientLogger;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
@@ -23,6 +21,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 动态纹理缓存：把网络封面图 / base64 图 / 二维码 上传为 Minecraft {@link ResourceLocation}，供
@@ -40,6 +40,14 @@ public final class MusicTextures {
     private static final Map<String, ResourceLocation> READY = new HashMap<>();
     private static final Set<String> LOADING = new HashSet<>();
 
+    // 所有 AWT/ImageIO 图片解码放到单一线程串行执行：macOS(尤其 Rosetta) 下并发调用
+    // AWT/CoreGraphics 原生代码会崩（objc_release）。单线程可最大限度规避。
+    private static final ExecutorService IMG_EXEC = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "FPSMaster-Music-Img");
+        t.setDaemon(true);
+        return t;
+    });
+
     private MusicTextures() {
     }
 
@@ -51,7 +59,7 @@ public final class MusicTextures {
         if (loc != null) return loc;
         if (LOADING.contains(key)) return null;
         LOADING.add(key);
-        FPSMaster.async.runnable(new Runnable() {
+        IMG_EXEC.execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -74,7 +82,7 @@ public final class MusicTextures {
         if (loc != null) return loc;
         if (LOADING.contains(key)) return null;
         LOADING.add(key);
-        FPSMaster.async.runnable(new Runnable() {
+        IMG_EXEC.execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -103,7 +111,7 @@ public final class MusicTextures {
         if (loc != null) return loc;
         if (LOADING.contains(key)) return null;
         LOADING.add(key);
-        FPSMaster.async.runnable(new Runnable() {
+        IMG_EXEC.execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -164,10 +172,12 @@ public final class MusicTextures {
 
     private static BufferedImage toArgb(BufferedImage src) {
         if (src.getType() == BufferedImage.TYPE_INT_ARGB) return src;
-        BufferedImage out = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = out.createGraphics();
-        g.drawImage(src, 0, 0, null);
-        g.dispose();
+        // 纯 Java 拷贝，避开 Graphics2D.createGraphics（macOS 上可能走原生 CoreGraphics）
+        int w = src.getWidth();
+        int h = src.getHeight();
+        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        int[] px = src.getRGB(0, 0, w, h, null, 0, w);
+        out.setRGB(0, 0, w, h, px, 0, w);
         return out;
     }
 

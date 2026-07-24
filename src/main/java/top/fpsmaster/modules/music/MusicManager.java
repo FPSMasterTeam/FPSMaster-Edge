@@ -2,6 +2,7 @@ package top.fpsmaster.modules.music;
 
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.music.AudioQuality;
 import top.fpsmaster.music.Lyric;
@@ -86,6 +87,9 @@ public class MusicManager {
     private volatile Lyric currentLyric = null;
     private volatile String status = "";
     private int volume = 70;
+
+    private final MusicOverlay overlay = new MusicOverlay(this);
+    private volatile boolean showLyricsInGame = false;
 
     // 二维码登录轮询
     private volatile Thread qrThread;
@@ -188,6 +192,21 @@ public class MusicManager {
 
     public void setStatus(String s) {
         this.status = s == null ? "" : s;
+    }
+
+    /** 是否在游戏内叠加显示当前歌词。 */
+    public boolean isShowLyricsInGame() {
+        return showLyricsInGame;
+    }
+
+    public void setShowLyricsInGame(boolean b) {
+        if (b == showLyricsInGame) return;
+        showLyricsInGame = b;
+        if (b) {
+            EventDispatcher.registerListener(overlay);
+        } else {
+            EventDispatcher.unregisterListener(overlay);
+        }
     }
 
     public int getVolume() {

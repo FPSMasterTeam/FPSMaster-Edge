@@ -332,10 +332,7 @@ public class MainPanel extends ScaledGuiScreen {
         float contentWidth = showText ? iconSize + 4f + textWidth : iconSize;
         float contentX = x + (width - contentWidth) / 2f;
         float iconY = y + (height - iconSize) / 2f;
-        // 简单的八分音符图标（符头 + 符干）
-        Rects.rounded(Math.round(contentX + 1), Math.round(iconY + 5), 5, 4, 2, contentColor);
-        Rects.fill(contentX + 5, iconY, 1.4f, 8f, contentColor);
-        Rects.fill(contentX + 5, iconY, 3f, 1.4f, contentColor);
+        Icons.draw("music", contentX, iconY, iconSize, contentColor);
         if (showText) {
             FPSMaster.fontManager.s14.drawString(text, contentX + iconSize + 4f, y + height / 2f - 4f, contentColor);
         }

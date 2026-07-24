@@ -108,7 +108,7 @@ dependencies {
 
     // 音乐能力：Cadence 数据客户端（网易云/QQ 搜索/直链/歌词/歌单/登录）。
     // gson 由 MC classpath 提供，故不传递依赖；Kotlin 运行时单独引入。
-    shadowImpl("top.fpsmaster:music-api:0.1.0") {
+    shadowImpl("top.fpsmaster:music-api:0.1.1") {
         isTransitive = false
     }
     shadowImpl("org.jetbrains.kotlin:kotlin-stdlib:2.4.0") {
