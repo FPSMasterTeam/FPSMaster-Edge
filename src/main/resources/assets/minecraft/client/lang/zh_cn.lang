@@ -412,6 +412,10 @@ autogg.servers.normal=普通模式
 autogg.message=自定义消息
 autogg.autoplay=自动重开
 autogg.delaytoplay=自动重开延迟
+autogg.detectionmode=检测模式
+autogg.detectionmode.chat=仅聊天
+autogg.detectionmode.title=仅Title
+autogg.detectionmode.both=两者同时
 
 
 oldanimations=旧动画
