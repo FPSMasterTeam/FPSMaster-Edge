@@ -18,19 +18,22 @@ from pathlib import Path
 
 from PIL import Image, ImageChops
 
-# Tolerances. A frame is not bit-identical between runs even without code changes:
-# entity animation phase, particle RNG and cloud position all move slightly. What must
-# not change is whether something is on screen at all, which shows up as a large number
-# of differing pixels rather than as small per-pixel deltas.
-CHANNEL_TOLERANCE = 8          # per-channel delta treated as "same pixel"
-MAX_DIFFERING_FRACTION = 0.02  # 2% of pixels may differ beyond that
+# A frame is not bit-identical between runs even without code changes: particle RNG,
+# entity animation phase and cloud position all move. How much they move is
+# scenario-dependent and has to be measured, not guessed — on the particle-dense
+# scenario two runs of the *same* configuration differ by 2.5% of pixels, so a fixed 2%
+# limit would have failed identical builds. Pass --null to calibrate the limit from a
+# duplicate-baseline run the same way the timing band is calibrated.
+CHANNEL_TOLERANCE = 8            # per-channel delta treated as "same pixel"
+DEFAULT_MAX_FRACTION = 0.005     # floor when no null control is supplied
+NULL_SAFETY_FACTOR = 1.5
 
 
-def compare(candidate: Path, reference: Path, diff_out: Path | None) -> tuple[bool, str]:
+def differing_fraction(candidate: Path, reference: Path, diff_out: Path | None = None) -> float:
     a = Image.open(reference).convert("RGB")
     b = Image.open(candidate).convert("RGB")
     if a.size != b.size:
-        return False, f"size {b.size} != reference {a.size}"
+        raise SystemExit(f"{candidate.name}: size {b.size} != reference {a.size}")
 
     diff = ImageChops.difference(a, b)
     # Collapse to a per-pixel maximum channel delta, then threshold.
@@ -40,18 +43,20 @@ def compare(candidate: Path, reference: Path, diff_out: Path | None) -> tuple[bo
     total = a.size[0] * a.size[1]
     fraction = differing / total
 
-    if diff_out is not None and fraction > MAX_DIFFERING_FRACTION:
+    if diff_out is not None:
         diff_out.parent.mkdir(parents=True, exist_ok=True)
         ImageChops.multiply(b, mask.convert("RGB")).save(diff_out)
 
-    ok = fraction <= MAX_DIFFERING_FRACTION
-    return ok, f"{fraction * 100:.3f}% of pixels differ (limit {MAX_DIFFERING_FRACTION * 100:.1f}%)"
+    return fraction
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("shots_dir", type=Path)
     parser.add_argument("--reference", type=Path, required=True)
+    parser.add_argument("--null", type=Path,
+                        help="shots from a duplicate-baseline variant; the pass limit is "
+                             "calibrated from how far these drift from the reference")
     parser.add_argument("--accept", action="store_true",
                         help="copy the shots in as the new reference instead of comparing")
     args = parser.parse_args()
@@ -67,6 +72,21 @@ def main() -> None:
         print(f"accepted {len(shots)} reference image(s) into {args.reference}")
         return
 
+    limit = DEFAULT_MAX_FRACTION
+    if args.null:
+        null_fractions = [
+            differing_fraction(args.null / shot.name, args.reference / shot.name)
+            for shot in shots
+            if (args.null / shot.name).exists() and (args.reference / shot.name).exists()
+        ]
+        if null_fractions:
+            limit = max(limit, max(null_fractions) * NULL_SAFETY_FACTOR)
+            print(f"limit calibrated from null control: {max(null_fractions) * 100:.3f}% "
+                  f"x{NULL_SAFETY_FACTOR} = {limit * 100:.3f}%")
+            if limit > 0.05:
+                print("  note: this scenario's own run-to-run variation is large, so the gate "
+                      "here is weak; a static scene gives a much stronger check")
+
     failures = 0
     for shot in shots:
         reference = args.reference / shot.name
@@ -74,8 +94,10 @@ def main() -> None:
             print(f"  {shot.name:<20} NO REFERENCE - run with --accept first")
             failures += 1
             continue
-        ok, detail = compare(shot, reference, args.shots_dir / "diff" / shot.name)
-        print(f"  {shot.name:<20} {'PASS' if ok else 'FAIL'}  {detail}")
+        fraction = differing_fraction(shot, reference, args.shots_dir / "diff" / shot.name)
+        ok = fraction <= limit
+        print(f"  {shot.name:<20} {'PASS' if ok else 'FAIL'}  "
+              f"{fraction * 100:.3f}% of pixels differ (limit {limit * 100:.3f}%)")
         failures += 0 if ok else 1
 
     if failures:

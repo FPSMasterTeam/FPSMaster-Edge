@@ -127,6 +127,35 @@ sub-features stayed active after the user disabled the module.
 
 ### R4 — particle frustum culling
 
-Pending: see `benchmark/results/r4-particle-culling/`.
+**Verdict: within noise on every metric. Kept as a correctness-neutral change, not
+claimed as a win.**
 
-Workload confirmed at ~144 particles per frame, of which culling skips ~11%.
+Scenario `particle-dense`, ~144 particles/frame of which culling skips ~11%.
+Series carried a duplicate baseline (`off`, `off2`, `on`), so the band below was
+measured in the same series under the same conditions as the effect.
+
+| metric | off | on | paired diff | band (off vs off2) | verdict |
+| --- | ---: | ---: | ---: | ---: | --- |
+| p50 frame ms | 1.318 | 1.314 | −0.65% | 2.00% | within noise |
+| p99 frame ms | 1.837 | 1.829 | −0.12% | 4.42% | within noise |
+| avg fps | 743.9 | 747.5 | +0.55% | 2.54% | within noise |
+| 1% low fps | 468.9 | 470.8 | +0.01% | 9.45% | within noise |
+
+The in-series band lands within a few tenths of a percent of the independently
+measured flat-orbit band (p50 2.00% vs 1.98%, p99 4.42% vs 4.97%), which is a useful
+cross-check on the method.
+
+Every metric moves in the favourable direction, but by far less than the band, so
+none of it is distinguishable from noise. That is the expected outcome for this
+change: a particle is four vertices, and only 11% of them are being skipped.
+Whether it pays off on a workload with a much larger off-screen fraction is untested.
+
+Screenshot gate: **pass**, 0.70% and 0.81% of pixels differing.
+
+**The gate needed calibrating, and that is worth recording.** With a fixed 2% limit
+the null control failed — two runs of the *same* configuration differed by 2.5% and
+2.1% of pixels, purely from particle RNG, while the actual change differed by 0.7%.
+A fixed threshold would have reported identical builds as a visual regression. The
+limit is now derived from the null control the same way the timing band is, and the
+tool warns when a scenario's own variation is large enough to make the gate weak.
+A static scene gives a far stronger check than one full of random particles.
