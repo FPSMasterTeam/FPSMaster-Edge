@@ -125,6 +125,52 @@ Correctness change, no timing claim. Verified with `switch-matrix.ps1` on
 off, zero with the sub-feature off, and non-zero with both on. Before the change, four
 sub-features stayed active after the user disabled the module.
 
+### Where frame time actually goes
+
+Measured with per-section timers on `entity-dense` (76 entities/frame, 1867us p50 frame):
+
+| section | CPU p50 | share of frame |
+| --- | ---: | ---: |
+| entities | 807us | 43% |
+| everything else | 1060us | 57% |
+
+On `particle-dense` (144 particles/frame, 1366us p50 frame): terrain 350us, entities
+359us, particles 25us, chunk upload 1.7us.
+
+This is the number that should drive what gets optimised next, and it is why judging a
+targeted change by whole-frame FPS is the wrong instrument — see R4 below.
+
+### Fast math (BetterFps-style lookup tables) — not worth doing here
+
+**Verdict: rejected on measurement. No code shipped beyond the benchmark itself.**
+
+Vanilla's `MathHelper.SIN_TABLE` is 65536 floats (256 KB), far larger than L1, and the
+standard suggestion is a smaller table with better locality. Microbenchmarked with each
+implementation in its own JVM, best of 3 invocations, scattered access:
+
+| implementation | ns/op | vs vanilla | max error |
+| --- | ---: | ---: | ---: |
+| vanilla 64K table | 1.2527 | — | 9.59e-05 |
+| fast 16K table | 1.2939 | +3.3% | 3.84e-04 |
+| fast 8K table | 1.1002 | −12.2% | 7.67e-04 |
+| fast 4K table | 1.3107 | +4.6% | 1.53e-03 |
+| `Math.sin` (double) | 46.5485 | +3616% | 2.98e-08 |
+
+Then the question that decides it: **how often is it actually called?** Counting on
+`entity-dense` gave **56 trig calls per frame** — about 0.07us of an 1867us frame, or
+**0.004%**. Making sin and cos infinitely fast would gain four thousandths of one
+percent.
+
+Two things worth keeping from this:
+
+- The first attempt measured all implementations in a single JVM and reported vanilla at
+  3.27 ns/op with the 16K table 65% faster. Per-JVM isolation put vanilla at 1.25 ns/op
+  and the ordering changed completely. A single dispatch site profiled across every
+  implementation pollutes the JIT's view of the loop, and the result then depends on run
+  order.
+- Porting an optimisation because another mod has it, without first measuring the call
+  volume in *this* codebase, would have spent a day on something worth 0.004%.
+
 ### R4 — particle frustum culling
 
 **Verdict: within noise on every metric. Kept as a correctness-neutral change, not
