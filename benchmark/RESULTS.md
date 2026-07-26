@@ -116,6 +116,32 @@ Things that silently produced empty or wrong workloads during development:
   for a feature that is demonstrably working. Reports carry both the run total and the
   window delta.
 
+## GL resource leak detection
+
+Heap figures cannot see driver-side leaks: display lists, textures and framebuffers live
+in GL memory, so a client can leak them steadily while the Java heap looks flat. The
+measurement window makes a usable test, because the scene is settled and the camera
+repeats a fixed loop — a net rise in live GL objects across it is a leak, not churn.
+
+Counters sit on `GLAllocation.generateDisplayLists` / `deleteDisplayLists` (both
+overloads) and `TextureUtil.glGenTextures` / `deleteTexture`.
+
+First result, `entity-dense`, 80s window over 29,418 frames:
+
+| resource | allocated | released | net |
+| --- | ---: | ---: | ---: |
+| display lists | 0 | 0 | **0** |
+| textures | 0 | 0 | **0** |
+
+No leak in this scenario. Whole-run totals including startup: 30 display lists
+allocated and none released — sky and chunk-container lists held for the session, not a
+leak — and 46 textures allocated against 45 released.
+
+The scenario is the limitation, not the instrument: it never switches worlds, reloads
+resource packs or rebuilds shader groups, which are the paths where leaks have actually
+occurred here before (a per-frame `ShaderGroup` reload once leaked framebuffers). A
+leak-stress scenario that cycles those paths is the next thing this needs.
+
 ## Runs
 
 ### R1 — Performance module semantics and dead settings

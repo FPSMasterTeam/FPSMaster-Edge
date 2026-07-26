@@ -50,6 +50,16 @@ public final class BenchCounters {
     public static long cullProbesHarvested;
     public static long cullProbesOccluded;
 
+    /**
+     * GL objects live in driver memory, so a steady leak there leaves the Java heap flat. During a
+     * measurement window the scene is settled and the camera repeats a fixed loop, which makes a net
+     * rise in live objects a leak rather than churn.
+     */
+    public static long displayListsAllocated;
+    public static long displayListsReleased;
+    public static long texturesAllocated;
+    public static long texturesReleased;
+
     public static long animatedSpritesTotal;
     public static long animatedSpritesUpdated;
 
@@ -61,6 +71,8 @@ public final class BenchCounters {
             "chunkRebuildsRequested", "chunkRebuildsCompleted", "chunkThrottleSleeps",
             "fontCacheHits", "fontCacheMisses", "fontCacheEvictions",
             "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
+            "displayListsAllocated", "displayListsReleased",
+            "texturesAllocated", "texturesReleased",
             "animatedSpritesTotal", "animatedSpritesUpdated",
     };
 
@@ -77,6 +89,8 @@ public final class BenchCounters {
                 chunkRebuildsRequested, chunkRebuildsCompleted, chunkThrottleSleeps,
                 fontCacheHits, fontCacheMisses, fontCacheEvictions,
                 cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
+                displayListsAllocated, displayListsReleased,
+                texturesAllocated, texturesReleased,
                 animatedSpritesTotal, animatedSpritesUpdated,
         };
     }
