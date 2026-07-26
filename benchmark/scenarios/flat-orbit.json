@@ -1,10 +1,21 @@
 {
-  "_comment": "Baseline terrain-light scenario: superflat world, camera orbits a fixed point. Establishes the noise floor for a real in-world workload and exercises chunk visibility, sky and HUD without terrain-generation variance.",
+  "_comment": "Baseline terrain-light scenario: superflat world, camera orbits a fixed point. Establishes the noise floor for a real in-world workload. Time, weather and mob spawning are pinned so two runs half an hour apart render the same thing.",
   "world": {
     "folder": "bench-flat",
     "seed": 20260726,
     "type": "FLAT",
-    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;"
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doMobSpawning false",
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/gamerule randomTickSpeed 0",
+      "/gamerule doFireTick false",
+      "/time set 6000",
+      "/weather clear 1000000",
+      "/difficulty peaceful",
+      "/kill @e[type=!Player]"
+    ]
   },
   "settleSeconds": 5,
   "settleTimeoutMillis": 120000,
@@ -14,11 +25,46 @@
   "camera": {
     "loopMillis": 20000,
     "keyframes": [
-      { "t": 0,     "x": 0,   "y": 70, "z": 0,   "yaw": 0,   "pitch": 5 },
-      { "t": 5000,  "x": 40,  "y": 70, "z": 0,   "yaw": 90,  "pitch": 5 },
-      { "t": 10000, "x": 40,  "y": 70, "z": 40,  "yaw": 180, "pitch": 5 },
-      { "t": 15000, "x": 0,   "y": 70, "z": 40,  "yaw": 270, "pitch": 5 },
-      { "t": 20000, "x": 0,   "y": 70, "z": 0,   "yaw": 360, "pitch": 5 }
+      {
+        "t": 0,
+        "x": 0,
+        "y": 70,
+        "z": 0,
+        "yaw": 0,
+        "pitch": 5
+      },
+      {
+        "t": 5000,
+        "x": 40,
+        "y": 70,
+        "z": 0,
+        "yaw": 90,
+        "pitch": 5
+      },
+      {
+        "t": 10000,
+        "x": 40,
+        "y": 70,
+        "z": 40,
+        "yaw": 180,
+        "pitch": 5
+      },
+      {
+        "t": 15000,
+        "x": 0,
+        "y": 70,
+        "z": 40,
+        "yaw": 270,
+        "pitch": 5
+      },
+      {
+        "t": 20000,
+        "x": 0,
+        "y": 70,
+        "z": 0,
+        "yaw": 360,
+        "pitch": 5
+      }
     ]
   }
 }

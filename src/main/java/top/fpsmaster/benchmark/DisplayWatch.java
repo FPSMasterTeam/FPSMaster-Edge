@@ -11,8 +11,11 @@ import org.lwjgl.opengl.Display;
  * exactly the tail statistics this harness exists to measure — and an unattended run has no way to
  * know it happened.
  *
- * <p>Focus changes, resizes and window moves are all detectable. Frames where any of them occurred
- * are excluded and counted; the count is always reported, never silently absorbed.
+ * <p>Only <em>changes</em> count as disturbances. A window that is unfocused for the whole run is
+ * in a steady state, not being perturbed; treating that as a disturbance excluded every frame of
+ * several runs, because an unattended benchmark usually does not own the foreground. The focused
+ * and unfocused frame counts are reported separately so the two can be compared rather than
+ * conflated.
  */
 public final class DisplayWatch {
 
@@ -24,18 +27,30 @@ public final class DisplayWatch {
 
     private int lastX = Integer.MIN_VALUE;
     private int lastY = Integer.MIN_VALUE;
+    private boolean lastActive;
+    private boolean haveLastActive;
     private int recoveryRemaining;
     private long disturbedFrames;
+    private long unfocusedFrames;
 
     /** Returns true when the frame just completed should be excluded from the sample set. */
     public boolean pollDisturbed() {
         int x = Display.getX();
         int y = Display.getY();
+        boolean active = Display.isActive();
+
         boolean moved = lastX != Integer.MIN_VALUE && (x != lastX || y != lastY);
+        boolean focusChanged = haveLastActive && active != lastActive;
+
         lastX = x;
         lastY = y;
+        lastActive = active;
+        haveLastActive = true;
+        if (!active) {
+            unfocusedFrames++;
+        }
 
-        boolean disturbed = moved || Display.wasResized() || !Display.isActive() || !Display.isVisible();
+        boolean disturbed = moved || focusChanged || Display.wasResized();
         if (disturbed) {
             recoveryRemaining = RECOVERY_FRAMES;
         } else if (recoveryRemaining > 0) {
@@ -50,10 +65,20 @@ public final class DisplayWatch {
 
     public void reset() {
         disturbedFrames = 0L;
+        unfocusedFrames = 0L;
         recoveryRemaining = 0;
     }
 
     public long disturbedFrames() {
         return disturbedFrames;
+    }
+
+    /**
+     * Frames rendered without the window focused. Not excluded — reported so that a run which spent
+     * its measurement window in the background can be compared against one that did not, instead of
+     * the difference being silently absorbed.
+     */
+    public long unfocusedFrames() {
+        return unfocusedFrames;
     }
 }

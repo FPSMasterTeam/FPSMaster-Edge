@@ -56,6 +56,35 @@ resting on 0.1% low needs far more data than a normal series produces.
 
 Pending: see `benchmark/results/noise-flat-orbit/`.
 
+## Touching the window destroys the tail statistics
+
+The first in-world noise series looked unusable:
+
+| metric | as measured | with the disturbed pass removed |
+| --- | ---: | ---: |
+| p50 | 6.19% | 3.18% |
+| p99 | 14.25% | **1.88%** |
+| avg fps | 7.26% | 2.95% |
+| 1% low | 32.17% | **3.17%** |
+
+Two of the six runs contained exactly one frame of 560ms and 230ms respectively.
+Every other frame in those runs was under 8.3ms. The cause was the window being
+dragged: Windows enters a modal move loop, the application stops pumping messages,
+and the frame spanning the drag is recorded as one enormous sample.
+
+One such frame in 60,000 was enough to move the 1% low by 32% and the p99 by 14%.
+Judged against the contaminated band, no optimisation short of a rewrite could ever
+have been called an improvement.
+
+Two guards now exist, because an unattended series has no other way to notice:
+
+- `DisplayWatch` excludes frames where the window moved, was resized, lost focus or
+  became invisible, plus one recovery frame. The count is always reported, including
+  when it is zero — a silently dropped frame is indistinguishable from a clean run.
+- `noise-band.py` refuses to derive a band from any run containing a frame over 20x
+  the median, and `compare.py` warns on one. A band measured from a disturbed run
+  would hide every real regression underneath it.
+
 ## Runs
 
 Pending.

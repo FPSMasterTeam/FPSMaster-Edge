@@ -72,6 +72,7 @@ public final class BenchRunner {
                 break;
             case LOADING_WORLD:
                 if (BenchWorld.isReady(mc)) {
+                    BenchSetup.run(mc, scenario.world());
                     settleTracker.reset(now);
                     phaseStartMillis = now;
                     pathStartMillis = now;

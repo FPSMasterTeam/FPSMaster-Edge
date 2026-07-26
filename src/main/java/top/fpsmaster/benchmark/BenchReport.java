@@ -83,6 +83,7 @@ public final class BenchReport {
         // Always reported, even when zero: a silently dropped frame is indistinguishable from
         // a clean run, and one dragged window is enough to move the 1% low by tens of percent.
         summary.addProperty("disturbedFrames", displayWatch.disturbedFrames());
+        summary.addProperty("unfocusedFrames", displayWatch.unfocusedFrames());
         if (samples.length == 0) {
             return summary;
         }

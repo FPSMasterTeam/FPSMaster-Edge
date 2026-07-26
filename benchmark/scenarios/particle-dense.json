@@ -1,0 +1,80 @@
+{
+  "_comment": "Particle-dense: a grid of lava blocks plus a torch row, both emitting continuously so the particle count is roughly constant across the whole measurement window instead of decaying from an initial burst.",
+  "world": {
+    "folder": "bench-flat",
+    "seed": 20260726,
+    "type": "FLAT",
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doMobSpawning false",
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/gamerule randomTickSpeed 0",
+      "/gamerule doFireTick false",
+      "/time set 6000",
+      "/weather clear 1000000",
+      "/difficulty peaceful",
+      "/kill @e[type=!Player]",
+      "/setblock -8 64 -8 minecraft:lava",
+      "/setblock -8 64 -4 minecraft:lava",
+      "/setblock -8 64 0 minecraft:lava",
+      "/setblock -8 64 4 minecraft:lava",
+      "/setblock -8 64 8 minecraft:lava",
+      "/setblock -4 64 -8 minecraft:lava",
+      "/setblock -4 64 -4 minecraft:lava",
+      "/setblock -4 64 0 minecraft:lava",
+      "/setblock -4 64 4 minecraft:lava",
+      "/setblock -4 64 8 minecraft:lava",
+      "/setblock 0 64 -8 minecraft:lava",
+      "/setblock 0 64 -4 minecraft:lava",
+      "/setblock 0 64 0 minecraft:lava",
+      "/setblock 0 64 4 minecraft:lava",
+      "/setblock 0 64 8 minecraft:lava",
+      "/setblock 4 64 -8 minecraft:lava",
+      "/setblock 4 64 -4 minecraft:lava",
+      "/setblock 4 64 0 minecraft:lava",
+      "/setblock 4 64 4 minecraft:lava",
+      "/setblock 4 64 8 minecraft:lava",
+      "/setblock 8 64 -8 minecraft:lava",
+      "/setblock 8 64 -4 minecraft:lava",
+      "/setblock 8 64 0 minecraft:lava",
+      "/setblock 8 64 4 minecraft:lava",
+      "/setblock 8 64 8 minecraft:lava",
+      "/fill -12 64 -12 12 64 -12 minecraft:torch"
+    ]
+  },
+  "settleSeconds": 5,
+  "settleTimeoutMillis": 120000,
+  "warmupMillis": 30000,
+  "discardMillis": 1000,
+  "measureMillis": 90000,
+  "camera": {
+    "loopMillis": 20000,
+    "keyframes": [
+      {
+        "t": 0,
+        "x": 0,
+        "y": 70,
+        "z": -16,
+        "yaw": 0,
+        "pitch": 20
+      },
+      {
+        "t": 10000,
+        "x": 0,
+        "y": 74,
+        "z": -10,
+        "yaw": 0,
+        "pitch": 35
+      },
+      {
+        "t": 20000,
+        "x": 0,
+        "y": 70,
+        "z": -16,
+        "yaw": 0,
+        "pitch": 20
+      }
+    ]
+  }
+}
