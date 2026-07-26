@@ -49,6 +49,7 @@
     "MixinRenderItem",
     "MixinRenderLivingBase",
     "MixinRenderManager",
+    "RenderGlobalMixin_SectionTiming",
     "MixinRenderTNTPrimed",
     "MixinServerSelectionList",
     "MixinShaderGroup",

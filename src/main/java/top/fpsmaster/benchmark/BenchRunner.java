@@ -60,6 +60,7 @@ public final class BenchRunner {
             Minecraft mc = Minecraft.getMinecraft();
             long now = System.currentTimeMillis();
             sampler.onFrame(System.nanoTime(), displayWatch.pollDisturbed());
+            BenchProfiler.instance().endFrame();
             advance(mc, now);
         } catch (Throwable t) {
             fail(t);
@@ -104,6 +105,7 @@ public final class BenchRunner {
                 driveCamera(mc, now);
                 if (now - phaseStartMillis >= scenario.warmupMillis()) {
                     sampler.start();
+                    BenchProfiler.instance().start();
                     phaseStartMillis = now;
                     state = State.DISCARD;
                 }
@@ -118,6 +120,7 @@ public final class BenchRunner {
                 driveCamera(mc, now);
                 if (now - phaseStartMillis >= scenario.measureMillis() || sampler.isFull()) {
                     sampler.stop();
+                    BenchProfiler.instance().stop();
                     if (scenario.screenshots() == null) {
                         finish(mc);
                     } else {
@@ -140,6 +143,8 @@ public final class BenchRunner {
     private void beginRun(Minecraft mc, long now) throws Exception {
         scenario = BenchScenario.load(mc.mcDataDir, BenchmarkMode.scenario());
         BenchOverrides.apply(BenchmarkMode.overrides());
+        // Needs a current GL context, so not in the constructor.
+        BenchProfiler.instance().initGpuTimer();
         gcCountAtStart = BenchReport.gcCollectionCount();
         gcMillisAtStart = BenchReport.gcCollectionMillis();
         phaseStartMillis = now;
@@ -174,6 +179,7 @@ public final class BenchRunner {
         // Keep recording, but throw away everything captured so far: the discard window exists to
         // get past the frames where getDebugFPS() is still 0.
         sampler.discardCollected();
+        BenchProfiler.instance().discardCollected();
         displayWatch.reset();
         countersAtMeasureStart = BenchCounters.values();
         gcCountAtStart = BenchReport.gcCollectionCount();

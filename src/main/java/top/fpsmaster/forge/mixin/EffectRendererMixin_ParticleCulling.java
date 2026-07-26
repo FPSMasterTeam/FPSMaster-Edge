@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchProfiler;
 import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.features.impl.optimizes.Performance;
 
@@ -43,8 +44,18 @@ public class EffectRendererMixin_ParticleCulling {
     @Unique
     private Frustum fpsmaster$frustum;
 
+    @Inject(method = "renderParticles", at = @At("RETURN"))
+    private void fpsmaster$endParticleSection(Entity entityIn, float partialTicks, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.end(BenchProfiler.SECTION_PARTICLES);
+        }
+    }
+
     @Inject(method = "renderParticles", at = @At("HEAD"))
     private void fpsmaster$captureFrustum(Entity entityIn, float partialTicks, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.begin(BenchProfiler.SECTION_PARTICLES);
+        }
         if (!Performance.using || !Performance.particleCulling.getValue()) {
             fpsmaster$frustum = null;
             return;

@@ -56,6 +56,8 @@ public final class BenchReport {
                 BenchCounters.difference(countersNow, countersAtMeasureStart)));
         root.add("countersTotal", BenchCounters.toJson(countersNow));
         root.add("summary", summarise(samples, displayWatch));
+        root.add("sections", BenchProfiler.instance().snapshot());
+        root.add("memory", describeMemory());
 
         // Gson 2.2.4 ships with Minecraft 1.8.9 and has no primitive JsonArray.add overloads.
         JsonArray raw = new JsonArray();
@@ -168,6 +170,19 @@ public final class BenchReport {
         gc.addProperty("collections", gcCollectionCount() - countBefore);
         gc.addProperty("collectionMillis", gcCollectionMillis() - millisBefore);
         return gc;
+    }
+
+    /**
+     * Heap figures for the leak and footprint goals. Sampled at report time, which is right after
+     * the measurement window closes, so it reflects the steady state of the measured workload.
+     */
+    private static JsonObject describeMemory() {
+        Runtime runtime = Runtime.getRuntime();
+        JsonObject json = new JsonObject();
+        json.addProperty("heapUsedMb", (runtime.totalMemory() - runtime.freeMemory()) / (1024L * 1024L));
+        json.addProperty("heapCommittedMb", runtime.totalMemory() / (1024L * 1024L));
+        json.addProperty("heapMaxMb", runtime.maxMemory() / (1024L * 1024L));
+        return json;
     }
 
     public static long gcCollectionCount() {
