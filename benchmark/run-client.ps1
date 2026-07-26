@@ -157,7 +157,7 @@ $resultFile = Join-Path $resultDir 'result.json'
 $failedFile = Join-Path $resultDir 'FAILED'
 $succeeded  = (Test-Path $resultFile) -and -not (Test-Path $failedFile)
 
-$shotsDir = Join-Path $resultDir 'shots'
+$shotsDir = Join-Path $resultDir 'screenshots'
 
 [pscustomobject]@{
     Outcome    = if ($succeeded) { 'OK' } elseif (Test-Path $failedFile) { 'HARNESS_FAILED' } else { $outcome }

@@ -77,7 +77,9 @@ public final class BenchScreenshots {
     }
 
     private void capture(Minecraft mc, String name) {
-        File dir = new File(new File(mc.mcDataDir, "bench-results"), "shots");
+        // saveScreenshot appends its own "screenshots" subfolder to whatever directory it is
+        // handed, so this lands in bench-results/screenshots/.
+        File dir = new File(mc.mcDataDir, "bench-results");
         if (!dir.isDirectory() && !dir.mkdirs()) {
             ClientLogger.error("benchmark", "could not create screenshot directory: " + dir);
             return;

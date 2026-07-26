@@ -72,6 +72,15 @@ for ($pass = 0; $pass -lt $totalPasses; $pass++) {
 
         $dest = Join-Path $outDir ("{0}-{1}.json" -f $name, $pass)
         Copy-Item $src $dest -Force
+
+        # Keep one set of screenshots per variant. Comparing the candidate's rendered
+        # output against the baseline's, from the same series, is a stronger check than
+        # comparing against a reference captured on some earlier build.
+        if ($result.ShotsDir) {
+            $shotDest = Join-Path $outDir "shots\$name"
+            New-Item -ItemType Directory -Force -Path $shotDest | Out-Null
+            Copy-Item (Join-Path $result.ShotsDir '*.png') $shotDest -Force
+        }
         $summary = (Get-Content $dest -Raw | ConvertFrom-Json).summary
         $log.Add([pscustomobject]@{
             Pass = $pass; Variant = $name; Status = 'OK'; File = $dest
