@@ -56,6 +56,11 @@ New-Item -ItemType Directory -Path $gameDir | Out-Null
 Copy-Item (Join-Path $PSScriptRoot 'options.benchmark.txt') (Join-Path $gameDir 'options.txt')
 
 if ($Scenario) {
+    $scenarioSrc = Join-Path $PSScriptRoot 'scenarios'
+    if (-not (Test-Path (Join-Path $scenarioSrc "$Scenario.json"))) {
+        throw "Unknown scenario '$Scenario' (looked in $scenarioSrc)"
+    }
+    Copy-Item $scenarioSrc (Join-Path $gameDir 'scenarios') -Recurse
     @{ scenario = $Scenario; variant = $Variant } | ConvertTo-Json |
         Set-Content -Path (Join-Path $gameDir 'bench-request.json') -Encoding UTF8
 }
