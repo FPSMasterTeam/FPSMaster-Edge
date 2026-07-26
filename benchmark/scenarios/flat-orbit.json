@@ -21,7 +21,7 @@
   "settleTimeoutMillis": 120000,
   "warmupMillis": 30000,
   "discardMillis": 1000,
-  "measureMillis": 90000,
+  "measureMillis": 80000,
   "camera": {
     "loopMillis": 20000,
     "keyframes": [
