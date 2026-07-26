@@ -289,6 +289,33 @@ guesswork. Two things the breakdown changes:
 This is also why judging a targeted change by whole-frame FPS is the wrong instrument —
 see R4 below.
 
+### Smart Animations — not implementable against evidence available here
+
+**Verdict: deferred. Measured before building, and the measurement does not support it.**
+
+Vanilla walks every animated sprite each tick and uploads the next frame whether or not
+anything on screen uses it. Restricting that to sprites the visible chunks reference is
+OptiFine's Smart Animations, and it needs sprite usage tracked through chunk compilation
+— a substantial change. Measured first, on `entity-dense`:
+
+| | |
+| --- | ---: |
+| `textureAnim` p50 | 0.0us (runs per tick, roughly 1 frame in 16 at this rate) |
+| `textureAnim` p99 | 123.7us |
+| total over an 80s window | 238.5ms, **0.3% of wall time** |
+| animated sprites in the atlas | ~16 (vanilla water, lava, fire, portal) |
+
+With vanilla textures the entire cost is 0.3%, so eliminating it completely would gain
+0.3%. The technique targets **high-resolution resource packs**, where a 512x animated
+sprite uploads 256 times the pixels — that is where OptiFine's win comes from, and there
+is no such pack here to measure against. Building it blind is the mistake fast math
+would have been.
+
+**What the measurement did surface** is a stutter source rather than a throughput one:
+p50 of 0 against a p99 of 123.7us is a spike once per tick, about 9us per sprite, which
+is `glTexSubImage2D` call overhead rather than pixel volume. That is relevant to the
+reduce-stutter goal and would remain relevant even at vanilla resolution.
+
 ### Fast math (BetterFps-style lookup tables) — not worth doing here
 
 **Verdict: rejected on measurement. No code shipped beyond the benchmark itself.**

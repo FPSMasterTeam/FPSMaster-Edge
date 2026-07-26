@@ -13,6 +13,7 @@
     "MixinS38PacketPlayerListItem",
     "MixinSplashScreen",
     "ModelRendererMixin_BatchDrawing",
+    "TextureMapMixin_AnimationTiming",
     "TexturedQuadMixin_BatchDraw"
   ],
   "client": [

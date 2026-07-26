@@ -36,12 +36,14 @@ public final class BenchProfiler {
     public static final int SECTION_ENTITY_LAYERS = 12;
     public static final int SECTION_ENTITY_BRIGHTNESS = 13;
     public static final int SECTION_ENTITY_SHADOW = 14;
-    public static final int SECTION_COUNT = 15;
+    /** Animated texture upload, the target Smart Animations would address. */
+    public static final int SECTION_TEXTURE_ANIM = 15;
+    public static final int SECTION_COUNT = 16;
 
     private static final String[] NAMES = {
             "terrain", "entities", "particles", "hud", "chunkUpload",
             "sky", "clouds", "hand", "terrainSetup", "frameTotal", "entityRender",
-            "entityModel", "entityLayers", "entityBrightness", "entityShadow",
+            "entityModel", "entityLayers", "entityBrightness", "entityShadow", "textureAnim",
     };
 
     private static final BenchProfiler INSTANCE = new BenchProfiler();
