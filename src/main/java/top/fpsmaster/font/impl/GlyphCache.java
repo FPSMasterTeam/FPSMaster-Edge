@@ -1,3 +1,15 @@
+/*
+ * Derived from BetterFonts by thvortex (https://github.com/thvortex/BetterFonts),
+ * licensed under the GNU Lesser General Public License version 2.1.
+ *
+ * LGPL-2.1 section 3 permits distributing a copy under the terms of the GNU General
+ * Public License instead, so this file is distributed here under the GPL-3.0 that
+ * covers the rest of FPSMaster Edge. The notice is kept because the licence requires
+ * the origin to be stated, not because the combination is in question.
+ *
+ * Modified for this project: package layout, integration with the client's own
+ * rendering helpers, and text filtering.
+ */
 package top.fpsmaster.font.impl;
 
 import top.fpsmaster.utils.render.draw.Images;

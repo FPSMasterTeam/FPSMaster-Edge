@@ -199,10 +199,28 @@ FPS and memory lines change every frame):
 **−12.9% on the HUD section** against a 1.2% null difference, rendering identical at
 0.003–0.034% against a 0.500% limit.
 
-Not addressed: `GlyphCache` and `StringCache` (1865 lines) are MCPatcher lineage rather
-than Patcher and serve only the client's own `UFontRenderer` — a separate licence
-question. `patcher_at.cfg` is a filename that reaches the jar manifest via `FMLAT`;
-renaming it touches the build and warrants its own verified change.
+### GlyphCache and StringCache — compatible, attribution was the gap
+
+These 1865 lines are **BetterFonts** lineage (thvortex), not Patcher, and BetterFonts is
+**LGPL-2.1**. Section 3 of LGPL-2.1 explicitly permits distributing a copy under the GNU
+GPL instead, so combining it into a GPL-3.0 work is allowed. **This was never a
+violation and rewriting it would have been waste.**
+
+What was actually missing was attribution: the files carried no provenance note and the
+README credited Patcher and eventbus but not BetterFonts. Both now state the origin,
+the original licence and the basis for redistributing under GPL-3.0.
+
+Worth separating from the Patcher case: one is an incompatible licence requiring the code
+to go, the other is a compatible licence requiring the origin to be stated. Treating them
+the same would have thrown away working code for no reason.
+
+### Access transformer renamed
+
+`patcher_at.cfg` became `fpsmaster_at.cfg`. The filename reaches the shipped jar through
+the `FMLAT` manifest entry, and the manifest duplicated the literal rather than using the
+`accessTransformerName` value declared directly above it, so both were corrected.
+Verified end to end: `FMLAT: fpsmaster_at.cfg` in the built jar, the file at
+`META-INF/fpsmaster_at.cfg`, and a client run with no mixin or access failures.
 
 ## Runs
 

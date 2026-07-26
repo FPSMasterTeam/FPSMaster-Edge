@@ -29,6 +29,10 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 [eventbus](https://github.com/therealbush/eventbus)
 
 ## 致谢
+本项目的 TrueType 字体渲染（`font/impl/GlyphCache`、`font/impl/StringCache`）派生自
+[BetterFonts](https://github.com/thvortex/BetterFonts)（作者 thvortex，LGPL-2.1）。
+LGPL-2.1 第 3 条允许改用 GPL 分发，因此这部分随本项目以 GPL-3.0 分发。
+
 本项目的部分性能优化方向参考了 [Patcher](https://github.com/Sk1erLLC/Patcher) 与 OptiFine
 所公开的思路（实体遮挡裁剪、粒子视锥裁剪、模型批处理、字符串渲染缓存等）。
 
