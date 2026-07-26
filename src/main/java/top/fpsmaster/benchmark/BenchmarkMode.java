@@ -25,10 +25,12 @@ public final class BenchmarkMode {
 
     private static final String SCENARIO;
     private static final String VARIANT;
+    private static final JsonObject OVERRIDES;
 
     static {
         String scenario = null;
         String variant = null;
+        JsonObject overrides = null;
         try {
             // The launcher sets the working directory to the game directory, and this class can be
             // touched before Minecraft exists, so the request is resolved relative to the cwd.
@@ -38,6 +40,8 @@ public final class BenchmarkMode {
                 JsonObject json = new JsonParser().parse(raw).getAsJsonObject();
                 scenario = json.has("scenario") ? json.get("scenario").getAsString() : null;
                 variant = json.has("variant") ? json.get("variant").getAsString() : "unnamed";
+                overrides = json.has("overrides") && json.get("overrides").isJsonObject()
+                        ? json.getAsJsonObject("overrides") : null;
             }
         } catch (Throwable t) {
             // ClientLogger is not necessarily usable this early, and a malformed request must never
@@ -47,6 +51,7 @@ public final class BenchmarkMode {
         }
         SCENARIO = scenario;
         VARIANT = variant;
+        OVERRIDES = overrides;
         ACTIVE = scenario != null;
     }
 
@@ -59,5 +64,10 @@ public final class BenchmarkMode {
 
     public static String variant() {
         return VARIANT;
+    }
+
+    /** Module and setting state this run forces, or {@code null} for stock configuration. */
+    public static JsonObject overrides() {
+        return OVERRIDES;
     }
 }

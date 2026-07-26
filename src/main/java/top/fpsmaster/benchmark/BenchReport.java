@@ -40,6 +40,9 @@ public final class BenchReport {
         root.addProperty("scenario", BenchmarkMode.scenario());
         root.addProperty("variant", BenchmarkMode.variant());
         root.addProperty("wallClockUtcMillis", System.currentTimeMillis());
+        if (BenchmarkMode.overrides() != null) {
+            root.add("overrides", BenchmarkMode.overrides());
+        }
         root.add("gl", describeGl());
         root.add("java", describeJava());
         root.add("settings", describeSettings());

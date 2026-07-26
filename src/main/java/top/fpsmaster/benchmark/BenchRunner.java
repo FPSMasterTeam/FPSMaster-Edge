@@ -83,6 +83,7 @@ public final class BenchRunner {
 
     private void beginRun(Minecraft mc, long now) throws Exception {
         scenario = BenchScenario.load(mc.mcDataDir, BenchmarkMode.scenario());
+        BenchOverrides.apply(BenchmarkMode.overrides());
         BenchCounters.reset();
         gcCountAtStart = BenchReport.gcCollectionCount();
         gcMillisAtStart = BenchReport.gcCollectionMillis();

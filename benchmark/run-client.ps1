@@ -25,10 +25,11 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $Scenario,
-    [string] $Variant = 'baseline',
-    [int]    $TimeoutSec = 420,
-    [switch] $KeepAlive
+    [string]    $Scenario,
+    [string]    $Variant = 'baseline',
+    [hashtable] $Overrides,
+    [int]       $TimeoutSec = 420,
+    [switch]    $KeepAlive
 )
 
 $ErrorActionPreference = 'Stop'
@@ -51,7 +52,17 @@ foreach ($required in @($java, $cpFile, $natives, $assets, $srg)) {
 
 # Fresh game dir every run: the client rewrites options.txt and its own config on
 # shutdown, so reusing one would let settings drift across an A/B series.
-if (Test-Path $gameDir) { Remove-Item $gameDir -Recurse -Force }
+# The previous run's JVM may still be releasing its redirected log handles, so retry
+# rather than aborting a whole series on a transient sharing violation.
+if (Test-Path $gameDir) {
+    for ($attempt = 1; ; $attempt++) {
+        try { Remove-Item $gameDir -Recurse -Force; break }
+        catch {
+            if ($attempt -ge 20) { throw }
+            Start-Sleep -Milliseconds 500
+        }
+    }
+}
 New-Item -ItemType Directory -Path $gameDir | Out-Null
 Copy-Item (Join-Path $PSScriptRoot 'options.benchmark.txt') (Join-Path $gameDir 'options.txt')
 
@@ -61,7 +72,9 @@ if ($Scenario) {
         throw "Unknown scenario '$Scenario' (looked in $scenarioSrc)"
     }
     Copy-Item $scenarioSrc (Join-Path $gameDir 'scenarios') -Recurse
-    @{ scenario = $Scenario; variant = $Variant } | ConvertTo-Json |
+    $request = @{ scenario = $Scenario; variant = $Variant }
+    if ($Overrides) { $request.overrides = $Overrides }
+    $request | ConvertTo-Json -Depth 5 |
         Set-Content -Path (Join-Path $gameDir 'bench-request.json') -Encoding UTF8
 }
 
@@ -132,8 +145,10 @@ $sw.Stop()
 
 if (-not $proc.HasExited) {
     Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
-    $proc.WaitForExit(10000) | Out-Null
 }
+# Always wait: the redirected stdout/stderr handles stay open until the process is
+# fully reaped, and the next run in a series starts by deleting this directory.
+$proc.WaitForExit(15000) | Out-Null
 
 [pscustomobject]@{
     Outcome    = $outcome
