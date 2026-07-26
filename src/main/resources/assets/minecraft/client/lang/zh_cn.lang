@@ -360,7 +360,6 @@ performance.chunkupdatelimit=区块更新限制
 performance.batchmodelrendering=渲染批处理
 performance.downscalepackicons=缩放资源包图标
 performance.particleculling=粒子视锥裁剪
-performance.cachemodellists=缓存静态模型几何
 performance.entityculling=实体遮挡裁剪
 performance.cullplayers=同时裁剪玩家
 performance.entitycullinginterval=裁剪刷新间隔 (毫秒)

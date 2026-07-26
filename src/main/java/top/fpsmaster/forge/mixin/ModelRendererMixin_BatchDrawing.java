@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.benchmark.BenchCounters;
 import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.utils.render.ModelBatching;
-import top.fpsmaster.utils.render.ModelDisplayListCache;
 
 /**
  * Holds one vertex batch open across a whole box compile, so its quads submit together.
@@ -38,8 +37,6 @@ public class ModelRendererMixin_BatchDrawing {
     private void edge$invalidateOnToggle(float scale, CallbackInfo ci) {
         if (edge$compiledBatched != ModelBatching.isEnabled()) {
             this.compiled = false;
-            // The whole-model lists replay geometry recorded under the previous setting.
-            ModelDisplayListCache.invalidateAll();
         }
     }
 

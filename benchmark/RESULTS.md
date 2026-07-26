@@ -509,6 +509,39 @@ breadth-first traversal and the per-chunk frustum tests, not the list.
 Removed rather than kept: an unmeasurable change still costs a mixin, a setting and two
 language entries, and the same standard was applied to fast math.
 
+### Caching a whole model as one display list — mechanism wrong, reverted
+
+**Verdict: entityModel −5.00% against a 4.04% band, nothing above it. Removed.**
+
+Vanilla renders a model box by box: push, translate, up to three rotates, `glCallList`,
+pop. That measured 8.66us per armour stand, about 2200 cycles per box for a trivial cube,
+so the cost looked like the call sequence rather than the geometry. Recording a whole
+model into one list, keyed by a hash of every box's pose, should have collapsed it.
+
+The cache worked exactly as designed — **96.1 hits per frame out of 96.0 entities, zero
+misses** — and the screenshot gate passed at 0.017-0.090%. The payoff did not follow:
+
+| metric | paired | null band | verdict |
+| --- | ---: | ---: | --- |
+| `entityModel` | −5.00% | 4.04% | marginal, per-pair −7.6%, −5.6%, −1.8% |
+| `entityRender` | −1.35% | 2.81% | within noise |
+| frame p50 | +1.12% | 2.68% | within noise |
+
+**The mechanism assumption was wrong.** A display list stores a nested `glCallList` as a
+call, not as the contents of the list being called — legacy GL does not flatten. Replaying
+the outer list still executes twelve nested list calls and all the matrix work on the
+driver side; what is saved is only the client-side command submission, Java through JNI.
+Hence 5% rather than 50%.
+
+Five percent of a section that is 30% of the frame is about 1.5% overall, inside the
+frame-level band, and it costs pose hashing, animation detection, a nested-`glNewList`
+hazard and invalidation coupling to the batching setting. Removed on the same standard
+applied to fast math and the visibility-list reuse.
+
+Making this pay would mean not using display lists at all — one interleaved vertex buffer
+per model with the transforms baked per pose — which is a different and much larger piece
+of work.
+
 ### R4 — particle frustum culling
 
 **Verdict: within noise on every metric. Kept as a correctness-neutral change, not

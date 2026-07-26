@@ -360,7 +360,6 @@ performance.chunkupdatelimit=Chunk Update Limit
 performance.batchmodelrendering=Batch Model Rendering
 performance.downscalepackicons=Downscale Resource Pack Icons
 performance.particleculling=Particle Frustum Culling
-performance.cachemodellists=Cache Static Model Geometry
 performance.entityculling=Entity Occlusion Culling
 performance.cullplayers=Also Cull Players
 performance.entitycullinginterval=Culling Refresh Interval (ms)
