@@ -238,6 +238,32 @@ this is unexplained and **the conservative −24% is what is quoted**. Separatel
 came out +4.50% against a 3.45% band — marginal, and worth watching rather than
 believing on one series.
 
+### Reusing the chunk visibility list — no benefit, reverted
+
+**Verdict: within noise on every metric. Change removed.**
+
+`setupTerrain` rebuilds its visible-chunk walk whenever the camera moves and starts by
+allocating a fresh `ArrayList`, which then grows to one entry per visible chunk —
+several hundred at render distance 12. The hypothesis was that the growth copies were
+worth removing. Reusing a cleared list with retained capacity:
+
+| section cpu p50 | off | on | paired diff | null band |
+| --- | ---: | ---: | ---: | ---: |
+| terrainSetup | 334.4us | 335.7us | −0.24% | 1.76% |
+| frameTotal | 2046.8us | 2022.8us | −0.89% | 1.32% |
+
+GC collections identical, [29,30,29] against [29,29,29]. Heap at the sampling instant
+read 855MB against 467MB, but with GC counts level that is sampling phase rather than a
+change in allocation rate, and is not claimed as a memory win.
+
+The estimate of roughly ten reallocations per rebuild was right; what was wrong was
+assuming that mattered. `ArrayList` growth is amortised, so a few hundred reference
+copies is well under a microsecond against a 334us walk. That walk's cost is the
+breadth-first traversal and the per-chunk frustum tests, not the list.
+
+Removed rather than kept: an unmeasurable change still costs a mixin, a setting and two
+language entries, and the same standard was applied to fast math.
+
 ### R4 — particle frustum culling
 
 **Verdict: within noise on every metric. Kept as a correctness-neutral change, not
