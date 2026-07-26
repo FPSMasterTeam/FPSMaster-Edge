@@ -76,6 +76,50 @@ public class RenderGlobalMixin_SectionTiming {
         }
     }
 
+    @Inject(method = "renderSky(FI)V", at = @At("HEAD"))
+    private void fpsmasterBeginSky(float partialTicks, int pass, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.begin(BenchProfiler.SECTION_SKY);
+        }
+    }
+
+    @Inject(method = "renderSky(FI)V", at = @At("RETURN"))
+    private void fpsmasterEndSky(float partialTicks, int pass, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.end(BenchProfiler.SECTION_SKY);
+        }
+    }
+
+    @Inject(method = "renderClouds", at = @At("HEAD"))
+    private void fpsmasterBeginClouds(float partialTicks, int pass, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.begin(BenchProfiler.SECTION_CLOUDS);
+        }
+    }
+
+    @Inject(method = "renderClouds", at = @At("RETURN"))
+    private void fpsmasterEndClouds(float partialTicks, int pass, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.end(BenchProfiler.SECTION_CLOUDS);
+        }
+    }
+
+    @Inject(method = "setupTerrain", at = @At("HEAD"))
+    private void fpsmasterBeginTerrainSetup(Entity viewEntity, double partialTicks, ICamera camera,
+                                            int frameCount, boolean playerSpectator, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.begin(BenchProfiler.SECTION_TERRAIN_SETUP);
+        }
+    }
+
+    @Inject(method = "setupTerrain", at = @At("RETURN"))
+    private void fpsmasterEndTerrainSetup(Entity viewEntity, double partialTicks, ICamera camera,
+                                          int frameCount, boolean playerSpectator, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.end(BenchProfiler.SECTION_TERRAIN_SETUP);
+        }
+    }
+
     @Inject(method = "updateChunks", at = @At("HEAD"))
     private void fpsmasterBeginChunkUpload(long finishTimeNano, CallbackInfo ci) {
         if (BenchmarkMode.ACTIVE) {

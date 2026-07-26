@@ -127,18 +127,35 @@ sub-features stayed active after the user disabled the module.
 
 ### Where frame time actually goes
 
-Measured with per-section timers on `entity-dense` (76 entities/frame, 1867us p50 frame):
+Full breakdown on `entity-dense`, 2530us p50 frame, culling off:
 
 | section | CPU p50 | share of frame |
 | --- | ---: | ---: |
-| entities | 807us | 43% |
-| everything else | 1060us | 57% |
+| **entities** | 1187.2us | **46.9%** |
+| terrain draw | 413.4us | 16.3% |
+| **terrain setup** | **376.0us** | **14.9%** |
+| sky | 134.8us | 5.3% |
+| hud | 13.4us | 0.5% |
+| hand | 8.1us | 0.3% |
+| particles / clouds / chunk upload | ~1us | ~0% |
+| outside the world render (blit, swap, GUI) | ~230us | 9.1% |
+| unattributed inside the world render | ~167us | 6.6% |
 
-On `particle-dense` (144 particles/frame, 1366us p50 frame): terrain 350us, entities
-359us, particles 25us, chunk upload 1.7us.
+Before these brackets existed, terrain and entities covered 58% of the frame and the
+rest was simply unmeasured — picking the next target from that position would have been
+guesswork. Two things the breakdown changes:
 
-This is the number that should drive what gets optimised next, and it is why judging a
-targeted change by whole-frame FPS is the wrong instrument — see R4 below.
+- **`setupTerrain` is 14.9% and had not been looked at.** It is the per-frame chunk
+  visibility walk, rerun whenever the camera moves, which for a PvP client is always.
+  Its bytecode allocates `ContainerLocalRenderInformation` at three sites — one per
+  visible render chunk per frame, each carrying its own `setFacing` set — plus a fresh
+  `renderInfos` list that grows to hundreds of entries. That is allocation churn on the
+  hot path, which is both the memory goal and the stutter goal.
+- **Sky is 134.8us** on a superflat scene with clouds disabled, which is more than
+  expected and worth a look.
+
+This is also why judging a targeted change by whole-frame FPS is the wrong instrument —
+see R4 below.
 
 ### Fast math (BetterFps-style lookup tables) — not worth doing here
 

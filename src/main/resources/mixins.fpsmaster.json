@@ -25,6 +25,7 @@
     "MixinEffectRender",
     "MixinEntityPlayerSP",
     "MixinEntityRenderer",
+    "EntityRendererMixin_SectionTiming",
     "MixinFontRender",
     "MixinGuiChat",
     "MixinGuiContainer",
