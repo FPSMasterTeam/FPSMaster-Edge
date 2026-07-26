@@ -64,7 +64,6 @@ sourceSets.main {
 // Dependencies:
 
 repositories {
-    mavenLocal() // 本地已发布的 Cadence (top.fpsmaster:music-api)
     mavenCentral()
     maven("https://jitpack.io")
     maven("https://repo.spongepowered.org/maven/")
@@ -107,8 +106,10 @@ dependencies {
     }
 
     // 音乐能力：Cadence 数据客户端（网易云/QQ 搜索/直链/歌词/歌单/登录）。
+    // 由 JitPack 托管 (FPSMasterTeam/Cadence)，坐标即 com.github.<owner>:<repo>:<tag>；
+    // 源码里的包名仍是 top.fpsmaster.music.*。
     // gson 由 MC classpath 提供，故不传递依赖；Kotlin 运行时单独引入。
-    shadowImpl("top.fpsmaster:music-api:0.1.1") {
+    shadowImpl("com.github.FPSMasterTeam:Cadence:v0.1.1") {
         isTransitive = false
     }
     shadowImpl("org.jetbrains.kotlin:kotlin-stdlib:2.4.0") {
