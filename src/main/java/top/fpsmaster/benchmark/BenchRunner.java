@@ -24,6 +24,8 @@ public final class BenchRunner {
 
     private enum State {
         INIT,
+        LOADING_WORLD,
+        SETTLING,
         WARMUP,
         DISCARD,
         MEASURE,
@@ -34,7 +36,9 @@ public final class BenchRunner {
     private final FrameSampler sampler = new FrameSampler(SAMPLE_CAPACITY);
     private State state = State.INIT;
     private BenchScenario scenario;
+    private BenchWorld.SettleTracker settleTracker;
     private long phaseStartMillis;
+    private long pathStartMillis;
     private long gcCountAtStart;
     private long gcMillisAtStart;
 
@@ -53,31 +57,67 @@ public final class BenchRunner {
             Minecraft mc = Minecraft.getMinecraft();
             long now = System.currentTimeMillis();
             sampler.onFrame(System.nanoTime());
-
-            switch (state) {
-                case INIT:
-                    beginRun(mc, now);
-                    break;
-                case WARMUP:
-                    if (now - phaseStartMillis >= scenario.warmupMillis()) {
-                        enterDiscard(now);
-                    }
-                    break;
-                case DISCARD:
-                    if (now - phaseStartMillis >= scenario.discardMillis()) {
-                        enterMeasure(now);
-                    }
-                    break;
-                case MEASURE:
-                    if (now - phaseStartMillis >= scenario.measureMillis() || sampler.isFull()) {
-                        finish(mc);
-                    }
-                    break;
-                default:
-                    break;
-            }
+            advance(mc, now);
         } catch (Throwable t) {
             fail(t);
+        }
+    }
+
+    private void advance(Minecraft mc, long now) throws Exception {
+        switch (state) {
+            case INIT:
+                beginRun(mc, now);
+                break;
+            case LOADING_WORLD:
+                if (BenchWorld.isReady(mc)) {
+                    settleTracker.reset(now);
+                    phaseStartMillis = now;
+                    pathStartMillis = now;
+                    state = State.SETTLING;
+                    ClientLogger.info("benchmark", "world ready, settling");
+                } else if (now - phaseStartMillis >= scenario.settleTimeoutMillis()) {
+                    throw new IllegalStateException("world did not load within "
+                            + scenario.settleTimeoutMillis() + "ms");
+                }
+                break;
+            case SETTLING:
+                // Hold at the start of the path. Settling means "let the world finish building
+                // around the start position"; a moving camera keeps pulling new chunks into view,
+                // so the rebuild counter would never go quiet.
+                holdCameraAtPathStart(mc);
+                if (settleTracker.update(now)) {
+                    ClientLogger.info("benchmark", "settled after " + (now - phaseStartMillis)
+                            + "ms, warmup " + scenario.warmupMillis() + "ms");
+                    phaseStartMillis = now;
+                    pathStartMillis = now;
+                    state = State.WARMUP;
+                } else if (now - phaseStartMillis >= scenario.settleTimeoutMillis()) {
+                    throw new IllegalStateException("terrain never settled within "
+                            + scenario.settleTimeoutMillis() + "ms");
+                }
+                break;
+            case WARMUP:
+                driveCamera(mc, now);
+                if (now - phaseStartMillis >= scenario.warmupMillis()) {
+                    sampler.start();
+                    phaseStartMillis = now;
+                    state = State.DISCARD;
+                }
+                break;
+            case DISCARD:
+                driveCamera(mc, now);
+                if (now - phaseStartMillis >= scenario.discardMillis()) {
+                    enterMeasure(now);
+                }
+                break;
+            case MEASURE:
+                driveCamera(mc, now);
+                if (now - phaseStartMillis >= scenario.measureMillis() || sampler.isFull()) {
+                    finish(mc);
+                }
+                break;
+            default:
+                break;
         }
     }
 
@@ -88,15 +128,31 @@ public final class BenchRunner {
         gcCountAtStart = BenchReport.gcCollectionCount();
         gcMillisAtStart = BenchReport.gcCollectionMillis();
         phaseStartMillis = now;
-        state = State.WARMUP;
-        ClientLogger.info("benchmark", "scenario '" + scenario.id() + "' variant '" + BenchmarkMode.variant()
-                + "': warmup " + scenario.warmupMillis() + "ms");
+        pathStartMillis = now;
+
+        ClientLogger.info("benchmark", "scenario '" + scenario.id() + "' variant '"
+                + BenchmarkMode.variant() + "'");
+
+        if (scenario.world() == null) {
+            settleTracker = null;
+            state = State.WARMUP;
+            return;
+        }
+        settleTracker = new BenchWorld.SettleTracker(scenario.settleSeconds());
+        BenchWorld.launch(mc, scenario.world());
+        state = State.LOADING_WORLD;
     }
 
-    private void enterDiscard(long now) {
-        sampler.start();
-        phaseStartMillis = now;
-        state = State.DISCARD;
+    private void driveCamera(Minecraft mc, long now) {
+        if (scenario.camera() != null && mc.thePlayer != null) {
+            scenario.camera().apply(mc.thePlayer, now - pathStartMillis);
+        }
+    }
+
+    private void holdCameraAtPathStart(Minecraft mc) {
+        if (scenario.camera() != null && mc.thePlayer != null) {
+            scenario.camera().apply(mc.thePlayer, 0L);
+        }
     }
 
     private void enterMeasure(long now) {
@@ -128,9 +184,9 @@ public final class BenchRunner {
         ClientLogger.error("benchmark", "run aborted: " + cause);
         try {
             // Leave a marker so the launcher can tell a crashed run from a hung one.
-            File marker = new File(Minecraft.getMinecraft().mcDataDir, "bench-results");
-            if (marker.isDirectory() || marker.mkdirs()) {
-                new File(marker, "FAILED").createNewFile();
+            File dir = new File(Minecraft.getMinecraft().mcDataDir, "bench-results");
+            if (dir.isDirectory() || dir.mkdirs()) {
+                new File(dir, "FAILED").createNewFile();
             }
         } catch (Throwable ignored) {
             // Reporting the failure must not itself throw; the launcher timeout is the backstop.

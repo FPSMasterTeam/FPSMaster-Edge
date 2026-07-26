@@ -18,14 +18,22 @@ import java.nio.file.Files;
 public final class BenchScenario {
 
     private final String id;
-    private final String world;
+    private final JsonObject world;
+    private final BenchCamera camera;
+    private final int settleSeconds;
+    private final long settleTimeoutMillis;
     private final long warmupMillis;
     private final long discardMillis;
     private final long measureMillis;
 
-    private BenchScenario(String id, String world, long warmupMillis, long discardMillis, long measureMillis) {
+    private BenchScenario(String id, JsonObject world, BenchCamera camera, int settleSeconds,
+                          long settleTimeoutMillis, long warmupMillis, long discardMillis,
+                          long measureMillis) {
         this.id = id;
         this.world = world;
+        this.camera = camera;
+        this.settleSeconds = settleSeconds;
+        this.settleTimeoutMillis = settleTimeoutMillis;
         this.warmupMillis = warmupMillis;
         this.discardMillis = discardMillis;
         this.measureMillis = measureMillis;
@@ -40,19 +48,45 @@ public final class BenchScenario {
         JsonObject json = new JsonParser().parse(raw).getAsJsonObject();
         return new BenchScenario(
                 id,
-                json.has("world") && !json.get("world").isJsonNull() ? json.get("world").getAsString() : null,
+                object(json, "world"),
+                BenchCamera.parse(object(json, "camera")),
+                json.has("settleSeconds") ? json.get("settleSeconds").getAsInt() : 5,
+                json.has("settleTimeoutMillis") ? json.get("settleTimeoutMillis").getAsLong() : 120_000L,
                 json.has("warmupMillis") ? json.get("warmupMillis").getAsLong() : 30_000L,
                 json.has("discardMillis") ? json.get("discardMillis").getAsLong() : 1_000L,
                 json.has("measureMillis") ? json.get("measureMillis").getAsLong() : 90_000L);
+    }
+
+    private static JsonObject object(JsonObject json, String key) {
+        return json.has(key) && json.get(key).isJsonObject() ? json.getAsJsonObject(key) : null;
     }
 
     public String id() {
         return id;
     }
 
-    /** Save folder to load, or {@code null} to benchmark without entering a world. */
-    public String world() {
+    /** World descriptor, or {@code null} to benchmark without entering a world. */
+    public JsonObject world() {
         return world;
+    }
+
+    public BenchCamera camera() {
+        return camera;
+    }
+
+    /**
+     * Consecutive seconds with no chunk rebuilds before measurement may begin.
+     *
+     * <p>{@code RenderChunk.renderChunksUpdated} is reset once a second by {@code runGameLoop},
+     * which makes it the most direct available signal for "the visible world has finished
+     * building".
+     */
+    public int settleSeconds() {
+        return settleSeconds;
+    }
+
+    public long settleTimeoutMillis() {
+        return settleTimeoutMillis;
     }
 
     public long warmupMillis() {
