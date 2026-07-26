@@ -97,6 +97,37 @@ Two guards now exist, because an unattended series has no other way to notice:
   median, and `compare.py` warns on one. A band measured from a disturbed run would hide
   every real regression underneath it.
 
+## The profiler was inflating the stutter it measured
+
+Analysing where slow frames come from — the reduce-stutter goal — turned up something
+about the harness rather than about the client. On an `entity-dense` run, frames slower
+than 1.5x the median accounted for **12.05% of the window**, and clustering them showed
+79% of that excess sitting in a single run of 328 consecutive frames at the very start
+of the measurement window. 328 frames at 281 fps is 1.17 seconds, well past the
+one-second discard.
+
+The cause was `BenchProfiler`'s own storage. Per-frame samples were nanoseconds in a
+`long`, two arrays per section, 262144 entries each — at sixteen sections that is 67 MB
+reserved but never written until recording began, so the first frames of every
+measurement window paid the page faults.
+
+Samples are now microseconds in an `int`, which halves the footprint and is ample
+resolution for values in the tens to hundreds of microseconds, and the arrays are
+touched when recording starts so the faults land in the warmup window. Re-measured:
+
+| | before | after |
+| --- | ---: | ---: |
+| leading ramp | 328 frames / 1.17s | **0 frames** |
+| ramp share of all excess | 79% | 0% |
+| excess over 1.5x median | **12.05%** | **2.45%** |
+
+**This affects earlier numbers.** Percentile and low-percentile figures from rounds run
+with the expanded profiler were inflated by this ramp; medians were not, since a median
+is insensitive to a leading tail. That is consistent with what the noise bands showed all
+along — p50 held at around 2% while p99 sat near 5% — and it is why only p50 and section
+medians were quoted for verdicts. Earlier rounds measured with five or ten sections had a
+0.05-0.24s ramp contributing 0.3-6% of excess, so they are affected far less.
+
 ## Scenario authoring notes
 
 Things that silently produced empty or wrong workloads during development:

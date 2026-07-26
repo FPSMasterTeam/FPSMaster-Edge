@@ -48,11 +48,20 @@ public final class BenchProfiler {
 
     private static final BenchProfiler INSTANCE = new BenchProfiler();
 
-    /** Per-frame CPU nanoseconds per section, in capture order. Sized like FrameSampler. */
-    private static final int CAPACITY = 262_144;
+    /**
+     * Per-frame samples per section, in capture order.
+     *
+     * <p>Microseconds in an {@code int}, not nanoseconds in a {@code long}. Section times are
+     * single- to triple-digit microseconds, so the resolution is ample, and the narrower type halves
+     * the footprint — which matters because this array is per section and the section count grows.
+     * At sixteen sections the long version reserved 67 MB, and first-touching those pages when
+     * recording began produced a 1.2 second ramp of slow frames at the start of every measurement
+     * window: the instrument was perturbing what it measured.
+     */
+    private static final int CAPACITY = 131_072;
 
-    private final long[][] cpuPerFrame = new long[SECTION_COUNT][];
-    private final long[][] gpuPerFrame = new long[SECTION_COUNT][];
+    private final int[][] cpuPerFrame = new int[SECTION_COUNT][];
+    private final int[][] gpuPerFrame = new int[SECTION_COUNT][];
     private final long[] frameStartNanos = new long[SECTION_COUNT];
     private final long[] frameCpuNanos = new long[SECTION_COUNT];
     private final int[] depth = new int[SECTION_COUNT];
@@ -62,8 +71,8 @@ public final class BenchProfiler {
 
     private BenchProfiler() {
         for (int i = 0; i < SECTION_COUNT; i++) {
-            cpuPerFrame[i] = new long[CAPACITY];
-            gpuPerFrame[i] = new long[CAPACITY];
+            cpuPerFrame[i] = new int[CAPACITY];
+            gpuPerFrame[i] = new int[CAPACITY];
         }
     }
 
@@ -108,8 +117,8 @@ public final class BenchProfiler {
         }
         if (recording && count < CAPACITY) {
             for (int i = 0; i < SECTION_COUNT; i++) {
-                cpuPerFrame[i][count] = frameCpuNanos[i];
-                gpuPerFrame[i][count] = gpuTimer == null ? 0L : gpuTimer.nanos(i);
+                cpuPerFrame[i][count] = (int) (frameCpuNanos[i] / 1000L);
+                gpuPerFrame[i][count] = gpuTimer == null ? 0 : (int) (gpuTimer.nanos(i) / 1000L);
             }
             count++;
         }
@@ -122,6 +131,12 @@ public final class BenchProfiler {
 
     public void start() {
         count = 0;
+        // Touch every page before recording so the page faults land in the warmup window rather
+        // than in the measured one.
+        for (int i = 0; i < SECTION_COUNT; i++) {
+            java.util.Arrays.fill(cpuPerFrame[i], 0);
+            java.util.Arrays.fill(gpuPerFrame[i], 0);
+        }
         recording = true;
     }
 
@@ -157,21 +172,22 @@ public final class BenchProfiler {
         return root;
     }
 
-    private static JsonObject describe(long[] samples, int length) {
+    private static JsonObject describe(int[] samples, int length) {
         JsonObject json = new JsonObject();
         if (length == 0) {
             return json;
         }
-        long[] sorted = Arrays.copyOf(samples, length);
+        int[] sorted = Arrays.copyOf(samples, length);
         Arrays.sort(sorted);
         long total = 0L;
         for (int i = 0; i < length; i++) {
             total += sorted[i];
         }
-        json.addProperty("p50", sorted[length / 2] / 1000.0d);
-        json.addProperty("p95", sorted[Math.min(length - 1, (int) (length * 0.95d))] / 1000.0d);
-        json.addProperty("p99", sorted[Math.min(length - 1, (int) (length * 0.99d))] / 1000.0d);
-        json.addProperty("totalMillis", total / 1_000_000.0d);
+        // Samples are already microseconds.
+        json.addProperty("p50", (double) sorted[length / 2]);
+        json.addProperty("p95", (double) sorted[Math.min(length - 1, (int) (length * 0.95d))]);
+        json.addProperty("p99", (double) sorted[Math.min(length - 1, (int) (length * 0.99d))]);
+        json.addProperty("totalMillis", total / 1000.0d);
         return json;
     }
 }
