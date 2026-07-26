@@ -412,6 +412,10 @@ autogg.servers.normal=Normal
 autogg.message=Custom Message
 autogg.autoplay=Auto Play
 autogg.delaytoplay=Auto Play Delay
+autogg.detectionmode=Detection Mode
+autogg.detectionmode.chat=Chat Only
+autogg.detectionmode.title=Title Only
+autogg.detectionmode.both=Both
 
 
 
