@@ -7,6 +7,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.features.impl.optimizes.Performance;
 
 @Mixin(ChunkRenderDispatcher.class)
@@ -15,6 +17,9 @@ public class ChunkRenderDispatcherMixin_LimitUpdates {
     @Inject(method = "getNextChunkUpdate", at = @At("HEAD"))
     private void patcher$limitChunkUpdates(CallbackInfoReturnable<ChunkCompileTaskGenerator> cir) throws InterruptedException {
         while (Performance.limitChunks.getValue() && RenderChunk.renderChunksUpdated >= Performance.chunkUpdateLimit.getValue().intValue()) {
+            if (BenchmarkMode.ACTIVE) {
+                BenchCounters.chunkThrottleSleeps++;
+            }
             Thread.sleep(50L);
         }
     }

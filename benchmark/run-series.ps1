@@ -41,6 +41,7 @@ New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 $runClient = Join-Path $PSScriptRoot 'run-client.ps1'
 $names = @($Variants.Keys)
 $log = [System.Collections.Generic.List[object]]::new()
+$consecutiveFailures = 0
 
 # Discarded warm-up run on the first variant only: it exists to warm the OS page
 # cache and the GPU clock state, not to be compared against anything.
@@ -51,13 +52,19 @@ for ($pass = 0; $pass -lt $totalPasses; $pass++) {
     foreach ($name in $names) {
         $result = & $runClient -Scenario $Scenario -Variant $name `
                                -Overrides $Variants[$name] -TimeoutSec $TimeoutSec
-        $src = Join-Path $result.GameDir 'bench-results\result.json'
+        $src = $result.ResultFile
 
-        if ($result.Outcome -ne 'EXITED_OK' -or -not (Test-Path $src)) {
+        if ($result.Outcome -ne 'OK') {
             $log.Add([pscustomobject]@{ Pass = $pass; Variant = $name; Status = $result.Outcome; File = $null })
             Write-Warning "run failed: variant=$name pass=$pass outcome=$($result.Outcome)"
+            # Fail fast. A series is 25+ minutes; grinding through it while every run
+            # fails wastes the whole slot and produces nothing to compare.
+            if (++$consecutiveFailures -ge 2) {
+                throw "aborting series: $consecutiveFailures consecutive failed runs (last outcome $($result.Outcome))"
+            }
             continue
         }
+        $consecutiveFailures = 0
         if ($discard) {
             $log.Add([pscustomobject]@{ Pass = $pass; Variant = $name; Status = 'DISCARDED'; File = $null })
             continue

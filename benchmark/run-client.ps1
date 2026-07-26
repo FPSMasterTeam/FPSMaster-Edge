@@ -127,7 +127,7 @@ $outcome   = 'TIMEOUT'
 
 while ((Get-Date) -lt $deadline) {
     if ($proc.HasExited) {
-        $outcome = if ($proc.ExitCode -eq 0) { 'EXITED_OK' } else { "EXITED_$($proc.ExitCode)" }
+        $outcome = 'EXITED'
         break
     }
     if (-not $Scenario -and -not $KeepAlive) {
@@ -150,9 +150,16 @@ if (-not $proc.HasExited) {
 # fully reaped, and the next run in a series starts by deleting this directory.
 $proc.WaitForExit(15000) | Out-Null
 
+# Success is decided by the artefact, not the exit code: Windows PowerShell 5.1 does
+# not cache ExitCode on a Start-Process -PassThru object the way pwsh 7 does, and an
+# unattended series must not silently discard eight good runs over that difference.
+$resultFile = Join-Path $resultDir 'result.json'
+$failedFile = Join-Path $resultDir 'FAILED'
+$succeeded  = (Test-Path $resultFile) -and -not (Test-Path $failedFile)
+
 [pscustomobject]@{
-    Outcome    = $outcome
+    Outcome    = if ($succeeded) { 'OK' } elseif (Test-Path $failedFile) { 'HARNESS_FAILED' } else { $outcome }
     ElapsedSec = [math]::Round($sw.Elapsed.TotalSeconds, 1)
     GameDir    = $gameDir
-    ResultDir  = if (Test-Path $resultDir) { $resultDir } else { $null }
+    ResultFile = if ($succeeded) { $resultFile } else { $null }
 }

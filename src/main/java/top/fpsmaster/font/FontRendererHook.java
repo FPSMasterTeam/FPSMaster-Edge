@@ -6,6 +6,8 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
+import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.font.optimize.CachedString;
 import top.fpsmaster.font.optimize.StringHash;
 import top.fpsmaster.forge.mixin.accessor.FontRendererAccessor;
@@ -162,6 +164,9 @@ public final class FontRendererHook {
         final CachedString cachedString = this.enhancedFontRenderer.get(hash);
 
         if (cachedString != null) {
+            if (BenchmarkMode.ACTIVE) {
+                BenchCounters.fontCacheHits++;
+            }
             GlStateManager.color(red, green, blue, alpha);
             GlStateManager.callList(cachedString.getListId());
 
@@ -182,6 +187,10 @@ public final class FontRendererHook {
             this.fontRendererAccessor.setPosX(posX + cachedString.getWidth());
             this.fontRendererAccessor.setPosY(posY + cachedString.getHeight());
             return true;
+        }
+
+        if (BenchmarkMode.ACTIVE) {
+            BenchCounters.fontCacheMisses++;
         }
 
         int list;
@@ -491,6 +500,9 @@ public final class FontRendererHook {
 
         Map<String, Integer> stringWidthCache = enhancedFontRenderer.getStringWidthCache();
         if (stringWidthCache.size() > 5000) {
+            if (BenchmarkMode.ACTIVE) {
+                BenchCounters.fontCacheEvictions += stringWidthCache.size();
+            }
             stringWidthCache.clear();
         }
 
