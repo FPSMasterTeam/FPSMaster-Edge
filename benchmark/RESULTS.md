@@ -433,9 +433,24 @@ them are skipped.
 | particles | 1.0us | 0.9us | −10.0% | 20.0% | within noise |
 | chunk upload | 2.3us | 2.1us | −8.45% | 12.5% | within noise |
 
-Per-pair entity-pass differences: −41.2%, −36.7%, −42.5%. Consistent in sign and size
-across every pair, three times the null band, and confined to the section that was
-changed.
+**Re-verified under counterbalanced order** (4 pairs, in-series duplicate baseline), which
+is the figure to quote:
+
+| metric | off | on | paired | null band | verdict |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `entities` cpu p50 | 1505us | 1062us | **−30.3%** | 5.84% | IMPROVED |
+| `entityRender` cpu p50 | 1268us | 800.5us | **−37.2%** | 1.89% | IMPROVED |
+| frame p50 | 2.881ms | 2.373ms | **−17.8%** | 6.07% | IMPROVED |
+| avg fps | 338.3 | 406.9 | **+19.9%** | 9.73% | IMPROVED |
+
+Per-pair on `entityRender`: −37.3%, −37.8%, −36.1%, −37.6%. Near-zero spread against a
+1.89% band — a twenty-to-one ratio — and the effect concentrates in the section that was
+changed. 35.7 of 96.0 entities per frame skipped.
+
+This supersedes the earlier fixed-order figures. Those measured −40% and then −24% on the
+entity pass across two builds and left the difference unexplained; under counterbalanced
+order the four pairs agree to within 1.7 percentage points, which suggests the earlier
+inconsistency was the ordering bias rather than anything in the code.
 
 Whole-frame p50 moved −23.41%. The p99 and 1% low figures from this series are **not
 trustworthy**: `off-2` contains a single 268ms frame that the outlier guard flagged, and
