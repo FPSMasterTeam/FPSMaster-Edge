@@ -151,6 +151,13 @@ guesswork. Two things the breakdown changes:
   visible render chunk per frame, each carrying its own `setFacing` set — plus a fresh
   `renderInfos` list that grows to hundreds of entries. That is allocation churn on the
   hot path, which is both the memory goal and the stutter goal.
+- **The entity pass splits 82/18.** Of 1120us, 918us is inside the per-entity render and
+  202us is the list walk, frustum checks and tile-entity work around it. That is 9.61us
+  per armour stand — roughly 30,000 cycles for a model of about a dozen boxes, so the
+  cost is per-entity fixed overhead (GlStateManager sequences, brightness lookup,
+  texture binds, layer iteration) rather than geometry. Occlusion culling removes that
+  cost wholesale for hidden entities, which is why it worked; making the remaining
+  entities cheaper is a separate, unexplored target.
 - **Sky is 134.8us** on a superflat scene with clouds disabled, which is more than
   expected and worth a look.
 
