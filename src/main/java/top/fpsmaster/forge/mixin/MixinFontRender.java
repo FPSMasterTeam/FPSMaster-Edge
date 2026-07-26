@@ -26,14 +26,14 @@ public abstract class MixinFontRender {
     public abstract int getCharWidth(char character);
 
     @Unique
-    private final FontRendererHook patcher$fontRendererHook = new FontRendererHook((FontRenderer) (Object) this);
+    private final FontRendererHook edge$fontRendererHook = new FontRendererHook((FontRenderer) (Object) this);
 
 
     @Inject(method = "getStringWidth", at = @At("HEAD"), cancellable = true)
     public void getStringWidth(String text, CallbackInfoReturnable<Integer> cir) {
         text = GlobalTextFilter.filter(text);
         if (Performance.using && Performance.fontOptimize.getValue()) {
-            cir.setReturnValue(this.patcher$fontRendererHook.getStringWidth(text));
+            cir.setReturnValue(this.edge$fontRendererHook.getStringWidth(text));
         } else {
             int i = 0;
             boolean flag = false;
@@ -66,16 +66,16 @@ public abstract class MixinFontRender {
     }
 
     @Inject(method = "renderStringAtPos", at = @At("HEAD"), cancellable = true)
-    private void patcher$useOptimizedRendering(String text, boolean shadow, CallbackInfo ci) {
+    private void edge$useOptimizedRendering(String text, boolean shadow, CallbackInfo ci) {
         if (Performance.using && Performance.fontOptimize.getValue()) {
-            if (this.patcher$fontRendererHook.renderStringAtPos(text, shadow)) {
+            if (this.edge$fontRendererHook.renderStringAtPos(text, shadow)) {
                 ci.cancel();
             }
         }
     }
 
     @Inject(method = "onResourceManagerReload", at = @At("HEAD"))
-    private void patcher$markFontRefresh(CallbackInfo ci) {
+    private void edge$markFontRefresh(CallbackInfo ci) {
         FontRendererHook.forceRefresh = true;
     }
 

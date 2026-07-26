@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.util.ScreenShotHelper;
 import top.fpsmaster.modules.logger.ClientLogger;
 
@@ -25,11 +26,14 @@ import java.util.List;
 public final class BenchScreenshots {
 
     /**
-     * Frames to render at a viewpoint before capturing. The camera jumps to a shot position rather
-     * than easing into it, so the first frames afterwards can still be resolving chunk visibility
-     * and entity interpolation.
+     * Frames to render at a viewpoint before capturing.
+     *
+     * <p>The camera jumps to a shot position rather than easing into it, so the frames afterwards
+     * are still resolving chunk visibility. Ten was not enough: two runs of an identical
+     * configuration differed by 4.9% of pixels, which is enough noise to hide a real regression and
+     * to manufacture a fake one. Capture now also waits for the terrain rebuild counter to go quiet.
      */
-    private static final int SETTLE_FRAMES = 10;
+    private static final int SETTLE_FRAMES = 60;
 
     private final List<Shot> shots = new ArrayList<Shot>();
     private int currentShot;
@@ -68,7 +72,7 @@ public final class BenchScreenshots {
      * @return true once every shot has been written
      */
     public boolean advance(Minecraft mc) {
-        if (++framesAtCurrentShot <= SETTLE_FRAMES) {
+        if (++framesAtCurrentShot <= SETTLE_FRAMES || RenderChunk.renderChunksUpdated > 0) {
             return false;
         }
         capture(mc, shots.get(currentShot).name);

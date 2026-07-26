@@ -20,7 +20,7 @@ import static top.fpsmaster.utils.core.Utility.mc;
 @Mixin(WorldClient.class)
 public class WorldClientMixin {
     @ModifyConstant(method = "doVoidFogParticles", constant = @Constant(intValue = 1000))
-    private int patcher$lowerTickCount(int original) {
+    private int edge$lowerTickCount(int original) {
         if (Performance.using && Performance.lowAnimationTick.getValue()) {
             if (BenchmarkMode.ACTIVE) {
                 BenchCounters.lowAnimationTickHits++;

@@ -57,7 +57,6 @@ public final class FontRendererHook {
         try (final InputStream stream = mc.getResourceManager().getResource(fontRendererAccessor.getLocationFontTexture()).getInputStream()) {
             specWidth = ImageIO.read(stream).getWidth();
         } catch (IOException e) {
-//            Patcher.instance.getLogger().error("Failed to read font texture while establishing size.", e);
         }
 
         regularCharDim = specWidth;
@@ -92,7 +91,6 @@ public final class FontRendererHook {
         try (final InputStream stream = mc.getResourceManager().getResource(fontRendererAccessor.getLocationFontTexture()).getInputStream()) {
             bufferedImage.getGraphics().drawImage(ImageIO.read(stream), 0, 16 * texSheetDim, null);
         } catch (IOException e) {
-//            Patcher.instance.getLogger().error("Failed to draw texture sheet.", e);
         }
 
         glTextureId = new DynamicTexture(bufferedImage).getGlTextureId();

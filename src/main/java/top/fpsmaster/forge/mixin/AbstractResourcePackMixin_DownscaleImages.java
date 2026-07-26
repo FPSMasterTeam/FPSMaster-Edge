@@ -23,7 +23,7 @@ public abstract class AbstractResourcePackMixin_DownscaleImages {
     protected abstract InputStream getInputStreamByName(String name) throws IOException;
 
     @Inject(method = "getPackImage", at = @At("HEAD"), cancellable = true)
-    private void patcher$downscalePackImage(CallbackInfoReturnable<BufferedImage> cir) throws IOException {
+    private void edge$downscalePackImage(CallbackInfoReturnable<BufferedImage> cir) throws IOException {
         if (!Performance.using || !Performance.downscalePackIcons.getValue()) {
             return;
         }
