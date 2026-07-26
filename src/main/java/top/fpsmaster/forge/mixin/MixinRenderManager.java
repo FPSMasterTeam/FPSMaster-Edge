@@ -18,8 +18,6 @@ import top.fpsmaster.benchmark.BenchCounters;
 import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.features.impl.render.FreeLook;
 import top.fpsmaster.forge.api.IRenderManager;
-import top.fpsmaster.features.impl.optimizes.CheckEntity;
-import top.fpsmaster.features.impl.optimizes.Performance;
 
 @Mixin(value = RenderManager.class, priority = 999)
 @Implements(@Interface(iface = IRenderManager.class, prefix = "fpsmaster$"))
@@ -47,23 +45,10 @@ public class MixinRenderManager implements IRenderManager {
         return renderPosZ;
     }
 
-    @Inject(method = "doRenderEntity", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "doRenderEntity", at = @At("HEAD"))
     public void preRender(Entity entity, double x, double y, double z, float entityYaw, float partialTicks, boolean p_147939_10_, CallbackInfoReturnable<Boolean> cir) {
         if (BenchmarkMode.ACTIVE) {
             BenchCounters.entitiesAttempted++;
-        }
-        if (Performance.using && entity != Minecraft.getMinecraft().thePlayer) {
-            if (Performance.entitiesOptimize.getValue()) {
-                if (!Performance.isVisible(new CheckEntity(entity))) {
-                    if (BenchmarkMode.ACTIVE) {
-                        BenchCounters.entitiesCulled++;
-                    }
-                    cir.setReturnValue(false);
-                    return;
-                }
-            }
-        }
-        if (BenchmarkMode.ACTIVE) {
             BenchCounters.entitiesRendered++;
         }
     }

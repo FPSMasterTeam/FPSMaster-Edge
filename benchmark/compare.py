@@ -36,6 +36,24 @@ def slowest_tail_fps(sorted_values: list[int], fraction: float) -> float:
     return NANOS_PER_SECOND / statistics.fmean(sorted_values[-tail:])
 
 
+def outlier_report(frames_sorted: list[int], label: str) -> str | None:
+    """Flag samples far above the median.
+
+    Belt and braces for the harness-side DisplayWatch: a disturbance it cannot see
+    (a modal dialog, a driver hitch, a title-bar click that never moves the window)
+    still shows up as a frame orders of magnitude above the median. These are never
+    dropped automatically here — they are surfaced so a contaminated run can be
+    rerun rather than quietly averaged in.
+    """
+    if not frames_sorted:
+        return None
+    median = frames_sorted[len(frames_sorted) // 2]
+    bad = [f for f in frames_sorted if f > median * 20]
+    if not bad:
+        return None
+    return f"{label}: {len(bad)} frame(s) over 20x median, worst {max(bad)/1e6:.1f}ms"
+
+
 class Variant:
     def __init__(self, name: str, files: list[Path]) -> None:
         self.name = name
@@ -114,6 +132,14 @@ def main() -> None:
         )
 
     print(f"GPU: {sa['glRenderer']}")
+    for variant in (a, b):
+        for run in variant.runs:
+            disturbed = run["summary"].get("disturbedFrames", 0)
+            if disturbed:
+                print(f"  note: {variant.name} excluded {disturbed} disturbed frame(s)")
+        warning = outlier_report(variant.frames, variant.name)
+        if warning:
+            print(f"  WARNING {warning} - rerun rather than trust the tail statistics")
     print(f"{'metric':<24}{args.baseline:>14}{args.candidate:>14}{'delta':>12}")
     rows = [
         ("p50 frame ms", sa["p50ms"], sb["p50ms"], True),

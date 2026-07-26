@@ -34,11 +34,13 @@ public final class BenchRunner {
     }
 
     private final FrameSampler sampler = new FrameSampler(SAMPLE_CAPACITY);
+    private final DisplayWatch displayWatch = new DisplayWatch();
     private State state = State.INIT;
     private BenchScenario scenario;
     private BenchWorld.SettleTracker settleTracker;
     private long phaseStartMillis;
     private long pathStartMillis;
+    private long[] countersAtMeasureStart;
     private long gcCountAtStart;
     private long gcMillisAtStart;
 
@@ -56,7 +58,7 @@ public final class BenchRunner {
         try {
             Minecraft mc = Minecraft.getMinecraft();
             long now = System.currentTimeMillis();
-            sampler.onFrame(System.nanoTime());
+            sampler.onFrame(System.nanoTime(), displayWatch.pollDisturbed());
             advance(mc, now);
         } catch (Throwable t) {
             fail(t);
@@ -124,7 +126,6 @@ public final class BenchRunner {
     private void beginRun(Minecraft mc, long now) throws Exception {
         scenario = BenchScenario.load(mc.mcDataDir, BenchmarkMode.scenario());
         BenchOverrides.apply(BenchmarkMode.overrides());
-        BenchCounters.reset();
         gcCountAtStart = BenchReport.gcCollectionCount();
         gcMillisAtStart = BenchReport.gcCollectionMillis();
         phaseStartMillis = now;
@@ -159,7 +160,8 @@ public final class BenchRunner {
         // Keep recording, but throw away everything captured so far: the discard window exists to
         // get past the frames where getDebugFPS() is still 0.
         sampler.discardCollected();
-        BenchCounters.reset();
+        displayWatch.reset();
+        countersAtMeasureStart = BenchCounters.values();
         gcCountAtStart = BenchReport.gcCollectionCount();
         gcMillisAtStart = BenchReport.gcCollectionMillis();
         phaseStartMillis = now;
@@ -171,7 +173,8 @@ public final class BenchRunner {
         sampler.stop();
         state = State.FINISHED;
         try {
-            BenchReport.write(mc.mcDataDir, sampler, gcCountAtStart, gcMillisAtStart);
+            BenchReport.write(mc.mcDataDir, sampler, displayWatch, countersAtMeasureStart,
+                    gcCountAtStart, gcMillisAtStart);
             ClientLogger.info("benchmark", "wrote result with " + sampler.sampleCount() + " frames");
         } catch (Throwable t) {
             ClientLogger.error("benchmark", "failed to write result: " + t);

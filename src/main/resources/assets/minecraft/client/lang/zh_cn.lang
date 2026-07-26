@@ -343,12 +343,10 @@ scoreboard.background=背景
 
 performance=性能
 performance.desc=优化MC帧数
-performance.entitiesoptimize=实体渲染优化
 performance.fastcloud=云渲染优化
 performance.fastrender=使用快速渲染
 performance.fastload=快速加载世界
 performance.fpslimit=限制客户端失去焦点时的帧数
-performance.entitylimit=实体限制
 performance.ignorestands=忽略盔甲架
 performance.particleslimit=粒子限制
 performance.screenshot=截图方式
@@ -360,6 +358,7 @@ performance.staticparticlecolor=静态粒子颜色
 performance.limitchunks=限制区块加载
 performance.chunkupdatelimit=区块更新限制
 performance.batchmodelrendering=渲染批处理
+performance.downscalepackicons=缩放资源包图标
 performance.lowanimationtick=低动画帧率
 
 fullbright=保持亮度

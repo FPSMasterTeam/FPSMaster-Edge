@@ -32,7 +32,8 @@ public final class BenchReport {
     private BenchReport() {
     }
 
-    public static void write(File gameDir, FrameSampler sampler, long gcCountBefore, long gcMillisBefore)
+    public static void write(File gameDir, FrameSampler sampler, DisplayWatch displayWatch,
+                             long[] countersAtMeasureStart, long gcCountBefore, long gcMillisBefore)
             throws IOException {
         long[] samples = sampler.samples();
 
@@ -47,8 +48,14 @@ public final class BenchReport {
         root.add("java", describeJava());
         root.add("settings", describeSettings());
         root.add("gc", describeGc(gcCountBefore, gcMillisBefore));
-        root.add("counters", BenchCounters.snapshot());
-        root.add("summary", summarise(samples));
+        long[] countersNow = BenchCounters.values();
+        // Both are reported: "did this code path run at all" is answered by the run total (some
+        // paths, such as display-list compilation, fire only during startup), while "how much work
+        // did the measured window do" is answered by the delta.
+        root.add("counters", BenchCounters.toJson(
+                BenchCounters.difference(countersNow, countersAtMeasureStart)));
+        root.add("countersTotal", BenchCounters.toJson(countersNow));
+        root.add("summary", summarise(samples, displayWatch));
 
         // Gson 2.2.4 ships with Minecraft 1.8.9 and has no primitive JsonArray.add overloads.
         JsonArray raw = new JsonArray();
@@ -70,9 +77,12 @@ public final class BenchReport {
      * Computes the summary statistics. Deliberately explicit about which definition is used, since
      * "1% low" has several incompatible ones in circulation.
      */
-    private static JsonObject summarise(long[] samples) {
+    private static JsonObject summarise(long[] samples, DisplayWatch displayWatch) {
         JsonObject summary = new JsonObject();
         summary.addProperty("frameCount", samples.length);
+        // Always reported, even when zero: a silently dropped frame is indistinguishable from
+        // a clean run, and one dragged window is enough to move the 1% low by tens of percent.
+        summary.addProperty("disturbedFrames", displayWatch.disturbedFrames());
         if (samples.length == 0) {
             return summary;
         }

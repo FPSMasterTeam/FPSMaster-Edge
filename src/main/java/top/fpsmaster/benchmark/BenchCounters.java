@@ -9,6 +9,12 @@ import com.google.gson.JsonObject;
  * behaviour at all, and in the intended direction? A culling change that shows a frame-time win but
  * leaves {@code entitiesCulled} at zero did something other than what it claims.
  *
+ * <p>Counters are never reset mid-run. Some code paths fire once during startup and never again —
+ * display-list compilation is the obvious case — so a counter that was cleared when measurement
+ * began would read zero for a feature that is demonstrably working. Instead the report carries both
+ * the run total and the delta over the measurement window, and each question is answered by the
+ * appropriate one.
+ *
  * <p>Every increment site is guarded by {@link BenchmarkMode#ACTIVE}, which HotSpot folds away
  * outside benchmark runs.
  */
@@ -22,6 +28,16 @@ public final class BenchCounters {
     public static long particlesRendered;
     public static long particlesCulled;
 
+    /**
+     * Sub-feature hit counters. These exist so the switch matrix can be checked: toggling a
+     * sub-feature, or the Performance module as a whole, must move the corresponding counter to or
+     * from zero. Without them "the setting is wired up" is an assertion, not an observation.
+     */
+    public static long staticParticleColorHits;
+    public static long batchedModelDraws;
+    public static long lowAnimationTickHits;
+    public static long packIconsDownscaled;
+
     public static long chunkRebuildsRequested;
     public static long chunkRebuildsCompleted;
     public static long chunkThrottleSleeps;
@@ -33,42 +49,45 @@ public final class BenchCounters {
     public static long animatedSpritesTotal;
     public static long animatedSpritesUpdated;
 
+    private static final String[] NAMES = {
+            "entitiesAttempted", "entitiesCulled", "entitiesRendered",
+            "particlesTicked", "particlesRendered", "particlesCulled",
+            "staticParticleColorHits", "batchedModelDraws", "lowAnimationTickHits",
+            "packIconsDownscaled",
+            "chunkRebuildsRequested", "chunkRebuildsCompleted", "chunkThrottleSleeps",
+            "fontCacheHits", "fontCacheMisses", "fontCacheEvictions",
+            "animatedSpritesTotal", "animatedSpritesUpdated",
+    };
+
     private BenchCounters() {
     }
 
-    public static void reset() {
-        entitiesAttempted = 0L;
-        entitiesCulled = 0L;
-        entitiesRendered = 0L;
-        particlesTicked = 0L;
-        particlesRendered = 0L;
-        particlesCulled = 0L;
-        chunkRebuildsRequested = 0L;
-        chunkRebuildsCompleted = 0L;
-        chunkThrottleSleeps = 0L;
-        fontCacheHits = 0L;
-        fontCacheMisses = 0L;
-        fontCacheEvictions = 0L;
-        animatedSpritesTotal = 0L;
-        animatedSpritesUpdated = 0L;
+    /** Current values, in the same order as {@link #NAMES}. Called twice per run, not on a hot path. */
+    public static long[] values() {
+        return new long[]{
+                entitiesAttempted, entitiesCulled, entitiesRendered,
+                particlesTicked, particlesRendered, particlesCulled,
+                staticParticleColorHits, batchedModelDraws, lowAnimationTickHits,
+                packIconsDownscaled,
+                chunkRebuildsRequested, chunkRebuildsCompleted, chunkThrottleSleeps,
+                fontCacheHits, fontCacheMisses, fontCacheEvictions,
+                animatedSpritesTotal, animatedSpritesUpdated,
+        };
     }
 
-    public static JsonObject snapshot() {
+    public static JsonObject toJson(long[] counters) {
         JsonObject json = new JsonObject();
-        json.addProperty("entitiesAttempted", entitiesAttempted);
-        json.addProperty("entitiesCulled", entitiesCulled);
-        json.addProperty("entitiesRendered", entitiesRendered);
-        json.addProperty("particlesTicked", particlesTicked);
-        json.addProperty("particlesRendered", particlesRendered);
-        json.addProperty("particlesCulled", particlesCulled);
-        json.addProperty("chunkRebuildsRequested", chunkRebuildsRequested);
-        json.addProperty("chunkRebuildsCompleted", chunkRebuildsCompleted);
-        json.addProperty("chunkThrottleSleeps", chunkThrottleSleeps);
-        json.addProperty("fontCacheHits", fontCacheHits);
-        json.addProperty("fontCacheMisses", fontCacheMisses);
-        json.addProperty("fontCacheEvictions", fontCacheEvictions);
-        json.addProperty("animatedSpritesTotal", animatedSpritesTotal);
-        json.addProperty("animatedSpritesUpdated", animatedSpritesUpdated);
+        for (int i = 0; i < NAMES.length; i++) {
+            json.addProperty(NAMES[i], counters[i]);
+        }
         return json;
+    }
+
+    public static long[] difference(long[] after, long[] before) {
+        long[] delta = new long[after.length];
+        for (int i = 0; i < after.length; i++) {
+            delta[i] = after[i] - before[i];
+        }
+        return delta;
     }
 }

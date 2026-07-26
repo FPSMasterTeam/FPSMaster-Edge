@@ -343,12 +343,10 @@ scoreboard.background=Show Background
 
 performance=Performance
 performance.desc=Optimize FPS
-performance.entitiesoptimize=Entity Rendering Optimization
 performance.fastcloud=Fast Clouds
 performance.fastrender=Fast Render
 performance.fastload=Fast World Loading
 performance.fpslimit=Limit FPS When Unfocused
-performance.entitylimit=Entity Limit
 performance.ignorestands=Ignore Armor Stands
 performance.particleslimit=Particle Limit
 performance.screenshot=Screenshot Method
@@ -360,6 +358,7 @@ performance.staticparticlecolor=Static Particle Color
 performance.limitchunks=Chunk Load Limit
 performance.chunkupdatelimit=Chunk Update Limit
 performance.batchmodelrendering=Batch Model Rendering
+performance.downscalepackicons=Downscale Resource Pack Icons
 performance.lowanimationtick=Low Animation Tick
 
 fullbright=Fullbright

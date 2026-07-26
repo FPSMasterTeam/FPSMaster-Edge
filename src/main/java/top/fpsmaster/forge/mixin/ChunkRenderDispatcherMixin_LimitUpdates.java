@@ -16,7 +16,7 @@ public class ChunkRenderDispatcherMixin_LimitUpdates {
     @SuppressWarnings("BusyWait")
     @Inject(method = "getNextChunkUpdate", at = @At("HEAD"))
     private void patcher$limitChunkUpdates(CallbackInfoReturnable<ChunkCompileTaskGenerator> cir) throws InterruptedException {
-        while (Performance.limitChunks.getValue() && RenderChunk.renderChunksUpdated >= Performance.chunkUpdateLimit.getValue().intValue()) {
+        while (Performance.using && Performance.limitChunks.getValue() && RenderChunk.renderChunksUpdated >= Performance.chunkUpdateLimit.getValue().intValue()) {
             if (BenchmarkMode.ACTIVE) {
                 BenchCounters.chunkThrottleSleeps++;
             }

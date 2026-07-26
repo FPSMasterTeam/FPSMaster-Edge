@@ -9,6 +9,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.features.impl.optimizes.Performance;
 
 @Mixin(ModelRenderer.class)
@@ -21,22 +23,25 @@ public class ModelRendererMixin_BatchDrawing {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void patcher$resetCompiled(float j, CallbackInfo ci) {
-        if (patcher$compiledState != Performance.batchModelRendering.getValue()) {
+        if (patcher$compiledState != (Performance.using && Performance.batchModelRendering.getValue())) {
             this.compiled = false;
         }
     }
 
     @Inject(method = "compileDisplayList", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/client/renderer/Tessellator;getWorldRenderer()Lnet/minecraft/client/renderer/WorldRenderer;"))
     private void patcher$beginRendering(CallbackInfo ci) {
-        this.patcher$compiledState = Performance.batchModelRendering.getValue();
-        if (Performance.batchModelRendering.getValue()) {
+        this.patcher$compiledState = (Performance.using && Performance.batchModelRendering.getValue());
+        if ((Performance.using && Performance.batchModelRendering.getValue())) {
             Tessellator.getInstance().getWorldRenderer().begin(7, DefaultVertexFormats.OLDMODEL_POSITION_TEX_NORMAL);
         }
     }
 
     @Inject(method = "compileDisplayList", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glEndList()V", remap = false))
     private void patcher$draw(CallbackInfo ci) {
-        if (Performance.batchModelRendering.getValue()) {
+        if ((Performance.using && Performance.batchModelRendering.getValue())) {
+            if (BenchmarkMode.ACTIVE) {
+                BenchCounters.batchedModelDraws++;
+            }
             Tessellator.getInstance().draw();
         }
     }

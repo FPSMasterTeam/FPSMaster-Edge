@@ -24,9 +24,12 @@ public final class FrameSampler {
     /**
      * Marks a frame boundary. Must be called once per frame, from the render thread, whether or not
      * recording is active — the first call after {@link #start} establishes the baseline timestamp.
+     *
+     * @param disturbed frame spanned a desktop interaction (see {@link DisplayWatch}); its duration
+     *                  measures the interruption rather than the workload, so it is not recorded
      */
-    public void onFrame(long nowNano) {
-        if (previousFrameNano != 0L && recording && count < frameNanos.length) {
+    public void onFrame(long nowNano, boolean disturbed) {
+        if (previousFrameNano != 0L && recording && count < frameNanos.length && !disturbed) {
             frameNanos[count++] = nowNano - previousFrameNano;
         }
         previousFrameNano = nowNano;
