@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.fpsmaster.benchmark.BenchCounters;
 import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.features.impl.render.FreeLook;
+import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.forge.api.IRenderManager;
 
 @Mixin(value = RenderManager.class, priority = 999)
@@ -45,12 +46,19 @@ public class MixinRenderManager implements IRenderManager {
         return renderPosZ;
     }
 
-    @Inject(method = "doRenderEntity", at = @At("HEAD"))
+    @Inject(method = "doRenderEntity", at = @At("HEAD"), cancellable = true)
     public void preRender(Entity entity, double x, double y, double z, float entityYaw, float partialTicks, boolean p_147939_10_, CallbackInfoReturnable<Boolean> cir) {
         if (BenchmarkMode.ACTIVE) {
             BenchCounters.entitiesAttempted++;
-            BenchCounters.entitiesRendered++;
         }
+        if (Performance.using && Performance.entityCulling.getValue()
+                && entity != Minecraft.getMinecraft().getRenderViewEntity()
+                && !Performance.ENTITY_CULLING.shouldRender(entity)) {
+            Performance.ENTITY_CULLING.countVisibility(false);
+            cir.setReturnValue(false);
+            return;
+        }
+        Performance.ENTITY_CULLING.countVisibility(true);
     }
 
     @Shadow

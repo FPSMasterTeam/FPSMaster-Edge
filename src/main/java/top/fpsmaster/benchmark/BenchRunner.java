@@ -39,6 +39,7 @@ public final class BenchRunner {
     private State state = State.INIT;
     private BenchScenario scenario;
     private BenchWorld.SettleTracker settleTracker;
+    private boolean setupIssued;
     private long phaseStartMillis;
     private long pathStartMillis;
     private long[] countersAtMeasureStart;
@@ -74,7 +75,6 @@ public final class BenchRunner {
                 break;
             case LOADING_WORLD:
                 if (BenchWorld.isReady(mc)) {
-                    BenchSetup.run(mc, scenario.world());
                     settleTracker.reset(now);
                     phaseStartMillis = now;
                     pathStartMillis = now;
@@ -91,6 +91,19 @@ public final class BenchRunner {
                 // so the rebuild counter would never go quiet.
                 holdCameraAtPathStart(mc);
                 if (settleTracker.update(now)) {
+                    if (!setupIssued) {
+                        // Only now: spawning and block placement are rejected in chunks the server
+                        // has not loaded yet, and a partial scenario still produces a plausible
+                        // looking measurement.
+                        setupIssued = true;
+                        BenchSetup.run(mc, scenario.world());
+                        settleTracker.reset(now);
+                        phaseStartMillis = now;
+                        break;
+                    }
+                    if (BenchSetup.hasFailed()) {
+                        throw new IllegalStateException("scenario setup commands failed; see log");
+                    }
                     ClientLogger.info("benchmark", "settled after " + (now - phaseStartMillis)
                             + "ms, warmup " + scenario.warmupMillis() + "ms");
                     phaseStartMillis = now;

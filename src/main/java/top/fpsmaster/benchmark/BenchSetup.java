@@ -25,13 +25,28 @@ import top.fpsmaster.modules.logger.ClientLogger;
  */
 public final class BenchSetup {
 
+    private static volatile boolean setupComplete;
+    private static volatile boolean setupFailed;
+
     private BenchSetup() {
+    }
+
+    /** Whether the queued commands have finished running on the server thread. */
+    public static boolean isComplete() {
+        return setupComplete;
+    }
+
+    public static boolean hasFailed() {
+        return setupFailed;
     }
 
     public static void run(Minecraft mc, JsonObject scenarioWorld) {
         if (scenarioWorld == null || !scenarioWorld.has("setupCommands")) {
+            setupComplete = true;
             return;
         }
+        setupComplete = false;
+        setupFailed = false;
         final MinecraftServer server = mc.getIntegratedServer();
         if (server == null) {
             throw new IllegalStateException("scenario has setup commands but no integrated server");
@@ -49,14 +64,29 @@ public final class BenchSetup {
         server.addScheduledTask(new Runnable() {
             @Override
             public void run() {
-                int executed = 0;
+                int failed = 0;
+                String firstFailure = null;
                 for (String command : toRun) {
                     // The command manager expects no leading slash.
                     String stripped = command.startsWith("/") ? command.substring(1) : command;
-                    executed += server.getCommandManager().executeCommand(server, stripped);
+                    if (server.getCommandManager().executeCommand(server, stripped) == 0) {
+                        failed++;
+                        if (firstFailure == null) {
+                            firstFailure = command;
+                        }
+                    }
                 }
-                ClientLogger.info("benchmark", "ran " + toRun.length + " setup command(s), "
-                        + executed + " succeeded");
+                // A partly-built scenario is worse than no scenario: it looks like a valid
+                // measurement. An earlier run silently lost its occluding wall to a chunk-loading
+                // race and reported a perfectly plausible "nothing was culled".
+                if (failed > 0) {
+                    ClientLogger.error("benchmark", failed + " of " + toRun.length
+                            + " setup command(s) failed, first: " + firstFailure);
+                    setupFailed = true;
+                } else {
+                    ClientLogger.info("benchmark", "ran " + toRun.length + " setup command(s)");
+                }
+                setupComplete = true;
             }
         });
     }

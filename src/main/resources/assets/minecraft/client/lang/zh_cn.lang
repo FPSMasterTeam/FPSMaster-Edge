@@ -360,6 +360,8 @@ performance.chunkupdatelimit=区块更新限制
 performance.batchmodelrendering=渲染批处理
 performance.downscalepackicons=缩放资源包图标
 performance.particleculling=粒子视锥裁剪
+performance.entityculling=实体遮挡裁剪
+performance.entitycullinginterval=裁剪刷新间隔 (毫秒)
 performance.lowanimationtick=低动画帧率
 
 fullbright=保持亮度

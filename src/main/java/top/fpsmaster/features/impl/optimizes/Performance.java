@@ -4,6 +4,7 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
+import top.fpsmaster.utils.render.culling.EntityCulling;
 
 
 public class Performance extends Module {
@@ -25,6 +26,10 @@ public class Performance extends Module {
     public static BooleanSetting lowAnimationTick = new BooleanSetting("LowAnimationTick", true);
     public static BooleanSetting downscalePackIcons = new BooleanSetting("DownscalePackIcons", true);
     public static BooleanSetting particleCulling = new BooleanSetting("ParticleCulling", true);
+    public static BooleanSetting entityCulling = new BooleanSetting("EntityCulling", false);
+
+    /** Shared culling state; lives here so the mixins that drive it have one owner. */
+    public static final EntityCulling ENTITY_CULLING = new EntityCulling();
 
     /**
      * Minimum of 1: at 0 the throttle's condition {@code renderChunksUpdated >= 0} is always true,
@@ -35,11 +40,18 @@ public class Performance extends Module {
     public static NumberSetting fpsLimit = new NumberSetting("FPSLimit", 30, 0, 360, 1);
     public static NumberSetting particlesLimit = new NumberSetting("ParticlesLimit", 400, 0, 2000, 1);
 
+    /**
+     * How long an entity keeps its visibility verdict before being probed again. Probing every
+     * entity every frame would cost more in queries and draw calls than the culling saves.
+     */
+    public static NumberSetting entityCullingInterval =
+            new NumberSetting("EntityCullingInterval", 50, 10, 500, 5, () -> entityCulling.getValue());
+
     public Performance() {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, fontOptimize, staticParticleColor, limitChunks, chunkUpdateLimit,
-                downscalePackIcons, particleCulling);
+                downscalePackIcons, particleCulling, entityCulling, entityCullingInterval);
     }
 
 

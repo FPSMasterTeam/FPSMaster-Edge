@@ -1,6 +1,8 @@
 package top.fpsmaster.forge.mixin;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderGlobal;
+import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.EnumWorldBlockLayer;
@@ -11,6 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.fpsmaster.benchmark.BenchProfiler;
 import top.fpsmaster.benchmark.BenchmarkMode;
+import top.fpsmaster.features.impl.optimizes.Performance;
+import top.fpsmaster.forge.api.IRenderManager;
 
 /**
  * Brackets the world-render phases so each can be timed on its own.
@@ -48,6 +52,18 @@ public class RenderGlobalMixin_SectionTiming {
                                         CallbackInfo ci) {
         if (BenchmarkMode.ACTIVE) {
             BenchProfiler.begin(BenchProfiler.SECTION_ENTITIES);
+        }
+        if (Performance.using && Performance.entityCulling.getValue()) {
+            Minecraft mc = Minecraft.getMinecraft();
+            RenderManager manager = mc.getRenderManager();
+            Performance.ENTITY_CULLING.init();
+            // renderEntities is called a second time for the entity-outline pass. No guard is
+            // needed: the reprobe interval inside update() already makes the second call a no-op.
+            Performance.ENTITY_CULLING.update(mc,
+                    ((IRenderManager) manager).renderPosX(),
+                    ((IRenderManager) manager).renderPosY(),
+                    ((IRenderManager) manager).renderPosZ(),
+                    Performance.entityCullingInterval.getValue().longValue());
         }
     }
 

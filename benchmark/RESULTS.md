@@ -171,6 +171,36 @@ Two things worth keeping from this:
 - Porting an optimisation because another mod has it, without first measuring the call
   volume in *this* codebase, would have spent a day on something worth 0.004%.
 
+### R5 — entity occlusion culling
+
+**Verdict: entity pass 40% faster. Judged on the section timer, not on frame rate.**
+
+Scenario `entity-dense`: 120 armour stands, 60 in front of a stone wall and 60 behind
+it. 95.6 entities reach the renderer per frame after vanilla frustum culling; 47.8 of
+them are skipped.
+
+| section cpu p50 | off | on | paired diff | null band | verdict |
+| --- | ---: | ---: | ---: | ---: | --- |
+| **entities** | **1209.7us** | **726.0us** | **−40.15%** | 13.56% | IMPROVED |
+| terrain | 428.8us | 408.1us | −2.79% | 14.07% | within noise |
+| particles | 1.0us | 0.9us | −10.0% | 20.0% | within noise |
+| chunk upload | 2.3us | 2.1us | −8.45% | 12.5% | within noise |
+
+Per-pair entity-pass differences: −41.2%, −36.7%, −42.5%. Consistent in sign and size
+across every pair, three times the null band, and confined to the section that was
+changed.
+
+Whole-frame p50 moved −23.41%. The p99 and 1% low figures from this series are **not
+trustworthy**: `off-2` contains a single 268ms frame that the outlier guard flagged, and
+it is what produced an absurd +915% on one pair's 1% low. Only p50 is quoted.
+
+Screenshot gate: pass, 0.65%–1.58% of pixels differing against a 7.29% calibrated limit.
+
+**Known regression, not yet fixed:** heap used rose from 480MB to 573MB and GC
+collections from 25/28/21 to 32/33/33. `Map<Integer, Probe>` boxes the entity id on
+every lookup, and there are two lookups per entity per frame — roughly 94,000 Integer
+allocations per second at this frame rate. Entity ids above 127 miss the Integer cache.
+
 ### R4 — particle frustum culling
 
 **Verdict: within noise on every metric. Kept as a correctness-neutral change, not

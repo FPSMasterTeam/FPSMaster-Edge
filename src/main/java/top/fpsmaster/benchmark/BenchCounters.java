@@ -46,6 +46,10 @@ public final class BenchCounters {
     public static long fontCacheMisses;
     public static long fontCacheEvictions;
 
+    public static long cullProbesIssued;
+    public static long cullProbesHarvested;
+    public static long cullProbesOccluded;
+
     public static long animatedSpritesTotal;
     public static long animatedSpritesUpdated;
 
@@ -56,6 +60,7 @@ public final class BenchCounters {
             "packIconsDownscaled",
             "chunkRebuildsRequested", "chunkRebuildsCompleted", "chunkThrottleSleeps",
             "fontCacheHits", "fontCacheMisses", "fontCacheEvictions",
+            "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "animatedSpritesTotal", "animatedSpritesUpdated",
     };
 
@@ -71,6 +76,7 @@ public final class BenchCounters {
                 packIconsDownscaled,
                 chunkRebuildsRequested, chunkRebuildsCompleted, chunkThrottleSleeps,
                 fontCacheHits, fontCacheMisses, fontCacheEvictions,
+                cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 animatedSpritesTotal, animatedSpritesUpdated,
         };
     }
