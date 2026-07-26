@@ -131,6 +131,9 @@ public final class BenchRunner {
                 break;
             case MEASURE:
                 driveCamera(mc, now);
+                if (scenario.stress() != null) {
+                    scenario.stress().update(now);
+                }
                 if (now - phaseStartMillis >= scenario.measureMillis() || sampler.isFull()) {
                     sampler.stop();
                     BenchProfiler.instance().stop();
@@ -203,6 +206,9 @@ public final class BenchRunner {
     }
 
     private void finish(Minecraft mc) {
+        if (scenario.stress() != null) {
+            scenario.stress().logSummary();
+        }
         sampler.stop();
         state = State.FINISHED;
         try {

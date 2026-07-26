@@ -21,6 +21,7 @@ public final class BenchScenario {
     private final JsonObject world;
     private final BenchCamera camera;
     private final BenchScreenshots screenshots;
+    private final BenchStress stress;
     private final int settleSeconds;
     private final long settleTimeoutMillis;
     private final long warmupMillis;
@@ -28,13 +29,14 @@ public final class BenchScenario {
     private final long measureMillis;
 
     private BenchScenario(String id, JsonObject world, BenchCamera camera,
-                          BenchScreenshots screenshots, int settleSeconds,
+                          BenchScreenshots screenshots, BenchStress stress, int settleSeconds,
                           long settleTimeoutMillis, long warmupMillis, long discardMillis,
                           long measureMillis) {
         this.id = id;
         this.world = world;
         this.camera = camera;
         this.screenshots = screenshots;
+        this.stress = stress;
         this.settleSeconds = settleSeconds;
         this.settleTimeoutMillis = settleTimeoutMillis;
         this.warmupMillis = warmupMillis;
@@ -54,6 +56,7 @@ public final class BenchScenario {
                 object(json, "world"),
                 BenchCamera.parse(object(json, "camera")),
                 BenchScreenshots.parse(json),
+                BenchStress.parse(json),
                 json.has("settleSeconds") ? json.get("settleSeconds").getAsInt() : 5,
                 json.has("settleTimeoutMillis") ? json.get("settleTimeoutMillis").getAsLong() : 120_000L,
                 json.has("warmupMillis") ? json.get("warmupMillis").getAsLong() : 30_000L,
@@ -81,6 +84,11 @@ public final class BenchScenario {
     /** Fixed viewpoints captured after measurement, or {@code null} when the scenario has none. */
     public BenchScreenshots screenshots() {
         return screenshots;
+    }
+
+    /** Feature toggling during measurement, for leak hunting. Null for normal scenarios. */
+    public BenchStress stress() {
+        return stress;
     }
 
     /**

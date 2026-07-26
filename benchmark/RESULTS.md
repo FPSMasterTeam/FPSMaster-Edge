@@ -137,10 +137,25 @@ No leak in this scenario. Whole-run totals including startup: 30 display lists
 allocated and none released — sky and chunk-container lists held for the session, not a
 leak — and 46 textures allocated against 45 released.
 
-The scenario is the limitation, not the instrument: it never switches worlds, reloads
-resource packs or rebuilds shader groups, which are the paths where leaks have actually
-occurred here before (a per-frame `ShaderGroup` reload once leaked framebuffers). A
-leak-stress scenario that cycles those paths is the next thing this needs.
+A settled scene never exercises the paths where leaks actually happen, so this result
+only says the steady state is clean. `BenchStress` fixes that by toggling features on a
+timer during the measurement window; the `leak-stress` scenario cycles MotionBlur (whose
+`ShaderGroup` reload once leaked framebuffers here), FontOptimize, BlockOverlay and
+EntityCulling once a second.
+
+Result over 120 cycles in 120s, 52,127 frames:
+
+| resource | allocated | released | net |
+| --- | ---: | ---: | ---: |
+| display lists | 0 | 0 | **0** |
+| textures | 253 | 253 | **0** |
+
+**No leak, and the instrument is demonstrably sensitive** — 253 texture allocations
+against zero in the static scenario shows the churn is being reached. Heap 802MB, 69 GC
+collections over the window.
+
+Frame times from a stress run are meaningless by construction, since the workload changes
+mid-window; only the resource counters should be read from it.
 
 ## Runs
 

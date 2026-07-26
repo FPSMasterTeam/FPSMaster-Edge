@@ -39,6 +39,11 @@ public final class BenchOverrides {
         }
     }
 
+    /** Sets one module or setting by the same key syntax {@link #apply} uses. */
+    public static void set(String key, boolean value) {
+        applyOne(key, new com.google.gson.JsonPrimitive(value));
+    }
+
     private static void applyOne(String key, JsonElement value) {
         int dot = key.indexOf('.');
         String moduleName = dot < 0 ? key : key.substring(0, dot);
