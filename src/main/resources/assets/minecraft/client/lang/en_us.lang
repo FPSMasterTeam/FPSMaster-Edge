@@ -359,6 +359,7 @@ performance.limitchunks=Chunk Load Limit
 performance.chunkupdatelimit=Chunk Update Limit
 performance.batchmodelrendering=Batch Model Rendering
 performance.downscalepackicons=Downscale Resource Pack Icons
+performance.particleculling=Particle Frustum Culling
 performance.lowanimationtick=Low Animation Tick
 
 fullbright=Fullbright

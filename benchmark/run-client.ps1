@@ -157,9 +157,12 @@ $resultFile = Join-Path $resultDir 'result.json'
 $failedFile = Join-Path $resultDir 'FAILED'
 $succeeded  = (Test-Path $resultFile) -and -not (Test-Path $failedFile)
 
+$shotsDir = Join-Path $resultDir 'shots'
+
 [pscustomobject]@{
     Outcome    = if ($succeeded) { 'OK' } elseif (Test-Path $failedFile) { 'HARNESS_FAILED' } else { $outcome }
     ElapsedSec = [math]::Round($sw.Elapsed.TotalSeconds, 1)
     GameDir    = $gameDir
     ResultFile = if ($succeeded) { $resultFile } else { $null }
+    ShotsDir   = if (Test-Path $shotsDir) { $shotsDir } else { $null }
 }

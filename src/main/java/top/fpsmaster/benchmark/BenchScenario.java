@@ -20,18 +20,21 @@ public final class BenchScenario {
     private final String id;
     private final JsonObject world;
     private final BenchCamera camera;
+    private final BenchScreenshots screenshots;
     private final int settleSeconds;
     private final long settleTimeoutMillis;
     private final long warmupMillis;
     private final long discardMillis;
     private final long measureMillis;
 
-    private BenchScenario(String id, JsonObject world, BenchCamera camera, int settleSeconds,
+    private BenchScenario(String id, JsonObject world, BenchCamera camera,
+                          BenchScreenshots screenshots, int settleSeconds,
                           long settleTimeoutMillis, long warmupMillis, long discardMillis,
                           long measureMillis) {
         this.id = id;
         this.world = world;
         this.camera = camera;
+        this.screenshots = screenshots;
         this.settleSeconds = settleSeconds;
         this.settleTimeoutMillis = settleTimeoutMillis;
         this.warmupMillis = warmupMillis;
@@ -50,6 +53,7 @@ public final class BenchScenario {
                 id,
                 object(json, "world"),
                 BenchCamera.parse(object(json, "camera")),
+                BenchScreenshots.parse(json),
                 json.has("settleSeconds") ? json.get("settleSeconds").getAsInt() : 5,
                 json.has("settleTimeoutMillis") ? json.get("settleTimeoutMillis").getAsLong() : 120_000L,
                 json.has("warmupMillis") ? json.get("warmupMillis").getAsLong() : 30_000L,
@@ -72,6 +76,11 @@ public final class BenchScenario {
 
     public BenchCamera camera() {
         return camera;
+    }
+
+    /** Fixed viewpoints captured after measurement, or {@code null} when the scenario has none. */
+    public BenchScreenshots screenshots() {
+        return screenshots;
     }
 
     /**

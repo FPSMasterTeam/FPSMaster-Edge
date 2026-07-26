@@ -24,6 +24,7 @@ public class Performance extends Module {
     public static BooleanSetting batchModelRendering = new BooleanSetting("BatchModelRendering", true);
     public static BooleanSetting lowAnimationTick = new BooleanSetting("LowAnimationTick", true);
     public static BooleanSetting downscalePackIcons = new BooleanSetting("DownscalePackIcons", true);
+    public static BooleanSetting particleCulling = new BooleanSetting("ParticleCulling", true);
 
     /**
      * Minimum of 1: at 0 the throttle's condition {@code renderChunksUpdated >= 0} is always true,
@@ -38,7 +39,7 @@ public class Performance extends Module {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, fontOptimize, staticParticleColor, limitChunks, chunkUpdateLimit,
-                downscalePackIcons);
+                downscalePackIcons, particleCulling);
     }
 
 

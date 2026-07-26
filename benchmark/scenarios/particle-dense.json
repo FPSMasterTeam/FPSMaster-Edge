@@ -76,5 +76,15 @@
         "pitch": 20
       }
     ]
-  }
+  },
+  "screenshots": [
+    {
+      "name": "low-angle",
+      "t": 0
+    },
+    {
+      "name": "overhead",
+      "t": 10000
+    }
+  ]
 }

@@ -17,6 +17,7 @@
   "client": [
     "AbstractResourcePackMixin_DownscaleImages",
     "ChunkRenderDispatcherMixin_LimitUpdates",
+    "EffectRendererMixin_ParticleCulling",
     "EntityFXMixin_StaticParticleColor",
     "MixinAbstractClientPlayer",
     "MixinChatLine",

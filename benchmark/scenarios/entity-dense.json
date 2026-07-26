@@ -187,5 +187,19 @@
         "pitch": 0
       }
     ]
-  }
+  },
+  "screenshots": [
+    {
+      "name": "front-wide",
+      "t": 0
+    },
+    {
+      "name": "front-angled",
+      "t": 5000
+    },
+    {
+      "name": "elevated",
+      "t": 10000
+    }
+  ]
 }

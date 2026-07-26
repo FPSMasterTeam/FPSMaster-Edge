@@ -29,6 +29,7 @@ public final class BenchRunner {
         WARMUP,
         DISCARD,
         MEASURE,
+        SHOTS,
         FINISHED,
         FAILED
     }
@@ -116,6 +117,18 @@ public final class BenchRunner {
             case MEASURE:
                 driveCamera(mc, now);
                 if (now - phaseStartMillis >= scenario.measureMillis() || sampler.isFull()) {
+                    sampler.stop();
+                    if (scenario.screenshots() == null) {
+                        finish(mc);
+                    } else {
+                        state = State.SHOTS;
+                    }
+                }
+                break;
+            case SHOTS:
+                // Capture happens after the timed window, so writing PNGs never lands in the samples.
+                scenario.camera().apply(mc.thePlayer, scenario.screenshots().currentPathMillis());
+                if (scenario.screenshots().advance(mc)) {
                     finish(mc);
                 }
                 break;

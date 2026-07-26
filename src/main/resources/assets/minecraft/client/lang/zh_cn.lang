@@ -359,6 +359,7 @@ performance.limitchunks=限制区块加载
 performance.chunkupdatelimit=区块更新限制
 performance.batchmodelrendering=渲染批处理
 performance.downscalepackicons=缩放资源包图标
+performance.particleculling=粒子视锥裁剪
 performance.lowanimationtick=低动画帧率
 
 fullbright=保持亮度
