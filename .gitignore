@@ -1,6 +1,9 @@
 .idea/
 .vscode/
 run/
+run-bench/
 build/
 .gradle/
 src/main/resources/git.properties
+benchmark/worlds/
+benchmark/results/
