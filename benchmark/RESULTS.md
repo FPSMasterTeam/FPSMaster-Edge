@@ -65,6 +65,46 @@ measurement taken before that change is not comparable to any taken after.
 Clean series: 0 disturbed and 0 unfocused frames in all six runs. Median 1.502ms p50,
 645.6 avg fps.
 
+## Run order carried a systematic bias
+
+An A-vs-A series on the rebuilt profiler produced paired differences that were not noise:
+p50 −7.2%, −1.7%, −4.5% and avg fps +8.5%, +2.4%, +8.2%, the same direction every pass.
+Two identical variants cannot differ systematically, so the bias was positional —
+whichever ran second was consistently faster by 5-6%.
+
+The cause was not established. Focus state correlates loosely and heap at sampling time
+was higher on the slower side, but neither explains every pass. Rather than guess, the
+order now alternates per pass, so each variant occupies each position equally and the
+bias cancels in the pairing. Re-measured, the p50 paired differences become +1.66%,
+−1.13%, +1.43%, +4.35% — mixed in sign, as noise should be.
+
+**This corrected a band that was too optimistic.** Under fixed order the p50 band read
+1.98%; counterbalanced it reads 5.48%. The earlier figure was tighter precisely because
+the bias shifted every pair the same way — biased but consistent, which looks like
+precision.
+
+## Noise bands do not transfer between scenarios
+
+Section bands measured on `flat-orbit` under counterbalanced order:
+
+| section | band | band excluding unfocused runs | magnitude here |
+| --- | ---: | ---: | --- |
+| terrain | 4.50% | 2.05% | 412us |
+| terrain setup | 3.15% | 3.15% | 376us |
+| sky | 10.82% | 2.57% | 135us |
+| entities | **20.85%** | 17.08% | near zero on this scenario |
+| entity model, hud | 0.00% | 0.00% | zero on this scenario |
+
+The entities band is 20.85% here and 6.83% on `entity-dense`, for the same code. A
+superflat world with mob spawning off barely renders an entity, so the section is near
+zero and relative noise explodes; on the entity-dense arena it is over 1000us and stable.
+
+So a band is only meaningful for the scenario and magnitude it was measured at. Judging
+an entity-dense result against a flat-orbit band would be meaningless in either
+direction. The in-series duplicate baseline used from R4 onward — `off` and `off2` in the
+same series as `on` — is the only form of this that is sound, and it is what the R4 and
+R5 verdicts rest on.
+
 ## Touching the window destroys the tail statistics
 
 The first in-world noise series looked unusable:
