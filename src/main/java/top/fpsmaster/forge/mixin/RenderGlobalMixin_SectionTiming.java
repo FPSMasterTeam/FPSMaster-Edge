@@ -63,7 +63,8 @@ public class RenderGlobalMixin_SectionTiming {
                     ((IRenderManager) manager).renderPosX(),
                     ((IRenderManager) manager).renderPosY(),
                     ((IRenderManager) manager).renderPosZ(),
-                    Performance.entityCullingInterval.getValue().longValue());
+                    Performance.entityCullingInterval.getValue().longValue(),
+                    Performance.cullPlayers.getValue());
         }
     }
 

@@ -53,7 +53,7 @@ public class MixinRenderManager implements IRenderManager {
         }
         if (Performance.using && Performance.entityCulling.getValue()
                 && entity != Minecraft.getMinecraft().getRenderViewEntity()
-                && !Performance.ENTITY_CULLING.shouldRender(entity)) {
+                && !Performance.ENTITY_CULLING.shouldRender(entity, Performance.cullPlayers.getValue())) {
             Performance.ENTITY_CULLING.countVisibility(false);
             cir.setReturnValue(false);
             return;

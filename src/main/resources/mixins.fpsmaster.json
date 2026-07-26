@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "MixinEntity",
+    "EntityMixin_Cullable",
     "MixinEntityLivingBase",
     "MixinEntityPlayer",
     "MixinNetworkManager",

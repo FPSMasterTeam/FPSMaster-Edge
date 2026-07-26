@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
@@ -13,12 +14,11 @@ import org.lwjgl.opengl.GL33;
 import org.lwjgl.opengl.GLContext;
 import top.fpsmaster.benchmark.BenchCounters;
 import top.fpsmaster.benchmark.BenchmarkMode;
+import top.fpsmaster.forge.api.ICullable;
 
 import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Hardware occlusion culling for entities.
@@ -63,21 +63,18 @@ public final class EntityCulling {
     /** Bounding boxes are grown slightly so a probe cannot fall inside its own model's geometry. */
     private static final double PROBE_EXPANSION = 0.15d;
 
-    private static final class Probe {
-        int queryId;
-        boolean pending;
-        boolean occluded;
-        long lastIssuedMillis;
-        int lastSeenTick;
-    }
-
-    private final Map<Integer, Probe> probes = new HashMap<Integer, Probe>();
+    /**
+     * Entities with a query in flight, so results can be harvested without walking the world.
+     *
+     * <p>Holds strong references only between issuing a probe and reading it back, which is at most
+     * a handful of frames; anything longer would keep dead entities alive.
+     */
+    private final List<Entity> pendingProbes = new ArrayList<Entity>();
     private final ArrayDeque<Integer> freeQueries = new ArrayDeque<Integer>();
     private int allocatedQueries;
     private boolean supported;
     private boolean initialised;
     private int queryTarget;
-    private int tick;
 
     public void init() {
         if (initialised) {
@@ -97,12 +94,22 @@ public final class EntityCulling {
     }
 
     /** Whether the entity should be drawn. Anything not positively known to be hidden is drawn. */
-    public boolean shouldRender(Entity entity) {
-        if (!supported) {
+    public boolean shouldRender(Entity entity, boolean cullPlayers) {
+        if (!supported || !isCullable(entity, cullPlayers)) {
             return true;
         }
-        Probe probe = probes.get(entity.getEntityId());
-        return probe == null || !probe.occluded;
+        return !((ICullable) entity).fpsmaster$isOccluded();
+    }
+
+    /**
+     * Players are excluded by default.
+     *
+     * <p>Skipping an entity's render also skips its nameplate, and this client has a NameTags
+     * feature built on that. Hiding a player's tag because a wall is in the way is a change in what
+     * the client shows, not a rendering optimisation, so it is opt-in rather than a side effect.
+     */
+    private static boolean isCullable(Entity entity, boolean cullPlayers) {
+        return cullPlayers || !(entity instanceof EntityPlayer);
     }
 
     /**
@@ -111,11 +118,10 @@ public final class EntityCulling {
      * <p>Call once at the start of the entity pass, after opaque terrain has been drawn.
      */
     public void update(Minecraft mc, double renderPosX, double renderPosY, double renderPosZ,
-                       long reprobeMillis) {
+                       long reprobeMillis, boolean cullPlayers) {
         if (!supported || mc.theWorld == null || mc.getRenderViewEntity() == null) {
             return;
         }
-        tick++;
         harvest();
 
         long now = System.currentTimeMillis();
@@ -127,16 +133,12 @@ public final class EntityCulling {
             WorldRenderer worldRenderer = Tessellator.getInstance().getWorldRenderer();
             for (int i = 0; i < entities.size(); i++) {
                 Entity entity = entities.get(i);
-                if (entity == viewEntity) {
+                if (entity == viewEntity || !isCullable(entity, cullPlayers)) {
                     continue;
                 }
-                Probe probe = probes.get(entity.getEntityId());
-                if (probe == null) {
-                    probe = new Probe();
-                    probes.put(entity.getEntityId(), probe);
-                }
-                probe.lastSeenTick = tick;
-                if (probe.pending || now - probe.lastIssuedMillis < reprobeMillis) {
+                ICullable state = (ICullable) entity;
+                if (state.fpsmaster$isQueryPending()
+                        || now - state.fpsmaster$getLastProbeMillis() < reprobeMillis) {
                     continue;
                 }
 
@@ -144,48 +146,51 @@ public final class EntityCulling {
                         PROBE_EXPANSION, PROBE_EXPANSION, PROBE_EXPANSION);
                 if (containsCamera(box, renderPosX, renderPosY, renderPosZ)) {
                     // Front faces only means a box around the camera rasterises nothing.
-                    probe.occluded = false;
+                    state.fpsmaster$setOccluded(false);
                     continue;
                 }
                 Integer queryId = acquireQuery();
                 if (queryId == null) {
-                    probe.occluded = false;
+                    state.fpsmaster$setOccluded(false);
                     continue;
                 }
-                probe.queryId = queryId;
-                probe.pending = true;
-                probe.lastIssuedMillis = now;
+                state.fpsmaster$setQueryId(queryId.intValue());
+                state.fpsmaster$setQueryPending(true);
+                state.fpsmaster$setLastProbeMillis(now);
+                pendingProbes.add(entity);
 
                 if (BenchmarkMode.ACTIVE) {
                     BenchCounters.cullProbesIssued++;
                 }
-                GL15.glBeginQuery(queryTarget, probe.queryId);
+                GL15.glBeginQuery(queryTarget, queryId.intValue());
                 drawBox(worldRenderer, box, renderPosX, renderPosY, renderPosZ);
                 GL15.glEndQuery(queryTarget);
             }
         } finally {
             endProbeState();
         }
-        forgetStaleEntities();
     }
 
     private void harvest() {
-        for (Probe probe : probes.values()) {
-            if (!probe.pending) {
-                continue;
-            }
-            if (GL15.glGetQueryObjectui(probe.queryId, GL15.GL_QUERY_RESULT_AVAILABLE) != GL11.GL_TRUE) {
+        for (int i = pendingProbes.size() - 1; i >= 0; i--) {
+            ICullable state = (ICullable) pendingProbes.get(i);
+            int queryId = state.fpsmaster$getQueryId();
+            if (GL15.glGetQueryObjectui(queryId, GL15.GL_QUERY_RESULT_AVAILABLE) != GL11.GL_TRUE) {
                 continue;  // not ready: keep the previous verdict rather than stall
             }
-            probe.occluded = GL15.glGetQueryObjectui(probe.queryId, GL15.GL_QUERY_RESULT) == 0;
+            boolean occluded = GL15.glGetQueryObjectui(queryId, GL15.GL_QUERY_RESULT) == 0;
+            state.fpsmaster$setOccluded(occluded);
+            state.fpsmaster$setQueryPending(false);
             if (BenchmarkMode.ACTIVE) {
                 BenchCounters.cullProbesHarvested++;
-                if (probe.occluded) {
+                if (occluded) {
                     BenchCounters.cullProbesOccluded++;
                 }
             }
-            probe.pending = false;
-            freeQueries.addLast(probe.queryId);
+            freeQueries.addLast(queryId);
+            // Swap-remove: order does not matter and this avoids shifting the tail.
+            pendingProbes.set(i, pendingProbes.get(pendingProbes.size() - 1));
+            pendingProbes.remove(pendingProbes.size() - 1);
         }
     }
 
@@ -200,36 +205,22 @@ public final class EntityCulling {
         return GL15.glGenQueries();
     }
 
-    /**
-     * Drops entries for entities that have not been seen for a while.
-     *
-     * <p>Without this the map grows for the lifetime of the session as entities spawn and die, which
-     * is exactly the kind of slow leak this work is meant to remove rather than add.
-     */
-    private void forgetStaleEntities() {
-        if ((tick & 0xFF) != 0) {
-            return;
-        }
-        Iterator<Map.Entry<Integer, Probe>> iterator = probes.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Probe probe = iterator.next().getValue();
-            if (tick - probe.lastSeenTick > 256 && !probe.pending) {
-                freeQueries.addLast(probe.queryId);
-                iterator.remove();
-            }
-        }
-    }
-
     private static boolean containsCamera(AxisAlignedBB box, double x, double y, double z) {
         return x >= box.minX && x <= box.maxX
                 && y >= box.minY && y <= box.maxY
                 && z >= box.minZ && z <= box.maxZ;
     }
 
+    /**
+     * Masks colour and depth writes for the probe pass.
+     *
+     * <p>Deliberately touches as little state as possible. An earlier version also disabled blending
+     * and lighting but only restored texturing and lighting, so a probe pass left blending off for
+     * whatever drew next. Neither blending nor lighting can affect the result once colour writes are
+     * masked, so the fix is to not touch them at all rather than to add a matching restore.
+     */
     private static void beginProbeState() {
         GlStateManager.disableTexture2D();
-        GlStateManager.disableLighting();
-        GlStateManager.disableBlend();
         GlStateManager.depthMask(false);
         GlStateManager.colorMask(false, false, false, false);
     }
@@ -238,7 +229,6 @@ public final class EntityCulling {
         GlStateManager.colorMask(true, true, true, true);
         GlStateManager.depthMask(true);
         GlStateManager.enableTexture2D();
-        GlStateManager.enableLighting();
     }
 
     private static void drawBox(WorldRenderer worldRenderer, AxisAlignedBB box,
@@ -285,14 +275,15 @@ public final class EntityCulling {
         Tessellator.getInstance().draw();
     }
 
-    /** Clears all state; call when the world changes so stale verdicts cannot leak across worlds. */
+    /** Drops in-flight probes; call when the world changes so queries cannot outlive their entity. */
     public void reset() {
-        for (Probe probe : probes.values()) {
-            if (!probe.pending) {
-                freeQueries.addLast(probe.queryId);
-            }
+        for (int i = 0; i < pendingProbes.size(); i++) {
+            ICullable state = (ICullable) pendingProbes.get(i);
+            state.fpsmaster$setQueryPending(false);
+            state.fpsmaster$setOccluded(false);
+            freeQueries.addLast(state.fpsmaster$getQueryId());
         }
-        probes.clear();
+        pendingProbes.clear();
     }
 
     public void countVisibility(boolean rendered) {

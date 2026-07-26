@@ -361,6 +361,7 @@ performance.batchmodelrendering=渲染批处理
 performance.downscalepackicons=缩放资源包图标
 performance.particleculling=粒子视锥裁剪
 performance.entityculling=实体遮挡裁剪
+performance.cullplayers=同时裁剪玩家
 performance.entitycullinginterval=裁剪刷新间隔 (毫秒)
 performance.lowanimationtick=低动画帧率
 

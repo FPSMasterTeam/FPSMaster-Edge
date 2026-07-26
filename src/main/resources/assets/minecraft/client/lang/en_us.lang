@@ -361,6 +361,7 @@ performance.batchmodelrendering=Batch Model Rendering
 performance.downscalepackicons=Downscale Resource Pack Icons
 performance.particleculling=Particle Frustum Culling
 performance.entityculling=Entity Occlusion Culling
+performance.cullplayers=Also Cull Players
 performance.entitycullinginterval=Culling Refresh Interval (ms)
 performance.lowanimationtick=Low Animation Tick
 

@@ -27,6 +27,8 @@ public class Performance extends Module {
     public static BooleanSetting downscalePackIcons = new BooleanSetting("DownscalePackIcons", true);
     public static BooleanSetting particleCulling = new BooleanSetting("ParticleCulling", true);
     public static BooleanSetting entityCulling = new BooleanSetting("EntityCulling", false);
+    public static BooleanSetting cullPlayers =
+            new BooleanSetting("CullPlayers", false, () -> entityCulling.getValue());
 
     /** Shared culling state; lives here so the mixins that drive it have one owner. */
     public static final EntityCulling ENTITY_CULLING = new EntityCulling();
@@ -51,7 +53,8 @@ public class Performance extends Module {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, fontOptimize, staticParticleColor, limitChunks, chunkUpdateLimit,
-                downscalePackIcons, particleCulling, entityCulling, entityCullingInterval);
+                downscalePackIcons, particleCulling, entityCulling, cullPlayers,
+                entityCullingInterval);
     }
 
 

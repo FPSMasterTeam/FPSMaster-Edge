@@ -196,10 +196,30 @@ it is what produced an absurd +915% on one pair's 1% low. Only p50 is quoted.
 
 Screenshot gate: pass, 0.65%–1.58% of pixels differing against a 7.29% calibrated limit.
 
-**Known regression, not yet fixed:** heap used rose from 480MB to 573MB and GC
-collections from 25/28/21 to 32/33/33. `Map<Integer, Probe>` boxes the entity id on
-every lookup, and there are two lookups per entity per frame — roughly 94,000 Integer
-allocations per second at this frame rate. Entity ids above 127 miss the Integer cache.
+**Memory regression found and fixed.** The first version raised heap from 480MB to
+573MB and GC collections by ~30%. `Map<Integer, Probe>` boxed the entity id on every
+lookup, twice per entity per frame — roughly 94,000 Integer allocations per second at
+this frame rate, since ids above 127 miss the Integer cache. Moving the state onto the
+entity via a duck interface removed the map, the hashing and the boxing together, and
+removed the need for a periodic sweep of stale keys. After the fix, on a clean series:
+heap 557MB off vs 539MB on, GC collections [29,26,27] off vs [28,30,31] on — level.
+
+Re-measured after that fix, clean series with no outlier frames:
+
+| section cpu p50 | off | on | paired diff | null band |
+| --- | ---: | ---: | ---: | ---: |
+| entities | 1142.8us | 863.2us | **−23.90%** | 6.83% |
+| terrain | 403.4us | 421.9us | +4.50% | 3.45% |
+
+Per-pair: −20.9%, −25.5%, −25.3%. avg fps 371.7 to 427.0.
+
+**Two things this series leaves open.** Entities culled per frame dropped from 47.8 in
+the first measurement to 35.5 in the second, and the entity-pass win moved with it,
+from −40% to −24%. The two are consistent with each other, so the question is why fewer
+entities are being culled; a review of the refactor found no behavioural difference, so
+this is unexplained and **the conservative −24% is what is quoted**. Separately, terrain
+came out +4.50% against a 3.45% band — marginal, and worth watching rather than
+believing on one series.
 
 ### R4 — particle frustum culling
 
