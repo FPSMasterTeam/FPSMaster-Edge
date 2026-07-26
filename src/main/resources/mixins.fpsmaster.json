@@ -50,6 +50,7 @@
     "MixinRenderEntityItem",
     "MixinRenderItem",
     "MixinRenderLivingBase",
+    "RendererLivingEntityMixin_SectionTiming",
     "MixinRenderManager",
     "RenderGlobalMixin_SectionTiming",
     "MixinRenderTNTPrimed",

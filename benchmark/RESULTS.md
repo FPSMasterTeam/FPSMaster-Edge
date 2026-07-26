@@ -157,7 +157,26 @@ guesswork. Two things the breakdown changes:
   cost is per-entity fixed overhead (GlStateManager sequences, brightness lookup,
   texture binds, layer iteration) rather than geometry. Occlusion culling removes that
   cost wholesale for hidden entities, which is why it worked; making the remaining
-  entities cheaper is a separate, unexplored target.
+  entities cheaper is a separate target, broken down below.
+
+  | per-entity phase | cpu p50 | share | per entity |
+  | --- | ---: | ---: | ---: |
+  | `renderModel` | 827.8us | 69.2% | 8.66us |
+  | `renderLayers` | 186.4us | 15.6% | 1.95us |
+  | `setBrightness` | 134.3us | 11.2% | 1.40us |
+  | unbracketed | 47.2us | 3.9% | 0.49us |
+
+  The model dominates: 8.66us across about a dozen boxes is 0.72us per box, roughly
+  2200 cycles for a translate, a rotate and a `glCallList`. This exposes the limit of
+  the existing BatchModelRendering, which batches vertices *inside*
+  `compileDisplayList` but does not reduce the number of `glCallList` invocations — an
+  entity still costs a dozen display-list calls and a dozen matrix setups. Collapsing a
+  model into one display list is the real fix and needs `ModelBase` restructuring.
+
+  `setBrightness` at 1.40us per entity is one `glMultiTexCoord2f` lightmap write.
+  Caching it to skip redundant writes is the obvious move, but display lists executed
+  by `glCallList` can contain texcoord commands that bypass such a cache and leave it
+  stale, so it is not worth doing without a way to verify that first.
 - **Sky is 134.8us** on a superflat scene with clouds disabled, which is more than
   expected and worth a look.
 

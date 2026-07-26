@@ -31,11 +31,17 @@ public final class BenchProfiler {
     public static final int SECTION_FRAME_TOTAL = 9;
     /** Per-entity render, nested inside {@link #SECTION_ENTITIES}. */
     public static final int SECTION_ENTITY_RENDER = 10;
-    public static final int SECTION_COUNT = 11;
+    /** Sub-phases of {@link #SECTION_ENTITY_RENDER}, to find where 9.6us per entity goes. */
+    public static final int SECTION_ENTITY_MODEL = 11;
+    public static final int SECTION_ENTITY_LAYERS = 12;
+    public static final int SECTION_ENTITY_BRIGHTNESS = 13;
+    public static final int SECTION_ENTITY_SHADOW = 14;
+    public static final int SECTION_COUNT = 15;
 
     private static final String[] NAMES = {
             "terrain", "entities", "particles", "hud", "chunkUpload",
             "sky", "clouds", "hand", "terrainSetup", "frameTotal", "entityRender",
+            "entityModel", "entityLayers", "entityBrightness", "entityShadow",
     };
 
     private static final BenchProfiler INSTANCE = new BenchProfiler();
