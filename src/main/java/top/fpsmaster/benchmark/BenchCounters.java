@@ -60,6 +60,9 @@ public final class BenchCounters {
     public static long texturesAllocated;
     public static long texturesReleased;
 
+    public static long modelListHits;
+    public static long modelListMisses;
+
     public static long animatedSpritesTotal;
     public static long animatedSpritesUpdated;
 
@@ -71,6 +74,7 @@ public final class BenchCounters {
             "chunkRebuildsRequested", "chunkRebuildsCompleted", "chunkThrottleSleeps",
             "fontCacheHits", "fontCacheMisses", "fontCacheEvictions",
             "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
+            "modelListHits", "modelListMisses",
             "displayListsAllocated", "displayListsReleased",
             "texturesAllocated", "texturesReleased",
             "animatedSpritesTotal", "animatedSpritesUpdated",
@@ -89,6 +93,7 @@ public final class BenchCounters {
                 chunkRebuildsRequested, chunkRebuildsCompleted, chunkThrottleSleeps,
                 fontCacheHits, fontCacheMisses, fontCacheEvictions,
                 cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
+                modelListHits, modelListMisses,
                 displayListsAllocated, displayListsReleased,
                 texturesAllocated, texturesReleased,
                 animatedSpritesTotal, animatedSpritesUpdated,

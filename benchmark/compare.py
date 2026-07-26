@@ -63,8 +63,12 @@ def check_contamination(runs: dict[int, dict], name: str) -> None:
         median = frames[len(frames) // 2]
         bad = [f for f in frames if f > median * 20]
         if bad:
+            worst = max(bad) / NANOS_PER_MILLI
+            # Over 100ms is a desktop stall rather than the client; below that it is a GC pause or
+            # driver hitch, which is the client's own behaviour and belongs in the numbers.
+            severity = "rerun, this is a desktop stall" if worst > 100 else "the tail rests on these"
             print(f"  WARNING {name}-{index} has {len(bad)} frame(s) over 20x median "
-                  f"(worst {max(bad) / NANOS_PER_MILLI:.1f}ms) - rerun rather than trust the tail")
+                  f"(worst {worst:.1f}ms) - {severity}")
 
 
 def main() -> None:

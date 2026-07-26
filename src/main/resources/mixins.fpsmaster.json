@@ -53,6 +53,7 @@
     "GLAllocationMixin_ResourceTracking",
     "TextureUtilMixin_ResourceTracking",
     "MixinRenderLivingBase",
+    "RendererLivingEntityMixin_ModelCache",
     "RendererLivingEntityMixin_SectionTiming",
     "MixinRenderManager",
     "RenderGlobalMixin_SectionTiming",

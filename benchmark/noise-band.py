@@ -86,12 +86,21 @@ def main() -> None:
         median = frames[len(frames) // 2]
         bad = [x for x in frames if x > median * 20]
         disturbed = run["summary"].get("disturbedFrames", 0)
-        if bad:
+        # Two different things look alike in the tail and must not be treated alike. A dragged
+        # window or an alt-tab stalls the process for hundreds of milliseconds and is not data. A
+        # 20-40ms frame is a GC pause or a driver hitch — it is the client's own behaviour, and
+        # discarding it would flatter the numbers. So rejection is on absolute duration, and the
+        # relative check only warns.
+        worst = max(frames) if frames else 0
+        if worst > 100_000_000:
             raise SystemExit(
-                f"{f.name} contains {len(bad)} frame(s) over 20x the median "
-                f"(worst {max(bad)/1e6:.1f}ms). A noise band measured from a disturbed run is "
-                f"useless - it would hide every real regression. Rerun the series undisturbed."
+                f"{f.name} contains a {worst/1e6:.0f}ms frame. A stall that long is the desktop, "
+                f"not the client, and a noise band measured from it would hide every real "
+                f"regression. Rerun the series undisturbed."
             )
+        if bad:
+            print(f"  note: {f.name} has {len(bad)} frame(s) over 20x the median "
+                  f"(worst {worst/1e6:.1f}ms) - kept, but the tail statistics rest on them")
         if disturbed:
             print(f"  note: {f.name} excluded {disturbed} disturbed frame(s) during capture")
 

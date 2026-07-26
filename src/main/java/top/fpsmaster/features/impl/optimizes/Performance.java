@@ -26,6 +26,7 @@ public class Performance extends Module {
     public static BooleanSetting lowAnimationTick = new BooleanSetting("LowAnimationTick", true);
     public static BooleanSetting downscalePackIcons = new BooleanSetting("DownscalePackIcons", true);
     public static BooleanSetting particleCulling = new BooleanSetting("ParticleCulling", true);
+    public static BooleanSetting cacheModelLists = new BooleanSetting("CacheModelLists", false);
     public static BooleanSetting entityCulling = new BooleanSetting("EntityCulling", false);
     public static BooleanSetting cullPlayers =
             new BooleanSetting("CullPlayers", false, () -> entityCulling.getValue());
@@ -53,7 +54,7 @@ public class Performance extends Module {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, fontOptimize, staticParticleColor, limitChunks, chunkUpdateLimit,
-                downscalePackIcons, particleCulling, entityCulling, cullPlayers,
+                downscalePackIcons, particleCulling, cacheModelLists, entityCulling, cullPlayers,
                 entityCullingInterval);
     }
 

@@ -49,7 +49,15 @@ $totalPasses = if ($NoDiscardFirst) { $Runs } else { $Runs + 1 }
 
 for ($pass = 0; $pass -lt $totalPasses; $pass++) {
     $discard = (-not $NoDiscardFirst) -and ($pass -eq 0)
-    foreach ($name in $names) {
+
+    # Counterbalance the order. Position within a pass turned out to carry a systematic
+    # 5-6% difference in an A-vs-A series: whichever variant ran second was consistently
+    # faster, in the same direction every pass. Reversing on alternate passes gives each
+    # variant each position equally often, so that bias cancels in the pairing instead of
+    # being read as an effect.
+    $order = if ($pass % 2 -eq 0) { $names } else { $names[($names.Count - 1)..0] }
+
+    foreach ($name in $order) {
         $result = & $runClient -Scenario $Scenario -Variant $name `
                                -Overrides $Variants[$name] -TimeoutSec $TimeoutSec
         $src = $result.ResultFile
