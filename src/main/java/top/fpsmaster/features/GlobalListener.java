@@ -16,7 +16,6 @@ import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
-import top.fpsmaster.font.EnhancedFontRenderer;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.utils.core.Utility;
@@ -57,7 +56,6 @@ public class GlobalListener {
     }
     @Subscribe
     public void onTick(EventTick e) {
-        EnhancedFontRenderer.tickAllInstances();
         long now = System.currentTimeMillis();
         if (now - lastFlushAt < 1000L) {
             return;

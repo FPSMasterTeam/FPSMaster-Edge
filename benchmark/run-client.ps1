@@ -110,6 +110,12 @@ $gameArgs = @(
     '--tweakClass', 'net.minecraftforge.fml.common.launcher.FMLTweaker',
     '--tweakClass', 'org.spongepowered.asm.launch.MixinTweaker',
     '--accessToken', 'undefined',
+    # Without an explicit name the client invents PlayerNNN per launch, and the default
+    # skin is derived from it — so the first-person arm changes between runs. That is
+    # 4.4% of the frame, which was enough to fail the screenshot gate on a change that
+    # had altered nothing visible at all.
+    '--username', 'BenchPlayer',
+    '--uuid', '00000000-0000-4000-8000-000000000001',
     '--mixin', 'mixins.fpsmaster.json'
 )
 

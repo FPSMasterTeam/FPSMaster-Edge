@@ -157,6 +157,53 @@ collections over the window.
 Frame times from a stress run are meaningless by construction, since the workload changes
 mid-window; only the resource counters should be read from it.
 
+## Patcher licence remediation
+
+Edge is GPL-3.0. Patcher is CC BY-NC-SA 4.0, which is incompatible: the NonCommercial
+clause is an added restriction GPL forbids, and ShareAlike requires derivatives to carry
+BY-NC-SA. Seven files carried a `patcher$` member prefix, `FontRendererHook` still had
+commented-out `Patcher.instance` logging calls, and it loaded
+`/assets/patcher/font_glyph_data.bin` — a Patcher asset which is not in this repository,
+so `Objects.requireNonNull` threw an NPE that the surrounding `catch (Exception ignored)`
+swallowed on every launch.
+
+Handled in order of exposure, since default-on code ships to everyone:
+
+- **Model batching** (default on) rewritten. The batch-ownership flag lived as a field on
+  every `TexturedQuad`, but it describes the current draw: once the outer batch is open,
+  `isDrawing()` is true regardless of who opened it. It now lives on a `ModelBatching`
+  helper. Verified identical: 0.008–0.159% of pixels against a 0.500% limit.
+- **Font optimisation** (default off) replaced. 858 lines removed —
+  `FontRendererHook` (610), `EnhancedFontRenderer` (111), `font/optimize/*` (140) — for a
+  190-line `StringRenderCache`.
+- Prefixes renamed, Patcher remnants deleted, README attribution corrected to state that
+  the ideas were referenced and the code is not derived.
+
+The font replacement drops the part that was not worth keeping. The original fused two
+optimisations: a string cache, and a 4096x4224 atlas merging all 256 unicode pages to
+avoid texture binds. That atlas is roughly 69 MB of video memory to save at most two
+binds per string, which is the wrong trade for a client whose goals include reducing
+memory. Only the cache is kept, and it gained proper LRU eviction — the original emptied
+itself wholesale at 5000 entries, collapsing the hit rate periodically for exactly the
+steady text that benefits most, and it dropped display lists without releasing them.
+
+Measured on `text-dense` (sidebar scoreboard, deterministic unlike the F3 overlay whose
+FPS and memory lines change every frame):
+
+| | hud cpu p50 | cache hits | misses |
+| --- | ---: | ---: | ---: |
+| off | 86.2us | — | — |
+| off2 | 85.2us | — | — |
+| **on** | **75.1us** | 929,070 | 0 |
+
+**−12.9% on the HUD section** against a 1.2% null difference, rendering identical at
+0.003–0.034% against a 0.500% limit.
+
+Not addressed: `GlyphCache` and `StringCache` (1865 lines) are MCPatcher lineage rather
+than Patcher and serve only the client's own `UFontRenderer` — a separate licence
+question. `patcher_at.cfg` is a filename that reaches the jar manifest via `FMLAT`;
+renaming it touches the build and warrants its own verified change.
+
 ## Runs
 
 ### R1 — Performance module semantics and dead settings
