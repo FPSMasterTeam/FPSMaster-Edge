@@ -19,6 +19,7 @@ package top.fpsmaster.benchmark;
  *   -Dedge.exp.noSkyImmediate=true  skip the sky's per-frame vertex uploads
  *   -Dedge.exp.noSkyStateToggles=true  skip the sky's fixed-function state changes
  *   -Dedge.exp.noGpuTimer=true     stop issuing GPU timestamp queries at all
+ *   -Dedge.exp.skyBreakdown=true   time every call the sky pass makes
  * </pre>
  */
 public final class Experiments {
@@ -29,6 +30,7 @@ public final class Experiments {
     public static final boolean NO_SKY_IMMEDIATE = flag("noSkyImmediate");
     public static final boolean NO_SKY_STATE_TOGGLES = flag("noSkyStateToggles");
     public static final boolean NO_GPU_TIMER = flag("noGpuTimer");
+    public static final boolean SKY_BREAKDOWN = flag("skyBreakdown");
 
     private Experiments() {
     }
