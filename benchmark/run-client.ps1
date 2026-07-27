@@ -29,6 +29,7 @@ param(
     [string]    $Variant = 'baseline',
     [hashtable] $Overrides,
     [int]       $TimeoutSec = 420,
+    [string]    $RecordReplay,
     [switch]    $KeepAlive
 )
 
@@ -98,6 +99,9 @@ $jvmArgs = @(
     "-Dorg.lwjgl.librarypath=$natives",
     # Never grab the cursor: an unattended loop must not hijack the desktop.
     '-Dfml.noGrab=true'
+)
+if ($RecordReplay) { $jvmArgs += "-Dedge.replay.record=$RecordReplay" }
+$jvmArgs += @(
     # Deliberately omitted vs. Loom's launch.cfg: mixin.debug and asmhelper.verbose.
     # Both add classload and logging overhead that would pollute frame timings.
 )

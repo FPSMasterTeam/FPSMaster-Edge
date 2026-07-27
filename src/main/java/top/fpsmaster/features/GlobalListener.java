@@ -11,6 +11,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.replay.ReplayRecorder;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.*;
@@ -56,6 +57,9 @@ public class GlobalListener {
     }
     @Subscribe
     public void onTick(EventTick e) {
+        if (Minecraft.getMinecraft().theWorld != null) {
+            ReplayRecorder.instance().startIfRequested();
+        }
         long now = System.currentTimeMillis();
         if (now - lastFlushAt < 1000L) {
             return;

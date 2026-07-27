@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventPacket;
+import top.fpsmaster.replay.ReplayRecorder;
 
 @Mixin(NetworkManager.class)
 public class MixinNetworkManager {
@@ -17,8 +18,13 @@ public class MixinNetworkManager {
     private void read(ChannelHandlerContext context, Packet<?> packet, CallbackInfo callback) {
         EventPacket eventPacket = new EventPacket(EventPacket.PacketType.RECEIVE, packet);
         EventDispatcher.dispatchEvent(eventPacket);
-        if (eventPacket.isCanceled())
+        if (eventPacket.isCanceled()) {
             callback.cancel();
+            return;
+        }
+        // After the cancel check: a packet the client never processed must not be in the recording,
+        // or playback would diverge from what was actually seen.
+        ReplayRecorder.instance().onPacket(packet);
     }
 
     @Inject(method = "sendPacket(Lnet/minecraft/network/Packet;)V", at = @At("HEAD"), cancellable = true)

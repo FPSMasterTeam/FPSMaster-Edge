@@ -61,6 +61,7 @@
     "MixinShaderGroup",
     "MixinSoundHandler",
     "WorldClientMixin",
+    "accessor.ChunkProviderClientAccessor",
     "accessor.FontRendererAccessor",
     "accessor.GlStateManagerAccessor",
     "accessor.WorldRendererAccessor"
