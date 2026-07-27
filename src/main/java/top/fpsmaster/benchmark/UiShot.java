@@ -3,6 +3,7 @@ package top.fpsmaster.benchmark;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ScreenShotHelper;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.io.File;
@@ -36,7 +37,7 @@ public final class UiShot {
             return;
         }
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.currentScreen == null) {
+        if (mc.currentScreen == null && mc.theWorld == null) {
             return;  // still starting up
         }
         long now = System.currentTimeMillis();
@@ -59,10 +60,24 @@ public final class UiShot {
                 mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
         // Report a measurement alongside the image, so a size regression is a number and not a
         // judgement about a picture.
-        ClientLogger.info("uishot", "captured " + name + " on " + mc.currentScreen.getClass().getSimpleName()
+        ClientLogger.info("uishot", "captured " + name + " on "
+                + (mc.currentScreen == null ? "in-world HUD" : mc.currentScreen.getClass().getSimpleName())
                 + " - s16 height " + FPSMaster.fontManager.s16.getHeight()
                 + ", s16 width of 'Multiplayer' " + FPSMaster.fontManager.s16.getStringWidth("Multiplayer")
                 + ", s24 height " + FPSMaster.fontManager.s24.getHeight());
+
+        // HUD components live in a space defined by the vanilla gui scale; the draggable area has to
+        // match the reach of the mouse in that same space or part of the screen becomes unreachable.
+        net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(mc);
+        float mouseReachX = sr.getScaledWidth() * sr.getScaleFactor() / 2f;
+        float mouseReachY = sr.getScaledHeight() * sr.getScaleFactor() / 2f;
+        float boundsX = sr.getScaledWidth() / 2f * sr.getScaleFactor();
+        float boundsY = sr.getScaledHeight() / 2f * sr.getScaleFactor();
+        float oldBoundsX = (float) (sr.getScaledWidth() / 2f * ClientSettings.getUiScale());
+        ClientLogger.info("uishot", "hud space: mouse reaches " + mouseReachX + "x" + mouseReachY
+                + ", drag bounds " + boundsX + "x" + boundsY
+                + " (previously " + oldBoundsX + " wide, uiScale " + ClientSettings.getUiScale()
+                + ", vanilla scale " + sr.getScaleFactor() + ")");
         mc.shutdown();
     }
 }
