@@ -51,7 +51,14 @@ public final class GlyphAtlas {
     private static final int MAX_PAGE_SIZE = 2048;
 
     /** Padding between glyphs so linear filtering cannot sample a neighbour. */
-    private static final int PADDING = 1;
+    /**
+     * Gutter between glyphs, in atlas texels.
+     *
+     * <p>Two rather than one because text is drawn at half the size it is rasterised at, so the
+     * filter samples across two texels and a single-texel gutter is not wide enough to keep a glyph
+     * from reaching its neighbour.
+     */
+    private static final int PADDING = 2;
 
     public static final class Glyph {
         public final float u0;
@@ -281,8 +288,14 @@ public final class GlyphAtlas {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+        // Cleared, not left undefined. Passing null allocates the texture without defining its
+        // contents, so every texel no glyph has been uploaded to holds whatever the driver last had
+        // there. Windowed that is usually zero and nothing shows; toggling fullscreen reallocates
+        // video memory and it can come back as opaque white, which is what turned characters into
+        // white squares. The filter reaches into that region at every glyph edge.
+        ByteBuffer blank = ByteBuffer.allocateDirect(pageSize * pageSize * 4).order(ByteOrder.nativeOrder());
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, pageSize, pageSize, 0,
-                GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) null);
+                GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, blank);
     }
 
     private void upload(BufferedImage image, int x, int y) {

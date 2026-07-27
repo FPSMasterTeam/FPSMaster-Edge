@@ -23,6 +23,7 @@ import net.minecraft.world.WorldType;
 import org.lwjgl.input.Keyboard;
 import top.fpsmaster.forge.mixin.accessor.NetHandlerPlayClientAccessor;
 import top.fpsmaster.modules.logger.ClientLogger;
+import top.fpsmaster.ui.screens.replay.ReplayScreen;
 import top.fpsmaster.utils.io.FileUtils;
 
 import java.io.File;
@@ -258,9 +259,13 @@ public final class ReplayPlayer {
         possessing = false;
         netHandler = null;
 
+        // Unloading the world leaves no world, no player and no render view entity. Vanilla never
+        // ends up in that state without a screen on top - every disconnect path puts one there - and
+        // the rest of the tick and the frame after it assume as much. Ending playback without one
+        // crashed the client; landing back in the browser is also where you want to be.
         Minecraft mc = Minecraft.getMinecraft();
-        mc.setRenderViewEntity(null);
         mc.loadWorld(null);
+        mc.displayGuiScreen(new ReplayScreen(null));
         ClientLogger.info("replay", "playback stopped");
     }
 

@@ -21,6 +21,7 @@ import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
+import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.ui.screens.replay.ReplayHud;
 import top.fpsmaster.utils.core.Utility;
@@ -69,6 +70,7 @@ public class GlobalListener {
         ReplayPlayer.instance().onClientTick();
         ReplayProbe.onClientTick();
         UiShot.onClientTick();
+        PendingScreen.tick();
         long now = System.currentTimeMillis();
         if (now - lastFlushAt < 1000L) {
             return;

@@ -2,6 +2,7 @@ package top.fpsmaster.features.command;
 
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.replay.ReplayRecorder;
+import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.screens.replay.ReplayScreen;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
@@ -65,14 +66,9 @@ public class CommandManager {
     private void handleReplay(String[] args) {
         ReplayRecorder recorder = ReplayRecorder.instance();
         if (args.length == 0) {
-            // Deferred: the chat GUI closes itself once the message is handled, and closing a screen
-            // sets the current screen to null - which threw this one away as soon as it opened.
-            mc.addScheduledTask(new Runnable() {
-                @Override
-                public void run() {
-                    mc.displayGuiScreen(new ReplayScreen(null));
-                }
-            });
+            // Next tick, not now: the chat GUI closes itself once the message is handled, and
+            // closing a screen sets the current screen to null, which would take this one with it.
+            PendingScreen.open(new ReplayScreen(null));
             return;
         }
         String action = args[0].toLowerCase();

@@ -1,8 +1,8 @@
 package top.fpsmaster.features.impl.utility;
 
-import net.minecraft.client.Minecraft;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.screens.replay.ReplayScreen;
 
 /**
@@ -24,16 +24,9 @@ public class Replay extends Module {
     @Override
     public void onEnable() {
         super.onEnable();
-        Minecraft mc = Minecraft.getMinecraft();
-        // Deferred by a tick for the same reason the chat command has to be: whatever screen the key
-        // was pressed in may close itself afterwards, and closing a screen sets the current one to
-        // null - taking this one with it.
-        mc.addScheduledTask(new Runnable() {
-            @Override
-            public void run() {
-                set(false);
-                Minecraft.getMinecraft().displayGuiScreen(new ReplayScreen(null));
-            }
-        });
+        set(false);
+        // Next tick, for the same reason the chat command needs it: whatever screen the key was
+        // pressed in may close itself afterwards, and that would take this one with it.
+        PendingScreen.open(new ReplayScreen(null));
     }
 }
