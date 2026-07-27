@@ -191,7 +191,10 @@ public final class ReplayInspect {
                 if (buffer.readableBytes() != 0) {
                     trailingBytes++;
                 }
-            } catch (Exception failure) {
+            } catch (Throwable failure) {
+                // Throwable, not Exception: some packets resolve ids through a registry, and with no
+                // game running that surfaces as ExceptionInInitializerError - an Error, which was
+                // escaping and taking the whole report with it.
                 undecodable++;
                 continue;
             }

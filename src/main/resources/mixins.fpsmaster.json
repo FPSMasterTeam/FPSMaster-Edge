@@ -63,6 +63,7 @@
     "WorldClientMixin",
     "AbstractClientPlayerMixin_ReplaySpectator",
     "PlayerControllerMPMixin_ReplayHud",
+    "RenderGlobalMixin_SkyProbe",
     "accessor.ChunkProviderClientAccessor",
     "accessor.NetHandlerPlayClientAccessor",
     "accessor.FontRendererAccessor",

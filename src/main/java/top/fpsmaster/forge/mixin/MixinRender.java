@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import top.fpsmaster.benchmark.Experiments;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.utility.LevelTag;
 
@@ -38,6 +39,10 @@ public abstract class MixinRender {
 
     @Inject(method = "renderLivingLabel", at = @At("HEAD"), cancellable = true)
     protected void renderLivingLabel(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci) {
+        if (Experiments.active(Experiments.NO_NAMEPLATES)) {
+            ci.cancel();
+            return;
+        }
         LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
         ci.cancel();
     }

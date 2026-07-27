@@ -2,6 +2,8 @@ package top.fpsmaster.benchmark;
 
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.modules.logger.ClientLogger;
+import top.fpsmaster.replay.ReplayPlayer;
+import top.fpsmaster.utils.io.FileUtils;
 
 import java.io.File;
 
@@ -25,6 +27,7 @@ public final class BenchRunner {
     private enum State {
         INIT,
         LOADING_WORLD,
+        LOADING_REPLAY,
         SETTLING,
         WARMUP,
         DISCARD,
@@ -72,6 +75,27 @@ public final class BenchRunner {
         switch (state) {
             case INIT:
                 beginRun(mc, now);
+                break;
+            case LOADING_REPLAY:
+                // Settle means the same thing it does for a world: give it time to fill in. Here
+                // that is the recording's own opening burst - the snapshot of chunks and entities -
+                // plus enough of the stream to be past it.
+                if (!ReplayPlayer.instance().isActive()) {
+                    throw new IllegalStateException("replay stopped before the run began");
+                }
+                if (ReplayPlayer.instance().hasAvatar()
+                        && ReplayPlayer.instance().elapsedMillis() >= scenario.settleSeconds() * 1000L) {
+                    // Possessed, so the camera is the recorder's own movement track: identical on
+                    // both sides of a comparison, with no path of our own to drift.
+                    ReplayPlayer.instance().possess();
+                    ClientLogger.info("benchmark", "replay settled, warmup "
+                            + scenario.warmupMillis() + "ms");
+                    phaseStartMillis = now;
+                    state = State.WARMUP;
+                } else if (now - phaseStartMillis >= scenario.settleTimeoutMillis()) {
+                    throw new IllegalStateException("replay never produced an avatar within "
+                            + scenario.settleTimeoutMillis() + "ms");
+                }
                 break;
             case LOADING_WORLD:
                 if (BenchWorld.isReady(mc)) {
@@ -130,6 +154,10 @@ public final class BenchRunner {
                 }
                 break;
             case MEASURE:
+                if (scenario.replay() != null && !ReplayPlayer.instance().isActive()) {
+                    throw new IllegalStateException("the recording ended before the measurement did;"
+                            + " shorten measureMillis or record longer");
+                }
                 driveCamera(mc, now);
                 if (scenario.stress() != null) {
                     scenario.stress().update(now);
@@ -169,6 +197,16 @@ public final class BenchRunner {
         ClientLogger.info("benchmark", "scenario '" + scenario.id() + "' variant '"
                 + BenchmarkMode.variant() + "'");
 
+        if (scenario.replay() != null) {
+            settleTracker = null;
+            ReplayPlayer.instance().start(new File(new File(FileUtils.dir, "replays"),
+                    scenario.replay() + ".edgereplay"));
+            if (!ReplayPlayer.instance().isActive()) {
+                throw new IllegalStateException("could not open replay '" + scenario.replay() + "'");
+            }
+            state = State.LOADING_REPLAY;
+            return;
+        }
         if (scenario.world() == null) {
             settleTracker = null;
             state = State.WARMUP;

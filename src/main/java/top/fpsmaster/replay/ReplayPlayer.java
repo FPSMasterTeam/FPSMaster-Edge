@@ -121,6 +121,11 @@ public final class ReplayPlayer {
         return active;
     }
 
+    /** True once the recorder's avatar has been built from the movement track. */
+    public boolean hasAvatar() {
+        return avatar != null;
+    }
+
     public boolean isPossessing() {
         return possessing;
     }

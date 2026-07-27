@@ -29,7 +29,10 @@ param(
     [int]    $Runs = 3,
     [string] $Tag,
     [int]    $TimeoutSec = 420,
-    [switch] $NoDiscardFirst
+    [switch] $NoDiscardFirst,
+    # Per-variant ceiling probes, e.g. @{ nosky = @('noSky') }. These delete work rather
+    # than optimise it, so they only ever answer what a pass is worth, never ship.
+    [System.Collections.IDictionary] $VariantExperiments
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,8 +61,10 @@ for ($pass = 0; $pass -lt $totalPasses; $pass++) {
     $order = if ($pass % 2 -eq 0) { $names } else { $names[($names.Count - 1)..0] }
 
     foreach ($name in $order) {
+        $exp = @()
+        if ($VariantExperiments -and $VariantExperiments.Contains($name)) { $exp = @($VariantExperiments[$name]) }
         $result = & $runClient -Scenario $Scenario -Variant $name `
-                               -Overrides $Variants[$name] -TimeoutSec $TimeoutSec
+                               -Overrides $Variants[$name] -Experiments $exp -TimeoutSec $TimeoutSec
         $src = $result.ResultFile
 
         if ($result.Outcome -ne 'OK') {

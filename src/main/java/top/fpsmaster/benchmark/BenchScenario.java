@@ -19,6 +19,7 @@ public final class BenchScenario {
 
     private final String id;
     private final JsonObject world;
+    private final String replay;
     private final BenchCamera camera;
     private final BenchScreenshots screenshots;
     private final BenchStress stress;
@@ -28,12 +29,13 @@ public final class BenchScenario {
     private final long discardMillis;
     private final long measureMillis;
 
-    private BenchScenario(String id, JsonObject world, BenchCamera camera,
+    private BenchScenario(String id, JsonObject world, String replay, BenchCamera camera,
                           BenchScreenshots screenshots, BenchStress stress, int settleSeconds,
                           long settleTimeoutMillis, long warmupMillis, long discardMillis,
                           long measureMillis) {
         this.id = id;
         this.world = world;
+        this.replay = replay;
         this.camera = camera;
         this.screenshots = screenshots;
         this.stress = stress;
@@ -54,6 +56,7 @@ public final class BenchScenario {
         return new BenchScenario(
                 id,
                 object(json, "world"),
+                json.has("replay") ? json.get("replay").getAsString() : null,
                 BenchCamera.parse(object(json, "camera")),
                 BenchScreenshots.parse(json),
                 BenchStress.parse(json),
@@ -70,6 +73,19 @@ public final class BenchScenario {
 
     public String id() {
         return id;
+    }
+
+    /**
+     * Recording to play as the workload, or null for a generated world.
+     *
+     * <p>A recording is the only workload here that contains what actually costs a PvP client:
+     * players with their own skins and nameplates, server-driven particles, scoreboard text, and
+     * chunk data arriving while the camera moves. It is also repeatable in a way a live server is
+     * not - the same packets at the same offsets every run - and the camera is the recorder's own,
+     * so it cannot drift between the two sides of a comparison.
+     */
+    public String replay() {
+        return replay;
     }
 
     /** World descriptor, or {@code null} to benchmark without entering a world. */

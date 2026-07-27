@@ -1,0 +1,9 @@
+{
+  "_comment": "A recorded Hypixel lobby played back as the workload: 11 players with their own skins and nameplates, server particles, scoreboard text and chunk streaming, none of which a generated world produces. Windows are deliberately short - most of a run's wall clock is client startup, so a long measurement buys less than it costs. Confirm anything promising with more repeats rather than a longer window.",
+  "replay": "lobby",
+  "settleSeconds": 3,
+  "settleTimeoutMillis": 45000,
+  "warmupMillis": 2000,
+  "discardMillis": 500,
+  "measureMillis": 8000
+}
