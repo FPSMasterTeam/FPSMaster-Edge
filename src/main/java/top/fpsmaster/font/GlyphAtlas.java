@@ -88,7 +88,16 @@ public final class GlyphAtlas {
     private int shelfHeight;
 
     private final int ascent;
+    private final int inkAscent;
     private final int lineHeight;
+
+    /**
+     * Characters the ink height is measured from.
+     *
+     * <p>Deliberately mixed: a CJK ideograph is the tallest thing this interface draws, and the
+     * Latin capitals and digits keep the measurement sane for a font without CJK coverage.
+     */
+    private static final String INK_PROBE = "选择语言第步AMgXÉ0189";
 
     public GlyphAtlas(Font font) {
         this.font = font;
@@ -101,10 +110,23 @@ public final class GlyphAtlas {
         this.ascent = probeGraphics.getFontMetrics().getAscent();
         this.lineHeight = probeGraphics.getFontMetrics().getHeight();
         probeGraphics.dispose();
+        this.inkAscent = measureInkAscent();
     }
 
     public int ascent() {
         return ascent;
+    }
+
+    /**
+     * How far the tallest glyph's ink rises above the baseline.
+     *
+     * <p>Not the same as {@link #ascent()}, which is a font metric including internal leading and
+     * sits well above anything actually drawn. Text is positioned from this instead, because callers
+     * pass the top of the text they want to see, not the top of a line box - and because it is what
+     * the renderer this replaced converged on, so existing layouts stay where they were.
+     */
+    public int inkAscent() {
+        return inkAscent;
     }
 
     public int lineHeight() {
@@ -113,6 +135,21 @@ public final class GlyphAtlas {
 
     public int textureId() {
         return textureId;
+    }
+
+    /** Measured through the same call rasterising uses, so the two cannot disagree. */
+    private int measureInkAscent() {
+        float highest = 0f;
+        for (int index = 0; index < INK_PROBE.length(); index++) {
+            char character = INK_PROBE.charAt(index);
+            if (!font.canDisplay(character)) {
+                continue;
+            }
+            GlyphVector vector = font.createGlyphVector(fontRenderContext, new char[]{character});
+            Rectangle2D bounds = vector.getGlyphPixelBounds(0, fontRenderContext, 0.0f, 0.0f);
+            highest = Math.max(highest, (float) -bounds.getY());
+        }
+        return highest > 0f ? Math.round(highest) : ascent;
     }
 
     /** Returns the glyph for a character, rasterising and uploading it on first use. */

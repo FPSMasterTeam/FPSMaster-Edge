@@ -12,6 +12,7 @@ import net.minecraft.util.IChatComponent;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.replay.ReplayPlayer;
+import top.fpsmaster.benchmark.UiShot;
 import top.fpsmaster.replay.ReplayProbe;
 import top.fpsmaster.replay.ReplayRecorder;
 import top.fpsmaster.event.EventDispatcher;
@@ -67,6 +68,7 @@ public class GlobalListener {
         ReplayPlayer.instance().startIfRequested();
         ReplayPlayer.instance().onClientTick();
         ReplayProbe.onClientTick();
+        UiShot.onClientTick();
         long now = System.currentTimeMillis();
         if (now - lastFlushAt < 1000L) {
             return;

@@ -180,10 +180,10 @@ public class UFontRenderer extends FontRenderer {
             UFontRenderer renderer = getDensityRenderer(densityScale);
             if (renderer != this) {
                 float actualDensityScale = renderer.size / (float) size;
-                return Math.round(renderer.textRenderer.height() / 2f / actualDensityScale);
+                return Math.round(renderer.textRenderer.height() / actualDensityScale);
             }
         }
-        return textRenderer.height() / 2;
+        return textRenderer.height();
     }
 
     private float getDensityScale() {

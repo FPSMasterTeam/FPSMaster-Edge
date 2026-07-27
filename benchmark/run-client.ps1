@@ -31,6 +31,8 @@ param(
     [int]       $TimeoutSec = 420,
     [string]    $RecordReplay,
     [string]    $PlayReplay,
+    [int]       $UiShot = -1,
+    [string]    $UiShotName = 'ui',
     [string]    $ProbeAt = '5,20,40',
     [int]       $ProbePossessFrom = -1,
     [switch]    $ProbeThirdPerson,
@@ -120,6 +122,7 @@ $jvmArgs = @(
     '-Dfml.noGrab=true'
 )
 if ($RecordReplay) { $jvmArgs += "-Dedge.replay.record=$RecordReplay" }
+if ($UiShot -ge 0)  { $jvmArgs += "-Dedge.uishot=$UiShot"; $jvmArgs += "-Dedge.uishot.name=$UiShotName" }
 if ($PlayReplay)   {
     $jvmArgs += "-Dedge.replay.play=$PlayReplay"
     $jvmArgs += "-Dedge.replay.probeAt=$ProbeAt"
@@ -165,7 +168,7 @@ while ((Get-Date) -lt $deadline) {
         $outcome = 'EXITED'
         break
     }
-    if (-not $Scenario -and -not $KeepAlive -and -not $PlayReplay) {
+    if (-not $Scenario -and -not $KeepAlive -and -not $PlayReplay -and $UiShot -lt 0) {
         # Smoke mode: stop as soon as the client is up.
         $log = Join-Path $gameDir 'logs\latest.log'
         if ((Test-Path $log) -and

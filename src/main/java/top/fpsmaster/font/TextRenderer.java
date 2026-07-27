@@ -25,6 +25,17 @@ public final class TextRenderer {
 
     private static final char FORMATTING_PREFIX = '§';
 
+    /**
+     * Glyphs are rasterised at the full point size and drawn at half of it.
+     *
+     * <p>This is deliberate supersampling, not a mistake: a 16pt font occupies 8 GUI pixels and gets
+     * the extra detail for free. Every caller in the client is written against that convention -
+     * widths, heights and positions are all in the halved space - so the scale belongs here, where
+     * measuring and drawing share one code path, rather than in the callers where the two could
+     * drift apart.
+     */
+    private static final float RENDER_SCALE = 0.5f;
+
     /** Vanilla's 16 colour codes, in the order the formatting characters index them. */
     private static final int[] COLOR_CODES = new int[16];
 
@@ -49,7 +60,9 @@ public final class TextRenderer {
     }
 
     public int height() {
-        return atlas.lineHeight();
+        // Truncating, not rounding: the renderer this replaced reported lineHeight / 2 in integer
+        // arithmetic, and rounding instead moves every odd-height font by a pixel.
+        return (int) (atlas.lineHeight() * RENDER_SCALE);
     }
 
     public float width(String text) {
@@ -97,13 +110,19 @@ public final class TextRenderer {
             worldRenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
         }
 
+        // Alpha passes through exactly as given, including zero. Treating zero as opaque - which
+        // vanilla's own renderer does - breaks the client's fade animations: Alpha.apply multiplies
+        // every colour by a global factor, so a fade that reaches zero would flash back to fully
+        // opaque instead of disappearing.
         int alpha = (argb >> 24) & 0xFF;
-        if (alpha == 0) {
-            alpha = 255;
-        }
         int currentRgb = argb & 0xFFFFFF;
-        float penX = x;
-        float baseline = y + atlas.ascent();
+        // Snapped to whole pixels like the renderer this replaces, so glyphs land on texel centres
+        // instead of being resampled across two of them.
+        float penX = Math.round(x);
+        float baseline = Math.round(y) + atlas.inkAscent() * RENDER_SCALE;
+        // Advance is accumulated separately from the pen, so the pixel snapping above cannot leak
+        // into a measured width and make layout disagree with what was drawn.
+        float advance = 0f;
 
         for (int i = 0; i < text.length(); i++) {
             char character = text.charAt(i);
@@ -127,14 +146,15 @@ public final class TextRenderer {
             if (draw && glyph.width > 0) {
                 emit(worldRenderer, glyph, penX, baseline, currentRgb, alpha);
             }
-            penX += glyph.advance;
+            penX += glyph.advance * RENDER_SCALE;
+            advance += glyph.advance * RENDER_SCALE;
         }
 
         if (draw) {
             Tessellator.getInstance().draw();
             GlStateManager.disableBlend();
         }
-        return penX - x;
+        return advance;
     }
 
     /**
@@ -157,10 +177,10 @@ public final class TextRenderer {
 
     private static void emit(WorldRenderer worldRenderer, GlyphAtlas.Glyph glyph,
                              float penX, float baseline, int rgb, int alpha) {
-        float x0 = penX + glyph.offsetX;
-        float y0 = baseline + glyph.offsetY;
-        float x1 = x0 + glyph.width;
-        float y1 = y0 + glyph.height;
+        float x0 = penX + glyph.offsetX * RENDER_SCALE;
+        float y0 = baseline + glyph.offsetY * RENDER_SCALE;
+        float x1 = x0 + glyph.width * RENDER_SCALE;
+        float y1 = y0 + glyph.height * RENDER_SCALE;
         int red = (rgb >> 16) & 0xFF;
         int green = (rgb >> 8) & 0xFF;
         int blue = rgb & 0xFF;
