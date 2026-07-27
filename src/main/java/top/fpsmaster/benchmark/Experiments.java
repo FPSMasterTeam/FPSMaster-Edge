@@ -17,6 +17,8 @@ package top.fpsmaster.benchmark;
  *   -Dedge.exp.noNameplates=true  skip every entity name label
  *   -Dedge.exp.noSkyLists=true    skip the sky's compiled geometry
  *   -Dedge.exp.noSkyImmediate=true  skip the sky's per-frame vertex uploads
+ *   -Dedge.exp.noSkyStateToggles=true  skip the sky's fixed-function state changes
+ *   -Dedge.exp.noGpuTimer=true     stop issuing GPU timestamp queries at all
  * </pre>
  */
 public final class Experiments {
@@ -25,6 +27,8 @@ public final class Experiments {
     public static final boolean NO_NAMEPLATES = flag("noNameplates");
     public static final boolean NO_SKY_LISTS = flag("noSkyLists");
     public static final boolean NO_SKY_IMMEDIATE = flag("noSkyImmediate");
+    public static final boolean NO_SKY_STATE_TOGGLES = flag("noSkyStateToggles");
+    public static final boolean NO_GPU_TIMER = flag("noGpuTimer");
 
     private Experiments() {
     }

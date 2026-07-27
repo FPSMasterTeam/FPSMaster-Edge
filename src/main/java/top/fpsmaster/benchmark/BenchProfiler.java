@@ -82,6 +82,11 @@ public final class BenchProfiler {
 
     /** Must be called with a current GL context before any section is timed. */
     public void initGpuTimer() {
+        if (Experiments.active(Experiments.NO_GPU_TIMER)) {
+            // Ceiling probe on the instrumentation itself. Each section issues two timestamp
+            // queries per frame, and a query can make the driver do more than record a number.
+            return;
+        }
         if (gpuTimer == null) {
             gpuTimer = new GpuTimer(SECTION_COUNT);
         }
