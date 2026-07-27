@@ -17,6 +17,14 @@ import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
 import net.minecraft.network.play.server.S0EPacketSpawnObject;
 import net.minecraft.network.play.server.S0FPacketSpawnMob;
 import net.minecraft.network.play.server.S21PacketChunkData;
+import net.minecraft.network.play.server.S3BPacketScoreboardObjective;
+import net.minecraft.network.play.server.S3CPacketUpdateScore;
+import net.minecraft.network.play.server.S3DPacketDisplayScoreboard;
+import net.minecraft.network.play.server.S3EPacketTeams;
+import net.minecraft.scoreboard.Score;
+import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.scoreboard.ScorePlayerTeam;
+import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.world.chunk.Chunk;
 import top.fpsmaster.forge.mixin.accessor.ChunkProviderClientAccessor;
 import top.fpsmaster.modules.logger.ClientLogger;
@@ -46,6 +54,9 @@ final class ReplaySnapshot {
     /** ADD_PLAYER, the first entry of the packet's action enum. */
     private static final int ACTION_ADD_PLAYER = 0;
 
+    /** Sidebar, list and below-name; the three slots a scoreboard can be shown in. */
+    private static final int DISPLAY_SLOTS = 3;
+
     /** Object type id for a dropped item in the spawn-object table. */
     private static final int OBJECT_TYPE_ITEM = 2;
 
@@ -60,8 +71,46 @@ final class ReplaySnapshot {
 
     static void capture(Minecraft mc, Sink sink) {
         capturePlayerList(mc, sink);
+        captureScoreboard(mc, sink);
         captureChunks(mc, sink);
         captureEntities(mc, sink);
+    }
+
+    /**
+     * Rebuilds the scoreboard, because every later change to it is an update to something that
+     * already exists.
+     *
+     * <p>handleTeams and handleScoreboardObjective look their subject up by name and use it without
+     * checking, so an update naming a team or objective created before recording began throws and is
+     * lost. On a server that keeps its scoreboard busy that is most of them. It is not cosmetic
+     * either: nameplate colours and prefixes live in teams, so the players that do appear render
+     * wrongly without this.
+     */
+    private static void captureScoreboard(Minecraft mc, Sink sink) {
+        if (mc.theWorld == null) {
+            return;
+        }
+        Scoreboard scoreboard = mc.theWorld.getScoreboard();
+        int objectives = 0;
+        for (ScoreObjective objective : scoreboard.getScoreObjectives()) {
+            sink.accept(new S3BPacketScoreboardObjective(objective, 0));
+            objectives++;
+        }
+        for (Score score : scoreboard.getScores()) {
+            sink.accept(new S3CPacketUpdateScore(score));
+        }
+        for (int slot = 0; slot < DISPLAY_SLOTS; slot++) {
+            ScoreObjective displayed = scoreboard.getObjectiveInDisplaySlot(slot);
+            if (displayed != null) {
+                sink.accept(new S3DPacketDisplayScoreboard(slot, displayed));
+            }
+        }
+        int teams = 0;
+        for (ScorePlayerTeam team : scoreboard.getTeams()) {
+            sink.accept(new S3EPacketTeams(team, 0));
+            teams++;
+        }
+        ClientLogger.info("replay", "seeded " + objectives + " objective(s) and " + teams + " team(s)");
     }
 
     private static void capturePlayerList(Minecraft mc, Sink sink) {

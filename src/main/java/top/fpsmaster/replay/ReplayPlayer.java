@@ -15,6 +15,7 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
 import net.minecraft.network.play.server.S2BPacketChangeGameState;
 import net.minecraft.network.play.server.S2DPacketOpenWindow;
 import net.minecraft.network.play.server.S39PacketPlayerAbilities;
@@ -32,6 +33,7 @@ import top.fpsmaster.ui.screens.replay.ReplayScreen;
 import top.fpsmaster.utils.io.FileUtils;
 
 import java.io.File;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -67,11 +69,17 @@ public final class ReplayPlayer {
     /** How far the possession ray reaches. Vanilla's 3-block spectator pick is unusable here. */
     private static final double POSSESS_REACH = 128.0d;
 
+    /** Packet id of S38PacketPlayerListItem in the 1.8 play/clientbound table. */
+    private static final int PLAYER_LIST_ITEM_ID = 0x38;
+
     /** The "change game mode" reason of S2BPacketChangeGameState. */
     private static final int GAME_STATE_CHANGE_GAME_MODE = 3;
 
     /** Bounded so a paused replay cannot pull the whole file into memory. */
     private static final int QUEUE_CAPACITY = 8192;
+
+    /** Enough to see the shape of a failure without filling the log with one repeat. */
+    private static final int MAX_LOGGED_FAILURES = 3;
 
     private static final ReplayPlayer INSTANCE = new ReplayPlayer();
 
@@ -100,6 +108,7 @@ public final class ReplayPlayer {
     private boolean sneakWasDown;
     private boolean pauseWasDown;
     private boolean autoPlayDone;
+    private int loggedFailures;
 
     private ReplayPlayer() {
     }
@@ -214,6 +223,7 @@ public final class ReplayPlayer {
         this.lastCameraPlayer = null;
         this.pending = null;
         this.readerFinished = false;
+        this.loggedFailures = 0;
         queue.clear();
 
         openWorld(header);
@@ -391,6 +401,46 @@ public final class ReplayPlayer {
                 && ((S2BPacketChangeGameState) packet).getGameState() == GAME_STATE_CHANGE_GAME_MODE;
     }
 
+    /**
+     * Gives a spawning player a tab-list entry when the recording never provided one.
+     *
+     * <p>handleSpawnPlayer reads getPlayerInfo(uuid).getGameProfile() with no null check, so a
+     * player the tab list does not name cannot be spawned at all - the packet throws and they are
+     * simply absent. That is not rare on a real server: of 37 players spawning in a recorded
+     * Hypixel lobby, 21 were never named, because entries are added and removed again before the
+     * recording started and the removal is what the recording caught.
+     *
+     * <p>A recording is a partial view of a session, and playback should fill the gaps rather than
+     * drop what it cannot explain. The stand-in carries no skin properties, so the player renders
+     * with the default skin for their id - which is what the real client falls back to anyway when
+     * a profile has no textures.
+     */
+    private void ensureNamed(S0CPacketSpawnPlayer packet) {
+        UUID id = packet.getPlayer();
+        if (id == null || netHandler.getPlayerInfo(id) != null) {
+            return;
+        }
+        PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
+        try {
+            buffer.writeVarIntToBuffer(0);  // ADD_PLAYER
+            buffer.writeVarIntToBuffer(1);
+            buffer.writeUuid(id);
+            buffer.writeString(id.toString().substring(0, 8));
+            buffer.writeVarIntToBuffer(0);  // no properties
+            buffer.writeVarIntToBuffer(0);  // survival
+            buffer.writeVarIntToBuffer(0);  // no ping
+            buffer.writeBoolean(false);     // no display name
+            Packet<?> tabEntry = EnumConnectionState.PLAY.getPacket(
+                    EnumPacketDirection.CLIENTBOUND, PLAYER_LIST_ITEM_ID);
+            tabEntry.readPacketData(buffer);
+            ((Packet) tabEntry).processPacket(netHandler);
+        } catch (Exception failure) {
+            ClientLogger.error("replay", "could not name " + id + ": " + failure);
+        } finally {
+            buffer.release();
+        }
+    }
+
     private void apply(Frame frame) {
         if (frame.packet instanceof S08PacketPlayerPosLook) {
             // Addressed to the recorder, but playback has no recorder entity to address - it would
@@ -400,6 +450,9 @@ public final class ReplayPlayer {
         }
         if (rewritesTheViewer(frame.packet)) {
             return;
+        }
+        if (frame.packet instanceof S0CPacketSpawnPlayer) {
+            ensureNamed((S0CPacketSpawnPlayer) frame.packet);
         }
         if (frame.packet instanceof S2DPacketOpenWindow && !possessing) {
             // A chest the recorder opened should not take over the screen of someone flying around
@@ -411,8 +464,13 @@ public final class ReplayPlayer {
                 // Raw cast: Packet's handler type is erased, and the only handler in play is ours.
                 ((Packet) frame.packet).processPacket(netHandler);
             } catch (Exception failure) {
+                // With the stack for the first few: the message alone says a packet failed but not
+                // which field was missing, and that is the whole question when one does.
                 ClientLogger.error("replay", "could not apply "
                         + frame.packet.getClass().getSimpleName() + ": " + failure);
+                if (loggedFailures++ < MAX_LOGGED_FAILURES) {
+                    failure.printStackTrace();
+                }
             }
             return;
         }

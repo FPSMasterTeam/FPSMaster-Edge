@@ -9,6 +9,8 @@ import net.minecraft.network.EnumConnectionState;
 import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
+import net.minecraft.network.play.server.S38PacketPlayerListItem;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.io.FileUtils;
 
@@ -63,8 +65,15 @@ public final class ReplayRecorder {
     private int lastWindowId = -1;
     private ItemStack[] lastSlots;
 
-    /** Time for chunks and entities to arrive before an automated capture snapshots them. */
-    private static final long AUTO_START_DELAY_MILLIS = 8000L;
+    /**
+     * Time for the world to fill in before an automated capture snapshots it.
+     *
+     * <p>Overridable because a test that wants to prove the snapshot captured something has to start
+     * recording after that something exists, and a benchmark scenario sets its world up on its own
+     * schedule.
+     */
+    private static final long AUTO_START_DELAY_MILLIS =
+            Long.getLong("edge.replay.recordDelay", 8L).longValue() * 1000L;
 
     private long autoStartFirstSeen;
     private boolean autoStartDone;
@@ -74,6 +83,8 @@ public final class ReplayRecorder {
     private long startMillis;
     private int packetsRecorded;
     private int packetsDropped;
+    private int playersSpawned;
+    private final java.util.Set<java.util.UUID> playersNamed = new java.util.HashSet<java.util.UUID>();
 
     private ReplayRecorder() {
     }
@@ -155,6 +166,8 @@ public final class ReplayRecorder {
         startMillis = System.currentTimeMillis();
         packetsRecorded = 0;
         packetsDropped = 0;
+        playersSpawned = 0;
+        playersNamed.clear();
         java.util.Arrays.fill(lastEquipment, null);
         lastWindowId = -1;
         lastSlots = null;
@@ -169,7 +182,16 @@ public final class ReplayRecorder {
         writerThread.setDaemon(true);
         writerThread.start();
 
-        ReplaySnapshot.capture(Minecraft.getMinecraft(), snapshotSink);
+        ReplaySnapshot.capture(mc, snapshotSink);
+        // The snapshot writes the tab list as raw bytes, which never passes through offer(), so the
+        // players it named have to be counted here or the report understates what was captured.
+        if (mc.getNetHandler() != null) {
+            for (net.minecraft.client.network.NetworkPlayerInfo info : mc.getNetHandler().getPlayerInfoMap()) {
+                if (info.getGameProfile() != null && info.getGameProfile().getId() != null) {
+                    playersNamed.add(info.getGameProfile().getId());
+                }
+            }
+        }
         ClientLogger.info("replay", "recording to " + file.getName());
     }
 
@@ -186,6 +208,8 @@ public final class ReplayRecorder {
         ClientLogger.info("replay", "stopped after " + packetsRecorded + " packet(s), "
                 + bytesWritten() / 1024L + " KiB" + (packetsDropped > 0
                 ? ", " + packetsDropped + " dropped" : ""));
+        ClientLogger.info("replay", "captured " + playersSpawned + " player spawn(s), "
+                + playersNamed.size() + " player(s) named in the tab list");
     }
 
     /**
@@ -346,7 +370,30 @@ public final class ReplayRecorder {
         offer(packet);
     }
 
+    /**
+     * Counts what the recording contains of other players, reported when it stops.
+     *
+     * <p>Both numbers matter and neither is obvious from the file size. handleSpawnPlayer looks the
+     * profile up in the tab list without checking it exists, so a player who is spawned but never
+     * named cannot appear during playback at all - the packet throws and they are simply missing.
+     */
+    private void countPlayers(Packet<?> packet) {
+        if (packet instanceof S0CPacketSpawnPlayer) {
+            playersSpawned++;
+        } else if (packet instanceof S38PacketPlayerListItem) {
+            S38PacketPlayerListItem list = (S38PacketPlayerListItem) packet;
+            if (list.getAction() == S38PacketPlayerListItem.Action.ADD_PLAYER) {
+                for (S38PacketPlayerListItem.AddPlayerData entry : list.getEntries()) {
+                    if (entry.getProfile() != null && entry.getProfile().getId() != null) {
+                        playersNamed.add(entry.getProfile().getId());
+                    }
+                }
+            }
+        }
+    }
+
     private void offer(Packet<?> packet) {
+        countPlayers(packet);
         Integer id = EnumConnectionState.PLAY.getPacketId(EnumPacketDirection.CLIENTBOUND, packet);
         if (id == null) {
             // Login and status packets are not part of a play-state recording.

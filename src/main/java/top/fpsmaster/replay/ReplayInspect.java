@@ -30,6 +30,58 @@ public final class ReplayInspect {
     private ReplayInspect() {
     }
 
+    /** Uuid and name of every ADD_PLAYER entry, read by hand so no registry is needed. */
+    private static java.util.List<String[]> tabEntriesOf(byte[] payload) {
+        java.util.List<String[]> entries = new java.util.ArrayList<String[]>();
+        try {
+            PacketBuffer buffer = new PacketBuffer(Unpooled.wrappedBuffer(payload));
+            int action = buffer.readVarIntFromBuffer();
+            int count = buffer.readVarIntFromBuffer();
+            if (action != 0) {
+                return entries;
+            }
+            for (int index = 0; index < count; index++) {
+                String uuid = buffer.readUuid().toString();
+                String name = buffer.readStringFromBuffer(16);
+                entries.add(new String[]{uuid, name});
+                int properties = buffer.readVarIntFromBuffer();
+                for (int property = 0; property < properties; property++) {
+                    buffer.readStringFromBuffer(32767);
+                    buffer.readStringFromBuffer(32767);
+                    if (buffer.readBoolean()) {
+                        buffer.readStringFromBuffer(32767);
+                    }
+                }
+                buffer.readVarIntFromBuffer();
+                buffer.readVarIntFromBuffer();
+                if (buffer.readBoolean()) {
+                    buffer.readStringFromBuffer(32767);
+                }
+            }
+        } catch (Exception truncated) {
+            // Partial is still informative.
+        }
+        return entries;
+    }
+
+    private static String spawnUuidOf(byte[] payload) {
+        try {
+            PacketBuffer buffer = new PacketBuffer(Unpooled.wrappedBuffer(payload));
+            buffer.readVarIntFromBuffer();
+            return buffer.readUuid().toString();
+        } catch (Exception failure) {
+            return "?";
+        }
+    }
+
+    private static int spawnEntityIdOf(byte[] payload) {
+        try {
+            return new PacketBuffer(Unpooled.wrappedBuffer(payload)).readVarIntFromBuffer();
+        } catch (Exception failure) {
+            return -1;
+        }
+    }
+
     /**
      * Reads the wire form of an item stack without touching the item registry.
      *
@@ -75,6 +127,12 @@ public final class ReplayInspect {
         int localSamples = 0;
         int equipmentChanges = 0;
         int containerSlots = 0;
+        java.util.Set<String> tabEntries = new java.util.HashSet<String>();
+        java.util.Set<Integer> spawnedPlayers = new java.util.HashSet<Integer>();
+        int tabPackets = 0;
+        java.util.Map<String, Integer> namedAt = new java.util.HashMap<String, Integer>();
+        java.util.List<int[]> spawnTimes = new java.util.ArrayList<int[]>();
+        java.util.List<String> spawnUuids = new java.util.ArrayList<String>();
         StringBuilder containerLog = new StringBuilder();
         ReplayFile.Record record;
         while ((record = ReplayFile.read(header)) != null) {
@@ -138,6 +196,19 @@ public final class ReplayInspect {
                 continue;
             }
             String name = packet.getClass().getSimpleName();
+            if ("S38PacketPlayerListItem".equals(name)) {
+                tabPackets++;
+                for (String[] entry : tabEntriesOf(record.payload)) {
+                    tabEntries.add(entry[1]);
+                    if (!namedAt.containsKey(entry[0])) {
+                        namedAt.put(entry[0], Integer.valueOf(record.millis));
+                    }
+                }
+            } else if ("S0CPacketSpawnPlayer".equals(name)) {
+                spawnedPlayers.add(Integer.valueOf(spawnEntityIdOf(record.payload)));
+                spawnUuids.add(spawnUuidOf(record.payload));
+                spawnTimes.add(new int[]{record.millis});
+            }
             Integer count = byType.get(name);
             byType.put(name, Integer.valueOf(count == null ? 1 : count.intValue() + 1));
             long[] bytes = bytesByType.get(name);
@@ -173,6 +244,41 @@ public final class ReplayInspect {
         if (containerLog.length() > 0) {
             System.out.println("  container slots recorded:");
             System.out.print(containerLog);
+        }
+
+        System.out.printf("  other players  %d spawn packets for %d distinct entities,"
+                        + " %d tab-list packets naming %d players%n",
+                Integer.valueOf(byType.containsKey("S0CPacketSpawnPlayer")
+                        ? byType.get("S0CPacketSpawnPlayer").intValue() : 0),
+                Integer.valueOf(spawnedPlayers.size()),
+                Integer.valueOf(tabPackets), Integer.valueOf(tabEntries.size()));
+        if (!tabEntries.isEmpty()) {
+            System.out.printf("    named: %s%n", String.join(", ",
+                    tabEntries.size() > 12
+                            ? new java.util.ArrayList<String>(tabEntries).subList(0, 12)
+                            : new java.util.ArrayList<String>(tabEntries)));
+        }
+        if (!spawnedPlayers.isEmpty() && tabEntries.isEmpty()) {
+            System.out.println("    WARNING: players are spawned but never named. handleSpawnPlayer"
+                    + " looks the profile up in the tab list without checking, so none of them"
+                    + " will appear during playback.");
+        }
+
+        int neverNamed = 0;
+        int namedLate = 0;
+        for (int index = 0; index < spawnUuids.size(); index++) {
+            Integer when = namedAt.get(spawnUuids.get(index));
+            if (when == null) {
+                neverNamed++;
+            } else if (when.intValue() > spawnTimes.get(index)[0]) {
+                namedLate++;
+            }
+        }
+        if (neverNamed > 0 || namedLate > 0) {
+            System.out.printf("    %d spawned without ever being named, %d named only after they"
+                            + " spawned - handleSpawnPlayer needs the name first, so these cannot"
+                            + " appear during playback%n",
+                    Integer.valueOf(neverNamed), Integer.valueOf(namedLate));
         }
 
         System.out.println("  heaviest packets:");

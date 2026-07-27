@@ -31,6 +31,7 @@ param(
     [int]       $TimeoutSec = 420,
     [string]    $RecordReplay,
     [int]       $ProbeContainerAt = -1,
+    [int]       $RecordDelay = -1,
     [string]    $PlayReplay,
     [int]       $UiShot = -1,
     [string]    $UiShotName = 'ui',
@@ -128,6 +129,7 @@ $jvmArgs = @(
 )
 if ($RecordReplay) { $jvmArgs += "-Dedge.replay.record=$RecordReplay" }
 if ($ProbeContainerAt -ge 0) { $jvmArgs += "-Dedge.replay.probeContainerAt=$ProbeContainerAt" }
+if ($RecordDelay -ge 0) { $jvmArgs += "-Dedge.replay.recordDelay=$RecordDelay" }
 if ($UiShot -ge 0)  {
     $jvmArgs += "-Dedge.uishot=$UiShot"
     $jvmArgs += "-Dedge.uishot.name=$UiShotName"
