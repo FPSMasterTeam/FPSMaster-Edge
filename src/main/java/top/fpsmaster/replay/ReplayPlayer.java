@@ -15,6 +15,9 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+import net.minecraft.network.play.server.S2BPacketChangeGameState;
+import net.minecraft.network.play.server.S2DPacketOpenWindow;
+import net.minecraft.network.play.server.S39PacketPlayerAbilities;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MovingObjectPosition;
@@ -63,6 +66,9 @@ public final class ReplayPlayer {
 
     /** How far the possession ray reaches. Vanilla's 3-block spectator pick is unusable here. */
     private static final double POSSESS_REACH = 128.0d;
+
+    /** The "change game mode" reason of S2BPacketChangeGameState. */
+    private static final int GAME_STATE_CHANGE_GAME_MODE = 3;
 
     /** Bounded so a paused replay cannot pull the whole file into memory. */
     private static final int QUEUE_CAPACITY = 8192;
@@ -368,11 +374,36 @@ public final class ReplayPlayer {
         }
     }
 
+    /**
+     * True for packets that reconfigure the client as the player it was recorded from.
+     *
+     * <p>The viewer is a spectator, not the recorder. These packets would change the viewer's game
+     * mode to whatever the recorder was in - which is what turns the hotbar, health and armour bar
+     * back on and takes away the free camera's flight - or overwrite its movement abilities
+     * directly. What the recorder's own client did with them is not the viewer's business.
+     */
+    private static boolean rewritesTheViewer(Packet<?> packet) {
+        if (packet instanceof S39PacketPlayerAbilities) {
+            return true;
+        }
+        // Reason 3 is "change game mode"; the others are weather, credits and demo messages.
+        return packet instanceof S2BPacketChangeGameState
+                && ((S2BPacketChangeGameState) packet).getGameState() == GAME_STATE_CHANGE_GAME_MODE;
+    }
+
     private void apply(Frame frame) {
         if (frame.packet instanceof S08PacketPlayerPosLook) {
             // Addressed to the recorder, but playback has no recorder entity to address - it would
             // teleport the viewer's free camera instead, every time the recording moved. The avatar
             // gets its position from the movement track; the camera is placed when it is created.
+            return;
+        }
+        if (rewritesTheViewer(frame.packet)) {
+            return;
+        }
+        if (frame.packet instanceof S2DPacketOpenWindow && !possessing) {
+            // A chest the recorder opened should not take over the screen of someone flying around
+            // watching them. Possess them and you get their interface.
             return;
         }
         if (frame.packet != null) {

@@ -25,7 +25,9 @@ public final class ReplayHud {
         Minecraft mc = Minecraft.getMinecraft();
         ScaledResolution resolution = new ScaledResolution(mc);
         float centerX = resolution.getScaledWidth() / 2f;
-        float y = resolution.getScaledHeight() - 46f;
+        // Clear of the vanilla overlay when there is one. Possessing turns the hotbar, health and
+        // hunger back on, and this used to sit straight on top of them.
+        float y = resolution.getScaledHeight() - (player.isPossessing() ? 78f : 46f);
 
         float barX = centerX - BAR_WIDTH / 2f;
         Rects.rounded(Math.round(barX), Math.round(y), BAR_WIDTH, BAR_HEIGHT, 1,

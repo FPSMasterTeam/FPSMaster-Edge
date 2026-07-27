@@ -62,6 +62,7 @@
     "MixinSoundHandler",
     "WorldClientMixin",
     "AbstractClientPlayerMixin_ReplaySpectator",
+    "PlayerControllerMPMixin_ReplayHud",
     "accessor.ChunkProviderClientAccessor",
     "accessor.NetHandlerPlayClientAccessor",
     "accessor.FontRendererAccessor",
