@@ -41,7 +41,7 @@ public final class HudBreakdown {
 
     /** Called once per overlay; reports periodically so a run produces a few readings. */
     public static void endFrame() {
-        if (++frames % 2000L != 0L) {
+        if (++frames % 600L != 0L) {
             return;
         }
         StringBuilder line = new StringBuilder("hud breakdown over " + frames + " frames:");

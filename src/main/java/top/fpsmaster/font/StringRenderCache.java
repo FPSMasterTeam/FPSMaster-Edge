@@ -94,7 +94,15 @@ public final class StringRenderCache {
 
     /** Replays a compiled string. The caller must then restore the pen from the entry. */
     public void replay(Entry entry) {
+        long mark = top.fpsmaster.benchmark.HudBreakdown.enabled() ? System.nanoTime() : 0L;
         GlStateManager.callList(entry.displayList);
+        if (mark != 0L) {
+            long afterCall = System.nanoTime();
+            top.fpsmaster.benchmark.HudBreakdown.record("font:callList", afterCall - mark);
+            invalidateShadowedGlState();
+            top.fpsmaster.benchmark.HudBreakdown.record("font:invalidate", System.nanoTime() - afterCall);
+            return;
+        }
         invalidateShadowedGlState();
     }
 
