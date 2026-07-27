@@ -2,6 +2,7 @@ package top.fpsmaster.replay;
 
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.EnumConnectionState;
 import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.Packet;
@@ -48,14 +49,16 @@ public final class ReplayRecorder {
     /** How much of a recording a hard crash may cost. */
     private static final long FLUSH_INTERVAL_MILLIS = 2000L;
 
-    /** Type, millis, three doubles, two floats and a flag byte. */
-    private static final long LOCAL_SAMPLE_BYTES = 38L;
-
     private static final ReplayRecorder INSTANCE = new ReplayRecorder();
 
     private final BlockingQueue<ReplayFile.Record> queue =
             new ArrayBlockingQueue<ReplayFile.Record>(QUEUE_CAPACITY);
     private final AtomicLong bytesWritten = new AtomicLong();
+
+    /** Held item plus the four armour pieces, numbered as the equipment packet numbers them. */
+    private static final int EQUIPMENT_SLOTS = 5;
+
+    private final ItemStack[] lastEquipment = new ItemStack[EQUIPMENT_SLOTS];
 
     /** Time for chunks and entities to arrive before an automated capture snapshots them. */
     private static final long AUTO_START_DELAY_MILLIS = 8000L;
@@ -142,6 +145,7 @@ public final class ReplayRecorder {
         startMillis = System.currentTimeMillis();
         packetsRecorded = 0;
         packetsDropped = 0;
+        java.util.Arrays.fill(lastEquipment, null);
         bytesWritten.set(0L);
         queue.clear();
         recording = true;
@@ -219,6 +223,37 @@ public final class ReplayRecorder {
         }
         enqueue(new ReplayFile.Record(elapsed(), mc.thePlayer.posX, mc.thePlayer.posY,
                 mc.thePlayer.posZ, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, flags));
+        sampleEquipment(mc);
+    }
+
+    /**
+     * Records what the player is holding and wearing, but only when it changes.
+     *
+     * <p>A held item is as visible as the player carrying it, and just as expensive to draw. It is
+     * also almost always the same as it was a tick ago, so this writes a record on change rather than
+     * five item stacks twenty times a second — which would have cost more than the entire rest of the
+     * file. Damage and stack size count as changes, so a sword being worn down is followed too.
+     */
+    private void sampleEquipment(Minecraft mc) {
+        for (int slot = 0; slot < EQUIPMENT_SLOTS; slot++) {
+            ItemStack stack = mc.thePlayer.getEquipmentInSlot(slot);
+            if (ItemStack.areItemStacksEqual(stack, lastEquipment[slot])) {
+                continue;
+            }
+            lastEquipment[slot] = stack == null ? null : stack.copy();
+
+            PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
+            try {
+                buffer.writeItemStackToBuffer(stack);
+                byte[] payload = new byte[buffer.readableBytes()];
+                buffer.readBytes(payload);
+                enqueue(ReplayFile.Record.equipment(elapsed(), slot, payload));
+            } catch (Exception failure) {
+                ClientLogger.error("replay", "could not record slot " + slot + ": " + failure);
+            } finally {
+                buffer.release();
+            }
+        }
     }
 
     private int elapsed() {
@@ -292,11 +327,7 @@ public final class ReplayRecorder {
                     ReplayFile.Record record = queue.poll(200L, java.util.concurrent.TimeUnit.MILLISECONDS);
                     if (record != null) {
                         ReplayFile.write(out, record);
-                        // A local-player sample has no payload; charging its length would have been
-                        // a null dereference on the writer thread, which killed the recording on the
-                        // first sample and left only the snapshot behind.
-                        bytesWritten.addAndGet(record.payload == null
-                                ? LOCAL_SAMPLE_BYTES : record.payload.length + 13L);
+                        bytesWritten.addAndGet(ReplayFile.sizeOf(record));
                     }
                     // Bound how much a crash can cost. The stream is sync-flushed, so everything up
                     // to here stays readable even if the process never gets to close it.

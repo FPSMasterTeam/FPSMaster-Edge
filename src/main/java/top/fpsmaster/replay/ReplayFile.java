@@ -25,11 +25,13 @@ import java.util.zip.GZIPOutputStream;
  *   record    byte type | int millis-since-start | ...
  *     type 0  int packet id | int payload length | payload bytes
  *     type 1  double x,y,z | float yaw,pitch | byte flags
+ *     type 2  byte slot | int length | serialised item stack
  * </pre>
  *
- * <p>Type 1 is the recording client's own player. A server never sends you your own spawn or
- * movement, so replaying the session with the recorder visible in it means capturing that
- * separately.
+ * <p>Types 1 and 2 are the recording client's own player. A server never sends you your own spawn,
+ * movement or equipment, so replaying the session with the recorder visible in it means capturing
+ * those separately. Position is sampled every tick; equipment only when it changes, because writing
+ * five item stacks twenty times a second would cost more than everything else in the file combined.
  *
  * <p>Gzipped: chunk payloads dominate the volume and compress by roughly an order of magnitude, and
  * the cost is paid on a writer thread rather than on the network thread.
@@ -37,7 +39,7 @@ import java.util.zip.GZIPOutputStream;
 public final class ReplayFile {
 
     static final String MAGIC = "EDGEREPL";
-    static final int VERSION = 3;
+    static final int VERSION = 4;
 
     private ReplayFile() {
     }
@@ -104,6 +106,7 @@ public final class ReplayFile {
 
     public static final int TYPE_PACKET = 0;
     public static final int TYPE_LOCAL_PLAYER = 1;
+    public static final int TYPE_LOCAL_EQUIPMENT = 2;
 
     public static final int FLAG_ON_GROUND = 1;
     public static final int FLAG_SNEAKING = 2;
@@ -121,6 +124,7 @@ public final class ReplayFile {
         public final int type;
         public final int millis;
         public final int packetId;
+        public final int slot;
         public final byte[] payload;
         public final double x;
         public final double y;
@@ -133,6 +137,7 @@ public final class ReplayFile {
             this.type = TYPE_PACKET;
             this.millis = millis;
             this.packetId = packetId;
+            this.slot = -1;
             this.payload = payload;
             this.x = 0.0d;
             this.y = 0.0d;
@@ -146,6 +151,7 @@ public final class ReplayFile {
             this.type = TYPE_LOCAL_PLAYER;
             this.millis = millis;
             this.packetId = -1;
+            this.slot = -1;
             this.payload = null;
             this.x = x;
             this.y = y;
@@ -154,6 +160,37 @@ public final class ReplayFile {
             this.pitch = pitch;
             this.flags = flags;
         }
+
+        /** Slot 0 is the held item, 1 to 4 the armour, matching the equipment packet's numbering. */
+        private Record(int type, int millis, int slot, byte[] payload) {
+            this.type = type;
+            this.millis = millis;
+            this.packetId = -1;
+            this.slot = slot;
+            this.payload = payload;
+            this.x = 0.0d;
+            this.y = 0.0d;
+            this.z = 0.0d;
+            this.yaw = 0.0f;
+            this.pitch = 0.0f;
+            this.flags = 0;
+        }
+
+        public static Record equipment(int millis, int slot, byte[] payload) {
+            return new Record(TYPE_LOCAL_EQUIPMENT, millis, slot, payload);
+        }
+    }
+
+    /** Bytes a record occupies on the wire, for the recorder's progress counter. */
+    static long sizeOf(Record record) {
+        switch (record.type) {
+            case TYPE_PACKET:
+                return 13L + record.payload.length;
+            case TYPE_LOCAL_EQUIPMENT:
+                return 10L + record.payload.length;
+            default:
+                return 38L;
+        }
     }
 
     public static void write(DataOutputStream out, Record record) throws IOException {
@@ -161,6 +198,10 @@ public final class ReplayFile {
         out.writeInt(record.millis);
         if (record.type == TYPE_PACKET) {
             out.writeInt(record.packetId);
+            out.writeInt(record.payload.length);
+            out.write(record.payload);
+        } else if (record.type == TYPE_LOCAL_EQUIPMENT) {
+            out.writeByte(record.slot);
             out.writeInt(record.payload.length);
             out.write(record.payload);
         } else {
@@ -188,20 +229,30 @@ public final class ReplayFile {
                 return new Record(millis, in.readDouble(), in.readDouble(), in.readDouble(),
                         in.readFloat(), in.readFloat(), in.readByte());
             }
+            if (type == TYPE_LOCAL_EQUIPMENT) {
+                int slot = in.readByte();
+                byte[] stack = readPayload(in);
+                return stack == null ? null : Record.equipment(millis, slot, stack);
+            }
             if (type != TYPE_PACKET) {
                 return null;  // unknown type: the stream ended inside a record
             }
             int packetId = in.readInt();
-            int length = in.readInt();
-            if (length < 0 || length > MAX_PAYLOAD) {
-                return null;  // garbage length: the stream ended inside a record header
-            }
-            byte[] payload = new byte[length];
-            in.readFully(payload);
-            return new Record(millis, packetId, payload);
+            byte[] payload = readPayload(in);
+            return payload == null ? null : new Record(millis, packetId, payload);
         } catch (IOException truncated) {
             return null;
         }
+    }
+
+    private static byte[] readPayload(DataInputStream in) throws IOException {
+        int length = in.readInt();
+        if (length < 0 || length > MAX_PAYLOAD) {
+            return null;  // garbage length: the stream ended inside a record header
+        }
+        byte[] payload = new byte[length];
+        in.readFully(payload);
+        return payload;
     }
 
     /** Sanity bound on a record; a chunk packet is well under a megabyte. */

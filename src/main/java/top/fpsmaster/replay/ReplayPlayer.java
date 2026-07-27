@@ -8,6 +8,7 @@ import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.EnumConnectionState;
 import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.NetworkManager;
@@ -169,6 +170,12 @@ public final class ReplayPlayer {
         state.addProperty("pitch", Float.valueOf(current.rotationPitch));
         state.addProperty("inWorld", Boolean.valueOf(current.isEntityAlive() && current.worldObj != null
                 && current.worldObj.getEntityByID(AVATAR_ENTITY_ID) == current));
+        StringBuilder equipment = new StringBuilder();
+        for (int slot = 0; slot < 5; slot++) {
+            ItemStack held = current.getEquipmentInSlot(slot);
+            equipment.append(slot == 0 ? "" : ", ").append(held == null ? "-" : held.getDisplayName());
+        }
+        state.addProperty("equipment", equipment.toString());
         return state;
     }
 
@@ -324,7 +331,20 @@ public final class ReplayPlayer {
             }
             return;
         }
+        if (frame.slot >= 0) {
+            applyEquipment(frame);
+            return;
+        }
         applyLocalSample(frame);
+    }
+
+    private void applyEquipment(Frame frame) {
+        if (avatar == null) {
+            // Equipment is written after the position sample that spawns the avatar, so this only
+            // happens if a recording was cut between the two.
+            return;
+        }
+        avatar.setCurrentItemOrArmor(frame.slot, frame.stack);
     }
 
     /** Drives the avatar from the recorder's own movement track. */
@@ -453,6 +473,14 @@ public final class ReplayPlayer {
             if (record.type == ReplayFile.TYPE_LOCAL_PLAYER) {
                 return new Frame(record);
             }
+            if (record.type == ReplayFile.TYPE_LOCAL_EQUIPMENT) {
+                try {
+                    PacketBuffer buffer = new PacketBuffer(Unpooled.wrappedBuffer(record.payload));
+                    return new Frame(record.millis, record.slot, buffer.readItemStackFromBuffer());
+                } catch (Exception failure) {
+                    return null;
+                }
+            }
             try {
                 Packet<?> packet = EnumConnectionState.PLAY.getPacket(
                         EnumPacketDirection.CLIENTBOUND, record.packetId);
@@ -471,6 +499,8 @@ public final class ReplayPlayer {
     private static final class Frame {
         final int millis;
         final Packet<?> packet;
+        final int slot;
+        final ItemStack stack;
         final double x;
         final double y;
         final double z;
@@ -481,6 +511,21 @@ public final class ReplayPlayer {
         Frame(int millis, Packet<?> packet) {
             this.millis = millis;
             this.packet = packet;
+            this.slot = -1;
+            this.stack = null;
+            this.x = 0.0d;
+            this.y = 0.0d;
+            this.z = 0.0d;
+            this.yaw = 0.0f;
+            this.pitch = 0.0f;
+            this.flags = 0;
+        }
+
+        Frame(int millis, int slot, ItemStack stack) {
+            this.millis = millis;
+            this.packet = null;
+            this.slot = slot;
+            this.stack = stack;
             this.x = 0.0d;
             this.y = 0.0d;
             this.z = 0.0d;
@@ -492,6 +537,8 @@ public final class ReplayPlayer {
         Frame(ReplayFile.Record record) {
             this.millis = record.millis;
             this.packet = null;
+            this.slot = -1;
+            this.stack = null;
             this.x = record.x;
             this.y = record.y;
             this.z = record.z;
