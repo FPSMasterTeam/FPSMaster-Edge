@@ -225,6 +225,9 @@ public final class ReplayRecorder {
         if (mc.thePlayer.isSwingInProgress) {
             flags |= ReplayFile.FLAG_SWINGING;
         }
+        if (mc.currentScreen instanceof net.minecraft.client.gui.inventory.GuiContainer) {
+            flags |= ReplayFile.FLAG_SCREEN_OPEN;
+        }
         enqueue(new ReplayFile.Record(elapsed(), mc.thePlayer.posX, mc.thePlayer.posY,
                 mc.thePlayer.posZ, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, flags));
         sampleEquipment(mc);

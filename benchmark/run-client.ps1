@@ -38,6 +38,8 @@ param(
     [string]    $ProbeAt = '5,20,40',
     [int]       $ProbePossessFrom = -1,
     [switch]    $ProbeThirdPerson,
+    [int]       $ProbeDisconnectAt = -1,
+    [int]       $ProbeRespawnAt = -1,
     [switch]    $KeepAlive
 )
 
@@ -135,6 +137,8 @@ if ($PlayReplay)   {
     $jvmArgs += "-Dedge.replay.probeAt=$ProbeAt"
     if ($ProbePossessFrom -ge 0) { $jvmArgs += "-Dedge.replay.probePossessFrom=$ProbePossessFrom" }
     if ($ProbeThirdPerson)       { $jvmArgs += "-Dedge.replay.probeThirdPerson=true" }
+    if ($ProbeDisconnectAt -ge 0) { $jvmArgs += "-Dedge.replay.probeDisconnectAt=$ProbeDisconnectAt" }
+    if ($ProbeRespawnAt -ge 0)    { $jvmArgs += "-Dedge.replay.probeRespawnAt=$ProbeRespawnAt" }
 }
 $jvmArgs += @(
     # Deliberately omitted vs. Loom's launch.cfg: mixin.debug and asmhelper.verbose.

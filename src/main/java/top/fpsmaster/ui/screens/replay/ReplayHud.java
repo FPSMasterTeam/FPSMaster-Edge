@@ -47,5 +47,7 @@ public final class ReplayHud {
                 : "Look at " + player.recorderName() + " and attack to watch from their eyes";
         FPSMaster.fontManager.s16.drawCenteredString(hint, centerX, y + 17f,
                 new Color(190, 190, 190).getRGB());
+        FPSMaster.fontManager.s16.drawCenteredString("Esc to quit  -  P to pause", centerX, y + 27f,
+                new Color(140, 140, 140).getRGB());
     }
 }

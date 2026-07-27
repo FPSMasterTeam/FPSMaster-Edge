@@ -182,6 +182,11 @@ public final class ReplayFile {
     public static final int FLAG_SNEAKING = 2;
     public static final int FLAG_SPRINTING = 4;
     public static final int FLAG_SWINGING = 8;
+    /**
+     * The recorder had a container open. Closing one is a client-to-server action, so nothing in the
+     * server's stream says it happened - without this the chest opens during playback and stays.
+     */
+    public static final int FLAG_SCREEN_OPEN = 16;
 
     /**
      * One recorded event.

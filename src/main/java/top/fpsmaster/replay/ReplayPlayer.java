@@ -14,6 +14,8 @@ import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+import net.minecraft.util.IChatComponent;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
@@ -77,6 +79,8 @@ public final class ReplayPlayer {
     private NetHandlerPlayClient netHandler;
     private GameProfile recorderProfile;
     private EntityOtherPlayerMP avatar;
+    private Object lastWorld;
+    private Object lastCameraPlayer;
     private File file;
 
     private long originNanos;
@@ -200,6 +204,8 @@ public final class ReplayPlayer {
         this.paused = false;
         this.possessing = false;
         this.avatar = null;
+        this.lastWorld = null;
+        this.lastCameraPlayer = null;
         this.pending = null;
         this.readerFinished = false;
         queue.clear();
@@ -264,8 +270,15 @@ public final class ReplayPlayer {
         // the rest of the tick and the frame after it assume as much. Ending playback without one
         // crashed the client; landing back in the browser is also where you want to be.
         Minecraft mc = Minecraft.getMinecraft();
-        mc.loadWorld(null);
-        mc.displayGuiScreen(new ReplayScreen(null));
+        if (mc.theWorld != null) {
+            mc.loadWorld(null);
+        }
+        // Only when nothing else is up. Reaching the end of a recording leaves no screen at all and
+        // the client cannot survive that, but someone who pressed Disconnect has already been sent
+        // somewhere and should not be pulled out of it.
+        if (mc.currentScreen == null) {
+            mc.displayGuiScreen(new ReplayScreen(null));
+        }
         ClientLogger.info("replay", "playback stopped");
     }
 
@@ -283,6 +296,29 @@ public final class ReplayPlayer {
         }
     }
 
+    /**
+     * Puts the viewer back together after the recording changes world.
+     *
+     * <p>A dimension change in the stream runs vanilla's respawn handler, which builds a new world,
+     * replaces {@code mc.thePlayer} outright and sets the game type to whatever the recording says
+     * the recorder was in. That undoes everything playback relies on: the camera stops being a
+     * spectator, so it falls and cannot fly; the avatar belongs to the previous world, so it is
+     * neither rendered nor updated; and possession keeps pointing at it. It also leaves the terrain
+     * loading screen up, because the packet that would dismiss it is one playback drops.
+     */
+    private void reestablish(Minecraft mc) {
+        lastWorld = mc.theWorld;
+        lastCameraPlayer = mc.thePlayer;
+        avatar = null;
+        possessing = false;
+        mc.thePlayer.setEntityId(CAMERA_ENTITY_ID);
+        mc.playerController.setGameType(WorldSettings.GameType.SPECTATOR);
+        mc.setRenderViewEntity(mc.thePlayer);
+        if (mc.currentScreen instanceof net.minecraft.client.gui.GuiDownloadTerrain) {
+            mc.displayGuiScreen(null);
+        }
+    }
+
     /** Delivers everything the recording says has happened by now. Called once per client tick. */
     public void onClientTick() {
         if (!active) {
@@ -290,7 +326,14 @@ public final class ReplayPlayer {
         }
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.theWorld == null || mc.thePlayer == null) {
+            // Something unloaded the world under us - the in-game menu's Disconnect, or a failure
+            // elsewhere. Staying "active" would leave the reader thread running and the playback
+            // overlay drawn over whatever screen came next.
+            stop();
             return;
+        }
+        if (mc.theWorld != lastWorld || mc.thePlayer != lastCameraPlayer) {
+            reestablish(mc);
         }
         boolean pauseDown = mc.currentScreen == null && Keyboard.isKeyDown(Keyboard.KEY_P);
         if (pauseDown && !pauseWasDown) {
@@ -326,6 +369,12 @@ public final class ReplayPlayer {
     }
 
     private void apply(Frame frame) {
+        if (frame.packet instanceof S08PacketPlayerPosLook) {
+            // Addressed to the recorder, but playback has no recorder entity to address - it would
+            // teleport the viewer's free camera instead, every time the recording moved. The avatar
+            // gets its position from the movement track; the camera is placed when it is created.
+            return;
+        }
         if (frame.packet != null) {
             try {
                 // Raw cast: Packet's handler type is erased, and the only handler in play is ours.
@@ -378,6 +427,12 @@ public final class ReplayPlayer {
         avatar.setSprinting((frame.flags & ReplayFile.FLAG_SPRINTING) != 0);
         if ((frame.flags & ReplayFile.FLAG_SWINGING) != 0 && !avatar.isSwingInProgress) {
             avatar.swingItem();
+        }
+        // The server never says a container was closed - the client tells it. Mirror what the
+        // recorder had open, or the chest they opened stays on screen for the rest of the replay.
+        if ((frame.flags & ReplayFile.FLAG_SCREEN_OPEN) == 0
+                && mc.currentScreen instanceof net.minecraft.client.gui.inventory.GuiContainer) {
+            mc.displayGuiScreen(null);
         }
     }
 
@@ -567,6 +622,21 @@ public final class ReplayPlayer {
         public void sendPacket(Packet packet,
                 io.netty.util.concurrent.GenericFutureListener<? extends io.netty.util.concurrent.Future<? super Void>> listener,
                 io.netty.util.concurrent.GenericFutureListener<? extends io.netty.util.concurrent.Future<? super Void>>... listeners) {
+        }
+
+        /**
+         * Vanilla dereferences the channel here without checking it exists - unlike isChannelOpen
+         * right next to it. Leaving a replay through the in-game menu goes
+         * Disconnect -> WorldClient.sendQuittingDisconnectingPacket -> closeChannel, so it threw
+         * before unloading anything and left the client stuck in the session it had just left.
+         */
+        @Override
+        public void closeChannel(IChatComponent message) {
+        }
+
+        /** Ends in channel.flush(). Nothing drives it during playback, but the contract is the same. */
+        @Override
+        public void processReceivedPackets() {
         }
     }
 }

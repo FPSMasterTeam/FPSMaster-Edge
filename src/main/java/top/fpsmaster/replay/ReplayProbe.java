@@ -31,6 +31,8 @@ public final class ReplayProbe {
     private static boolean finished;
     private static int possessFrom = -1;
     private static boolean thirdPerson;
+    private static boolean disconnected;
+    private static boolean respawned;
 
     private ReplayProbe() {
     }
@@ -52,6 +54,8 @@ public final class ReplayProbe {
     }
 
     public static void onClientTick() {
+        maybeDisconnect();
+        maybeRespawn();
         if (probeSeconds == null || finished || !ReplayPlayer.instance().isActive()) {
             return;
         }
@@ -75,6 +79,51 @@ public final class ReplayProbe {
         }
     }
 
+    /**
+     * Does exactly what the in-game menu's Disconnect button does, while a replay is playing.
+     *
+     * <p>Copied statement for statement from {@code GuiIngameMenu.actionPerformed} case 1, taking
+     * the branch a replay session falls into: no integrated server and no realm. Reproducing it
+     * here is the only way to test that path without a human clicking the button.
+     */
+    private static void maybeDisconnect() {
+        int at = Integer.getInteger("edge.replay.probeDisconnectAt", -1).intValue();
+        if (at < 0 || disconnected || !ReplayPlayer.instance().isActive()
+                || ReplayPlayer.instance().elapsedMillis() / 1000 < at) {
+            return;
+        }
+        disconnected = true;
+        Minecraft mc = Minecraft.getMinecraft();
+        ClientLogger.info("replay", "probe: pressing Disconnect mid-playback");
+        mc.theWorld.sendQuittingDisconnectingPacket();
+        mc.loadWorld(null);
+        mc.displayGuiScreen(new net.minecraft.client.gui.GuiMultiplayer(
+                new net.minecraft.client.gui.GuiMainMenu()));
+        ClientLogger.info("replay", "probe: disconnect returned without throwing");
+    }
+
+    /**
+     * Feeds a dimension change into playback, the way a recording of someone walking through a
+     * portal would. Vanilla's respawn handler rebuilds the world and replaces the player, which is
+     * the case playback has to put itself back together after.
+     */
+    private static void maybeRespawn() {
+        int at = Integer.getInteger("edge.replay.probeRespawnAt", -1).intValue();
+        if (at < 0 || respawned || !ReplayPlayer.instance().isActive()
+                || ReplayPlayer.instance().elapsedMillis() / 1000 < at) {
+            return;
+        }
+        respawned = true;
+        Minecraft mc = Minecraft.getMinecraft();
+        ClientLogger.info("replay", "probe: injecting a dimension change");
+        new net.minecraft.network.play.server.S07PacketRespawn(
+                -1, net.minecraft.world.EnumDifficulty.NORMAL,
+                net.minecraft.world.WorldType.DEFAULT,
+                net.minecraft.world.WorldSettings.GameType.SURVIVAL)
+                .processPacket(mc.getNetHandler());
+        ClientLogger.info("replay", "probe: dimension change returned without throwing");
+    }
+
     private static JsonObject sample(Minecraft mc, int elapsedSeconds) {
         JsonObject sample = new JsonObject();
         sample.addProperty("atSeconds", Integer.valueOf(elapsedSeconds));
@@ -86,6 +135,9 @@ public final class ReplayProbe {
                 mc.getNetHandler() == null ? 0 : mc.getNetHandler().getPlayerInfoMap().size()));
         sample.addProperty("renderInfo", mc.renderGlobal == null ? "" : mc.renderGlobal.getDebugInfoRenders());
         sample.addProperty("possessing", Boolean.valueOf(ReplayPlayer.instance().isPossessing()));
+        sample.addProperty("dimension", Integer.valueOf(mc.thePlayer == null ? -99 : mc.thePlayer.dimension));
+        sample.addProperty("gameType", mc.playerController == null ? "?" : String.valueOf(mc.playerController.getCurrentGameType()));
+        sample.addProperty("screen", mc.currentScreen == null ? "none" : mc.currentScreen.getClass().getSimpleName());
         sample.addProperty("viewEntity", mc.getRenderViewEntity() == null
                 ? "none" : mc.getRenderViewEntity().getName() + "#" + mc.getRenderViewEntity().getEntityId());
         if (mc.thePlayer != null) {
