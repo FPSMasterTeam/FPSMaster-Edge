@@ -45,10 +45,15 @@ public final class ReplayInspect {
         int lastMillis = 0;
         long payloadBytes = 0L;
 
+        int localSamples = 0;
         ReplayFile.Record record;
         while ((record = ReplayFile.read(header.stream)) != null) {
             records++;
             lastMillis = record.millis;
+            if (record.type == ReplayFile.TYPE_LOCAL_PLAYER) {
+                localSamples++;
+                continue;
+            }
             payloadBytes += record.payload.length;
 
             Packet<?> packet;
@@ -80,7 +85,7 @@ public final class ReplayInspect {
         System.out.printf("%s%n", file.getName());
         System.out.printf("  minecraft      %s%n", header.minecraftVersion);
         System.out.printf("  duration       %.1fs%n", lastMillis / 1000.0d);
-        System.out.printf("  records        %d%n", records);
+        System.out.printf("  records        %d (%d local-player samples)%n", records, localSamples);
         System.out.printf("  payload        %.1f KiB (%.0f KiB/s)%n",
                 payloadBytes / 1024.0d, payloadBytes / 1024.0d / Math.max(lastMillis / 1000.0d, 1e-9));
         System.out.printf("  undecodable    %d%n", undecodable);

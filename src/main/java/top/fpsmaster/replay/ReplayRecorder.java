@@ -2,20 +2,15 @@ package top.fpsmaster.replay;
 
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.network.EnumConnectionState;
 import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.network.play.server.S21PacketChunkData;
-import net.minecraft.world.chunk.Chunk;
-import top.fpsmaster.forge.mixin.accessor.ChunkProviderClientAccessor;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.io.FileUtils;
 
 import java.io.DataOutputStream;
 import java.io.File;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,12 +47,20 @@ public final class ReplayRecorder {
     /** How much of a recording a hard crash may cost. */
     private static final long FLUSH_INTERVAL_MILLIS = 2000L;
 
+    /** Type, millis, three doubles, two floats and a flag byte. */
+    private static final long LOCAL_SAMPLE_BYTES = 38L;
+
     private static final ReplayRecorder INSTANCE = new ReplayRecorder();
 
     private final BlockingQueue<ReplayFile.Record> queue =
             new ArrayBlockingQueue<ReplayFile.Record>(QUEUE_CAPACITY);
     private final AtomicLong bytesWritten = new AtomicLong();
 
+    /** Time for chunks and entities to arrive before an automated capture snapshots them. */
+    private static final long AUTO_START_DELAY_MILLIS = 8000L;
+
+    private long autoStartFirstSeen;
+    private boolean autoStartDone;
     private volatile boolean recording;
     private Thread writerThread;
     private File file;
@@ -80,9 +83,25 @@ public final class ReplayRecorder {
      */
     public void startIfRequested() {
         String requested = System.getProperty("edge.replay.record");
-        if (requested != null && !requested.isEmpty() && !recording) {
-            start(requested);
+        if (requested == null || requested.isEmpty() || recording || autoStartDone) {
+            return;
         }
+        // Wait for the world to actually populate. Firing on the first tick where theWorld is
+        // non-null snapshots an empty world: no chunks have arrived and no entities exist yet, so
+        // the recording opens on nothing.
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null || mc.thePlayer == null) {
+            return;
+        }
+        if (autoStartFirstSeen == 0L) {
+            autoStartFirstSeen = System.currentTimeMillis();
+            return;
+        }
+        if (System.currentTimeMillis() - autoStartFirstSeen < AUTO_START_DELAY_MILLIS) {
+            return;
+        }
+        autoStartDone = true;
+        start(requested);
     }
 
     public boolean isRecording() {
@@ -130,7 +149,7 @@ public final class ReplayRecorder {
         writerThread.setDaemon(true);
         writerThread.start();
 
-        captureLoadedChunks();
+        ReplaySnapshot.capture(Minecraft.getMinecraft(), snapshotSink);
         ClientLogger.info("replay", "recording to " + file.getName());
     }
 
@@ -147,6 +166,69 @@ public final class ReplayRecorder {
         ClientLogger.info("replay", "stopped after " + packetsRecorded + " packet(s), "
                 + bytesWritten.get() / 1024L + " KiB" + (packetsDropped > 0
                 ? ", " + packetsDropped + " dropped" : ""));
+    }
+
+    /**
+     * Snapshot output. Raw entries exist because some packets cannot be constructed on a client and
+     * are written as protocol bytes instead — see {@link ReplaySnapshot}.
+     */
+    private final ReplaySnapshot.Sink snapshotSink = new ReplaySnapshot.Sink() {
+        @Override
+        public void accept(Packet<?> packet) {
+            offer(packet);
+        }
+
+        @Override
+        public void acceptRaw(int packetId, byte[] payload) {
+            enqueue(new ReplayFile.Record(elapsed(), packetId, payload));
+        }
+    };
+
+    /**
+     * Samples the recording player's own position and action state.
+     *
+     * <p>Called once per client tick. The server never sends you your own movement, so replaying a
+     * session with the recorder visible in it — as an avatar to watch or to attach the camera to —
+     * means capturing this separately from the packet stream.
+     */
+    public void onClientTick() {
+        if (!recording) {
+            return;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.thePlayer == null) {
+            return;
+        }
+        int flags = 0;
+        if (mc.thePlayer.onGround) {
+            flags |= ReplayFile.FLAG_ON_GROUND;
+        }
+        if (mc.thePlayer.isSneaking()) {
+            flags |= ReplayFile.FLAG_SNEAKING;
+        }
+        if (mc.thePlayer.isSprinting()) {
+            flags |= ReplayFile.FLAG_SPRINTING;
+        }
+        if (mc.thePlayer.isSwingInProgress) {
+            flags |= ReplayFile.FLAG_SWINGING;
+        }
+        enqueue(new ReplayFile.Record(elapsed(), mc.thePlayer.posX, mc.thePlayer.posY,
+                mc.thePlayer.posZ, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, flags));
+    }
+
+    private int elapsed() {
+        return (int) Math.min(Integer.MAX_VALUE, System.currentTimeMillis() - startMillis);
+    }
+
+    private void enqueue(ReplayFile.Record record) {
+        if (!queue.offer(record)) {
+            packetsDropped++;
+            if (packetsDropped == 1) {
+                ClientLogger.warn("replay: writer cannot keep up, recording will be truncated");
+            }
+        } else {
+            packetsRecorded++;
+        }
     }
 
     /** Called from the network thread for every inbound packet. */
@@ -177,39 +259,7 @@ public final class ReplayRecorder {
             return;
         }
 
-        int millis = (int) Math.min(Integer.MAX_VALUE, System.currentTimeMillis() - startMillis);
-        if (!queue.offer(new ReplayFile.Record(millis, id.intValue(), payload))) {
-            packetsDropped++;
-            if (packetsDropped == 1) {
-                ClientLogger.warn("replay: writer cannot keep up, recording will be truncated");
-            }
-        } else {
-            packetsRecorded++;
-        }
-    }
-
-    /**
-     * Writes the chunks already loaded, so a recording started mid-world is not empty on playback.
-     *
-     * <p>Runs on the caller's thread at start, which is a visible hitch on a large view distance —
-     * acceptable once, at a moment the user chose.
-     */
-    private void captureLoadedChunks() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.theWorld == null || !(mc.theWorld.getChunkProvider() instanceof ChunkProviderClient)) {
-            return;
-        }
-        List<Chunk> chunks = ((ChunkProviderClientAccessor) mc.theWorld.getChunkProvider())
-                .getChunkListing();
-        int captured = 0;
-        for (Chunk chunk : chunks) {
-            if (chunk == null || !chunk.isLoaded()) {
-                continue;
-            }
-            offer(new S21PacketChunkData(chunk, true, 0xFFFF));
-            captured++;
-        }
-        ClientLogger.info("replay", "seeded " + captured + " already-loaded chunk(s)");
+        enqueue(new ReplayFile.Record(elapsed(), id.intValue(), payload));
     }
 
     private final class Writer implements Runnable {
@@ -231,7 +281,11 @@ public final class ReplayRecorder {
                     ReplayFile.Record record = queue.poll(200L, java.util.concurrent.TimeUnit.MILLISECONDS);
                     if (record != null) {
                         ReplayFile.write(out, record);
-                        bytesWritten.addAndGet(record.payload.length + 12L);
+                        // A local-player sample has no payload; charging its length would have been
+                        // a null dereference on the writer thread, which killed the recording on the
+                        // first sample and left only the snapshot behind.
+                        bytesWritten.addAndGet(record.payload == null
+                                ? LOCAL_SAMPLE_BYTES : record.payload.length + 13L);
                     }
                     // Bound how much a crash can cost. The stream is sync-flushed, so everything up
                     // to here stays readable even if the process never gets to close it.

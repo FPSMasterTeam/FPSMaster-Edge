@@ -60,6 +60,7 @@ public class GlobalListener {
         if (Minecraft.getMinecraft().theWorld != null) {
             ReplayRecorder.instance().startIfRequested();
         }
+        ReplayRecorder.instance().onClientTick();
         long now = System.currentTimeMillis();
         if (now - lastFlushAt < 1000L) {
             return;
