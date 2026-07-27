@@ -15,12 +15,16 @@ package top.fpsmaster.benchmark;
  * <pre>
  *   -Dedge.exp.noSky=true         skip the sky pass entirely
  *   -Dedge.exp.noNameplates=true  skip every entity name label
+ *   -Dedge.exp.noSkyLists=true    skip the sky's compiled geometry
+ *   -Dedge.exp.noSkyImmediate=true  skip the sky's per-frame vertex uploads
  * </pre>
  */
 public final class Experiments {
 
     public static final boolean NO_SKY = flag("noSky");
     public static final boolean NO_NAMEPLATES = flag("noNameplates");
+    public static final boolean NO_SKY_LISTS = flag("noSkyLists");
+    public static final boolean NO_SKY_IMMEDIATE = flag("noSkyImmediate");
 
     private Experiments() {
     }
