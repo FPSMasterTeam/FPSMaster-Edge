@@ -1,6 +1,7 @@
 package top.fpsmaster.font;
 
 import net.minecraft.client.renderer.GlStateManager;
+import top.fpsmaster.benchmark.HudBreakdown;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -97,6 +98,7 @@ public final class TextRenderer {
      */
     private float layout(String text, float x, float y, int argb, boolean draw) {
         WorldRenderer worldRenderer = null;
+        long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
         if (draw) {
             if (atlas.textureId() == -1) {
                 // Force the atlas into existence before the batch opens: rasterising a glyph binds a
@@ -104,6 +106,10 @@ public final class TextRenderer {
                 atlas.glyph(' ');
             }
             prewarm(text);
+            if (mark != 0L) {
+                HudBreakdown.record("text:prewarm", System.nanoTime() - mark);
+                mark = System.nanoTime();
+            }
 
             GlStateManager.enableTexture2D();
             GlStateManager.enableBlend();
@@ -111,6 +117,10 @@ public final class TextRenderer {
             GlStateManager.bindTexture(atlas.textureId());
             worldRenderer = Tessellator.getInstance().getWorldRenderer();
             worldRenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+            if (mark != 0L) {
+                HudBreakdown.record("text:setup", System.nanoTime() - mark);
+                mark = System.nanoTime();
+            }
         }
 
         // Alpha passes through exactly as given, including zero. Treating zero as opaque - which
@@ -154,8 +164,15 @@ public final class TextRenderer {
         }
 
         if (draw) {
+            if (mark != 0L) {
+                HudBreakdown.record("text:emit", System.nanoTime() - mark);
+                mark = System.nanoTime();
+            }
             Tessellator.getInstance().draw();
             GlStateManager.disableBlend();
+            if (mark != 0L) {
+                HudBreakdown.record("text:submit", System.nanoTime() - mark);
+            }
         }
         return advance;
     }

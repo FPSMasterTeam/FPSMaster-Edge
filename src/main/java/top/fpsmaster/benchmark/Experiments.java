@@ -21,6 +21,7 @@ package top.fpsmaster.benchmark;
  *   -Dedge.exp.noGpuTimer=true     stop issuing GPU timestamp queries at all
  *   -Dedge.exp.skyBreakdown=true   time every call the sky pass makes
  *   -Dedge.exp.hudBreakdown=true   time each piece of the overlay by name
+ *   -Dedge.exp.fontCompare=true    draw the same strings through both font renderers
  * </pre>
  */
 public final class Experiments {
@@ -33,6 +34,7 @@ public final class Experiments {
     public static final boolean NO_GPU_TIMER = flag("noGpuTimer");
     public static final boolean SKY_BREAKDOWN = flag("skyBreakdown");
     public static final boolean HUD_BREAKDOWN = flag("hudBreakdown");
+    public static final boolean FONT_COMPARE = flag("fontCompare");
 
     private Experiments() {
     }

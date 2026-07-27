@@ -11,6 +11,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.benchmark.FontCompare;
 import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.replay.ReplayPlayer;
 import top.fpsmaster.benchmark.UiShot;
@@ -109,6 +110,9 @@ public class GlobalListener {
             started = System.nanoTime();
         }
 
+        if (FontCompare.enabled()) {
+            FontCompare.draw();
+        }
         ReplayHud.draw();
         if (started != 0L) {
             // Charged separately because it only exists during playback - counting it as HUD cost
