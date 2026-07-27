@@ -11,6 +11,8 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.replay.ReplayPlayer;
+import top.fpsmaster.replay.ReplayProbe;
 import top.fpsmaster.replay.ReplayRecorder;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
@@ -19,6 +21,7 @@ import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.ui.notification.NotificationManager;
+import top.fpsmaster.ui.screens.replay.ReplayHud;
 import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.render.StencilUtil;
 import top.fpsmaster.utils.render.draw.Circles;
@@ -61,6 +64,9 @@ public class GlobalListener {
             ReplayRecorder.instance().startIfRequested();
         }
         ReplayRecorder.instance().onClientTick();
+        ReplayPlayer.instance().startIfRequested();
+        ReplayPlayer.instance().onClientTick();
+        ReplayProbe.onClientTick();
         long now = System.currentTimeMillis();
         if (now - lastFlushAt < 1000L) {
             return;
@@ -89,6 +95,7 @@ public class GlobalListener {
 
         FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);
 
+        ReplayHud.draw();
         NotificationManager.drawNotifications();
 
     }

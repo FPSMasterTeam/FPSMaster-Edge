@@ -1,0 +1,520 @@
+package top.fpsmaster.replay;
+
+import com.google.gson.JsonObject;
+import com.mojang.authlib.GameProfile;
+import io.netty.buffer.Unpooled;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityOtherPlayerMP;
+import net.minecraft.client.multiplayer.PlayerControllerMP;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.client.network.NetHandlerPlayClient;
+import net.minecraft.network.EnumConnectionState;
+import net.minecraft.network.EnumPacketDirection;
+import net.minecraft.network.NetworkManager;
+import net.minecraft.network.Packet;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
+import net.minecraft.world.EnumDifficulty;
+import net.minecraft.world.WorldSettings;
+import net.minecraft.world.WorldType;
+import org.lwjgl.input.Keyboard;
+import top.fpsmaster.forge.mixin.accessor.NetHandlerPlayClientAccessor;
+import top.fpsmaster.modules.logger.ClientLogger;
+import top.fpsmaster.utils.io.FileUtils;
+
+import java.io.File;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
+/**
+ * Plays a recording back into a live client.
+ *
+ * <h3>Why there is no server</h3>
+ *
+ * <p>The obvious design is to spin up a loopback server and replay the packets over a socket. That
+ * would be faithful to how the packets originally arrived, but it also reintroduces everything a
+ * benchmark wants held still: syscalls, Nagle, the encryption and compression pipeline, and a second
+ * process competing for the same cores. Instead the recorded packets are handed straight to a
+ * {@link NetHandlerPlayClient} on the client thread, which is where they would have ended up anyway
+ * — Netty only ever hands packets across; the handler does the work being measured.
+ *
+ * <p>The connection object is real but has no channel. Anything the client tries to send is dropped,
+ * which is correct: there is nobody to answer, and a queued outbound backlog would grow for the
+ * length of the session.
+ *
+ * <h3>Camera</h3>
+ *
+ * <p>The viewer is a spectator: no collision, no interaction, free flight. The recording player is
+ * rebuilt as an avatar from the position track and can be possessed by looking at it and clicking,
+ * which moves the render view onto it; sneak releases it. While possessed the view is entirely the
+ * recorder's own — the mouse does not move it, because the point is to see what they saw.
+ */
+public final class ReplayPlayer {
+
+    /** Far above any id a server hands out, so the camera and avatar cannot collide with the stream. */
+    private static final int CAMERA_ENTITY_ID = Integer.MAX_VALUE;
+    private static final int AVATAR_ENTITY_ID = Integer.MAX_VALUE - 1;
+
+    /** How far the possession ray reaches. Vanilla's 3-block spectator pick is unusable here. */
+    private static final double POSSESS_REACH = 128.0d;
+
+    /** Bounded so a paused replay cannot pull the whole file into memory. */
+    private static final int QUEUE_CAPACITY = 8192;
+
+    private static final ReplayPlayer INSTANCE = new ReplayPlayer();
+
+    private final BlockingQueue<Frame> queue = new ArrayBlockingQueue<Frame>(QUEUE_CAPACITY);
+
+    private volatile boolean active;
+    private volatile boolean readerFinished;
+    private Thread readerThread;
+    private Frame pending;
+
+    private NetHandlerPlayClient netHandler;
+    private GameProfile recorderProfile;
+    private EntityOtherPlayerMP avatar;
+    private File file;
+
+    private long originNanos;
+    private int pausedAtMillis;
+    private boolean paused;
+    private int durationMillis;
+    private int elapsedMillis;
+
+    private boolean possessing;
+    private boolean attackWasDown;
+    private boolean sneakWasDown;
+    private boolean pauseWasDown;
+    private boolean autoPlayDone;
+
+    private ReplayPlayer() {
+    }
+
+    public static ReplayPlayer instance() {
+        return INSTANCE;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public boolean isPossessing() {
+        return possessing;
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public int elapsedMillis() {
+        return elapsedMillis;
+    }
+
+    public int durationMillis() {
+        return durationMillis;
+    }
+
+    public String recorderName() {
+        return recorderProfile == null ? "" : recorderProfile.getName();
+    }
+
+    public File file() {
+        return file;
+    }
+
+    /**
+     * True for the entity the viewer is flying around as.
+     *
+     * <p>Vanilla decides whether a client player is a spectator by looking its own UUID up in the tab
+     * list, which cannot work here: there is no server to put the viewer in that list, and when you
+     * watch your own recording the entry that <em>is</em> there belongs to the avatar. So the camera
+     * is marked directly instead — see {@code AbstractClientPlayerMixin_ReplaySpectator}.
+     */
+    public boolean isCameraEntity(Object entity) {
+        return active && entity == Minecraft.getMinecraft().thePlayer;
+    }
+
+    public boolean isAvatar(Object entity) {
+        return entity != null && entity == avatar;
+    }
+
+    /**
+     * Starts playback if {@code -Dedge.replay.play=<name>} was passed.
+     *
+     * <p>The automated counterpart to picking a recording in the browser, so playback can be checked
+     * without a human sitting in front of it.
+     */
+    public void startIfRequested() {
+        String requested = System.getProperty("edge.replay.play");
+        if (requested == null || requested.isEmpty() || active || autoPlayDone) {
+            return;
+        }
+        autoPlayDone = true;
+        start(new File(new File(FileUtils.dir, "replays"), requested + ".edgereplay"));
+    }
+
+    /** State of the recorder's avatar, for the automated probe. Null before the first sample. */
+    public JsonObject avatarState() {
+        EntityOtherPlayerMP current = avatar;
+        if (current == null) {
+            return null;
+        }
+        JsonObject state = new JsonObject();
+        state.addProperty("x", Double.valueOf(current.posX));
+        state.addProperty("y", Double.valueOf(current.posY));
+        state.addProperty("z", Double.valueOf(current.posZ));
+        state.addProperty("yaw", Float.valueOf(current.rotationYaw));
+        state.addProperty("pitch", Float.valueOf(current.rotationPitch));
+        state.addProperty("inWorld", Boolean.valueOf(current.isEntityAlive() && current.worldObj != null
+                && current.worldObj.getEntityByID(AVATAR_ENTITY_ID) == current));
+        return state;
+    }
+
+    public synchronized void start(File replay) {
+        if (active) {
+            stop();
+        }
+        ReplayFile.Header header;
+        try {
+            header = ReplayFile.openForRead(replay);
+        } catch (Exception failure) {
+            ClientLogger.error("replay", "cannot open " + replay.getName() + ": " + failure.getMessage());
+            return;
+        }
+
+        this.file = replay;
+        this.recorderProfile = new GameProfile(header.recorderId, header.recorderName);
+        this.durationMillis = 0;
+        this.elapsedMillis = 0;
+        this.pausedAtMillis = 0;
+        this.paused = false;
+        this.possessing = false;
+        this.avatar = null;
+        this.pending = null;
+        this.readerFinished = false;
+        queue.clear();
+
+        openWorld(header);
+        active = true;
+        originNanos = System.nanoTime();
+
+        readerThread = new Thread(new Reader(header), "Edge-ReplayReader");
+        readerThread.setDaemon(true);
+        readerThread.start();
+        ClientLogger.info("replay", "playing " + replay.getName() + " recorded by " + header.recorderName);
+    }
+
+    /**
+     * Builds the world the recording will be poured into.
+     *
+     * <p>This is what {@code handleJoinGame} does, minus its one Forge call: that resolves the
+     * dimension through the connection's Netty channel, and playback has no channel.
+     */
+    private void openWorld(ReplayFile.Header header) {
+        Minecraft mc = Minecraft.getMinecraft();
+        NetworkManager connection = new SilentConnection();
+        netHandler = new NetHandlerPlayClient(mc, null, connection, recorderProfile);
+        connection.setNetHandler(netHandler);
+
+        mc.playerController = new PlayerControllerMP(mc, netHandler);
+        WorldClient world = new WorldClient(netHandler,
+                new WorldSettings(0L, WorldSettings.GameType.SPECTATOR, false, false, WorldType.DEFAULT),
+                header.dimension, EnumDifficulty.NORMAL, mc.mcProfiler);
+        ((NetHandlerPlayClientAccessor) netHandler).setClientWorldController(world);
+
+        mc.loadWorld(world);
+        mc.thePlayer.dimension = header.dimension;
+        mc.thePlayer.setEntityId(CAMERA_ENTITY_ID);
+        mc.playerController.setGameType(WorldSettings.GameType.SPECTATOR);
+        mc.displayGuiScreen(null);
+    }
+
+    public synchronized void stop() {
+        if (!active) {
+            return;
+        }
+        active = false;
+        if (readerThread != null) {
+            readerThread.interrupt();
+            try {
+                readerThread.join(2000L);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            readerThread = null;
+        }
+        queue.clear();
+        pending = null;
+        avatar = null;
+        possessing = false;
+        netHandler = null;
+
+        Minecraft mc = Minecraft.getMinecraft();
+        mc.setRenderViewEntity(null);
+        mc.loadWorld(null);
+        ClientLogger.info("replay", "playback stopped");
+    }
+
+    public void togglePause() {
+        if (!active) {
+            return;
+        }
+        if (paused) {
+            // Restart the clock where it stopped rather than where it would have been.
+            originNanos = System.nanoTime() - pausedAtMillis * 1_000_000L;
+            paused = false;
+        } else {
+            pausedAtMillis = elapsedMillis;
+            paused = true;
+        }
+    }
+
+    /** Delivers everything the recording says has happened by now. Called once per client tick. */
+    public void onClientTick() {
+        if (!active) {
+            return;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null || mc.thePlayer == null) {
+            return;
+        }
+        boolean pauseDown = mc.currentScreen == null && Keyboard.isKeyDown(Keyboard.KEY_P);
+        if (pauseDown && !pauseWasDown) {
+            togglePause();
+        }
+        pauseWasDown = pauseDown;
+
+        if (!paused) {
+            elapsedMillis = (int) ((System.nanoTime() - originNanos) / 1_000_000L);
+            drain();
+        }
+        updateCamera(mc);
+    }
+
+    private void drain() {
+        while (true) {
+            if (pending == null) {
+                pending = queue.poll();
+            }
+            if (pending == null) {
+                if (readerFinished) {
+                    ClientLogger.info("replay", "reached the end of " + file.getName());
+                    stop();
+                }
+                return;
+            }
+            if (pending.millis > elapsedMillis) {
+                return;
+            }
+            apply(pending);
+            pending = null;
+        }
+    }
+
+    private void apply(Frame frame) {
+        if (frame.packet != null) {
+            try {
+                // Raw cast: Packet's handler type is erased, and the only handler in play is ours.
+                ((Packet) frame.packet).processPacket(netHandler);
+            } catch (Exception failure) {
+                ClientLogger.error("replay", "could not apply "
+                        + frame.packet.getClass().getSimpleName() + ": " + failure);
+            }
+            return;
+        }
+        applyLocalSample(frame);
+    }
+
+    /** Drives the avatar from the recorder's own movement track. */
+    private void applyLocalSample(Frame frame) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null) {
+            return;
+        }
+        if (avatar == null) {
+            avatar = new EntityOtherPlayerMP(mc.theWorld, recorderProfile);
+            avatar.setEntityId(AVATAR_ENTITY_ID);
+            avatar.setPositionAndRotation(frame.x, frame.y, frame.z, frame.yaw, frame.pitch);
+            avatar.rotationYawHead = frame.yaw;
+            avatar.prevRotationYawHead = frame.yaw;
+            mc.theWorld.addEntityToWorld(AVATAR_ENTITY_ID, avatar);
+            // Put the free camera where the recorder was, otherwise it starts at the world origin
+            // and the viewer opens on nothing.
+            mc.thePlayer.setPositionAndRotation(frame.x, frame.y, frame.z, frame.yaw, frame.pitch);
+        }
+        // One increment: samples are one client tick apart, so the avatar lands exactly on each
+        // sample and the renderer interpolates between them the same way it does for any player.
+        avatar.setPositionAndRotation2(frame.x, frame.y, frame.z, frame.yaw, frame.pitch, 1, false);
+        avatar.rotationYawHead = frame.yaw;
+        avatar.onGround = (frame.flags & ReplayFile.FLAG_ON_GROUND) != 0;
+        avatar.setSneaking((frame.flags & ReplayFile.FLAG_SNEAKING) != 0);
+        avatar.setSprinting((frame.flags & ReplayFile.FLAG_SPRINTING) != 0);
+        if ((frame.flags & ReplayFile.FLAG_SWINGING) != 0 && !avatar.isSwingInProgress) {
+            avatar.swingItem();
+        }
+    }
+
+    private void updateCamera(Minecraft mc) {
+        boolean attackDown = mc.gameSettings.keyBindAttack.isKeyDown();
+        boolean sneakDown = mc.gameSettings.keyBindSneak.isKeyDown();
+
+        if (attackDown && !attackWasDown && !possessing && mc.currentScreen == null && lookingAtAvatar(mc)) {
+            possess();
+        } else if (sneakDown && !sneakWasDown && possessing) {
+            release();
+        }
+        attackWasDown = attackDown;
+        sneakWasDown = sneakDown;
+
+        if (possessing && avatar != null) {
+            // The view comes from the avatar, so the mouse cannot turn it. Dragging the hidden
+            // camera along keeps it facing the same way when possession is released.
+            mc.thePlayer.setPositionAndRotation(avatar.posX, avatar.posY, avatar.posZ,
+                    avatar.rotationYaw, avatar.rotationPitch);
+            mc.thePlayer.motionX = 0.0d;
+            mc.thePlayer.motionY = 0.0d;
+            mc.thePlayer.motionZ = 0.0d;
+        } else if (possessing) {
+            release();
+        }
+    }
+
+    /** Moves the view onto the recorder. Their rotation drives the camera; the mouse does not. */
+    public void possess() {
+        if (!active || avatar == null || possessing) {
+            return;
+        }
+        possessing = true;
+        Minecraft.getMinecraft().setRenderViewEntity(avatar);
+    }
+
+    public void release() {
+        if (!possessing) {
+            return;
+        }
+        possessing = false;
+        Minecraft.getMinecraft().setRenderViewEntity(Minecraft.getMinecraft().thePlayer);
+    }
+
+    private boolean lookingAtAvatar(Minecraft mc) {
+        if (avatar == null) {
+            return false;
+        }
+        Vec3 eyes = mc.thePlayer.getPositionEyes(1.0f);
+        Vec3 look = mc.thePlayer.getLook(1.0f);
+        Vec3 reach = eyes.addVector(look.xCoord * POSSESS_REACH, look.yCoord * POSSESS_REACH,
+                look.zCoord * POSSESS_REACH);
+        // Generous box: the avatar is a person-sized target that may be a long way off, and asking
+        // for pixel accuracy at that distance would make possession a game of its own.
+        AxisAlignedBB box = avatar.getEntityBoundingBox().expand(0.5d, 0.5d, 0.5d);
+        MovingObjectPosition hit = box.calculateIntercept(eyes, reach);
+        return hit != null;
+    }
+
+    /** Reads and decodes off the client thread, so playback only pays for handling. */
+    private final class Reader implements Runnable {
+        private final ReplayFile.Header header;
+
+        Reader(ReplayFile.Header header) {
+            this.header = header;
+        }
+
+        @Override
+        public void run() {
+            try {
+                ReplayFile.Record record;
+                while (active && (record = ReplayFile.read(header.stream)) != null) {
+                    durationMillis = Math.max(durationMillis, record.millis);
+                    Frame frame = decode(record);
+                    if (frame == null) {
+                        continue;
+                    }
+                    while (active && !queue.offer(frame, 100L, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                        // Playback is paused or behind; hold here rather than grow without bound.
+                    }
+                }
+            } catch (InterruptedException stopped) {
+                Thread.currentThread().interrupt();
+            } catch (Exception failure) {
+                ClientLogger.error("replay", "reader failed: " + failure);
+            } finally {
+                readerFinished = true;
+                try {
+                    header.stream.close();
+                } catch (Exception closeFailure) {
+                    ClientLogger.error("replay", "could not close the recording: " + closeFailure);
+                }
+            }
+        }
+
+        private Frame decode(ReplayFile.Record record) {
+            if (record.type == ReplayFile.TYPE_LOCAL_PLAYER) {
+                return new Frame(record);
+            }
+            try {
+                Packet<?> packet = EnumConnectionState.PLAY.getPacket(
+                        EnumPacketDirection.CLIENTBOUND, record.packetId);
+                if (packet == null) {
+                    return null;
+                }
+                packet.readPacketData(new PacketBuffer(Unpooled.wrappedBuffer(record.payload)));
+                return new Frame(record.millis, packet);
+            } catch (Exception failure) {
+                // One unreadable packet degrades the replay; aborting it loses the session.
+                return null;
+            }
+        }
+    }
+
+    private static final class Frame {
+        final int millis;
+        final Packet<?> packet;
+        final double x;
+        final double y;
+        final double z;
+        final float yaw;
+        final float pitch;
+        final int flags;
+
+        Frame(int millis, Packet<?> packet) {
+            this.millis = millis;
+            this.packet = packet;
+            this.x = 0.0d;
+            this.y = 0.0d;
+            this.z = 0.0d;
+            this.yaw = 0.0f;
+            this.pitch = 0.0f;
+            this.flags = 0;
+        }
+
+        Frame(ReplayFile.Record record) {
+            this.millis = record.millis;
+            this.packet = null;
+            this.x = record.x;
+            this.y = record.y;
+            this.z = record.z;
+            this.yaw = record.yaw;
+            this.pitch = record.pitch;
+            this.flags = record.flags;
+        }
+    }
+
+    /** A connection with nowhere to send. Outbound packets are dropped instead of queued forever. */
+    private static final class SilentConnection extends NetworkManager {
+        SilentConnection() {
+            super(EnumPacketDirection.CLIENTBOUND);
+        }
+
+        @Override
+        public void sendPacket(Packet packet) {
+        }
+
+        @Override
+        public void sendPacket(Packet packet,
+                io.netty.util.concurrent.GenericFutureListener<? extends io.netty.util.concurrent.Future<? super Void>> listener,
+                io.netty.util.concurrent.GenericFutureListener<? extends io.netty.util.concurrent.Future<? super Void>>... listeners) {
+        }
+    }
+}

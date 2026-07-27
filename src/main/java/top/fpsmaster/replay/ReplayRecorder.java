@@ -11,6 +11,7 @@ import top.fpsmaster.utils.io.FileUtils;
 
 import java.io.DataOutputStream;
 import java.io.File;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -145,7 +146,11 @@ public final class ReplayRecorder {
         queue.clear();
         recording = true;
 
-        writerThread = new Thread(new Writer(file, startMillis), "Edge-ReplayWriter");
+        Minecraft mc = Minecraft.getMinecraft();
+        writerThread = new Thread(new Writer(file, startMillis, mc.getSession().getUsername(),
+                mc.thePlayer == null ? mc.getSession().getProfile().getId()
+                        : mc.thePlayer.getGameProfile().getId(),
+                mc.thePlayer == null ? 0 : mc.thePlayer.dimension), "Edge-ReplayWriter");
         writerThread.setDaemon(true);
         writerThread.start();
 
@@ -265,17 +270,23 @@ public final class ReplayRecorder {
     private final class Writer implements Runnable {
         private final File target;
         private final long start;
+        private final String recorderName;
+        private final UUID recorderId;
+        private final int dimension;
 
-        Writer(File target, long start) {
+        Writer(File target, long start, String recorderName, UUID recorderId, int dimension) {
             this.target = target;
             this.start = start;
+            this.recorderName = recorderName;
+            this.recorderId = recorderId;
+            this.dimension = dimension;
         }
 
         @Override
         public void run() {
             DataOutputStream out = null;
             try {
-                out = ReplayFile.openForWrite(target, "1.8.9", start);
+                out = ReplayFile.openForWrite(target, "1.8.9", start, recorderName, recorderId, dimension);
                 long lastFlush = System.currentTimeMillis();
                 while (recording || !queue.isEmpty()) {
                     ReplayFile.Record record = queue.poll(200L, java.util.concurrent.TimeUnit.MILLISECONDS);

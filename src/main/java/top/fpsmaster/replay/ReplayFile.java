@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -20,6 +21,7 @@ import java.util.zip.GZIPOutputStream;
  *
  * <pre>
  *   header    magic "EDGEREPL" | int version | UTF minecraft version | long wall-clock start
+ *             UTF recorder name | long uuid-high | long uuid-low | int dimension
  *   record    byte type | int millis-since-start | ...
  *     type 0  int packet id | int payload length | payload bytes
  *     type 1  double x,y,z | float yaw,pitch | byte flags
@@ -35,13 +37,13 @@ import java.util.zip.GZIPOutputStream;
 public final class ReplayFile {
 
     static final String MAGIC = "EDGEREPL";
-    static final int VERSION = 2;
+    static final int VERSION = 3;
 
     private ReplayFile() {
     }
 
-    public static DataOutputStream openForWrite(File file, String minecraftVersion, long startMillis)
-            throws IOException {
+    public static DataOutputStream openForWrite(File file, String minecraftVersion, long startMillis,
+            String recorderName, UUID recorderId, int dimension) throws IOException {
         // syncFlush so a periodic flush emits a complete deflate block. Without it a crash mid-match
         // leaves an unreadable stream and the whole session is gone; with it, everything up to the
         // last flush survives.
@@ -52,6 +54,12 @@ public final class ReplayFile {
         out.writeInt(VERSION);
         out.writeUTF(minecraftVersion);
         out.writeLong(startMillis);
+        // Playback needs to know who was recording: the avatar is built from this profile, and its
+        // skin comes from the tab-list entry the snapshot already carries under the same UUID.
+        out.writeUTF(recorderName);
+        out.writeLong(recorderId.getMostSignificantBits());
+        out.writeLong(recorderId.getLeastSignificantBits());
+        out.writeInt(dimension);
         return out;
     }
 
@@ -68,18 +76,29 @@ public final class ReplayFile {
             in.close();
             throw new IOException("replay version " + version + ", this build reads " + VERSION);
         }
-        return new Header(in, in.readUTF(), in.readLong());
+        String minecraftVersion = in.readUTF();
+        long startMillis = in.readLong();
+        String recorderName = in.readUTF();
+        UUID recorderId = new UUID(in.readLong(), in.readLong());
+        return new Header(in, minecraftVersion, startMillis, recorderName, recorderId, in.readInt());
     }
 
     public static final class Header {
         public final DataInputStream stream;
         public final String minecraftVersion;
         public final long startMillis;
+        public final String recorderName;
+        public final UUID recorderId;
+        public final int dimension;
 
-        Header(DataInputStream stream, String minecraftVersion, long startMillis) {
+        Header(DataInputStream stream, String minecraftVersion, long startMillis, String recorderName,
+                UUID recorderId, int dimension) {
             this.stream = stream;
             this.minecraftVersion = minecraftVersion;
             this.startMillis = startMillis;
+            this.recorderName = recorderName;
+            this.recorderId = recorderId;
+            this.dimension = dimension;
         }
     }
 

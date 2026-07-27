@@ -61,7 +61,9 @@
     "MixinShaderGroup",
     "MixinSoundHandler",
     "WorldClientMixin",
+    "AbstractClientPlayerMixin_ReplaySpectator",
     "accessor.ChunkProviderClientAccessor",
+    "accessor.NetHandlerPlayClientAccessor",
     "accessor.FontRendererAccessor",
     "accessor.GlStateManagerAccessor",
     "accessor.WorldRendererAccessor"

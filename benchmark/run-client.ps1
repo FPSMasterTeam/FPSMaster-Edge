@@ -30,6 +30,10 @@ param(
     [hashtable] $Overrides,
     [int]       $TimeoutSec = 420,
     [string]    $RecordReplay,
+    [string]    $PlayReplay,
+    [string]    $ProbeAt = '5,20,40',
+    [int]       $ProbePossessFrom = -1,
+    [switch]    $ProbeThirdPerson,
     [switch]    $KeepAlive
 )
 
@@ -51,6 +55,16 @@ foreach ($required in @($java, $cpFile, $natives, $assets, $srg)) {
     }
 }
 
+# Recordings are inputs to a run, not products of one, so they are kept outside the
+# game directory and copied back in. Without this the wipe below would delete the
+# recording between capturing it and playing it back.
+$replayStore = Join-Path $PSScriptRoot 'replays'
+$recordedDir = Join-Path (Join-Path $gameDir 'FPSMaster Edge') 'replays'
+if (Test-Path $recordedDir) {
+    if (-not (Test-Path $replayStore)) { New-Item -ItemType Directory -Path $replayStore | Out-Null }
+    Copy-Item (Join-Path $recordedDir '*.edgereplay') $replayStore -Force -ErrorAction SilentlyContinue
+}
+
 # Fresh game dir every run: the client rewrites options.txt and its own config on
 # shutdown, so reusing one would let settings drift across an A/B series.
 # The previous run's JVM may still be releasing its redirected log handles, so retry
@@ -66,6 +80,11 @@ if (Test-Path $gameDir) {
 }
 New-Item -ItemType Directory -Path $gameDir | Out-Null
 Copy-Item (Join-Path $PSScriptRoot 'options.benchmark.txt') (Join-Path $gameDir 'options.txt')
+
+if (Test-Path $replayStore) {
+    New-Item -ItemType Directory -Path $recordedDir -Force | Out-Null
+    Copy-Item (Join-Path $replayStore '*.edgereplay') $recordedDir -Force -ErrorAction SilentlyContinue
+}
 
 if ($Scenario) {
     $scenarioSrc = Join-Path $PSScriptRoot 'scenarios'
@@ -101,6 +120,12 @@ $jvmArgs = @(
     '-Dfml.noGrab=true'
 )
 if ($RecordReplay) { $jvmArgs += "-Dedge.replay.record=$RecordReplay" }
+if ($PlayReplay)   {
+    $jvmArgs += "-Dedge.replay.play=$PlayReplay"
+    $jvmArgs += "-Dedge.replay.probeAt=$ProbeAt"
+    if ($ProbePossessFrom -ge 0) { $jvmArgs += "-Dedge.replay.probePossessFrom=$ProbePossessFrom" }
+    if ($ProbeThirdPerson)       { $jvmArgs += "-Dedge.replay.probeThirdPerson=true" }
+}
 $jvmArgs += @(
     # Deliberately omitted vs. Loom's launch.cfg: mixin.debug and asmhelper.verbose.
     # Both add classload and logging overhead that would pollute frame timings.
@@ -140,7 +165,7 @@ while ((Get-Date) -lt $deadline) {
         $outcome = 'EXITED'
         break
     }
-    if (-not $Scenario -and -not $KeepAlive) {
+    if (-not $Scenario -and -not $KeepAlive -and -not $PlayReplay) {
         # Smoke mode: stop as soon as the client is up.
         $log = Join-Path $gameDir 'logs\latest.log'
         if ((Test-Path $log) -and

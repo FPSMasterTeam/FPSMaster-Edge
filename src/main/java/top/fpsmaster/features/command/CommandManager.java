@@ -2,6 +2,7 @@ package top.fpsmaster.features.command;
 
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.replay.ReplayRecorder;
+import top.fpsmaster.ui.screens.replay.ReplayScreen;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventSendChatMessage;
@@ -56,14 +57,18 @@ public class CommandManager {
     }
 
     /**
-     * {@code .replay start [name] | stop | status}
+     * {@code .replay} opens the browser; {@code .replay start [name] | stop | status}
      *
      * <p>A chat command rather than a keybind because recording is a deliberate act with a real
      * cost — it writes to disk for as long as it runs — and should not be one mistyped key away.
      */
     private void handleReplay(String[] args) {
         ReplayRecorder recorder = ReplayRecorder.instance();
-        String action = args.length > 0 ? args[0].toLowerCase() : "status";
+        if (args.length == 0) {
+            mc.displayGuiScreen(new ReplayScreen(null));
+            return;
+        }
+        String action = args[0].toLowerCase();
 
         if ("start".equals(action)) {
             if (recorder.isRecording()) {

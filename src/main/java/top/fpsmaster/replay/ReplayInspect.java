@@ -84,6 +84,8 @@ public final class ReplayInspect {
 
         System.out.printf("%s%n", file.getName());
         System.out.printf("  minecraft      %s%n", header.minecraftVersion);
+        System.out.printf("  recorder       %s (%s), dimension %d%n",
+                header.recorderName, header.recorderId, Integer.valueOf(header.dimension));
         System.out.printf("  duration       %.1fs%n", lastMillis / 1000.0d);
         System.out.printf("  records        %d (%d local-player samples)%n", records, localSamples);
         System.out.printf("  payload        %.1f KiB (%.0f KiB/s)%n",
