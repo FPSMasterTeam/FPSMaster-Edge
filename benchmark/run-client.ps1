@@ -33,6 +33,8 @@ param(
     [string]    $PlayReplay,
     [int]       $UiShot = -1,
     [string]    $UiShotName = 'ui',
+    [string]    $UiShotScreen,
+    [int]       $UiShotStress = 0,
     [string]    $ProbeAt = '5,20,40',
     [int]       $ProbePossessFrom = -1,
     [switch]    $ProbeThirdPerson,
@@ -122,7 +124,12 @@ $jvmArgs = @(
     '-Dfml.noGrab=true'
 )
 if ($RecordReplay) { $jvmArgs += "-Dedge.replay.record=$RecordReplay" }
-if ($UiShot -ge 0)  { $jvmArgs += "-Dedge.uishot=$UiShot"; $jvmArgs += "-Dedge.uishot.name=$UiShotName" }
+if ($UiShot -ge 0)  {
+    $jvmArgs += "-Dedge.uishot=$UiShot"
+    $jvmArgs += "-Dedge.uishot.name=$UiShotName"
+    if ($UiShotScreen) { $jvmArgs += "-Dedge.uishot.screen=$UiShotScreen" }
+    if ($UiShotStress -gt 0) { $jvmArgs += "-Dedge.uishot.stress=$UiShotStress" }
+}
 if ($PlayReplay)   {
     $jvmArgs += "-Dedge.replay.play=$PlayReplay"
     $jvmArgs += "-Dedge.replay.probeAt=$ProbeAt"

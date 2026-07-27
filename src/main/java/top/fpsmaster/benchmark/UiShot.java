@@ -20,6 +20,7 @@ import java.io.File;
  * <pre>
  *   -Dedge.uishot=6            capture the main menu six seconds in, then quit
  *   -Dedge.uishot.name=before  file name to write
+ *   -Dedge.uishot.screen=clickgui  open the click GUI first
  * </pre>
  */
 public final class UiShot {
@@ -43,6 +44,15 @@ public final class UiShot {
         long now = System.currentTimeMillis();
         if (firstTickMillis == 0L) {
             firstTickMillis = now;
+            // The click GUI is the densest text in the client - hundreds of distinct characters,
+            // enough to make the glyph atlas grow - so it is the screen worth pointing this at.
+            String screen = System.getProperty("edge.uishot.screen", "");
+            if ("clickgui".equals(screen)) {
+                mc.displayGuiScreen(FPSMaster.moduleManager.mainPanel);
+            } else if ("replay".equals(screen)) {
+                mc.displayGuiScreen(new top.fpsmaster.ui.screens.replay.ReplayScreen(null));
+            }
+            stressGlyphs();
             return;
         }
         if (now - firstTickMillis < DELAY_SECONDS * 1000L) {
@@ -79,5 +89,29 @@ public final class UiShot {
                 + " (previously " + oldBoundsX + " wide, uiScale " + ClientSettings.getUiScale()
                 + ", vanilla scale " + sr.getScaleFactor() + ")");
         mc.shutdown();
+    }
+
+    /**
+     * Fills the glyph atlas with distinct characters so it has to grow before anything is drawn.
+     *
+     * <p>A freshly started client never gets near that; one that has been showing Chinese text for a
+     * while does. Growth throws away every cached glyph, and getting that wrong stays invisible
+     * until a string happens to be laid out across the moment it happens.
+     */
+    private static void stressGlyphs() {
+        int count = Integer.getInteger("edge.uishot.stress", 0).intValue();
+        if (count <= 0) {
+            return;
+        }
+        StringBuilder text = new StringBuilder();
+        for (int index = 0; index < count; index++) {
+            text.append((char) (0x4E00 + index));
+            if (text.length() >= 64) {
+                FPSMaster.fontManager.s16.getStringWidth(text.toString());
+                FPSMaster.fontManager.s18.getStringWidth(text.toString());
+                text.setLength(0);
+            }
+        }
+        ClientLogger.info("uishot", "stressed the atlas with " + count + " distinct characters");
     }
 }

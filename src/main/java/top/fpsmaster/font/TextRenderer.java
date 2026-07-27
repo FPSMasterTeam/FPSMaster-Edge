@@ -36,6 +36,9 @@ public final class TextRenderer {
      */
     private static final float RENDER_SCALE = 0.5f;
 
+    /** 512 to 2048 is two doublings; a couple of spare passes cost nothing and cannot hang. */
+    private static final int MAX_PREWARM_PASSES = 4;
+
     /** Vanilla's 16 colour codes, in the order the formatting characters index them. */
     private static final int[] COLOR_CODES = new int[16];
 
@@ -164,15 +167,27 @@ public final class TextRenderer {
      * between {@code begin()} and {@code draw()}. Doing it up front keeps the batch uninterrupted.
      */
     private void prewarm(String text) {
-        for (int i = 0; i < text.length(); i++) {
-            char character = text.charAt(i);
-            if (character == FORMATTING_PREFIX && i + 1 < text.length()
-                    && "0123456789abcdefklmnor".indexOf(Character.toLowerCase(text.charAt(i + 1))) >= 0) {
-                i++;
-                continue;
+        // Repeated until a whole pass happens without the page growing. Growing discards every
+        // cached glyph, so a pass that triggers one leaves the characters it already handled
+        // missing - and they would then be rasterised from inside the vertex batch, which rebinds
+        // the texture and can grow the page again underneath UVs that have already been written.
+        // That is what made the first characters of a string disappear.
+        int generation;
+        int attempts = 0;
+        do {
+            generation = atlas.generation();
+            for (int i = 0; i < text.length(); i++) {
+                char character = text.charAt(i);
+                if (character == FORMATTING_PREFIX && i + 1 < text.length()
+                        && "0123456789abcdefklmnor".indexOf(Character.toLowerCase(text.charAt(i + 1))) >= 0) {
+                    i++;
+                    continue;
+                }
+                atlas.glyph(character);
             }
-            atlas.glyph(character);
-        }
+            // The page can only double a fixed number of times, so this terminates; the bound is
+            // here so a future change to growth cannot turn it into a hang.
+        } while (generation != atlas.generation() && ++attempts < MAX_PREWARM_PASSES);
     }
 
     private static void emit(WorldRenderer worldRenderer, GlyphAtlas.Glyph glyph,

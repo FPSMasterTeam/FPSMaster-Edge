@@ -797,3 +797,5 @@ blur.performance=Blur may reduce performance. Disable on low-end PCs!
 motionblur.fast_render=Motion Blur is not compatible with Fast Render. Fast Render has been disabled.
 chat.irc=Client
 chat.mc=Vanilla
+replay=Replay
+replay.desc=Record a session and play it back

@@ -797,3 +797,5 @@ blur.performance=组件模糊会极大影响性能，若您的配置较低则不
 motionblur.fast_render=快速渲染与运动模糊不兼容，已为您自动关闭快速渲染。
 chat.irc=客户端
 chat.mc=原版
+replay=录像
+replay.desc=录制并回放对局

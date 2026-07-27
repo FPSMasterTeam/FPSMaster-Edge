@@ -65,7 +65,14 @@ public class CommandManager {
     private void handleReplay(String[] args) {
         ReplayRecorder recorder = ReplayRecorder.instance();
         if (args.length == 0) {
-            mc.displayGuiScreen(new ReplayScreen(null));
+            // Deferred: the chat GUI closes itself once the message is handled, and closing a screen
+            // sets the current screen to null - which threw this one away as soon as it opened.
+            mc.addScheduledTask(new Runnable() {
+                @Override
+                public void run() {
+                    mc.displayGuiScreen(new ReplayScreen(null));
+                }
+            });
             return;
         }
         String action = args[0].toLowerCase();

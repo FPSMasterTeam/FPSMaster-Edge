@@ -5,6 +5,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import top.fpsmaster.benchmark.BenchCounters;
 import top.fpsmaster.benchmark.BenchmarkMode;
+import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -87,6 +88,11 @@ public final class GlyphAtlas {
     private int shelfY;
     private int shelfHeight;
 
+    /**
+     * Bumped whenever the page is rebuilt, so callers can tell that everything they cached is gone.
+     */
+    private int generation;
+
     private final int ascent;
     private final int inkAscent;
     private final int lineHeight;
@@ -135,6 +141,11 @@ public final class GlyphAtlas {
 
     public int textureId() {
         return textureId;
+    }
+
+    /** Changes when the page grows and every cached glyph is discarded with it. */
+    public int generation() {
+        return generation;
     }
 
     /** Measured through the same call rasterising uses, so the two cannot disagree. */
@@ -240,6 +251,7 @@ public final class GlyphAtlas {
             return false;
         }
         pageSize *= 2;
+        generation++;
         glyphs.clear();
         shelfX = 0;
         shelfY = 0;
@@ -252,6 +264,7 @@ public final class GlyphAtlas {
             textureId = -1;
         }
         ensureTexture();
+        ClientLogger.info("font", font.getSize() + "pt atlas grew to " + pageSize + "px");
         return true;
     }
 
