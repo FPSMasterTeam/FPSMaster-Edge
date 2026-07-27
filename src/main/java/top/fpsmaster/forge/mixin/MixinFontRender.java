@@ -19,8 +19,16 @@ import top.fpsmaster.modules.client.GlobalTextFilter;
  * buffers; on a current one running a compatibility profile they are emulated, and replaying
  * hundreds of tiny ones per frame costs far more than drawing the text.
  *
- * <p>Caching strings is still a reasonable idea. Compiling each into its own display list is not,
- * so anything replacing it should batch many strings into one draw rather than many lists.
+ * <p>Batching the glyphs into one draw was tried next and does not help either. It was correct — a
+ * static vanilla screen came out byte-identical — and it did what it claimed, cutting 435 draw calls
+ * a frame to 102, but two scenarios measured it at -1.2% and -2.3% frame rate. Timing the loop in
+ * place says why: vanilla spends 362us a frame inside renderStringAtPos for 766 characters, about
+ * half a microsecond each, and that is the character loop rather than the submission. Nothing that
+ * only changes how the quads are submitted can reach it.
+ *
+ * <p>What does reach it is not drawing the text this way at all. Routing chat through the client's
+ * own renderer (BetterChat's BetterFont, off by default) measures 705us to 398us on the HUD section,
+ * three separated runs each way.
  */
 @Mixin(FontRenderer.class)
 public abstract class MixinFontRender {

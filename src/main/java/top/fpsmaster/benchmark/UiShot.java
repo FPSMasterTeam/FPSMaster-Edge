@@ -49,6 +49,11 @@ public final class UiShot {
             String screen = System.getProperty("edge.uishot.screen", "");
             if ("clickgui".equals(screen)) {
                 mc.displayGuiScreen(FPSMaster.moduleManager.mainPanel);
+            } else if ("language".equals(screen)) {
+                // Vanilla's own font on a screen that never moves, and whose entries span both
+                // the bitmap page and the unicode pages - the two paths a font change can break.
+                mc.displayGuiScreen(new net.minecraft.client.gui.GuiLanguage(
+                        null, mc.gameSettings, mc.getLanguageManager()));
             } else if ("replay".equals(screen)) {
                 mc.displayGuiScreen(new top.fpsmaster.ui.screens.replay.ReplayScreen(null));
             }
