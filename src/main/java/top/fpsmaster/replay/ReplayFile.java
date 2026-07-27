@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -22,10 +24,13 @@ import java.util.zip.GZIPOutputStream;
  * <pre>
  *   header    magic "EDGEREPL" | int version | UTF minecraft version | long wall-clock start
  *             UTF recorder name | long uuid-high | long uuid-low | int dimension
+ *             int chunk dictionary cap, MiB
  *   record    byte type | int millis-since-start | ...
  *     type 0  int packet id | int payload length | payload bytes
  *     type 1  double x,y,z | float yaw,pitch | byte flags
  *     type 2  byte slot | int length | serialised item stack
+ *     type 3  int packet id | int header length | header | int blobs
+ *             per blob: int reference, and when it is 0, int length | bytes
  * </pre>
  *
  * <p>Types 1 and 2 are the recording client's own player. A server never sends you your own spawn,
@@ -35,16 +40,21 @@ import java.util.zip.GZIPOutputStream;
  *
  * <p>Gzipped: chunk payloads dominate the volume and compress by roughly an order of magnitude, and
  * the cost is paid on a writer thread rather than on the network thread.
+ *
+ * <p>Type 3 is a chunk packet whose per-chunk blobs are stored once and referenced afterwards.
+ * Compression cannot do this itself - a chunk is tens of kilobytes and deflate only looks back
+ * 32 KiB - and chunk data is over 99% of a recording, so this is where the size is. Readers never
+ * see it: {@link #read} puts the packet back together and hands out an ordinary type 0 record.
  */
 public final class ReplayFile {
 
     static final String MAGIC = "EDGEREPL";
-    static final int VERSION = 4;
+    static final int VERSION = 5;
 
     private ReplayFile() {
     }
 
-    public static DataOutputStream openForWrite(File file, String minecraftVersion, long startMillis,
+    public static Writer openForWrite(File file, String minecraftVersion, long startMillis,
             String recorderName, UUID recorderId, int dimension) throws IOException {
         // syncFlush so a periodic flush emits a complete deflate block. Without it a crash mid-match
         // leaves an unreadable stream and the whole session is gone; with it, everything up to the
@@ -62,7 +72,62 @@ public final class ReplayFile {
         out.writeLong(recorderId.getMostSignificantBits());
         out.writeLong(recorderId.getLeastSignificantBits());
         out.writeInt(dimension);
-        return out;
+        out.writeInt(ReplayChunkDictionary.DEFAULT_CAP_MIB);
+        return new Writer(out, ReplayChunkDictionary.DEFAULT_CAP_MIB);
+    }
+
+    /**
+     * Writes records, folding chunk packets through the dictionary.
+     *
+     * <p>The split happens here rather than where packets are captured, because it is array copying
+     * over the bulk of the recording and belongs on the writer thread with the compression, not on
+     * the network thread ahead of packet handling.
+     */
+    public static final class Writer {
+        private final DataOutputStream out;
+        private final ReplayChunkDictionary.Write dictionary;
+
+        Writer(DataOutputStream out, int capMiB) {
+            this.out = out;
+            this.dictionary = new ReplayChunkDictionary.Write((long) capMiB << 20);
+        }
+
+        public void write(Record record) throws IOException {
+            List<byte[]> blobs = record.type == TYPE_PACKET
+                    && ReplayChunkCodec.isChunkPacket(record.packetId)
+                    ? ReplayChunkCodec.split(record.packetId, record.payload) : null;
+            if (blobs == null) {
+                ReplayFile.write(out, record);
+                return;
+            }
+            int headerLength = record.payload.length;
+            for (int index = 0; index < blobs.size(); index++) {
+                headerLength -= blobs.get(index).length;
+            }
+            out.writeByte(TYPE_CHUNK_PACKET);
+            out.writeInt(record.millis);
+            out.writeInt(record.packetId);
+            out.writeInt(headerLength);
+            out.write(record.payload, 0, headerLength);
+            out.writeInt(blobs.size());
+            for (int index = 0; index < blobs.size(); index++) {
+                byte[] blob = blobs.get(index);
+                int reference = dictionary.reference(blob);
+                out.writeInt(reference);
+                if (reference == 0) {
+                    out.writeInt(blob.length);
+                    out.write(blob);
+                }
+            }
+        }
+
+        public void flush() throws IOException {
+            out.flush();
+        }
+
+        public void close() throws IOException {
+            out.close();
+        }
     }
 
     public static Header openForRead(File file) throws IOException {
@@ -82,7 +147,9 @@ public final class ReplayFile {
         long startMillis = in.readLong();
         String recorderName = in.readUTF();
         UUID recorderId = new UUID(in.readLong(), in.readLong());
-        return new Header(in, minecraftVersion, startMillis, recorderName, recorderId, in.readInt());
+        int dimension = in.readInt();
+        return new Header(in, minecraftVersion, startMillis, recorderName, recorderId, dimension,
+                in.readInt());
     }
 
     public static final class Header {
@@ -92,9 +159,11 @@ public final class ReplayFile {
         public final String recorderName;
         public final UUID recorderId;
         public final int dimension;
+        final ReplayChunkDictionary.Read dictionary;
 
         Header(DataInputStream stream, String minecraftVersion, long startMillis, String recorderName,
-                UUID recorderId, int dimension) {
+                UUID recorderId, int dimension, int chunkDictionaryMiB) {
+            this.dictionary = new ReplayChunkDictionary.Read((long) chunkDictionaryMiB << 20);
             this.stream = stream;
             this.minecraftVersion = minecraftVersion;
             this.startMillis = startMillis;
@@ -107,6 +176,7 @@ public final class ReplayFile {
     public static final int TYPE_PACKET = 0;
     public static final int TYPE_LOCAL_PLAYER = 1;
     public static final int TYPE_LOCAL_EQUIPMENT = 2;
+    static final int TYPE_CHUNK_PACKET = 3;
 
     public static final int FLAG_ON_GROUND = 1;
     public static final int FLAG_SNEAKING = 2;
@@ -181,18 +251,6 @@ public final class ReplayFile {
         }
     }
 
-    /** Bytes a record occupies on the wire, for the recorder's progress counter. */
-    static long sizeOf(Record record) {
-        switch (record.type) {
-            case TYPE_PACKET:
-                return 13L + record.payload.length;
-            case TYPE_LOCAL_EQUIPMENT:
-                return 10L + record.payload.length;
-            default:
-                return 38L;
-        }
-    }
-
     public static void write(DataOutputStream out, Record record) throws IOException {
         out.writeByte(record.type);
         out.writeInt(record.millis);
@@ -221,13 +279,17 @@ public final class ReplayFile {
      * crash is still worth everything that was written before it, and refusing to open it would
      * throw away the session that is hardest to capture again.
      */
-    public static Record read(DataInputStream in) {
+    public static Record read(Header header) {
+        DataInputStream in = header.stream;
         try {
             int type = in.readByte();
             int millis = in.readInt();
             if (type == TYPE_LOCAL_PLAYER) {
                 return new Record(millis, in.readDouble(), in.readDouble(), in.readDouble(),
                         in.readFloat(), in.readFloat(), in.readByte());
+            }
+            if (type == TYPE_CHUNK_PACKET) {
+                return readChunkPacket(header, in, millis);
             }
             if (type == TYPE_LOCAL_EQUIPMENT) {
                 int slot = in.readByte();
@@ -243,6 +305,41 @@ public final class ReplayFile {
         } catch (IOException truncated) {
             return null;
         }
+    }
+
+    /** Rebuilds a chunk packet from the dictionary and returns it as an ordinary packet record. */
+    private static Record readChunkPacket(Header header, DataInputStream in, int millis)
+            throws IOException {
+        int packetId = in.readInt();
+        byte[] packetHeader = readPayload(in);
+        if (packetHeader == null) {
+            return null;
+        }
+        int count = in.readInt();
+        if (count < 0 || count > 1024) {
+            return null;  // garbage count: the stream ended inside a record
+        }
+        List<byte[]> blobs = new ArrayList<byte[]>(count);
+        for (int index = 0; index < count; index++) {
+            int reference = in.readInt();
+            if (reference == 0) {
+                byte[] blob = readPayload(in);
+                if (blob == null) {
+                    return null;
+                }
+                // Offered in the order the writer remembered them, which is what keeps the two
+                // dictionaries identical without either side having to describe its contents.
+                header.dictionary.offer(blob);
+                blobs.add(blob);
+                continue;
+            }
+            byte[] blob = header.dictionary.get(reference);
+            if (blob == null) {
+                return null;  // dangling reference: the stream is not what it claims to be
+            }
+            blobs.add(blob);
+        }
+        return new Record(millis, packetId, ReplayChunkCodec.join(packetHeader, blobs));
     }
 
     private static byte[] readPayload(DataInputStream in) throws IOException {

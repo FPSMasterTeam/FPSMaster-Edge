@@ -445,7 +445,7 @@ public final class ReplayPlayer {
         public void run() {
             try {
                 ReplayFile.Record record;
-                while (active && (record = ReplayFile.read(header.stream)) != null) {
+                while (active && (record = ReplayFile.read(header)) != null) {
                     durationMillis = Math.max(durationMillis, record.millis);
                     Frame frame = decode(record);
                     if (frame == null) {

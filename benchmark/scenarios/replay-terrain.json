@@ -1,0 +1,49 @@
+{
+  "_comment": "Realistic chunk entropy for sizing recordings, not a measurement. A superflat world's chunk data is nearly uniform and gzips 79x, which makes every conclusion about recording size wrong in the optimistic direction. Generated terrain is what a real server's chunks actually look like.",
+  "world": {
+    "folder": "bench-terrain",
+    "seed": 20260727,
+    "type": "DEFAULT",
+    "setupCommands": [
+      "/gamerule doMobSpawning false",
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/time set 6000",
+      "/weather clear 1000000"
+    ]
+  },
+  "settleSeconds": 5,
+  "settleTimeoutMillis": 180000,
+  "warmupMillis": 3000,
+  "discardMillis": 500,
+  "measureMillis": 60000,
+  "camera": {
+    "loopMillis": 30000,
+    "keyframes": [
+      {
+        "t": 0,
+        "x": 0,
+        "y": 90,
+        "z": 0,
+        "yaw": 0,
+        "pitch": 5
+      },
+      {
+        "t": 15000,
+        "x": 120,
+        "y": 95,
+        "z": 60,
+        "yaw": 180,
+        "pitch": 0
+      },
+      {
+        "t": 30000,
+        "x": 0,
+        "y": 90,
+        "z": 0,
+        "yaw": 360,
+        "pitch": 5
+      }
+    ]
+  }
+}

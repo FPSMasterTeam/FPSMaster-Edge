@@ -39,6 +39,11 @@ public final class ReplayInspect {
         ReplayFile.Header header = ReplayFile.openForRead(file);
 
         Map<String, Integer> byType = new HashMap<String, Integer>();
+        Map<String, long[]> bytesByType = new HashMap<String, long[]>();
+        Map<String, Long> firstSeen = new HashMap<String, Long>();
+        long duplicateBytes = 0L;
+        int duplicateRecords = 0;
+        long chunkBytes = 0L;
         int records = 0;
         int undecodable = 0;
         int trailingBytes = 0;
@@ -48,7 +53,7 @@ public final class ReplayInspect {
         int localSamples = 0;
         int equipmentChanges = 0;
         ReplayFile.Record record;
-        while ((record = ReplayFile.read(header.stream)) != null) {
+        while ((record = ReplayFile.read(header)) != null) {
             records++;
             lastMillis = record.millis;
             if (record.type == ReplayFile.TYPE_LOCAL_PLAYER) {
@@ -61,6 +66,22 @@ public final class ReplayInspect {
                 continue;
             }
             payloadBytes += record.payload.length;
+            // Repeats among everything the chunk dictionary does not already handle, which is what
+            // would decide whether a second dictionary is worth adding. Chunk packets are counted
+            // separately: their repeats are removed before they reach the file, so including them
+            // here would advertise a saving that has already been taken.
+            if (ReplayChunkCodec.isChunkPacket(record.packetId)) {
+                chunkBytes += record.payload.length;
+            } else {
+                String fingerprint = record.packetId + ":" + java.util.Arrays.hashCode(record.payload)
+                        + ":" + record.payload.length;
+                if (firstSeen.containsKey(fingerprint)) {
+                    duplicateBytes += record.payload.length;
+                    duplicateRecords++;
+                } else {
+                    firstSeen.put(fingerprint, Long.valueOf(0L));
+                }
+            }
 
             Packet<?> packet;
             try {
@@ -85,6 +106,12 @@ public final class ReplayInspect {
             String name = packet.getClass().getSimpleName();
             Integer count = byType.get(name);
             byType.put(name, Integer.valueOf(count == null ? 1 : count.intValue() + 1));
+            long[] bytes = bytesByType.get(name);
+            if (bytes == null) {
+                bytes = new long[1];
+                bytesByType.put(name, bytes);
+            }
+            bytes[0] += record.payload.length;
         }
         header.stream.close();
 
@@ -100,11 +127,20 @@ public final class ReplayInspect {
         System.out.printf("  undecodable    %d%n", undecodable);
         System.out.printf("  trailing bytes %d%n", trailingBytes);
 
-        System.out.println("  most frequent packets:");
-        byType.entrySet().stream()
-                .sorted((a, b) -> b.getValue().intValue() - a.getValue().intValue())
+        System.out.printf("  file on disk   %.1f KiB (%.1fx compression)%n",
+                file.length() / 1024.0d, payloadBytes / (double) Math.max(file.length(), 1L));
+        System.out.printf("  chunk data     %.1f KiB (%.0f%% of payload, deduplicated in the file)%n",
+                chunkBytes / 1024.0d, 100.0d * chunkBytes / Math.max(payloadBytes, 1L));
+        System.out.printf("  other repeats  %.1f KiB in %d records (%.0f%% of payload)%n",
+                duplicateBytes / 1024.0d, duplicateRecords,
+                100.0d * duplicateBytes / Math.max(payloadBytes, 1L));
+
+        System.out.println("  heaviest packets:");
+        bytesByType.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]))
                 .limit(12)
-                .forEach(e -> System.out.printf("    %-38s %6d%n", e.getKey(), e.getValue()));
+                .forEach(e -> System.out.printf("    %-38s %6d x %8.1f KiB%n", e.getKey(),
+                        byType.get(e.getKey()), e.getValue()[0] / 1024.0d));
 
         if (undecodable > 0 || trailingBytes > 0) {
             System.err.println("\nFAIL: the recording does not round-trip cleanly");

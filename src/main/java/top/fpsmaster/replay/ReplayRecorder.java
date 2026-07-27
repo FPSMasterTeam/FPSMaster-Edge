@@ -15,7 +15,6 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Records the inbound packet stream so a real session can be replayed as a benchmark workload.
@@ -53,7 +52,6 @@ public final class ReplayRecorder {
 
     private final BlockingQueue<ReplayFile.Record> queue =
             new ArrayBlockingQueue<ReplayFile.Record>(QUEUE_CAPACITY);
-    private final AtomicLong bytesWritten = new AtomicLong();
 
     /** Held item plus the four armour pieces, numbered as the equipment packet numbers them. */
     private static final int EQUIPMENT_SLOTS = 5;
@@ -124,8 +122,15 @@ public final class ReplayRecorder {
         return packetsDropped;
     }
 
+    /**
+     * Size of the recording so far, as it stands on disk.
+     *
+     * <p>Counting bytes handed to the writer would report the uncompressed volume, which for a
+     * recording of real terrain is forty times the file - so the display said 70 MB while the file
+     * was 1.7 MB. The number people care about is the one the disk shows.
+     */
     public long bytesWritten() {
-        return bytesWritten.get();
+        return file == null ? 0L : file.length();
     }
 
     public long elapsedMillis() {
@@ -146,7 +151,6 @@ public final class ReplayRecorder {
         packetsRecorded = 0;
         packetsDropped = 0;
         java.util.Arrays.fill(lastEquipment, null);
-        bytesWritten.set(0L);
         queue.clear();
         recording = true;
 
@@ -173,7 +177,7 @@ public final class ReplayRecorder {
             Thread.currentThread().interrupt();
         }
         ClientLogger.info("replay", "stopped after " + packetsRecorded + " packet(s), "
-                + bytesWritten.get() / 1024L + " KiB" + (packetsDropped > 0
+                + bytesWritten() / 1024L + " KiB" + (packetsDropped > 0
                 ? ", " + packetsDropped + " dropped" : ""));
     }
 
@@ -319,15 +323,14 @@ public final class ReplayRecorder {
 
         @Override
         public void run() {
-            DataOutputStream out = null;
+            ReplayFile.Writer out = null;
             try {
                 out = ReplayFile.openForWrite(target, "1.8.9", start, recorderName, recorderId, dimension);
                 long lastFlush = System.currentTimeMillis();
                 while (recording || !queue.isEmpty()) {
                     ReplayFile.Record record = queue.poll(200L, java.util.concurrent.TimeUnit.MILLISECONDS);
                     if (record != null) {
-                        ReplayFile.write(out, record);
-                        bytesWritten.addAndGet(ReplayFile.sizeOf(record));
+                        out.write(record);
                     }
                     // Bound how much a crash can cost. The stream is sync-flushed, so everything up
                     // to here stays readable even if the process never gets to close it.

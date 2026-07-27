@@ -102,7 +102,7 @@ public class ReplayScreen extends ScaledGuiScreen {
                         entry.recorder = header.recorderName;
                         int last = 0;
                         ReplayFile.Record record;
-                        while ((record = ReplayFile.read(header.stream)) != null) {
+                        while ((record = ReplayFile.read(header)) != null) {
                             last = record.millis;
                         }
                         entry.durationMillis = last;
