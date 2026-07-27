@@ -36,6 +36,7 @@ public final class BenchCounters {
     public static long staticParticleColorHits;
     public static long batchedModelDraws;
     public static long lowAnimationTickHits;
+    public static long skyColorCacheHits;
     public static long packIconsDownscaled;
 
     public static long chunkRebuildsRequested;
@@ -67,6 +68,7 @@ public final class BenchCounters {
             "entitiesAttempted", "entitiesCulled", "entitiesRendered",
             "particlesTicked", "particlesRendered", "particlesCulled",
             "staticParticleColorHits", "batchedModelDraws", "lowAnimationTickHits",
+            "skyColorCacheHits",
             "packIconsDownscaled",
             "chunkRebuildsRequested", "chunkRebuildsCompleted", "chunkThrottleSleeps",
             "fontCacheHits", "fontCacheMisses", "fontCacheEvictions",
@@ -85,6 +87,7 @@ public final class BenchCounters {
                 entitiesAttempted, entitiesCulled, entitiesRendered,
                 particlesTicked, particlesRendered, particlesCulled,
                 staticParticleColorHits, batchedModelDraws, lowAnimationTickHits,
+                skyColorCacheHits,
                 packIconsDownscaled,
                 chunkRebuildsRequested, chunkRebuildsCompleted, chunkThrottleSleeps,
                 fontCacheHits, fontCacheMisses, fontCacheEvictions,

@@ -23,11 +23,12 @@ public final class SkyBreakdown {
     public static final int DRAW = 4;
     public static final int BIND = 5;
     public static final int QUERY = 6;
-    private static final int COUNT = 7;
+    public static final int SKY_COLOR = 7;
+    private static final int COUNT = 8;
 
     private static final String[] NAMES = {
             "state toggles", "matrix ops", "color", "call list", "tessellator draw",
-            "bind texture", "world queries",
+            "bind texture", "other world queries", "getSkyColor",
     };
 
     private static final long[] NANOS = new long[COUNT];
@@ -46,6 +47,9 @@ public final class SkyBreakdown {
         CALLS[bucket]++;
     }
 
+    /** Set once so the report can say whether the camera's chunk was loaded. */
+    public static volatile String note = "";
+
     /** Called once per sky pass; reports periodically so a run produces a few readings. */
     public static void endPass() {
         if (++frames % 2000L != 0L) {
@@ -59,6 +63,6 @@ public final class SkyBreakdown {
                     NAMES[i], NANOS[i] / 1000.0d / frames, CALLS[i] / (double) frames));
         }
         line.append(String.format(" || counted %.1fus/frame", total / 1000.0d / frames));
-        ClientLogger.info("skybreak", line.toString());
+        ClientLogger.info("skybreak", line.toString() + " || " + note);
     }
 }

@@ -342,7 +342,11 @@ public class RenderGlobalMixin_SkyState {
         }
         long start = System.nanoTime();
         Vec3 value = world.getSkyColor(entity, partialTicks);
-        SkyBreakdown.record(SkyBreakdown.QUERY, System.nanoTime() - start);
+        SkyBreakdown.record(SkyBreakdown.SKY_COLOR, System.nanoTime() - start);
+        // getBiomeGenForCoords falls back to generating biome data when the position's chunk is not
+        // loaded, and that fallback caches nothing - so whether it is loaded decides everything.
+        SkyBreakdown.note = "camera chunk loaded: "
+                + world.isBlockLoaded(new net.minecraft.util.BlockPos(entity.posX, entity.posY, entity.posZ));
         return value;
     }
 

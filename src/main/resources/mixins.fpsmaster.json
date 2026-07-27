@@ -61,6 +61,7 @@
     "MixinShaderGroup",
     "MixinSoundHandler",
     "WorldClientMixin",
+    "WorldMixin_SkyColorCache",
     "AbstractClientPlayerMixin_ReplaySpectator",
     "PlayerControllerMPMixin_ReplayHud",
     "RenderGlobalMixin_SkyParts",
