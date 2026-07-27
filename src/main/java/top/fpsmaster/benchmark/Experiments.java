@@ -20,6 +20,7 @@ package top.fpsmaster.benchmark;
  *   -Dedge.exp.noSkyStateToggles=true  skip the sky's fixed-function state changes
  *   -Dedge.exp.noGpuTimer=true     stop issuing GPU timestamp queries at all
  *   -Dedge.exp.skyBreakdown=true   time every call the sky pass makes
+ *   -Dedge.exp.hudBreakdown=true   time each piece of the overlay by name
  * </pre>
  */
 public final class Experiments {
@@ -31,6 +32,7 @@ public final class Experiments {
     public static final boolean NO_SKY_STATE_TOGGLES = flag("noSkyStateToggles");
     public static final boolean NO_GPU_TIMER = flag("noGpuTimer");
     public static final boolean SKY_BREAKDOWN = flag("skyBreakdown");
+    public static final boolean HUD_BREAKDOWN = flag("hudBreakdown");
 
     private Experiments() {
     }

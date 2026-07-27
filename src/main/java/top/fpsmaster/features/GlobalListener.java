@@ -11,6 +11,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.replay.ReplayPlayer;
 import top.fpsmaster.benchmark.UiShot;
 import top.fpsmaster.replay.ReplayProbe;
@@ -88,6 +89,7 @@ public class GlobalListener {
         float mouseX = (float) Mouse.getX() / scaledResolution.getScaleFactor();
         float mouseY = scaledResolution.getScaledHeight() - (float) Mouse.getY() / scaledResolution.getScaleFactor();
 
+        long started = HudBreakdown.enabled() ? System.nanoTime() : 0L;
         if (ClientSettings.blur.getValue()) {
             StencilUtil.initStencilToWrite();
             EventDispatcher.dispatchEvent(new EventShader());
@@ -95,12 +97,30 @@ public class GlobalListener {
             StencilUtil.readStencilBuffer(1);
             KawaseBlur.renderBlur(3, 3);
             StencilUtil.uninitStencilBuffer();
+            if (started != 0L) {
+                HudBreakdown.record("~blur pass", System.nanoTime() - started);
+                started = System.nanoTime();
+            }
         }
 
         FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);
+        if (started != 0L) {
+            HudBreakdown.record("~components total", System.nanoTime() - started);
+            started = System.nanoTime();
+        }
 
         ReplayHud.draw();
+        if (started != 0L) {
+            // Charged separately because it only exists during playback - counting it as HUD cost
+            // would attribute the measuring apparatus to the thing being measured.
+            HudBreakdown.record("~replay overlay", System.nanoTime() - started);
+            started = System.nanoTime();
+        }
         NotificationManager.drawNotifications();
+        if (started != 0L) {
+            HudBreakdown.record("~notifications", System.nanoTime() - started);
+            HudBreakdown.endFrame();
+        }
 
     }
 

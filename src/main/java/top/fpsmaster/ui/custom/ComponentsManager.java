@@ -5,6 +5,7 @@ import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.ui.custom.impl.*;
 import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.render.gui.GuiScale;
+import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.util.ArrayList;
@@ -76,10 +77,14 @@ public class ComponentsManager {
         int finalMouseY = mouseY;
         components.forEach(component -> {
             if (component.shouldDisplay()) {
+                long started = HudBreakdown.enabled() ? System.nanoTime() : 0L;
                 try {
                     component.display(sr, finalMouseX, finalMouseY);
                 } catch (Exception e) {
                     ClientLogger.error("Failed to render component: " + component.mod.name);
+                }
+                if (started != 0L) {
+                    HudBreakdown.record(component.mod.name, System.nanoTime() - started);
                 }
             }
         });

@@ -31,6 +31,7 @@
     "MixinGuiChat",
     "MixinGuiContainer",
     "MixinGuiIngame",
+    "GuiIngameForgeMixin_HudBreakdown",
     "MixinGuiIngameForge",
     "MixinGuiMultiplayer",
     "MixinGuiNewChat",
