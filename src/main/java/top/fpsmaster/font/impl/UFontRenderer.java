@@ -3,6 +3,7 @@ package top.fpsmaster.font.impl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.ResourceLocation;
+import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.font.TextRenderer;
 import top.fpsmaster.modules.client.GlobalTextFilter;
 import top.fpsmaster.modules.logger.ClientLogger;
@@ -144,6 +145,15 @@ public class UFontRenderer extends FontRenderer {
     }
 
     private int drawStringInternal(String text, float x, float y, int color, boolean dropShadow, float shadowOffset) {
+        long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
+        int drawn = edge$drawStringInternal(text, x, y, color, dropShadow, shadowOffset);
+        if (mark != 0L) {
+            HudBreakdown.record("ourFont:draw", System.nanoTime() - mark);
+        }
+        return drawn;
+    }
+
+    private int edge$drawStringInternal(String text, float x, float y, int color, boolean dropShadow, float shadowOffset) {
         color = apply(color);
         int i;
         if (dropShadow) {
@@ -158,6 +168,15 @@ public class UFontRenderer extends FontRenderer {
 
     @Override
     public int getStringWidth(String text) {
+        long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
+        int measured = edge$getStringWidth(text);
+        if (mark != 0L) {
+            HudBreakdown.record("ourFont:width", System.nanoTime() - mark);
+        }
+        return measured;
+    }
+
+    private int edge$getStringWidth(String text) {
         text = GlobalTextFilter.filter(text);
         float densityScale = getDensityScale();
         if (densityScale > 1.0f) {

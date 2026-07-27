@@ -19,7 +19,6 @@ public class Performance extends Module {
 
     public static BooleanSetting ignoreStands = new BooleanSetting("IgnoreStands", true);
     public static BooleanSetting fastLoad = new BooleanSetting("FastLoad", true);
-    public static BooleanSetting fontOptimize = new BooleanSetting("FontOptimize", false);
     public static BooleanSetting staticParticleColor = new BooleanSetting("StaticParticleColor", true);
     public static BooleanSetting limitChunks = new BooleanSetting("LimitChunks", true);
     public static BooleanSetting batchModelRendering = new BooleanSetting("BatchModelRendering", true);
@@ -53,7 +52,7 @@ public class Performance extends Module {
     public Performance() {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
-                particlesLimit, fontOptimize, staticParticleColor, limitChunks, chunkUpdateLimit,
+                particlesLimit, staticParticleColor, limitChunks, chunkUpdateLimit,
                 downscalePackIcons, particleCulling, entityCulling, cullPlayers,
                 entityCullingInterval, cacheSkyColor);
     }

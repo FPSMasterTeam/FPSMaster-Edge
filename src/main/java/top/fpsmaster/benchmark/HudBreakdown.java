@@ -52,7 +52,8 @@ public final class HudBreakdown {
             if (nanos / 1000.0d / frames < 1.0d) {
                 continue;  // below a microsecond a frame is noise, and there are twenty of these
             }
-            line.append(String.format(" | %s %.1fus", entry.getKey(), nanos / 1000.0d / frames));
+            line.append(String.format(" | %s %.1fus in %.1f calls", entry.getKey(),
+                    nanos / 1000.0d / frames, entry.getValue()[1] / (double) frames));
         }
         line.append(String.format(" || counted %.1fus/frame", total / 1000.0d / frames));
         ClientLogger.info("hudbreak", line.toString());
