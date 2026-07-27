@@ -82,6 +82,16 @@ public final class TextRenderer {
         return width;
     }
 
+    /**
+     * Advance of a single character, in the same units as {@link #width}.
+     *
+     * <p>Vanilla's layout — chat wrapping, string trimming, tooltip boxes — is all built on
+     * per-character widths, so replacing its renderer means answering that question too.
+     */
+    public float advance(char character) {
+        return atlas.glyph(character).advance * RENDER_SCALE;
+    }
+
     /** Draws the string and returns its advance width. */
     public float draw(String text, float x, float y, int argb) {
         if (text == null || text.isEmpty()) {

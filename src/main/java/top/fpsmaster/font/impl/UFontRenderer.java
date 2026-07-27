@@ -189,6 +189,23 @@ public class UFontRenderer extends FontRenderer {
         return Math.round(textRenderer.width(text));
     }
 
+    /**
+     * Draws without the client's global fade or its text filter, for standing in as vanilla's
+     * renderer.
+     *
+     * <p>{@link #drawString} multiplies by {@link top.fpsmaster.utils.render.state.Alpha}, which is
+     * how the client's own screens fade in. Vanilla's HUD is not part of that animation and must not
+     * fade with it, so this path leaves the colour alone.
+     */
+    public float drawRaw(String text, float x, float y, int argb) {
+        return textRenderer.draw(text, x, y, argb);
+    }
+
+    /** Advance of one character, for vanilla's per-character layout. */
+    public float advanceOf(char character) {
+        return textRenderer.advance(character);
+    }
+
     public void drawCenteredString(String text, float x, float y, int color) {
         drawString(text, x - textRenderer.width(text) / 2f, y, color, false);
     }

@@ -184,6 +184,14 @@ public final class GlyphAtlas {
     private Glyph rasterise(char character) {
         ensureTexture();
 
+        if (!font.canDisplay(character)) {
+            // Asking for a character the font has no glyph for yields .notdef, a hollow box with
+            // real dimensions, which then gets rasterised and drawn. Vanilla draws nothing at all in
+            // that case, and the difference is visible: servers pad scoreboard lines with private
+            // use characters to keep them unique, so every line ends in a row of squares.
+            return new Glyph(0f, 0f, 0f, 0f, 0, 0, 0, 0, 0f);
+        }
+
         GlyphVector vector = font.createGlyphVector(fontRenderContext, new char[]{character});
         Rectangle2D bounds = vector.getGlyphPixelBounds(0, fontRenderContext, 0.0f, 0.0f);
         float advance = (float) vector.getGlyphMetrics(0).getAdvanceX();
