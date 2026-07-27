@@ -30,6 +30,7 @@ param(
     [hashtable] $Overrides,
     [int]       $TimeoutSec = 420,
     [string]    $RecordReplay,
+    [int]       $ProbeContainerAt = -1,
     [string]    $PlayReplay,
     [int]       $UiShot = -1,
     [string]    $UiShotName = 'ui',
@@ -126,6 +127,7 @@ $jvmArgs = @(
     '-Dfml.noGrab=true'
 )
 if ($RecordReplay) { $jvmArgs += "-Dedge.replay.record=$RecordReplay" }
+if ($ProbeContainerAt -ge 0) { $jvmArgs += "-Dedge.replay.probeContainerAt=$ProbeContainerAt" }
 if ($UiShot -ge 0)  {
     $jvmArgs += "-Dedge.uishot=$UiShot"
     $jvmArgs += "-Dedge.uishot.name=$UiShotName"

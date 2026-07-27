@@ -2,6 +2,8 @@ package top.fpsmaster.replay;
 
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.EnumConnectionState;
 import net.minecraft.network.EnumPacketDirection;
@@ -57,6 +59,9 @@ public final class ReplayRecorder {
     private static final int EQUIPMENT_SLOTS = 5;
 
     private final ItemStack[] lastEquipment = new ItemStack[EQUIPMENT_SLOTS];
+
+    private int lastWindowId = -1;
+    private ItemStack[] lastSlots;
 
     /** Time for chunks and entities to arrive before an automated capture snapshots them. */
     private static final long AUTO_START_DELAY_MILLIS = 8000L;
@@ -151,6 +156,8 @@ public final class ReplayRecorder {
         packetsRecorded = 0;
         packetsDropped = 0;
         java.util.Arrays.fill(lastEquipment, null);
+        lastWindowId = -1;
+        lastSlots = null;
         queue.clear();
         recording = true;
 
@@ -231,6 +238,59 @@ public final class ReplayRecorder {
         enqueue(new ReplayFile.Record(elapsed(), mc.thePlayer.posX, mc.thePlayer.posY,
                 mc.thePlayer.posZ, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, flags));
         sampleEquipment(mc);
+        sampleContainer(mc);
+    }
+
+    /**
+     * Records the contents of an open container as they change.
+     *
+     * <p>Moving an item is invisible in a server-to-client recording. On an accepted click the
+     * server sets isChangingQuantityOnly before detectAndSendChanges, and sendSlotContents checks
+     * that flag - so it sends a transaction confirmation and nothing else, leaving the real client
+     * to apply the prediction it made from its own click packet. That packet travels the other way
+     * and is not recorded, so the result has to be observed rather than derived.
+     *
+     * <p>Diffed against the previous tick, like equipment, because a container is mostly still. The
+     * first sight of a window is taken as a baseline and not written: the server has just sent the
+     * whole thing in S30PacketWindowItems, and repeating it would double what opening a chest costs
+     * for nothing.
+     */
+    private void sampleContainer(Minecraft mc) {
+        if (!(mc.currentScreen instanceof GuiContainer) || mc.thePlayer.openContainer == null) {
+            lastWindowId = -1;
+            lastSlots = null;
+            return;
+        }
+        Container container = mc.thePlayer.openContainer;
+        int size = container.inventorySlots.size();
+        if (container.windowId != lastWindowId || lastSlots == null || lastSlots.length != size) {
+            lastWindowId = container.windowId;
+            lastSlots = new ItemStack[size];
+            for (int slot = 0; slot < size; slot++) {
+                ItemStack stack = container.getSlot(slot).getStack();
+                lastSlots[slot] = stack == null ? null : stack.copy();
+            }
+            return;
+        }
+        for (int slot = 0; slot < size; slot++) {
+            ItemStack stack = container.getSlot(slot).getStack();
+            if (ItemStack.areItemStacksEqual(stack, lastSlots[slot])) {
+                continue;
+            }
+            lastSlots[slot] = stack == null ? null : stack.copy();
+
+            PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
+            try {
+                buffer.writeItemStackToBuffer(stack);
+                byte[] payload = new byte[buffer.readableBytes()];
+                buffer.readBytes(payload);
+                enqueue(ReplayFile.Record.containerSlot(elapsed(), container.windowId, slot, payload));
+            } catch (Exception failure) {
+                ClientLogger.error("replay", "could not record container slot " + slot + ": " + failure);
+            } finally {
+                buffer.release();
+            }
+        }
     }
 
     /**

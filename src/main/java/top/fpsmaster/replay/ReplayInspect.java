@@ -30,6 +30,28 @@ public final class ReplayInspect {
     private ReplayInspect() {
     }
 
+    /**
+     * Reads the wire form of an item stack without touching the item registry.
+     *
+     * <p>This tool runs without a game, so the registry is empty and anything that resolves an id to
+     * an Item throws. The numbers are what matter here anyway - a wrong item shows up as a wrong id.
+     */
+    private static String describe(byte[] payload) {
+        try {
+            PacketBuffer buffer = new PacketBuffer(Unpooled.wrappedBuffer(payload));
+            int id = buffer.readShort();
+            if (id < 0) {
+                return "empty";
+            }
+            int count = buffer.readByte();
+            int damage = buffer.readShort();
+            byte nbt = buffer.readByte();
+            return count + "x id " + id + " dmg " + damage + (nbt == 0 ? "" : " +nbt");
+        } catch (Exception failure) {
+            return "undecodable: " + failure;
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
             System.err.println("usage: ReplayInspect <file.edgereplay>");
@@ -52,12 +74,24 @@ public final class ReplayInspect {
 
         int localSamples = 0;
         int equipmentChanges = 0;
+        int containerSlots = 0;
+        StringBuilder containerLog = new StringBuilder();
         ReplayFile.Record record;
         while ((record = ReplayFile.read(header)) != null) {
             records++;
             lastMillis = record.millis;
             if (record.type == ReplayFile.TYPE_LOCAL_PLAYER) {
                 localSamples++;
+                continue;
+            }
+            if (record.type == ReplayFile.TYPE_CONTAINER_SLOT) {
+                containerSlots++;
+                payloadBytes += record.payload.length;
+                if (containerLog.length() < 600) {
+                    containerLog.append(String.format("    %6dms  window %d slot %-3d %s%n",
+                            Integer.valueOf(record.millis), Integer.valueOf(record.windowId),
+                            Integer.valueOf(record.slot), describe(record.payload)));
+                }
                 continue;
             }
             if (record.type == ReplayFile.TYPE_LOCAL_EQUIPMENT) {
@@ -120,8 +154,9 @@ public final class ReplayInspect {
         System.out.printf("  recorder       %s (%s), dimension %d%n",
                 header.recorderName, header.recorderId, Integer.valueOf(header.dimension));
         System.out.printf("  duration       %.1fs%n", lastMillis / 1000.0d);
-        System.out.printf("  records        %d (%d local-player samples, %d equipment changes)%n",
-                records, localSamples, equipmentChanges);
+        System.out.printf("  records        %d (%d local-player samples, %d equipment changes,"
+                        + " %d container slots)%n",
+                records, localSamples, equipmentChanges, containerSlots);
         System.out.printf("  payload        %.1f KiB (%.0f KiB/s)%n",
                 payloadBytes / 1024.0d, payloadBytes / 1024.0d / Math.max(lastMillis / 1000.0d, 1e-9));
         System.out.printf("  undecodable    %d%n", undecodable);
@@ -134,6 +169,11 @@ public final class ReplayInspect {
         System.out.printf("  other repeats  %.1f KiB in %d records (%.0f%% of payload)%n",
                 duplicateBytes / 1024.0d, duplicateRecords,
                 100.0d * duplicateBytes / Math.max(payloadBytes, 1L));
+
+        if (containerLog.length() > 0) {
+            System.out.println("  container slots recorded:");
+            System.out.print(containerLog);
+        }
 
         System.out.println("  heaviest packets:");
         bytesByType.entrySet().stream()

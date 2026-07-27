@@ -31,6 +31,7 @@ import java.util.zip.GZIPOutputStream;
  *     type 2  byte slot | int length | serialised item stack
  *     type 3  int packet id | int header length | header | int blobs
  *             per blob: int reference, and when it is 0, int length | bytes
+ *     type 4  int window id | int slot | int length | serialised item stack
  * </pre>
  *
  * <p>Types 1 and 2 are the recording client's own player. A server never sends you your own spawn,
@@ -49,7 +50,7 @@ import java.util.zip.GZIPOutputStream;
 public final class ReplayFile {
 
     static final String MAGIC = "EDGEREPL";
-    static final int VERSION = 5;
+    static final int VERSION = 6;
 
     private ReplayFile() {
     }
@@ -177,6 +178,7 @@ public final class ReplayFile {
     public static final int TYPE_LOCAL_PLAYER = 1;
     public static final int TYPE_LOCAL_EQUIPMENT = 2;
     static final int TYPE_CHUNK_PACKET = 3;
+    public static final int TYPE_CONTAINER_SLOT = 4;
 
     public static final int FLAG_ON_GROUND = 1;
     public static final int FLAG_SNEAKING = 2;
@@ -200,6 +202,7 @@ public final class ReplayFile {
         public final int millis;
         public final int packetId;
         public final int slot;
+        public final int windowId;
         public final byte[] payload;
         public final double x;
         public final double y;
@@ -213,6 +216,7 @@ public final class ReplayFile {
             this.millis = millis;
             this.packetId = packetId;
             this.slot = -1;
+            this.windowId = -1;
             this.payload = payload;
             this.x = 0.0d;
             this.y = 0.0d;
@@ -227,6 +231,7 @@ public final class ReplayFile {
             this.millis = millis;
             this.packetId = -1;
             this.slot = -1;
+            this.windowId = -1;
             this.payload = null;
             this.x = x;
             this.y = y;
@@ -237,11 +242,12 @@ public final class ReplayFile {
         }
 
         /** Slot 0 is the held item, 1 to 4 the armour, matching the equipment packet's numbering. */
-        private Record(int type, int millis, int slot, byte[] payload) {
+        private Record(int type, int millis, int windowId, int slot, byte[] payload) {
             this.type = type;
             this.millis = millis;
             this.packetId = -1;
             this.slot = slot;
+            this.windowId = windowId;
             this.payload = payload;
             this.x = 0.0d;
             this.y = 0.0d;
@@ -252,7 +258,12 @@ public final class ReplayFile {
         }
 
         public static Record equipment(int millis, int slot, byte[] payload) {
-            return new Record(TYPE_LOCAL_EQUIPMENT, millis, slot, payload);
+            return new Record(TYPE_LOCAL_EQUIPMENT, millis, -1, slot, payload);
+        }
+
+        /** One slot of whatever container the recorder had open, after it changed. */
+        public static Record containerSlot(int millis, int windowId, int slot, byte[] payload) {
+            return new Record(TYPE_CONTAINER_SLOT, millis, windowId, slot, payload);
         }
     }
 
@@ -265,6 +276,11 @@ public final class ReplayFile {
             out.write(record.payload);
         } else if (record.type == TYPE_LOCAL_EQUIPMENT) {
             out.writeByte(record.slot);
+            out.writeInt(record.payload.length);
+            out.write(record.payload);
+        } else if (record.type == TYPE_CONTAINER_SLOT) {
+            out.writeInt(record.windowId);
+            out.writeInt(record.slot);
             out.writeInt(record.payload.length);
             out.write(record.payload);
         } else {
@@ -295,6 +311,12 @@ public final class ReplayFile {
             }
             if (type == TYPE_CHUNK_PACKET) {
                 return readChunkPacket(header, in, millis);
+            }
+            if (type == TYPE_CONTAINER_SLOT) {
+                int windowId = in.readInt();
+                int slot = in.readInt();
+                byte[] stack = readPayload(in);
+                return stack == null ? null : Record.containerSlot(millis, windowId, slot, stack);
             }
             if (type == TYPE_LOCAL_EQUIPMENT) {
                 int slot = in.readByte();

@@ -416,11 +416,32 @@ public final class ReplayPlayer {
             }
             return;
         }
+        if (frame.windowId >= 0) {
+            applyContainerSlot(frame);
+            return;
+        }
         if (frame.slot >= 0) {
             applyEquipment(frame);
             return;
         }
         applyLocalSample(frame);
+    }
+
+    /**
+     * Puts a recorded slot back into whatever container is open, when it is the same one.
+     *
+     * <p>The window id has to match. A chest is only opened while its owner is possessed, so free
+     * flying leaves the player's own inventory open under window zero and a chest's slots are
+     * skipped rather than written into the wrong container.
+     */
+    private void applyContainerSlot(Frame frame) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.thePlayer == null || mc.thePlayer.openContainer == null
+                || mc.thePlayer.openContainer.windowId != frame.windowId
+                || frame.slot >= mc.thePlayer.openContainer.inventorySlots.size()) {
+            return;
+        }
+        mc.thePlayer.openContainer.putStackInSlot(frame.slot, frame.stack);
     }
 
     private void applyEquipment(Frame frame) {
@@ -564,10 +585,12 @@ public final class ReplayPlayer {
             if (record.type == ReplayFile.TYPE_LOCAL_PLAYER) {
                 return new Frame(record);
             }
-            if (record.type == ReplayFile.TYPE_LOCAL_EQUIPMENT) {
+            if (record.type == ReplayFile.TYPE_LOCAL_EQUIPMENT
+                    || record.type == ReplayFile.TYPE_CONTAINER_SLOT) {
                 try {
                     PacketBuffer buffer = new PacketBuffer(Unpooled.wrappedBuffer(record.payload));
-                    return new Frame(record.millis, record.slot, buffer.readItemStackFromBuffer());
+                    return new Frame(record.millis, record.windowId, record.slot,
+                            buffer.readItemStackFromBuffer());
                 } catch (Exception failure) {
                     return null;
                 }
@@ -591,6 +614,7 @@ public final class ReplayPlayer {
         final int millis;
         final Packet<?> packet;
         final int slot;
+        final int windowId;
         final ItemStack stack;
         final double x;
         final double y;
@@ -603,6 +627,7 @@ public final class ReplayPlayer {
             this.millis = millis;
             this.packet = packet;
             this.slot = -1;
+            this.windowId = -1;
             this.stack = null;
             this.x = 0.0d;
             this.y = 0.0d;
@@ -612,10 +637,11 @@ public final class ReplayPlayer {
             this.flags = 0;
         }
 
-        Frame(int millis, int slot, ItemStack stack) {
+        Frame(int millis, int windowId, int slot, ItemStack stack) {
             this.millis = millis;
             this.packet = null;
             this.slot = slot;
+            this.windowId = windowId;
             this.stack = stack;
             this.x = 0.0d;
             this.y = 0.0d;
@@ -629,6 +655,7 @@ public final class ReplayPlayer {
             this.millis = record.millis;
             this.packet = null;
             this.slot = -1;
+            this.windowId = -1;
             this.stack = null;
             this.x = record.x;
             this.y = record.y;

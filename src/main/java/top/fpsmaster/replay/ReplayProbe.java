@@ -33,6 +33,7 @@ public final class ReplayProbe {
     private static boolean thirdPerson;
     private static boolean disconnected;
     private static boolean respawned;
+    private static int stirStage;
 
     private ReplayProbe() {
     }
@@ -54,6 +55,7 @@ public final class ReplayProbe {
     }
 
     public static void onClientTick() {
+        maybeStirContainer();
         maybeDisconnect();
         maybeRespawn();
         if (probeSeconds == null || finished || !ReplayPlayer.instance().isActive()) {
@@ -76,6 +78,45 @@ public final class ReplayProbe {
         nextProbe++;
         if (nextProbe >= probeSeconds.length) {
             finish(mc);
+        }
+    }
+
+    /**
+     * Opens the inventory during a recording and moves an item, so the container path can be tested.
+     *
+     * <p>Written straight into the container rather than through a click, which is what a click
+     * would have produced locally anyway - the recorder observes the slots, not the action. Without
+     * this there is no way to produce a recording containing a container interaction without a
+     * person sitting there doing it.
+     */
+    private static void maybeStirContainer() {
+        int at = Integer.getInteger("edge.replay.probeContainerAt", -1).intValue();
+        if (at < 0 || stirStage > 2 || !ReplayRecorder.instance().isRecording()) {
+            return;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.thePlayer == null) {
+            return;
+        }
+        long elapsed = ReplayRecorder.instance().elapsedMillis() / 1000L;
+        if (stirStage == 0 && elapsed >= at) {
+            mc.thePlayer.inventory.mainInventory[0] =
+                    new net.minecraft.item.ItemStack(net.minecraft.init.Items.diamond_sword);
+            mc.displayGuiScreen(new net.minecraft.client.gui.inventory.GuiInventory(mc.thePlayer));
+            stirStage = 1;
+            ClientLogger.info("replay", "probe: opened the inventory with a sword in hotbar 0");
+        } else if (stirStage == 1 && elapsed >= at + 3) {
+            // 36 is the first hotbar slot of the player container, 9 the first main-inventory slot.
+            net.minecraft.inventory.Container container = mc.thePlayer.openContainer;
+            net.minecraft.item.ItemStack moved = container.getSlot(36).getStack();
+            container.putStackInSlot(36, null);
+            container.putStackInSlot(9, moved);
+            stirStage = 2;
+            ClientLogger.info("replay", "probe: moved the sword from slot 36 to slot 9");
+        } else if (stirStage == 2 && elapsed >= at + 6) {
+            mc.displayGuiScreen(null);
+            stirStage = 3;
+            ClientLogger.info("replay", "probe: closed the inventory");
         }
     }
 
@@ -138,6 +179,11 @@ public final class ReplayProbe {
         sample.addProperty("dimension", Integer.valueOf(mc.thePlayer == null ? -99 : mc.thePlayer.dimension));
         sample.addProperty("gameType", mc.playerController == null ? "?" : String.valueOf(mc.playerController.getCurrentGameType()));
         sample.addProperty("screen", mc.currentScreen == null ? "none" : mc.currentScreen.getClass().getSimpleName());
+        if (mc.thePlayer != null && mc.thePlayer.openContainer != null) {
+            sample.addProperty("containerWindow", Integer.valueOf(mc.thePlayer.openContainer.windowId));
+            sample.addProperty("slot9", describeSlot(mc, 9));
+            sample.addProperty("slot36", describeSlot(mc, 36));
+        }
         sample.addProperty("viewEntity", mc.getRenderViewEntity() == null
                 ? "none" : mc.getRenderViewEntity().getName() + "#" + mc.getRenderViewEntity().getEntityId());
         if (mc.thePlayer != null) {
@@ -151,6 +197,14 @@ public final class ReplayProbe {
             sample.add("avatar", avatar);
         }
         return sample;
+    }
+
+    private static String describeSlot(Minecraft mc, int slot) {
+        if (slot >= mc.thePlayer.openContainer.inventorySlots.size()) {
+            return "-";
+        }
+        net.minecraft.item.ItemStack stack = mc.thePlayer.openContainer.getSlot(slot).getStack();
+        return stack == null ? "empty" : stack.getDisplayName();
     }
 
     private static void capture(Minecraft mc, String name) {
