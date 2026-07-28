@@ -49,16 +49,6 @@ public class Performance extends Module {
      */
     public static BooleanSetting fastRender = new BooleanSetting("FastRender", false);
 
-    /**
-     * Reuses the last chunk the entity pass looked up.
-     *
-     * <p>That pass visits 2893 chunk sections a frame on a recorded lobby and asks the world which
-     * chunk each belongs to, a hash lookup every time, when sixteen of them in a row share an
-     * answer. Only 122 of those sections have any geometry at all — almost everything the walk
-     * touches is empty air it was never going to draw.
-     */
-    public static BooleanSetting cacheEntityChunkLookup =
-            new BooleanSetting("CacheEntityChunkLookup", false);
     public static BooleanSetting cullPlayers =
             new BooleanSetting("CullPlayers", false, () -> entityCulling.getValue());
 
@@ -110,7 +100,7 @@ public class Performance extends Module {
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, staticParticleColor, limitChunks, chunkUpdateLimit,
                 downscalePackIcons, particleCulling, entityCulling, cullPlayers,
-                entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont, customHudFontSize, fastRender, cacheEntityChunkLookup);
+                entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont, customHudFontSize, fastRender);
     }
 
 

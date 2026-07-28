@@ -32,7 +32,6 @@
     "OpenGlHelperMixin_FastRender",
     "RenderChunkMixin_BuildProbe",
     "VertexBufferMixin_DrawProbe",
-    "RenderGlobalMixin_EntityChunkCache",
     "MixinFontRender",
     "MixinGuiChat",
     "MixinGuiContainer",
