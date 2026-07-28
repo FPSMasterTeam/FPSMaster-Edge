@@ -427,9 +427,11 @@ public class StringCache {
         
         GlStateManager.disableBlend();
         
-        // 文字位置像素对齐，避免纹理采样模糊
-        startX = Math.round(startX);
-        startY = Math.round(startY);
+        // 文字位置像素对齐，避免纹理采样模糊；阴影 pass 保留半像素偏移，避免格式化粗体文本阴影偏移过大。
+        if (!shadowFlag) {
+            startX = Math.round(startX);
+            startY = Math.round(startY);
+        }
 
         // 检查无效参数
         if (str == null || str.isEmpty()) {
