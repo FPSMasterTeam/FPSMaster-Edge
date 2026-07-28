@@ -571,6 +571,11 @@ public final class ReplayPlayer {
             mc.thePlayer.motionX = 0.0d;
             mc.thePlayer.motionY = 0.0d;
             mc.thePlayer.motionZ = 0.0d;
+            // The first-person renderer draws whatever is in the viewer's own selected slot, and
+            // the recording only ever dressed the avatar. Without this the recorder is holding a
+            // sword everyone else can see and the view through their eyes shows an empty hand.
+            mc.thePlayer.inventory.mainInventory[mc.thePlayer.inventory.currentItem] =
+                    avatar.getEquipmentInSlot(0);
         } else if (possessing) {
             release();
         }
