@@ -134,10 +134,32 @@ public final class ReplayInspect {
         java.util.List<int[]> spawnTimes = new java.util.ArrayList<int[]>();
         java.util.List<String> spawnUuids = new java.util.ArrayList<String>();
         StringBuilder containerLog = new StringBuilder();
+        // Packet ids in the 1.8 play/clientbound table: join game, respawn, spawn player.
+        final int ID_JOIN = 0x01;
+        final int ID_RESPAWN = 0x07;
+        final int ID_SPAWN_PLAYER = 0x0C;
+        java.util.List<int[]> worldSwitches = new java.util.ArrayList<int[]>();
+        int spawnsSinceSwitch = 0;
+        int chunksSinceSwitch = 0;
         ReplayFile.Record record;
         while ((record = ReplayFile.read(header)) != null) {
             records++;
             lastMillis = record.millis;
+            if (record.type == ReplayFile.TYPE_PACKET) {
+                // By packet id, not by record type: a chunk record is stored as TYPE_CHUNK_PACKET
+                // but read() reassembles it and hands it back as an ordinary packet, so a check on
+                // the type counted zero chunks in a file that is 98% chunk data.
+                if (record.packetId == ID_SPAWN_PLAYER) {
+                    spawnsSinceSwitch++;
+                } else if (ReplayChunkCodec.isChunkPacket(record.packetId)) {
+                    chunksSinceSwitch++;
+                } else if (record.packetId == ID_JOIN || record.packetId == ID_RESPAWN) {
+                    worldSwitches.add(new int[]{record.millis, record.packetId,
+                            spawnsSinceSwitch, chunksSinceSwitch});
+                    spawnsSinceSwitch = 0;
+                    chunksSinceSwitch = 0;
+                }
+            }
             if (record.type == ReplayFile.TYPE_LOCAL_PLAYER) {
                 localSamples++;
                 continue;
@@ -284,6 +306,15 @@ public final class ReplayInspect {
                     Integer.valueOf(neverNamed), Integer.valueOf(namedLate));
         }
 
+        worldSwitches.add(new int[]{lastMillis, -1, spawnsSinceSwitch, chunksSinceSwitch});
+        System.out.println("  world switches: " + (worldSwitches.size() - 1));
+        for (int i = 0; i < worldSwitches.size(); i++) {
+            int[] w = worldSwitches.get(i);
+            System.out.printf("    segment ending %6dms at %-10s : %4d player spawns, %5d chunk packets%n",
+                    Integer.valueOf(w[0]),
+                    w[1] == 0x01 ? "joinGame" : (w[1] == 0x07 ? "respawn" : "end-of-file"),
+                    Integer.valueOf(w[2]), Integer.valueOf(w[3]));
+        }
         System.out.println("  heaviest packets:");
         bytesByType.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]))
