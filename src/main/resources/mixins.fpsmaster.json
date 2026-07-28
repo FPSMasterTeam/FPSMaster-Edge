@@ -31,6 +31,7 @@
     "ChunkMixin_EntityWalkProbe",
     "OpenGlHelperMixin_FastRender",
     "RenderChunkMixin_BuildProbe",
+    "VertexBufferMixin_DrawProbe",
     "MixinFontRender",
     "MixinGuiChat",
     "MixinGuiContainer",
