@@ -175,62 +175,68 @@ public class MotionBlur extends Module {
 
     public static void blur(float multiplier) {
         if (OpenGlHelper.isFramebufferEnabled()) {
-            ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
-            int width = Minecraft.getMinecraft().getFramebuffer().framebufferWidth;
-            int height = Minecraft.getMinecraft().getFramebuffer().framebufferHeight;
-            // float division: with integer division the quads come up short by the
-            // remainder pixels, leaving unprocessed rows/columns at the bottom/right edge
-            float scaledWidth = (float) width / sr.getScaleFactor();
-            float scaledHeight = (float) height / sr.getScaleFactor();
-
+            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_CURRENT_BIT | GL11.GL_TEXTURE_BIT);
             GlStateManager.matrixMode(GL11.GL_PROJECTION);
             GlStateManager.pushMatrix();
-            GlStateManager.loadIdentity();
-            GlStateManager.ortho(0.0, scaledWidth, scaledHeight, 0.0, 2000.0, 4000.0);
             GlStateManager.matrixMode(GL11.GL_MODELVIEW);
             GlStateManager.pushMatrix();
-            GlStateManager.loadIdentity();
-            GlStateManager.translate(0f, 0f, -2000f);
+            try {
+                ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+                int width = Minecraft.getMinecraft().getFramebuffer().framebufferWidth;
+                int height = Minecraft.getMinecraft().getFramebuffer().framebufferHeight;
+                // float division: with integer division the quads come up short by the
+                // remainder pixels, leaving unprocessed rows/columns at the bottom/right edge
+                float scaledWidth = (float) width / sr.getScaleFactor();
+                float scaledHeight = (float) height / sr.getScaleFactor();
 
-            blurBufferMain = checkFramebufferSizes(blurBufferMain, width, height);
-            blurBufferInto = checkFramebufferSizes(blurBufferInto, width, height);
+                GlStateManager.matrixMode(GL11.GL_PROJECTION);
+                GlStateManager.loadIdentity();
+                GlStateManager.ortho(0.0, scaledWidth, scaledHeight, 0.0, 2000.0, 4000.0);
+                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+                GlStateManager.loadIdentity();
+                GlStateManager.translate(0f, 0f, -2000f);
 
-            blurBufferInto.framebufferClear();
-            blurBufferInto.bindFramebuffer(true);
+                blurBufferMain = checkFramebufferSizes(blurBufferMain, width, height);
+                blurBufferInto = checkFramebufferSizes(blurBufferInto, width, height);
 
-            OpenGlHelper.glBlendFunc(770, 771, 0, 1); // GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
-            GlStateManager.disableLighting();
-            GlStateManager.disableFog();
-            GlStateManager.disableBlend();
+                blurBufferInto.framebufferClear();
+                blurBufferInto.bindFramebuffer(true);
 
-            Minecraft.getMinecraft().getFramebuffer().bindFramebufferTexture();
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
-                    0f, 1f, 0f, 1f, 9728);
+                OpenGlHelper.glBlendFunc(770, 771, 0, 1); // GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+                GlStateManager.disableLighting();
+                GlStateManager.disableFog();
+                GlStateManager.disableBlend();
 
-            GlStateManager.enableBlend();
-            blurBufferMain.bindFramebufferTexture();
-            GlStateManager.color(1f, 1f, 1f, multiplier / 10 - 0.1f);
-            drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
-                    0f, 1f, 1f, 0f, 9728);
+                Minecraft.getMinecraft().getFramebuffer().bindFramebufferTexture();
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
+                        0f, 1f, 0f, 1f, 9728);
 
-            Minecraft.getMinecraft().getFramebuffer().bindFramebuffer(true);
-            blurBufferInto.bindFramebufferTexture();
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            GlStateManager.enableBlend();
-            OpenGlHelper.glBlendFunc(770, 771, 1, 771);
+                GlStateManager.enableBlend();
+                blurBufferMain.bindFramebufferTexture();
+                GlStateManager.color(1f, 1f, 1f, multiplier / 10 - 0.1f);
+                drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
+                        0f, 1f, 1f, 0f, 9728);
 
-            drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
-                    0f, 1f, 0f, 1f, 9728);
+                Minecraft.getMinecraft().getFramebuffer().bindFramebuffer(true);
+                blurBufferInto.bindFramebufferTexture();
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                GlStateManager.enableBlend();
+                OpenGlHelper.glBlendFunc(770, 771, 1, 771);
 
-            Framebuffer tempBuff = blurBufferMain;
-            blurBufferMain = blurBufferInto;
-            blurBufferInto = tempBuff;
+                drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight,
+                        0f, 1f, 0f, 1f, 9728);
 
-            GlStateManager.matrixMode(GL11.GL_PROJECTION);
-            GlStateManager.popMatrix();
-            GlStateManager.matrixMode(GL11.GL_MODELVIEW);
-            GlStateManager.popMatrix();
+                Framebuffer tempBuff = blurBufferMain;
+                blurBufferMain = blurBufferInto;
+                blurBufferInto = tempBuff;
+            } finally {
+                GlStateManager.matrixMode(GL11.GL_PROJECTION);
+                GlStateManager.popMatrix();
+                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+                GlStateManager.popMatrix();
+                GL11.glPopAttrib();
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ public class EventDispatcher {
                 if (Event.class.isAssignableFrom(parameterType)) {
                     Class<? extends Event> eventType = (Class<? extends Event>) parameterType;
                     List<Handler> listeners = eventListeners.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>());
-                    listeners.add(new ReflectHandler(listener, method));
+                    listeners.add(new MethodHandleHandler(listener, method));
                 }
             }
         }
