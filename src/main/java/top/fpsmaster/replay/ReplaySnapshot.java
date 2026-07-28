@@ -97,6 +97,13 @@ final class ReplaySnapshot {
             objectives++;
         }
         for (Score score : scoreboard.getScores()) {
+            // A score can outlive the objective it belongs to — the server removes an objective and
+            // the scores keyed on it are dropped separately, so between the two the scoreboard holds
+            // entries whose objective is already gone. Vanilla's packet reads that objective's name
+            // in its constructor and this crashed the moment recording started on a real server.
+            if (score.getObjective() == null) {
+                continue;
+            }
             sink.accept(new S3CPacketUpdateScore(score));
         }
         for (int slot = 0; slot < DISPLAY_SLOTS; slot++) {
