@@ -27,6 +27,16 @@ import top.fpsmaster.features.impl.optimizes.Performance;
  * weather does. Those are exactly the things this keys on, so a hit is exact rather than
  * approximate — the colour returned is the colour vanilla would have computed. On a server that
  * holds the time still, which is most of them, it is the same value all day.
+ *
+ * <p><b>What it gives back depends on what the frame is waiting for.</b> The 33.9% above was
+ * measured where the frame was limited by the processor. On a machine where it is limited by the
+ * graphics card the saving is real but mostly does not become frame rate: the same lobby measured
+ * the sky pass falling from 1198us to 117us while terrainSetup rose from 2128us to 3091us, the two
+ * together unchanged at about 3200us, for +4.2% on the frame rate. Nothing moved into terrainSetup
+ * — the processor simply reached the graphics card sooner and waited there instead, in the next
+ * section that touches GL. The giveaway is that across three runs of that variant terrainSetup fell
+ * as the frame rate rose, 3669us at 61fps down to 2285us at 72fps, which no amount of real work
+ * does. Section timings on a card-limited frame are not attributable; read the frame total.
  */
 @Mixin(World.class)
 public class WorldMixin_SkyColorCache {
