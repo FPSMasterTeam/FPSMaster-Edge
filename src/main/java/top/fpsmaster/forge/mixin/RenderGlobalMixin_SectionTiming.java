@@ -59,11 +59,12 @@ public class RenderGlobalMixin_SectionTiming {
             Performance.ENTITY_CULLING.init();
             // renderEntities is called a second time for the entity-outline pass. No guard is
             // needed: the reprobe interval inside update() already makes the second call a no-op.
-            Performance.ENTITY_CULLING.update(mc,
+            Performance.ENTITY_CULLING.update(mc, camera,
                     ((IRenderManager) manager).renderPosX(),
                     ((IRenderManager) manager).renderPosY(),
                     ((IRenderManager) manager).renderPosZ(),
                     Performance.entityCullingInterval.getValue().longValue(),
+                    Performance.entityCullingMinEntities.getValue().intValue(),
                     Performance.cullPlayers.getValue());
         }
     }

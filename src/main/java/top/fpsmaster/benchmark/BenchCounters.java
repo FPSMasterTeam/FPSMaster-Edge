@@ -43,6 +43,8 @@ public final class BenchCounters {
     public static long chunkRebuildsCompleted;
     public static long chunkThrottleSleeps;
 
+    public static long cullCandidates;
+    public static long cullDormantFrames;
     public static long cullProbesIssued;
     public static long cullProbesHarvested;
     public static long cullProbesOccluded;
@@ -67,7 +69,7 @@ public final class BenchCounters {
             "skyColorCacheHits",
             "packIconsDownscaled",
             "chunkRebuildsRequested", "chunkRebuildsCompleted", "chunkThrottleSleeps",
-            "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
+            "cullCandidates", "cullDormantFrames", "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "displayListsAllocated", "displayListsReleased",
             "texturesAllocated", "texturesReleased",
             "animatedSpritesTotal", "animatedSpritesUpdated",
@@ -85,7 +87,7 @@ public final class BenchCounters {
                 skyColorCacheHits,
                 packIconsDownscaled,
                 chunkRebuildsRequested, chunkRebuildsCompleted, chunkThrottleSleeps,
-                cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
+                cullCandidates, cullDormantFrames, cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 displayListsAllocated, displayListsReleased,
                 texturesAllocated, texturesReleased,
                 animatedSpritesTotal, animatedSpritesUpdated,

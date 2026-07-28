@@ -2,6 +2,8 @@ package top.fpsmaster.utils.render.culling;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.culling.ICamera;
+import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -63,6 +65,24 @@ public final class EntityCulling {
     /** Bounding boxes are grown slightly so a probe cannot fall inside its own model's geometry. */
     private static final double PROBE_EXPANSION = 0.15d;
 
+    /** How many verdicts the occlusion rate is judged over before the interval is reconsidered. */
+    private static final int RATE_WINDOW = 256;
+
+    /**
+     * Hysteresis on that rate.
+     *
+     * <p>Below the lower bound almost nothing is being hidden and the probes are paying for
+     * nothing, so they are spaced out; above the upper bound they are earning their cost and run at
+     * the configured interval. Between the two the current decision stands, which is what stops a
+     * scene hovering around the boundary from flipping every window.
+     */
+    private static final double IDLE_FRACTION = 0.05d;
+    private static final double BUSY_FRACTION = 0.10d;
+    private static final int MAX_BACKOFF = 4;
+
+    /** How far the count has to fall below the threshold before probing stops again. */
+    private static final double DORMANT_MARGIN = 0.75d;
+
     /**
      * Entities with a query in flight, so results can be harvested without walking the world.
      *
@@ -70,11 +90,19 @@ public final class EntityCulling {
      * a handful of frames; anything longer would keep dead entities alive.
      */
     private final List<Entity> pendingProbes = new ArrayList<Entity>();
+    /** Reused so the per-frame candidate walk does not allocate. */
+    private final List<Entity> candidates = new ArrayList<Entity>();
     private final ArrayDeque<Integer> freeQueries = new ArrayDeque<Integer>();
     private int allocatedQueries;
     private boolean supported;
     private boolean initialised;
     private int queryTarget;
+
+    /** Set when there is too little on screen for culling to be worth probing for. */
+    private boolean dormant;
+    private int windowHarvested;
+    private int windowOccluded;
+    private int backoff = 1;
 
     public void init() {
         if (initialised) {
@@ -95,7 +123,7 @@ public final class EntityCulling {
 
     /** Whether the entity should be drawn. Anything not positively known to be hidden is drawn. */
     public boolean shouldRender(Entity entity, boolean cullPlayers) {
-        if (!supported || !isCullable(entity, cullPlayers)) {
+        if (dormant || !supported || !isCullable(entity, cullPlayers)) {
             return true;
         }
         return !((ICullable) entity).fpsmaster$isOccluded();
@@ -117,8 +145,8 @@ public final class EntityCulling {
      *
      * <p>Call once at the start of the entity pass, after opaque terrain has been drawn.
      */
-    public void update(Minecraft mc, double renderPosX, double renderPosY, double renderPosZ,
-                       long reprobeMillis, boolean cullPlayers) {
+    public void update(Minecraft mc, ICamera camera, double renderPosX, double renderPosY,
+                       double renderPosZ, long reprobeMillis, int minEntities, boolean cullPlayers) {
         if (!supported || mc.theWorld == null || mc.getRenderViewEntity() == null) {
             return;
         }
@@ -126,19 +154,54 @@ public final class EntityCulling {
 
         long now = System.currentTimeMillis();
         Entity viewEntity = mc.getRenderViewEntity();
+        RenderManager manager = mc.getRenderManager();
         List<Entity> entities = mc.theWorld.getLoadedEntityList();
 
+        // Only entities the game is about to draw anyway. Probing one that is behind the camera or
+        // out of render range costs a query and a box and can save nothing, because vanilla was
+        // never going to draw it.
+        candidates.clear();
+        for (int i = 0; i < entities.size(); i++) {
+            Entity entity = entities.get(i);
+            if (entity == viewEntity || !isCullable(entity, cullPlayers)) {
+                continue;
+            }
+            if (!manager.shouldRender(entity, camera, renderPosX, renderPosY, renderPosZ)) {
+                continue;
+            }
+            candidates.add(entity);
+        }
+        if (BenchmarkMode.ACTIVE) {
+            BenchCounters.cullCandidates += candidates.size();
+        }
+
+        // With few enough entities on screen there is no entity cost worth removing, and the probes
+        // are all that would be left. Measured on a recorded lobby: fourteen entities, of which one
+        // was hidden, for no change in frame rate either way.
+        // Hysteresis, because the decision is made every frame from an instantaneous count. A
+        // scene sitting near the threshold would otherwise flip each frame, and everything behind a
+        // wall would appear and disappear with it - a visible artefact rather than a cost.
+        if (dormant) {
+            dormant = candidates.size() < minEntities;
+        } else {
+            dormant = candidates.size() < minEntities * DORMANT_MARGIN;
+        }
+        if (dormant) {
+            if (BenchmarkMode.ACTIVE) {
+                BenchCounters.cullDormantFrames++;
+            }
+            return;
+        }
+
+        long interval = reprobeMillis * backoff;
         beginProbeState();
         try {
             WorldRenderer worldRenderer = Tessellator.getInstance().getWorldRenderer();
-            for (int i = 0; i < entities.size(); i++) {
-                Entity entity = entities.get(i);
-                if (entity == viewEntity || !isCullable(entity, cullPlayers)) {
-                    continue;
-                }
+            for (int i = 0; i < candidates.size(); i++) {
+                Entity entity = candidates.get(i);
                 ICullable state = (ICullable) entity;
                 if (state.fpsmaster$isQueryPending()
-                        || now - state.fpsmaster$getLastProbeMillis() < reprobeMillis) {
+                        || now - state.fpsmaster$getLastProbeMillis() < interval) {
                     continue;
                 }
 
@@ -181,6 +244,20 @@ public final class EntityCulling {
             boolean occluded = GL15.glGetQueryObjectui(queryId, GL15.GL_QUERY_RESULT) == 0;
             state.fpsmaster$setOccluded(occluded);
             state.fpsmaster$setQueryPending(false);
+            windowHarvested++;
+            if (occluded) {
+                windowOccluded++;
+            }
+            if (windowHarvested >= RATE_WINDOW) {
+                double fraction = windowOccluded / (double) windowHarvested;
+                if (fraction <= IDLE_FRACTION) {
+                    backoff = MAX_BACKOFF;
+                } else if (fraction >= BUSY_FRACTION) {
+                    backoff = 1;
+                }
+                windowHarvested = 0;
+                windowOccluded = 0;
+            }
             if (BenchmarkMode.ACTIVE) {
                 BenchCounters.cullProbesHarvested++;
                 if (occluded) {
@@ -284,6 +361,11 @@ public final class EntityCulling {
             freeQueries.addLast(state.fpsmaster$getQueryId());
         }
         pendingProbes.clear();
+        candidates.clear();
+        dormant = false;
+        windowHarvested = 0;
+        windowOccluded = 0;
+        backoff = 1;
     }
 
     public void countVisibility(boolean rendered) {

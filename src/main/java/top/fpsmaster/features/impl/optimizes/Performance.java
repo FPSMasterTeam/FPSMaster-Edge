@@ -60,6 +60,17 @@ public class Performance extends Module {
             new NumberSetting("EntityCullingInterval", 50, 10, 500, 5, () -> entityCulling.getValue());
 
     /**
+     * How many entities have to be on screen before probing is worth doing at all.
+     *
+     * <p>Culling can only give back what the entities cost, and a scene with a handful of them has
+     * nothing to give: a recorded Hypixel lobby draws fourteen, one of which is behind something,
+     * and turning culling on there moved the frame rate by -0.2%. Below this count the probes are
+     * skipped and everything renders. Zero means always probe.
+     */
+    public static NumberSetting entityCullingMinEntities =
+            new NumberSetting("EntityCullingMinEntities", 24, 0, 256, 1, () -> entityCulling.getValue());
+
+    /**
      * Point size the replacement font is rasterised at, chosen by height rather than width.
      *
      * <p>Matching vanilla's character advances would take 21, but vanilla puts its lines 9 pixels
@@ -77,7 +88,7 @@ public class Performance extends Module {
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, staticParticleColor, limitChunks, chunkUpdateLimit,
                 downscalePackIcons, particleCulling, entityCulling, cullPlayers,
-                entityCullingInterval, cacheSkyColor, customHudFont, customHudFontSize);
+                entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont, customHudFontSize);
     }
 
 
