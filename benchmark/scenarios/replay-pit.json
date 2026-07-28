@@ -1,0 +1,9 @@
+{
+  "_comment": "Hypixel The Pit, recorded 27.6s. Steady melee: ~800 packets/s of player movement, damage, particles and scoreboard updates with almost no chunk streaming, so frame time is dominated by entities and HUD rather than by terrain building. settleSeconds skips the recording's opening chunk snapshot; the measured window is replay t=5s..22.5s.",
+  "replay": "pit",
+  "settleSeconds": 5,
+  "settleTimeoutMillis": 60000,
+  "warmupMillis": 2000,
+  "discardMillis": 500,
+  "measureMillis": 15000
+}

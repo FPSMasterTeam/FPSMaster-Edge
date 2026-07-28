@@ -1,0 +1,9 @@
+{
+  "_comment": "Hypixel Bed Wars, recorded 162.8s. The window is replay t=16s..38.5s, the heaviest stretch in the recording: island travel with chunks streaming in (peaks at 107 chunk packets and 1.9 MiB in one second) on top of combat traffic. Terrain building, entities and HUD are all loaded at once, which is what a real match costs. Measuring the whole recording would cost three minutes a run for no extra information.",
+  "replay": "bedwars",
+  "settleSeconds": 16,
+  "settleTimeoutMillis": 90000,
+  "warmupMillis": 2000,
+  "discardMillis": 500,
+  "measureMillis": 20000
+}

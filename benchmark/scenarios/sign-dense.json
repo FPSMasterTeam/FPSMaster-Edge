@@ -1,0 +1,30 @@
+{
+  "_comment": "A field of 2401 signs, each with four lines of text, spread from under the camera out to 34 blocks. Signs are the only block entity that re-lays out and re-draws text through the font renderer every frame, and the recorded Hypixel matches contain none at all, so this exists to make that cost measurable and to give the distance cull something to cull. The spread matters more than the count: OptiFine's threshold lands near 16 blocks at 720p, so a field that only reaches 12 would show nothing.",
+  "world": {
+    "folder": "bench-signs",
+    "seed": 20260729,
+    "type": "FLAT",
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/gamerule doMobSpawning false",
+      "/gamerule randomTickSpeed 0",
+      "/time set 6000",
+      "/weather clear 1000000",
+      "/fill -24 7 -24 24 7 24 minecraft:standing_sign 0 replace {Text1:\"{\\\"text\\\":\\\"FPSMaster Edge\\\"}\",Text2:\"{\\\"text\\\":\\\"sign text\\\"}\",Text3:\"{\\\"text\\\":\\\"render cost\\\"}\",Text4:\"{\\\"text\\\":\\\"benchmark\\\"}\"}"
+    ]
+  },
+  "settleSeconds": 3,
+  "settleTimeoutMillis": 120000,
+  "warmupMillis": 2000,
+  "discardMillis": 500,
+  "measureMillis": 12000,
+  "camera": {
+    "loopMillis": 12000,
+    "keyframes": [
+      { "t": 0, "x": 0.5, "y": 10, "z": 0.5, "yaw": 0, "pitch": 25 },
+      { "t": 12000, "x": 0.5, "y": 10, "z": 0.5, "yaw": 360, "pitch": 25 }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "_comment": "Four quadrants around the camera, one per kind of special block, so the block-entity pass can be attributed rather than measured as a lump. North-east is signs with text, north-west enchanting tables, south-west chests, south-east stained glass and panes. Glass is there for the translucent question and is deliberately not a block entity: it is chunk geometry, so it shows up in the terrain sections rather than in blockEntities, which is itself the answer.",
+  "world": {
+    "folder": "bench-blockentities",
+    "seed": 20260729,
+    "type": "FLAT",
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/gamerule doMobSpawning false",
+      "/gamerule randomTickSpeed 0",
+      "/time set 6000",
+      "/weather clear 1000000",
+      "/fill 2 7 2 24 7 24 minecraft:standing_sign 0 replace {Text1:\"{\\\"text\\\":\\\"FPSMaster Edge\\\"}\",Text2:\"{\\\"text\\\":\\\"sign text\\\"}\",Text3:\"{\\\"text\\\":\\\"render cost\\\"}\",Text4:\"{\\\"text\\\":\\\"benchmark\\\"}\"}",
+      "/fill -24 7 2 -2 7 24 minecraft:enchanting_table 0 replace",
+      "/fill -24 7 -24 -2 7 -2 minecraft:chest 0 replace",
+      "/fill 2 7 -24 24 9 -2 minecraft:stained_glass 3 replace",
+      "/fill 2 10 -24 24 10 -2 minecraft:stained_glass_pane 14 replace"
+    ]
+  },
+  "settleSeconds": 3,
+  "settleTimeoutMillis": 120000,
+  "warmupMillis": 2000,
+  "discardMillis": 500,
+  "measureMillis": 12000,
+  "camera": {
+    "loopMillis": 12000,
+    "keyframes": [
+      { "t": 0, "x": 0.5, "y": 11, "z": 0.5, "yaw": 0, "pitch": 20 },
+      { "t": 12000, "x": 0.5, "y": 11, "z": 0.5, "yaw": 360, "pitch": 20 }
+    ]
+  }
+}
