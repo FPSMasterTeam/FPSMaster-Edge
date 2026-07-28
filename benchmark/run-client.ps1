@@ -28,6 +28,10 @@ param(
     [string]    $Scenario,
     [string]    $Variant = 'baseline',
     [hashtable] $Overrides,
+    # Vanilla game settings to patch into options.txt, e.g. @{ fboEnable = 'false' }. Some of
+    # what other clients call an optimisation is a vanilla option, and those are worth pricing
+    # before any code is written for them.
+    [hashtable] $GameOptions,
     [int]       $TimeoutSec = 420,
     [string]    $RecordReplay,
     [string[]]  $Experiments,
@@ -88,7 +92,20 @@ if (Test-Path $gameDir) {
     }
 }
 New-Item -ItemType Directory -Path $gameDir | Out-Null
-Copy-Item (Join-Path $PSScriptRoot 'options.benchmark.txt') (Join-Path $gameDir 'options.txt')
+$optionsPath = Join-Path $gameDir 'options.txt'
+Copy-Item (Join-Path $PSScriptRoot 'options.benchmark.txt') $optionsPath
+if ($GameOptions) {
+    $lines = [System.Collections.Generic.List[string]](Get-Content $optionsPath)
+    foreach ($key in $GameOptions.Keys) {
+        $value = "${key}:$($GameOptions[$key])"
+        $index = -1
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -like "${key}:*") { $index = $i; break }
+        }
+        if ($index -ge 0) { $lines[$index] = $value } else { $lines.Add($value) }
+    }
+    Set-Content -Path $optionsPath -Value $lines
+}
 
 if (Test-Path $replayStore) {
     New-Item -ItemType Directory -Path $recordedDir -Force | Out-Null

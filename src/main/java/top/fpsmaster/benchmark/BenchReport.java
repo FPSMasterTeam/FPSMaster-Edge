@@ -157,6 +157,7 @@ public final class BenchReport {
         json.addProperty("enableVsync", settings.enableVsync);
         json.addProperty("renderDistanceChunks", settings.renderDistanceChunks);
         json.addProperty("useVbo", settings.useVbo);
+        json.addProperty("fboEnable", settings.fboEnable);
         json.addProperty("fancyGraphics", settings.fancyGraphics);
         json.addProperty("particleSetting", settings.particleSetting);
         json.addProperty("ambientOcclusion", settings.ambientOcclusion);

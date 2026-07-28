@@ -32,7 +32,9 @@ param(
     [switch] $NoDiscardFirst,
     # Per-variant ceiling probes, e.g. @{ nosky = @('noSky') }. These delete work rather
     # than optimise it, so they only ever answer what a pass is worth, never ship.
-    [System.Collections.IDictionary] $VariantExperiments
+    [System.Collections.IDictionary] $VariantExperiments,
+    # Per-variant vanilla settings, e.g. @{ nofbo = @{ fboEnable = 'false' } }.
+    [System.Collections.IDictionary] $VariantGameOptions
 )
 
 $ErrorActionPreference = 'Stop'
@@ -63,8 +65,10 @@ for ($pass = 0; $pass -lt $totalPasses; $pass++) {
     foreach ($name in $order) {
         $exp = @()
         if ($VariantExperiments -and $VariantExperiments.Contains($name)) { $exp = @($VariantExperiments[$name]) }
+        $opts = $null
+        if ($VariantGameOptions -and $VariantGameOptions.Contains($name)) { $opts = $VariantGameOptions[$name] }
         $result = & $runClient -Scenario $Scenario -Variant $name `
-                               -Overrides $Variants[$name] -Experiments $exp -TimeoutSec $TimeoutSec
+                               -Overrides $Variants[$name] -Experiments $exp -GameOptions $opts -TimeoutSec $TimeoutSec
         $src = $result.ResultFile
 
         if ($result.Outcome -ne 'OK') {

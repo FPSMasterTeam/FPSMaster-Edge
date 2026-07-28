@@ -28,6 +28,7 @@
     "MixinEntityRenderer",
     "EntityRendererMixin_SectionTiming",
     "FontRendererMixin_CustomFont",
+    "ChunkMixin_EntityWalkProbe",
     "MixinFontRender",
     "MixinGuiChat",
     "MixinGuiContainer",

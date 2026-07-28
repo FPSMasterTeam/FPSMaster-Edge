@@ -42,6 +42,8 @@ public final class BenchCounters {
     public static long chunkRebuildsRequested;
     public static long chunkRebuildsCompleted;
     public static long chunkThrottleSleeps;
+    public static long entityListLookups;
+    public static long entityListNonEmpty;
 
     public static long cullCandidates;
     public static long cullDormantFrames;
@@ -68,7 +70,7 @@ public final class BenchCounters {
             "staticParticleColorHits", "batchedModelDraws", "lowAnimationTickHits",
             "skyColorCacheHits",
             "packIconsDownscaled",
-            "chunkRebuildsRequested", "chunkRebuildsCompleted", "chunkThrottleSleeps",
+            "chunkRebuildsRequested", "chunkRebuildsCompleted", "chunkThrottleSleeps", "entityListLookups", "entityListNonEmpty",
             "cullCandidates", "cullDormantFrames", "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "displayListsAllocated", "displayListsReleased",
             "texturesAllocated", "texturesReleased",
@@ -87,6 +89,7 @@ public final class BenchCounters {
                 skyColorCacheHits,
                 packIconsDownscaled,
                 chunkRebuildsRequested, chunkRebuildsCompleted, chunkThrottleSleeps,
+                entityListLookups, entityListNonEmpty,
                 cullCandidates, cullDormantFrames, cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 displayListsAllocated, displayListsReleased,
                 texturesAllocated, texturesReleased,
