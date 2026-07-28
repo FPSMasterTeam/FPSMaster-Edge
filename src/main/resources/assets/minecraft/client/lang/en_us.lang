@@ -361,9 +361,17 @@ performance.batchmodelrendering=Batch Model Rendering
 performance.downscalepackicons=Downscale Resource Pack Icons
 performance.particleculling=Particle Frustum Culling
 performance.entityculling=Entity Occlusion Culling
+performance.cachearmortextures=Cache Armour Textures
 performance.cullplayers=Also Cull Players
 performance.entitycullinginterval=Culling Refresh Interval (ms)
 performance.lowanimationtick=Low Animation Tick
+performance.signtextculling=Sign Text Distance Culling
+performance.blockentityculling=Block Entity Distance Culling
+performance.blockentitydistance=Block Entity Render Distance
+performance.cacheskycolor=Cache Sky Colour
+performance.customhudfont=Custom HUD Font
+performance.customhudfontsize=Custom HUD Font Size
+performance.entitycullingminentities=Minimum Entities To Cull
 
 fullbright=Fullbright
 fullbright.desc=Keep brightness at max

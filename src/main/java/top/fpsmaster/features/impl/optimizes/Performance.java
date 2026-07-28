@@ -17,16 +17,73 @@ public class Performance extends Module {
      */
     public static boolean using = false;
 
-    public static BooleanSetting ignoreStands = new BooleanSetting("IgnoreStands", true);
+    /**
+     * Stops drawing the name label above armour stands.
+     *
+     * <p>It does not skip the stand itself, only its name — the injection is on
+     * {@code Render.renderName}. That distinction matters on a server: a hologram is an invisible
+     * armour stand whose entire content is its name, so this hides shop labels, kill feeds and
+     * every other piece of floating text a server puts in the world.
+     *
+     * <p>Off by default for that reason. It removes content rather than making the same picture
+     * cheaper, and a player who cannot see the shop labels has no way to guess which setting did it.
+     */
+    public static BooleanSetting ignoreStands = new BooleanSetting("IgnoreStands", false);
     public static BooleanSetting fastLoad = new BooleanSetting("FastLoad", true);
-    public static BooleanSetting staticParticleColor = new BooleanSetting("StaticParticleColor", true);
+    /**
+     * Renders every particle at full brightness instead of looking its light level up.
+     *
+     * <p>Off by default: it changes what is on screen rather than how fast the same picture is
+     * drawn. Particles stop responding to the light around them, so they glow at night and in caves.
+     */
+    public static BooleanSetting staticParticleColor = new BooleanSetting("StaticParticleColor", false);
     public static BooleanSetting limitChunks = new BooleanSetting("LimitChunks", true);
     public static BooleanSetting batchModelRendering = new BooleanSetting("BatchModelRendering", true);
-    public static BooleanSetting lowAnimationTick = new BooleanSetting("LowAnimationTick", true);
+    /**
+     * Cuts the sample count in {@code doVoidFogParticles} from 1000 to 100.
+     *
+     * <p>That call is what scatters ambient particles around the player — lava sparks, torch smoke,
+     * portal haze — so a tenth of the samples is a tenth of the particles. Off by default for the
+     * same reason as the rest of this group: the scene visibly thins out.
+     */
+    public static BooleanSetting lowAnimationTick = new BooleanSetting("LowAnimationTick", false);
     public static BooleanSetting downscalePackIcons = new BooleanSetting("DownscalePackIcons", true);
     public static BooleanSetting particleCulling = new BooleanSetting("ParticleCulling", true);
     public static BooleanSetting cacheSkyColor = new BooleanSetting("CacheSkyColor", true);
     public static BooleanSetting entityCulling = new BooleanSetting("EntityCulling", false);
+
+    /**
+     * Skips rebuilding a worn armour texture path that never changes.
+     *
+     * <p>Forge formats the path with {@code String.format} on every call and only then consults its
+     * map, so the map saves an allocation and pays the formatting regardless. The path depends only
+     * on the armour material, the slot and whether this is the overlay pass, and caching it on those
+     * produces the same {@code ResourceLocation} vanilla would have.
+     */
+    public static BooleanSetting cacheArmorTextures = new BooleanSetting("CacheArmorTextures", true);
+
+    /**
+     * Stops drawing sign text past the distance at which a glyph falls below about a pixel.
+     *
+     * <p>The text is the entire cost of rendering a sign — splitting the lines into components,
+     * measuring them and pushing them through the font renderer, every frame, for every sign in
+     * render distance. The cutoff scales with window height and field of view rather than being a
+     * fixed number of blocks, so it stays at the same apparent size whatever the display.
+     */
+    public static BooleanSetting signTextCulling = new BooleanSetting("SignTextCulling", true);
+
+    /**
+     * Stops drawing block entities past {@link #blockEntityDistance}.
+     *
+     * <p>Off by default because it is visible rather than free: unlike sign text, a chest or an
+     * enchanting table does not become unreadable at a distance, it just disappears. Forge already
+     * frustum-tests these and vanilla already caps them, so there is nothing invisible left to
+     * reclaim — this only exists for worlds that put hundreds of them in view at once.
+     */
+    public static BooleanSetting blockEntityCulling = new BooleanSetting("BlockEntityCulling", false);
+
+    public static NumberSetting blockEntityDistance =
+            new NumberSetting("BlockEntityDistance", 32, 8, 64, 1, () -> blockEntityCulling.getValue());
 
     /**
      * Draws every string vanilla would draw with the client's own renderer instead.
@@ -61,7 +118,16 @@ public class Performance extends Module {
      * entirely.
      */
     public static NumberSetting chunkUpdateLimit = new NumberSetting("ChunkUpdateLimit", 50, 1, 250, 1);
-    public static NumberSetting fpsLimit = new NumberSetting("FPSLimit", 30, 0, 360, 1);
+    /**
+     * Frame rate to hold the game at while its window is not focused. Zero disables the cap —
+     * {@code Display.sync} returns immediately for anything at or below zero.
+     *
+     * <p>Defaults to zero so the module changes nothing on its own. Note that vanilla only reaches
+     * this at all when the player's own frame rate limit is below Unlimited: {@code runGameLoop}
+     * guards the {@code Display.sync} call with {@code isFramerateLimitBelowMax}, which reads the
+     * game setting rather than this one.
+     */
+    public static NumberSetting fpsLimit = new NumberSetting("FPSLimit", 0, 0, 360, 1);
     public static NumberSetting particlesLimit = new NumberSetting("ParticlesLimit", 400, 0, 2000, 1);
 
     /**
@@ -99,7 +165,8 @@ public class Performance extends Module {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, staticParticleColor, limitChunks, chunkUpdateLimit,
-                downscalePackIcons, particleCulling, entityCulling, cullPlayers,
+                downscalePackIcons, particleCulling, entityCulling, cacheArmorTextures,
+                signTextCulling, blockEntityCulling, blockEntityDistance, cullPlayers,
                 entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont, customHudFontSize, fastRender);
     }
 

@@ -15,6 +15,10 @@ package top.fpsmaster.benchmark;
  * <pre>
  *   -Dedge.exp.noSky=true         skip the sky pass entirely
  *   -Dedge.exp.noNameplates=true  skip every entity name label
+ *   -Dedge.exp.noGlint=true       skip the enchantment glint on worn armour
+ *   -Dedge.exp.noArmor=true       skip the worn-armour layer entirely
+ *   -Dedge.exp.noHeldItem=true    skip the held-item layer
+ *   -Dedge.exp.noSignText=true    skip the text drawn on signs
  *   -Dedge.exp.noSkyLists=true    skip the sky's compiled geometry
  *   -Dedge.exp.noSkyImmediate=true  skip the sky's per-frame vertex uploads
  *   -Dedge.exp.noSkyStateToggles=true  skip the sky's fixed-function state changes
@@ -28,6 +32,10 @@ public final class Experiments {
 
     public static final boolean NO_SKY = flag("noSky");
     public static final boolean NO_NAMEPLATES = flag("noNameplates");
+    public static final boolean NO_GLINT = flag("noGlint");
+    public static final boolean NO_ARMOR = flag("noArmor");
+    public static final boolean NO_HELD_ITEM = flag("noHeldItem");
+    public static final boolean NO_SIGN_TEXT = flag("noSignText");
     public static final boolean NO_SKY_LISTS = flag("noSkyLists");
     public static final boolean NO_SKY_IMMEDIATE = flag("noSkyImmediate");
     public static final boolean NO_SKY_STATE_TOGGLES = flag("noSkyStateToggles");

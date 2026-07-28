@@ -64,6 +64,26 @@ public final class BenchCounters {
     public static long animatedSpritesTotal;
     public static long animatedSpritesUpdated;
 
+    /**
+     * Volume behind the per-entity layer stack, which is the largest single section on a recorded
+     * PvP workload. A ceiling probe says what a pass is worth; these say how much work was in it,
+     * which is what decides whether the answer generalises beyond the recording it was measured on.
+     *
+     * <p>{@code armorGlintModelRenders} counts whole model renders, not enchanted pieces: vanilla
+     * draws the model twice more per enchanted piece, each with its own texture matrix.
+     */
+    public static long armorLayerRenders;
+    public static long armorPiecesRendered;
+    public static long armorGlintModelRenders;
+    public static long heldItemLayerRenders;
+
+    public static long armorTextureCacheHits;
+
+    public static long signsRendered;
+    public static long signTextCulled;
+    public static long blockEntitiesAttempted;
+    public static long blockEntitiesCulled;
+
     private static final String[] NAMES = {
             "entitiesAttempted", "entitiesCulled", "entitiesRendered",
             "particlesTicked", "particlesRendered", "particlesCulled",
@@ -75,6 +95,10 @@ public final class BenchCounters {
             "displayListsAllocated", "displayListsReleased",
             "texturesAllocated", "texturesReleased",
             "animatedSpritesTotal", "animatedSpritesUpdated",
+            "armorLayerRenders", "armorPiecesRendered", "armorGlintModelRenders", "heldItemLayerRenders",
+            "armorTextureCacheHits",
+            "signsRendered", "signTextCulled",
+            "blockEntitiesAttempted", "blockEntitiesCulled",
     };
 
     private BenchCounters() {
@@ -94,6 +118,10 @@ public final class BenchCounters {
                 displayListsAllocated, displayListsReleased,
                 texturesAllocated, texturesReleased,
                 animatedSpritesTotal, animatedSpritesUpdated,
+                armorLayerRenders, armorPiecesRendered, armorGlintModelRenders, heldItemLayerRenders,
+                armorTextureCacheHits,
+                signsRendered, signTextCulled,
+                blockEntitiesAttempted, blockEntitiesCulled,
         };
     }
 

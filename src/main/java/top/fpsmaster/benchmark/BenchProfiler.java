@@ -38,12 +38,22 @@ public final class BenchProfiler {
     public static final int SECTION_ENTITY_SHADOW = 14;
     /** Animated texture upload, the target Smart Animations would address. */
     public static final int SECTION_TEXTURE_ANIM = 15;
-    public static final int SECTION_COUNT = 16;
+    /**
+     * The block-entity pass, nested inside {@link #SECTION_ENTITIES}.
+     *
+     * <p>Signs, chests, enchanting tables, banners and skulls are drawn in immediate mode every
+     * frame rather than baked into chunk geometry, and a sign additionally re-lays out its text
+     * through the font renderer. That is the only per-frame cost block rendering carries, so it
+     * needs its own bracket before any of it can be called worth optimising.
+     */
+    public static final int SECTION_BLOCK_ENTITIES = 16;
+    public static final int SECTION_COUNT = 17;
 
     private static final String[] NAMES = {
             "terrain", "entities", "particles", "hud", "chunkUpload",
             "sky", "clouds", "hand", "terrainSetup", "frameTotal", "entityRender",
             "entityModel", "entityLayers", "entityBrightness", "entityShadow", "textureAnim",
+            "blockEntities",
     };
 
     private static final BenchProfiler INSTANCE = new BenchProfiler();

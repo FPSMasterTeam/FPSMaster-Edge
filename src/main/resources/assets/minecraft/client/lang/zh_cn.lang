@@ -361,9 +361,17 @@ performance.batchmodelrendering=渲染批处理
 performance.downscalepackicons=缩放资源包图标
 performance.particleculling=粒子视锥裁剪
 performance.entityculling=实体遮挡裁剪
+performance.cachearmortextures=缓存盔甲贴图路径
 performance.cullplayers=同时裁剪玩家
 performance.entitycullinginterval=裁剪刷新间隔 (毫秒)
 performance.lowanimationtick=低动画帧率
+performance.signtextculling=告示牌文字距离裁剪
+performance.blockentityculling=特殊方块距离裁剪
+performance.blockentitydistance=特殊方块渲染距离
+performance.cacheskycolor=缓存天空颜色
+performance.customhudfont=使用自定义 HUD 字体
+performance.customhudfontsize=自定义 HUD 字体大小
+performance.entitycullingminentities=启用裁剪的最少实体数
 
 fullbright=保持亮度
 fullbright.desc=保持视野明亮
