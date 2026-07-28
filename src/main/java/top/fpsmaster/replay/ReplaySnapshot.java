@@ -136,16 +136,41 @@ final class ReplaySnapshot {
         if (mc.getNetHandler() == null) {
             return;
         }
-        Collection<NetworkPlayerInfo> infos = mc.getNetHandler().getPlayerInfoMap();
-        if (infos.isEmpty()) {
+        // Both sources, because neither is complete on its own. Servers that keep the tab list
+        // tidy remove an entry while the player is still standing there — a lobby hides its
+        // crowd this way — and playback needs the name before it can spawn anyone, so those
+        // players simply never appeared. The entity carries the same profile the tab entry did.
+        java.util.LinkedHashMap<java.util.UUID, GameProfile> profiles =
+                new java.util.LinkedHashMap<java.util.UUID, GameProfile>();
+        java.util.HashMap<java.util.UUID, NetworkPlayerInfo> listed =
+                new java.util.HashMap<java.util.UUID, NetworkPlayerInfo>();
+        for (NetworkPlayerInfo info : mc.getNetHandler().getPlayerInfoMap()) {
+            GameProfile profile = info.getGameProfile();
+            if (profile != null && profile.getId() != null && profile.getName() != null) {
+                profiles.put(profile.getId(), profile);
+                listed.put(profile.getId(), info);
+            }
+        }
+        int fromEntities = 0;
+        if (mc.theWorld != null) {
+            for (net.minecraft.entity.player.EntityPlayer player : mc.theWorld.playerEntities) {
+                GameProfile profile = player.getGameProfile();
+                if (profile != null && profile.getId() != null && profile.getName() != null
+                        && !profiles.containsKey(profile.getId())) {
+                    profiles.put(profile.getId(), profile);
+                    fromEntities++;
+                }
+            }
+        }
+        if (profiles.isEmpty()) {
             return;
         }
         PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
         try {
             buffer.writeVarIntToBuffer(ACTION_ADD_PLAYER);
-            buffer.writeVarIntToBuffer(infos.size());
-            for (NetworkPlayerInfo info : infos) {
-                GameProfile profile = info.getGameProfile();
+            buffer.writeVarIntToBuffer(profiles.size());
+            for (GameProfile profile : profiles.values()) {
+                NetworkPlayerInfo info = listed.get(profile.getId());
                 buffer.writeUuid(profile.getId());
                 buffer.writeString(profile.getName());
 
@@ -160,8 +185,9 @@ final class ReplaySnapshot {
                         buffer.writeString(property.getSignature());
                     }
                 }
-                buffer.writeVarIntToBuffer(info.getGameType() == null ? 0 : info.getGameType().getID());
-                buffer.writeVarIntToBuffer(info.getResponseTime());
+                buffer.writeVarIntToBuffer(
+                        info == null || info.getGameType() == null ? 0 : info.getGameType().getID());
+                buffer.writeVarIntToBuffer(info == null ? 0 : info.getResponseTime());
                 // No display name: the entry carries the profile name, which is what the renderer
                 // needs. A scoreboard-driven display name arrives in the stream if it changes.
                 buffer.writeBoolean(false);
@@ -169,7 +195,8 @@ final class ReplaySnapshot {
             byte[] payload = new byte[buffer.readableBytes()];
             buffer.readBytes(payload);
             sink.acceptRaw(PLAYER_LIST_ITEM_ID, payload);
-            ClientLogger.info("replay", "seeded " + infos.size() + " tab-list entr(ies)");
+            ClientLogger.info("replay", "seeded " + profiles.size() + " tab-list entr(ies), "
+                    + fromEntities + " of them recovered from loaded entities");
         } catch (Exception failure) {
             ClientLogger.error("replay", "could not seed the tab list: " + failure);
         } finally {
