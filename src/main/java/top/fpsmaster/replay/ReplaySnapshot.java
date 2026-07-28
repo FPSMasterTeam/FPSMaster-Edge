@@ -113,9 +113,21 @@ final class ReplaySnapshot {
             }
         }
         int teams = 0;
+        int skipped = 0;
         for (ScorePlayerTeam team : scoreboard.getTeams()) {
+            // Same shape as the score above: vanilla's packet dereferences these in its constructor,
+            // and a scoreboard being rewritten holds teams that have a name but not yet the rest.
+            // Skipping one costs that team's nameplate prefix in the recording; not skipping it took
+            // the game down as recording started.
+            if (team.getNameTagVisibility() == null || team.getChatFormat() == null) {
+                skipped++;
+                continue;
+            }
             sink.accept(new S3EPacketTeams(team, 0));
             teams++;
+        }
+        if (skipped > 0) {
+            ClientLogger.info("replay", "skipped " + skipped + " half-built team(s) in the snapshot");
         }
         ClientLogger.info("replay", "seeded " + objectives + " objective(s) and " + teams + " team(s)");
     }
