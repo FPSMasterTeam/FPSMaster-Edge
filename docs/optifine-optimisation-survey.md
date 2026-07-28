@@ -29,7 +29,6 @@ OptiFine 是闭源专有许可，本项目是 GPL-3.0。**不能移植代码。*
 
 | 手段 | 机制 | 为什么可能有用 | 怎么定价 |
 |---|---|---|---|
-| **区块构建期的对象复用**（`RenderEnv` / `BlockPosM`） | 区块编译时逐方块渲染会产生大量临时对象（坐标对象、面边界数组、位集）。OptiFine 把它们收进一个按线程复用的暂存对象，整个区块编译只分配一次 | 命中的是**区块构建线程**，即卡顿来源而非帧率。项目一直缺少针对 `chunkRebuild` 的优化 | 计数区块编译期的分配量 + GC 次数；测 p99 / max 帧时间而非 avgFps |
 | **Render Regions**（`VboRegion`） | 把同一区域内多个区块的 VBO 合并进一个缓冲，绘制时减少绑定和 draw call | 我们已确认「批量提交」在字体上没用（驱动侧成本相当），但区块 VBO 的量级完全不同 | 需要先数出每帧区块 draw call 数；改动量大，先定价再决定 |
 | **Quads to Triangles** | 上传顶点时把四边形拓扑改写成三角形 | 现代驱动对 `GL_QUADS` 是模拟的，可能存在转换开销 | 可先用计数器统计每帧四边形数量，估算改写成本 vs 驱动模拟成本 |
 | **Dynamic Chunk Updates** | 玩家静止时提高每帧允许的区块更新数，移动时降低 | 我们已有 `LimitChunks` + `ChunkUpdateLimit`（实测正收益：关掉 fps −7.3%），这是它的自适应版本 | 直接 A/B 现有阈值的静止/移动分段 |
@@ -44,6 +43,7 @@ OptiFine 是闭源专有许可，本项目是 GPL-3.0。**不能移植代码。*
 | **Cloud Renderer 显示列表** | 把云几何缓存进显示列表，仅在云色变化或 20 tick 后重建。但本项目已实测显示列表在现代驱动上是模拟的 —— `FontOptimize` 因此 −58% 帧率被删除。同一套机制没有理由在云上更快 |
 | `Smooth FPS` | 在地形阶段插入 `glFinish()`。这是**降低**吞吐换取帧时间平滑，不是帧率优化 |
 | `Occlusion Fancy` | 该构建里找不到调用点 |
+| **区块构建期的对象复用**（`RenderEnv` / `BlockPosM`）| 目标在我们这里不存在。OptiFine 复用的是原版 `BlockModelRenderer` 逐方块分配的暂存对象，但 Forge 1.8.9 用自己的顶点管线完全绕过了那两个方法 —— 探针实测：8 秒窗口内区块编译 1562 次，而 `renderModelAmbientOcclusion` / `renderModelStandard` 调用 **0 次**。要在这里省分配，得先查 Forge 管线自己分配了什么，那是另一件事 |
 
 ## 四、不是优化
 
@@ -61,6 +61,9 @@ harness 已具备的能力：
 - `-Overrides` 改客户端设置，`-VariantGameOptions` 改原版 `options.txt`（Fast Render 的主要部分其实就是原版 `fboEnable`，靠这个零客户端代码就测了）
 - `BenchCounters` 加计数器做定价探针
 - `run-series.ps1` 交错配对 + 丢弃首次运行
+
+**已知的观测**：`replay-lobby` 的 8 秒测量窗口内区块编译 **1562 次（约 195 次/秒）**。这是一条又热又
+从未被优化过的路径，只是 OptiFine 的具体手段用不上。`BenchCounters.chunkRebuilds` 现在能看到它。
 
 **当前平台的限制**：独显已从系统中消失，全部测试跑在集显上（约 55–70 fps，独显时代是 280–430）。
 后果是：

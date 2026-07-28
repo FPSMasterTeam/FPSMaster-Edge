@@ -30,6 +30,7 @@
     "FontRendererMixin_CustomFont",
     "ChunkMixin_EntityWalkProbe",
     "OpenGlHelperMixin_FastRender",
+    "RenderChunkMixin_BuildProbe",
     "MixinFontRender",
     "MixinGuiChat",
     "MixinGuiContainer",
