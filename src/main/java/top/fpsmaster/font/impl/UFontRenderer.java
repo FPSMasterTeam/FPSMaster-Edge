@@ -159,7 +159,7 @@ public class UFontRenderer extends FontRenderer {
         if (dropShadow) {
             if (Colors.toColor(color).getAlpha() > 50) {
                 textRenderer.draw(text, x + shadowOffset, y + shadowOffset,
-                        new Color(20, 20, 20, Colors.toColor(color).getAlpha()).getRGB());
+                        new Color(20, 20, 20, Colors.toColor(color).getAlpha()).getRGB(), true);
             }
         }
         i = Math.round(textRenderer.draw(text, x, y, color));
@@ -197,8 +197,8 @@ public class UFontRenderer extends FontRenderer {
      * how the client's own screens fade in. Vanilla's HUD is not part of that animation and must not
      * fade with it, so this path leaves the colour alone.
      */
-    public float drawRaw(String text, float x, float y, int argb) {
-        return textRenderer.draw(text, x, y, argb);
+    public float drawRaw(String text, float x, float y, int argb, boolean shadowPass) {
+        return textRenderer.draw(text, x, y, argb, shadowPass);
     }
 
     /** Advance of one character, for vanilla's per-character layout. */

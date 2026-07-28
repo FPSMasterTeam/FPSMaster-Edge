@@ -33,8 +33,8 @@ public class Performance extends Module {
      *
      * <p>Vanilla spends about half a microsecond per character inside its glyph loop, which on a
      * busy server is 362us a frame; the client's renderer submits a whole string at once and costs a
-     * fraction of that. It is off by default because it changes how the game looks: the two fonts
-     * are not the same shape, and bold and obfuscated styles are consumed rather than drawn.
+     * fraction of that. It is off by default because it changes how the game looks: the two faces
+     * are not the same shape and the replacement is the narrower of them.
      */
     public static BooleanSetting customHudFont = new BooleanSetting("CustomHudFont", false);
     public static BooleanSetting cullPlayers =

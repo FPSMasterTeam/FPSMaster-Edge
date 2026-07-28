@@ -35,6 +35,7 @@ public final class Experiments {
     public static final boolean SKY_BREAKDOWN = flag("skyBreakdown");
     public static final boolean HUD_BREAKDOWN = flag("hudBreakdown");
     public static final boolean FONT_COMPARE = flag("fontCompare");
+    public static final boolean FONT_STYLES = flag("fontStyles");
 
     private Experiments() {
     }

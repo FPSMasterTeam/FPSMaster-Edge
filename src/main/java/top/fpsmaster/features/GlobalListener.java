@@ -12,6 +12,7 @@ import net.minecraft.util.IChatComponent;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.benchmark.FontCompare;
+import top.fpsmaster.benchmark.FontStyles;
 import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.replay.ReplayPlayer;
 import top.fpsmaster.benchmark.UiShot;
@@ -110,6 +111,9 @@ public class GlobalListener {
             started = System.nanoTime();
         }
 
+        if (FontStyles.enabled()) {
+            FontStyles.draw();
+        }
         if (FontCompare.enabled()) {
             FontCompare.draw();
         }

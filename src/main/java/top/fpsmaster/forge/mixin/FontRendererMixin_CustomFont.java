@@ -34,10 +34,11 @@ import top.fpsmaster.modules.client.GlobalTextFilter;
  * source here, which is what lets the replacement be narrower than what it stands in for without
  * anything landing in the wrong place — every layout is measured with the font it is drawn with.
  *
- * <p>Two things vanilla does are not reproduced. Bold, italic, obfuscated and the two decoration
- * styles are consumed rather than drawn, because the renderer has one face and no decoration
- * geometry; and right-to-left reordering is left to vanilla, which is why a set bidi flag falls
- * through untouched rather than drawing the text in the wrong order.
+ * <p>Formatting codes are carried over, including the styles: bold is the glyph drawn twice a pixel
+ * apart, italic a sheared quad, obfuscated a stand-in redrawn every frame, and the two bars are
+ * emitted after the glyphs so the batch never has to stop being textured. Right-to-left reordering
+ * is the one thing left to vanilla, which is why a set bidi flag falls through untouched rather
+ * than drawing the text in the wrong order.
  */
 @Mixin(FontRenderer.class)
 public abstract class FontRendererMixin_CustomFont {
@@ -104,7 +105,7 @@ public abstract class FontRendererMixin_CustomFont {
         if (!GL11.glIsEnabled(GL11.GL_BLEND)) {
             color |= 0xFF000000;
         }
-        float advance = font.drawRaw(GlobalTextFilter.filter(text), x, y, color);
+        float advance = font.drawRaw(GlobalTextFilter.filter(text), x, y, color, dropShadow);
         callback.setReturnValue(Integer.valueOf((int) (x + advance)));
     }
 
