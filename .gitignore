@@ -8,3 +8,4 @@ src/main/resources/git.properties
 benchmark/worlds/
 benchmark/results/
 benchmark/replays/
+remeasure.ps1

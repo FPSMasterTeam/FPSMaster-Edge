@@ -25,4 +25,19 @@ public class PlayerControllerMPMixin_ReplayHud {
             callback.setReturnValue(Boolean.TRUE);
         }
     }
+
+    /**
+     * Drawing the overlay is not the same question as which overlay to draw.
+     *
+     * <p>The controller is asked separately, and a yes here is what puts the spectator's own hotbar
+     * on screen instead of the recorder's, changes the crosshair and drops the held-item tooltip.
+     * Answering both questions the same way while possessed is what makes the interface the
+     * recorder's rather than a mixture of theirs and a spectator's.
+     */
+    @Inject(method = "isSpectator", at = @At("HEAD"), cancellable = true)
+    private void replayPossessedController(CallbackInfoReturnable<Boolean> callback) {
+        if (ReplayPlayer.instance().isPossessing()) {
+            callback.setReturnValue(Boolean.FALSE);
+        }
+    }
 }
