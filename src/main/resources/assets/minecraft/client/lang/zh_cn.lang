@@ -213,6 +213,14 @@ betterchat.background=背景
 betterchat.foldmessage=折叠消息
 betterchat.copymessage=复制消息
 
+chatavatars=聊天头像
+chatavatars.desc=在聊天消息旁显示玩家头像
+chatavatars.mojangfallback=Mojang 备用加载
+chatavatars.size=头像大小
+chatavatars.gap=头像间距
+chatavatars.offsetx=水平偏移
+chatavatars.offsety=垂直偏移
+
 combodisplay=连击显示
 combodisplay.desc=显示连击数
 combodisplay.textcolor=文字颜色

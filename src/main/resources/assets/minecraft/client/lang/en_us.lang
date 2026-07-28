@@ -213,6 +213,14 @@ betterchat.background=Show Background
 betterchat.foldmessage=Fold Message
 betterchat.copymessage=Copy Message
 
+chatavatars=Chat Avatars
+chatavatars.desc=Shows player heads next to chat messages
+chatavatars.mojangfallback=Mojang Fallback
+chatavatars.size=Avatar Size
+chatavatars.gap=Avatar Gap
+chatavatars.offsetx=Horizontal Offset
+chatavatars.offsety=Vertical Offset
+
 combodisplay=Combo Counter
 combodisplay.desc=Displays current combo count
 combodisplay.textcolor=Text Color

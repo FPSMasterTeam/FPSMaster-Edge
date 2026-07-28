@@ -90,6 +90,7 @@ public class ModuleManager {
         modules.add(new ItemPhysics());
         modules.add(new MinimizedBobbing());
         modules.add(new MoreParticles());
+        modules.add(new ChatAvatars());
         modules.add(new FPSDisplay());
         modules.add(new ArmorDisplay());
         modules.add(new BetterChat());

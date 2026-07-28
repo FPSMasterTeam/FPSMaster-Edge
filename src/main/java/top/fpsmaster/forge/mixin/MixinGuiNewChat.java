@@ -8,11 +8,14 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
+import top.fpsmaster.features.impl.render.ChatAvatarCache;
+import top.fpsmaster.features.impl.render.ChatAvatars;
 
 import java.awt.*;
 import java.util.List;
@@ -67,8 +70,9 @@ public abstract class MixinGuiNewChat {
 
                     float g = this.getChatScale();
                     int k = MathHelper.ceiling_float_int((float) this.getChatWidth() / g);
+                    int chatAvatarOffset = ChatAvatars.getChatOffset();
                     GlStateManager.pushMatrix();
-                    GlStateManager.translate(2.0F, 8.0F, 0.0F);
+                    GlStateManager.translate(2.0F + chatAvatarOffset, 8.0F, 0.0F);
                     GlStateManager.scale(g, g, 1.0F);
                     int l = 0;
 
@@ -94,7 +98,8 @@ public abstract class MixinGuiNewChat {
                                 ++l;
                                 if (o > 3) {
                                     int q = -m * 9;
-                                    Gui.drawRect(-2, q - 9, k + 4, q, o / 2 << 24);
+                                    Gui.drawRect(-2 - chatAvatarOffset, q - 9, k + 4, q, o / 2 << 24);
+                                    drawChatAvatar(chatLine, -chatAvatarOffset + 1 + ChatAvatars.getOffsetX(), q - 8 + ChatAvatars.getOffsetY(), o);
                                     String string = chatLine.getChatComponent().getFormattedText();
                                     GlStateManager.enableBlend();
                                     mc.fontRendererObj.drawStringWithShadow(string, 0.0F, (float) (q - 8), 16777215 + (o << 24));
@@ -115,8 +120,8 @@ public abstract class MixinGuiNewChat {
                         if (r != n) {
                             o = s > 0 ? 170 : 96;
                             int p = this.isScrolled ? 13382451 : 3355562;
-                            Gui.drawRect(0, -s, 2, -s - t, p + (o << 24));
-                            Gui.drawRect(2, -s, 1, -s - t, 13421772 + (o << 24));
+                            Gui.drawRect(-chatAvatarOffset, -s, 2 - chatAvatarOffset, -s - t, p + (o << 24));
+                            Gui.drawRect(2 - chatAvatarOffset, -s, 1 - chatAvatarOffset, -s - t, 13421772 + (o << 24));
                         }
                     }
 
@@ -132,8 +137,9 @@ public abstract class MixinGuiNewChat {
 
                     float g = this.getChatScale();
                     int k = MathHelper.ceiling_float_int((float) this.getChatWidth() / g);
+                    int chatAvatarOffset = ChatAvatars.getChatOffset();
                     GlStateManager.pushMatrix();
-                    GlStateManager.translate(2.0F, 8.0F, 0.0F);
+                    GlStateManager.translate(2.0F + chatAvatarOffset, 8.0F, 0.0F);
                     GlStateManager.scale(g, g, 1.0F);
 
                     int m;
@@ -156,7 +162,8 @@ public abstract class MixinGuiNewChat {
                                 if (alpha > 3) {
                                     int q = -m * 9;
                                     int alpha1 = (int) ((alpha / 255f) * module.backgroundColor.getColor().getAlpha());
-                                    Gui.drawRect(-2, q - 8, k + 4, q + 1, Colors.alpha(module.backgroundColor.getColor(), alpha1).getRGB());
+                                    Gui.drawRect(-2 - chatAvatarOffset, q - 8, k + 4, q + 1, Colors.alpha(module.backgroundColor.getColor(), alpha1).getRGB());
+                                    drawChatAvatar(chatLine, -chatAvatarOffset + 1 + ChatAvatars.getOffsetX(), q - 8 + ChatAvatars.getOffsetY() + Math.round(6 - (alpha / 255f) * 6), alpha);
                                     String string = chatLine.getChatComponent().getFormattedText();
                                     GlStateManager.enableBlend();
                                     if (module.betterFont.getValue()) {
@@ -176,8 +183,8 @@ public abstract class MixinGuiNewChat {
                         GlStateManager.translate(-3.0F, 0.0F, 0.0F);
                         int r = j * m + j;
                         if (r != 0) {
-                            Gui.drawRect(0, 0, 2, 0, module.backgroundColor.getColor().getRGB());
-                            Gui.drawRect(2, 0, 1, 0, module.backgroundColor.getColor().getRGB());
+                            Gui.drawRect(-chatAvatarOffset, 0, 2 - chatAvatarOffset, 0, module.backgroundColor.getColor().getRGB());
+                            Gui.drawRect(2 - chatAvatarOffset, 0, 1 - chatAvatarOffset, 0, module.backgroundColor.getColor().getRGB());
                         }
                     }
 
@@ -201,7 +208,7 @@ public abstract class MixinGuiNewChat {
             float f = this.getChatScale();
             int j = mouseX / i - 2;
             int k = mouseY / i - 40;
-            j = MathHelper.floor_float((float) j / f);
+            j = MathHelper.floor_float((float) j / f) - ChatAvatars.getChatOffset();
             k = MathHelper.floor_float((float) k / f);
             if (j >= 0 && k >= 0) {
                 AtomicInteger l = new AtomicInteger(Math.min(this.getLineCount(), this.drawnChatLines.size()));
@@ -245,10 +252,20 @@ public abstract class MixinGuiNewChat {
     public List<IChatComponent> spilt(IChatComponent chatComponent, int i, FontRenderer chatcomponenttext, boolean l, boolean chatcomponenttext2){
         BetterChat module = (BetterChat) FPSMaster.moduleManager.getModule(BetterChat.class);
 
+        int chatAvatarOffset = ChatAvatars.getChatOffset();
+        int width = Math.max(20, i - chatAvatarOffset);
         if (BetterChat.using && module.betterFont.getValue()) {
-            return GuiUtilRenderComponents.splitText(chatComponent, i, FPSMaster.fontManager.s16, false, false);
+            return GuiUtilRenderComponents.splitText(chatComponent, width, FPSMaster.fontManager.s16, false, false);
         } else {
-            return GuiUtilRenderComponents.splitText(chatComponent, i, mc.fontRendererObj, false, false);
+            return GuiUtilRenderComponents.splitText(chatComponent, width, mc.fontRendererObj, false, false);
+        }
+    }
+
+    @Unique
+    private void drawChatAvatar(ChatLine chatLine, int x, int y, int alpha) {
+        ResourceLocation avatar = ChatAvatars.getAvatar(chatLine.getChatComponent());
+        if (avatar != null) {
+            ChatAvatarCache.drawHead(avatar, x, y, ChatAvatars.getAvatarSize(), alpha);
         }
     }
 
