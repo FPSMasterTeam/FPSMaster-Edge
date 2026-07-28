@@ -3,6 +3,7 @@ package top.fpsmaster.replay;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.entity.DataWatcher;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.EnumConnectionState;
@@ -10,6 +11,7 @@ import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
+import net.minecraft.network.play.server.S0FPacketSpawnMob;
 import net.minecraft.network.play.server.S38PacketPlayerListItem;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.io.FileUtils;
@@ -85,6 +87,9 @@ public final class ReplayRecorder {
     private int packetsDropped;
     private int playersSpawned;
     private final java.util.Set<java.util.UUID> playersNamed = new java.util.HashSet<java.util.UUID>();
+
+    /** Packet types already reported as unserialisable, so each is complained about once. */
+    private final java.util.Set<String> serialisationFailures = new java.util.HashSet<String>();
 
     private ReplayRecorder() {
     }
@@ -168,6 +173,7 @@ public final class ReplayRecorder {
         packetsDropped = 0;
         playersSpawned = 0;
         playersNamed.clear();
+        serialisationFailures.clear();
         java.util.Arrays.fill(lastEquipment, null);
         lastWindowId = -1;
         lastSlots = null;
@@ -402,18 +408,70 @@ public final class ReplayRecorder {
         byte[] payload;
         try {
             PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
-            packet.writePacketData(buffer);
+            writePayload(packet, buffer);
             payload = new byte[buffer.readableBytes()];
             buffer.readBytes(payload);
             buffer.release();
         } catch (Exception failure) {
             // A packet that will not round-trip is dropped rather than allowed to abort the
             // recording; one missing packet degrades the replay, an exception here would end it.
+            // Reported once per type, because that is the difference between noticing and not: the
+            // spawn packets below failed on every single one and the only sign was a drop count
+            // shared with queue overflow.
             packetsDropped++;
+            if (serialisationFailures.add(packet.getClass().getSimpleName())) {
+                ClientLogger.error("replay", "cannot serialise "
+                        + packet.getClass().getSimpleName() + ", dropping every one: " + failure);
+            }
             return;
         }
 
         enqueue(new ReplayFile.Record(elapsed(), id.intValue(), payload));
+    }
+
+    /**
+     * Writes a packet's payload, by hand for the two whose own writer cannot handle a received one.
+     *
+     * <p>A spawn packet carries its metadata as a {@code DataWatcher} when the server builds it and
+     * as a plain list when a client reads it, and {@code writePacketData} only knows about the
+     * DataWatcher — so the field is null on everything that arrived over the network and every
+     * player and mob the server ever spawned was thrown away here. What survived into a recording
+     * were the spawns the snapshot built itself from live entities, which is why a replay showed
+     * exactly the crowd that was standing there when recording started and nobody who arrived
+     * after. {@code S1CPacketEntityMetadata} writes the same data through the static list writer
+     * used below and has never had the problem.
+     */
+    private static void writePayload(Packet<?> packet, PacketBuffer buffer) throws Exception {
+        if (packet instanceof S0CPacketSpawnPlayer) {
+            S0CPacketSpawnPlayer spawn = (S0CPacketSpawnPlayer) packet;
+            buffer.writeVarIntToBuffer(spawn.getEntityID());
+            buffer.writeUuid(spawn.getPlayer());
+            buffer.writeInt(spawn.getX());
+            buffer.writeInt(spawn.getY());
+            buffer.writeInt(spawn.getZ());
+            buffer.writeByte(spawn.getYaw());
+            buffer.writeByte(spawn.getPitch());
+            buffer.writeShort(spawn.getCurrentItemID());
+            DataWatcher.writeWatchedListToPacketBuffer(spawn.func_148944_c(), buffer);
+            return;
+        }
+        if (packet instanceof S0FPacketSpawnMob) {
+            S0FPacketSpawnMob spawn = (S0FPacketSpawnMob) packet;
+            buffer.writeVarIntToBuffer(spawn.getEntityID());
+            buffer.writeByte(spawn.getEntityType() & 0xFF);
+            buffer.writeInt(spawn.getX());
+            buffer.writeInt(spawn.getY());
+            buffer.writeInt(spawn.getZ());
+            buffer.writeByte(spawn.getYaw());
+            buffer.writeByte(spawn.getPitch());
+            buffer.writeByte(spawn.getHeadPitch());
+            buffer.writeShort(spawn.getVelocityX());
+            buffer.writeShort(spawn.getVelocityY());
+            buffer.writeShort(spawn.getVelocityZ());
+            DataWatcher.writeWatchedListToPacketBuffer(spawn.func_149027_c(), buffer);
+            return;
+        }
+        packet.writePacketData(buffer);
     }
 
     private final class Writer implements Runnable {
