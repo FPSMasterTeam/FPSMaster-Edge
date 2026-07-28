@@ -576,3 +576,378 @@ A fixed threshold would have reported identical builds as a visual regression. T
 limit is now derived from the null control the same way the timing band is, and the
 tool warns when a scenario's own variation is large enough to make the gate weak.
 A static scene gives a far stronger check than one full of random particles.
+
+## Recorded Hypixel matches: Bed Wars and The Pit
+
+Two recordings replace the synthetic scenarios as the primary workload. `replay-pit` is
+27.6s of Pit melee — around 800 packets a second of movement, damage, particles and
+scoreboard updates with almost no chunk streaming. `replay-bedwars` is 162.8s of a Bed
+Wars match, and the measured window is `t=16s..38.5s`, the heaviest stretch in it: island
+travel with chunks arriving (peaks at 107 chunk packets and 1.9 MiB in one second) on top
+of combat traffic.
+
+Neither is played in full. `settleSeconds` skips to the interesting part, and the window
+is 15s and 20s respectively. Playing all 162 seconds of the Bed Wars recording would cost
+three minutes a run and measure mostly walking.
+
+### What these workloads actually contain
+
+Counters, per frame, with no optimisations enabled:
+
+| | pit | bedwars |
+| --- | ---: | ---: |
+| entities reaching the renderer | 24.2 | 19.5 |
+| armour slots examined | 41.7 | 76.1 |
+| **armour glint model renders** | **0.01** | **0.00** |
+| held-item layers | 10.4 | 19.0 |
+| particles rendered | 63.8 | 45.0 |
+| terrain draw calls | 331.5 | 74.1 |
+| chunk rebuilds | 0.98 | 1.71 |
+| **signs rendered** | **0.00** | **0.00** |
+
+Section CPU p50, no optimisations:
+
+| section | pit | bedwars |
+| --- | ---: | ---: |
+| entities | 620us | 492us |
+| entity layers | 418us | 6us |
+| **hud** | **221us** | **244us** |
+| block entities | **0us** | **0us** |
+| frame total | 1091us | 958us |
+
+Two of these settle questions that were open:
+
+- **The block-entity pass is not a target.** Signs, chests, enchanting tables, banners and
+  skulls all render through `TileEntityRendererDispatcher`, which now has its own bracket.
+  It reads a p50 of 0us on both recordings, 0.44us and 2.4us per frame in total, which is
+  0.03% and 0.3% of the frame. Neither recording draws a single sign.
+- **Enchantment glint is not a target either.** Vanilla draws an enchanted armour piece
+  three times — the piece, then the glint twice, each pass reloading the texture matrix —
+  so a fully enchanted set looked like the obvious cost in the layer stack. The counter
+  says 0.01 glint model renders per frame on the Pit recording and zero on Bed Wars. The
+  mechanism is real and the workload does not exercise it.
+
+Both were measured before anything was built for them, which is the only reason neither
+cost a day.
+
+### The HUD is a third of the frame, and the feature aimed at it is off by default
+
+`CustomHudFont` is the one setting that improved every metric in every series:
+
+| | avg fps off | avg fps on | difference | hud section |
+| --- | ---: | ---: | ---: | ---: |
+| pit, 13-variant survey | 593.3 | 661.5 | **+11.5%** | −15.7% |
+| pit, 4-variant confirmation | 576.2 | 715.6 | **+24.2%** | −15.7% |
+| bedwars, 4-variant confirmation | 503.6 | 637.2 | **+26.5%** | −35.5% |
+
+The Bed Wars series is the strongest form this evidence can take on a machine this noisy:
+the three `hudfont` runs measured 637.2, 575.0 and 639.7 fps and the three `off` runs
+measured 497.3, 248.0 and 509.8. **The worst run with the feature on beats the best run
+with it off**, so the separation does not depend on any filtering decision.
+
+It is off by default because it changes how text looks — the replacement face is narrower
+than vanilla's. That is a product decision, not a measurement one, but it is worth knowing
+it is the largest single frame-rate setting the client has on a real server.
+
+### Fast Render, priced a third time
+
+OptiFine's Fast Render is two changes. The first is `OpenGlHelper.isFramebufferEnabled`
+returning false, so the world is drawn straight to the back buffer instead of into a
+framebuffer that is then blitted; this client already does exactly that. The second is in
+`Profiler.startSection`, which sets `GlStateManager.clearEnabled = false` on entering
+`render` and back to true on entering `display` — the colour and depth clear is skipped
+for the whole world pass. This client does not have that half.
+
+Measured on the recordings, against the defaults rather than against nothing:
+
+| | defaults | + FastRender | difference |
+| --- | ---: | ---: | ---: |
+| pit | 700.1 | 728.4 | +4.0% |
+| bedwars | 526.4 | 530.1 | +0.7% |
+
+The null band on the same series is ±2.5% on avg fps, so this is the third independent
+attempt that has failed to find a benefit — after an integrated-GPU series and a
+discrete-GPU series. The verdict stands: keep it off by default.
+
+### What OptiFine does for signs, and why it does not apply here
+
+`TileEntitySignRenderer` is one of only four block-entity renderers OptiFine touches at
+all, and the change is a level of detail rather than an optimisation of the drawing:
+`isRenderText` skips the text entirely past a distance derived from field of view and
+window height, `max(1.5 * displayHeight / fov, 16)` blocks, recomputed once per frame.
+At 1280x720 and the default field of view that is 16 blocks, where a sign glyph is about
+two pixels tall. `RenderItemFrame` carries the same trick for the item inside a frame.
+
+This is worth recording because it is the only per-frame text cost in block rendering —
+every visible sign re-splits and re-draws its four lines through the font renderer, every
+frame — but the counters above say both recordings draw zero signs, and the whole
+block-entity pass is 0us. There is nothing to save.
+
+The other renderers are untouched. The enchanting table, the beacon, the ender chest and
+the end portal have no OptiFine change beyond shader and custom-colour hooks, and nothing
+in OptiFine addresses glass or translucent blocks specifically. In 1.8.9 the translucent
+layer's per-move re-sort is dispatched through `updateTransparencyLater` onto the chunk
+builder thread, so it does not sit in the frame at all.
+
+`RenderGlobal` does keep `renderInfosEntities` and `renderInfosTileEntities` as separate
+pre-filtered lists rather than walking all visible chunks — which is the entity chunk
+pre-filter this project implemented, measured at +0.5% avg fps, and deleted.
+
+### Caching the armour texture path — built, and not measurable here
+
+Forge's `LayerArmorBase.getArmorResource` builds the texture path with `String.format` —
+four arguments, one boxed, plus a nested `String.format` for the overlay suffix — and only
+then consults its map. The map spares the `ResourceLocation` allocation and nothing else:
+the formatting, the boxing and the hash of a forty-character string are paid on every
+call. Caching on the three things the path actually depends on (material, whether the slot
+takes leggings, overlay or not) removes all of that and returns the same instance vanilla
+would have.
+
+The counter first: **13.8 calls per frame**, not the forty the armour-slot count suggested,
+because only slots that actually hold armour reach it. At roughly 1.5us for a
+`String.format` that is about 21us against a 1000us frame, or 2%.
+
+The A/B confirms the switch works — 0 cache hits with the setting off, 13.8 with it on —
+and says nothing else, because the in-series null band swamps it:
+
+| | off | off2 | on |
+| --- | ---: | ---: | ---: |
+| avg fps | 594.3 | 571.6 (−3.8%) | 640.3 (+7.7%) |
+| entity layers cpu p50 | 341us | 272us (**−20.1%**) | 193us (−43.4%) |
+
+`off` and `off2` are the same configuration. Twenty percent apart on the section, and a
+−43.4% reading for a change that can only account for about 6% of it, is the machine
+talking, not the code. **This is not a result in either direction**, and the change should
+be re-measured or removed rather than believed.
+
+## The measurement environment stopped being usable
+
+This has to be recorded because it invalidates part of the campaign above and will
+invalidate the next one if it is not fixed.
+
+Runs fall into two populations that no amount of repetition merges:
+
+- clean, p50 1.33–1.53ms, zero or one frame over 20x the median;
+- contaminated, either spiky — dozens of frames of 130–380ms — or uniformly slow, p50
+  15.67ms and 19.52ms, which is 64 and 51 frames a second.
+
+The uniformly slow ones are the dangerous kind: their frame times are *even*, so they
+contain no frame over 20x their own median and the project's existing outlier guard passes
+them. Frame times pinned near a display refresh interval are the desktop compositor pacing
+the window, not the client rendering slowly. `matrix.py --clean` now rejects a run on p50
+as well as on outliers.
+
+The rate rose through the session, from around 40% of runs to every run in the last Bed
+Wars series. The GPU was not the cause: clocks held at the locked 1792 MHz throughout, 70C,
+with no throttle reason set. The machine runs a remote-desktop agent with a virtual display
+adapter (`GameViewer`, plus `OrayIddDriver` and a virtual display in the adapter list) and
+a HIPS security daemon, either of which can take the desktop for long enough to do this.
+
+Consequences for what is written above:
+
+- **Frame-level medians on the clean subset are usable.** The `off` versus `base` null pair
+  in the survey — the same code path, one through the module switch — came out at +2.5% on
+  avg fps and −2.0% on p50, so that is the band the survey results are judged against.
+- **Section-level attribution is not usable at these magnitudes.** The same series reports
+  `terrain` +382% for a font change and `terrainSetup` +1420% for a chunk-update throttle,
+  which are not effects. Only differences far larger than the section's own null spread —
+  the HUD result — should be read from the section table.
+- **Every per-feature figure smaller than about 5% is undecided**, including particle
+  culling (which demonstrably skips 69% of particles yet moves avg fps +3.5%), entity
+  culling, model batching and the armour texture cache.
+
+The first attempt at this campaign was additionally polluted by this session's own tool
+use — decompiling jars and extracting archives while runs were in flight — which produced
+per-pass differences from −84% to −0.4% for the same variant. That part is fixed by not
+doing it; the rest is not fixable from inside the benchmark.
+
+## The interference was software, and removing it fixed the instrument
+
+The desktop stalls described above came from `GameViewer`, a remote-desktop agent, whose
+service was stopped for the session. An A-vs-A series immediately afterwards:
+
+| | before | after |
+| --- | ---: | ---: |
+| runs containing a frame over 20x the median | ~40%, rising to 100% | 0 of 6 (each has exactly one, worst 42ms) |
+| uniformly slow runs (p50 15-20ms) | several | none |
+| p50 spread across six runs | 1.33-4.51ms | 1.275-1.346ms |
+| **paired p50 band** | unusable | **2.74%** |
+
+Frame-level p50 is usable again. avg fps and the tail metrics are not: the same six runs
+give a 9.99% band on avg fps, 22.17% on p99 and 11.19% on the 1% low, because a single
+30-40ms frame per run still moves them. **Verdicts below are taken on p50 and on section
+p50, with avg fps quoted only for scale.**
+
+## Block rendering: signs are the whole story, and the rest is not there
+
+Three stress scenarios, because the recorded matches contain none of this: `sign-dense`
+puts 2401 signs in a field reaching 34 blocks, `enchant-dense` 1089 enchanting tables,
+`blockentity-dense` one block type per quadrant plus stained glass and panes.
+
+They are stress scenarios in the literal sense — `sign-dense` runs at 36.9 fps with
+**92.5% of the frame inside the block-entity pass**. That is the point: a cost that is
+0.03% of a real match cannot be measured on a real match.
+
+### What each block actually costs
+
+Derived from the pass timings and the per-frame counters:
+
+| | per block per frame |
+| --- | ---: |
+| **sign text** | **~12us** |
+| sign model | ~2us |
+| enchanting table | ~2us |
+| stained glass / panes | **0** — chunk geometry, not a block entity |
+
+The text is the outlier by six times. Everything else lands at the same ~2us, which is
+what a matrix setup, a light lookup, a texture bind and a small model cost — the actual
+drawing, with nothing recoverable in it.
+
+### Sign text distance culling — shipped, default on
+
+`SignTextCulling` implements OptiFine's cutoff, `max(1.5 * windowHeight / fov, 16)` blocks,
+which is an angular threshold in disguise: it asks where a glyph falls below about a pixel.
+At 1280x720 and the default field of view that is 16 blocks, where a sign character is
+roughly two pixels tall.
+
+The redirect is on the `signText` field read rather than on `drawString`. An empty array
+makes the loop not execute at all, which skips the component splitting and the width
+measurement as well; skipping only the draw would leave the layout work, which is the
+larger half.
+
+`sign-dense`, in-series duplicate baseline:
+
+| | off | off2 | on |
+| --- | ---: | ---: | ---: |
+| **p50 frame** | 27.0ms | 27.2ms (+3.9%) | **15.1ms (−43.3%)** |
+| blockEntities cpu p50 | 24285us | 24352us (+3.6%) | **12865us (−46.6%)** |
+| avg fps | 36.9 | 32.5 | 66.0 |
+| sign text culled per frame | 0 | 0 | **960 of 1737** |
+
+Per-pass p50: −40.2%, −45.6%, −44.2%, against a 3.9% null band measured in the same
+series. An order of magnitude clear of it, and the counter shows the mechanism doing what
+it claims.
+
+It is default on. It is a visible change in principle — text stops being drawn — but only
+past the distance where it is already unreadable, which is the same trade OptiFine ships
+on by default. On the recorded Hypixel matches it does nothing at all, because they
+contain zero signs.
+
+### Block-entity distance culling — shipped, default off
+
+`BlockEntityCulling` plus `BlockEntityDistance` bring the cutoff in from vanilla's own
+limit. This is a knob rather than an optimisation, and the reason is worth stating: there
+was nothing invisible left to take. Forge already frustum-tests every block entity before
+dispatching it — confirmed in the bytecode of the mapped jar, `getRenderBoundingBox`
+followed by `isBoundingBoxInFrustum` at all three dispatch sites — and vanilla already
+skips anything past `getMaxRenderDistanceSquared`. The remaining ~2us each is the drawing.
+
+So the only lever is to draw fewer of them, and unlike sign text that is plainly visible:
+a chest at forty blocks stops having a lid. Hence off by default, and hence a distance the
+user chooses rather than one derived from the window.
+
+`enchant-dense` at 12 blocks:
+
+| | off | off2 | on |
+| --- | ---: | ---: | ---: |
+| **p50 frame** | 3.4ms | 3.2ms (−6.0%) | **1.9ms (−44.4%)** |
+| blockEntities cpu p50 | 2348us | 2206us (−5.6%) | **942us (−59.4%)** |
+| avg fps | 289.5 | 308.6 | 521.2 |
+| culled per frame | 0 | 0 | **247 of 409** |
+
+`blockentity-dense` at 24 blocks, with both features:
+
+| | off | off2 | signs only | both |
+| --- | ---: | ---: | ---: | ---: |
+| **p50 frame** | 11.0ms | 12.0ms (+9.0%) | **6.4ms (−41.8%)** | **5.7ms (−48.3%)** |
+| blockEntities cpu p50 | 9340us | 10156us (+8.8%) | 4980us (−46.7%) | 4298us (−54.0%) |
+| terrain cpu p50 | 411us | 463us | 378us | 412us |
+| avg fps | 90.3 | 82.8 | 154.4 | 174.5 |
+
+Sign text culling alone recovers most of it; the distance cut adds another six points of
+p50 on top.
+
+### Glass and translucent blocks: nothing to optimise, and the reason
+
+The `terrain` section does not move across any of these variants — 411us, 463us, 378us,
+412us — while the block-entity pass halves. The stained glass and pane quadrant is 23x23x4
+blocks of translucent geometry and it is simply part of the chunk mesh.
+
+The premise that translucent blocks are expensive per frame does not hold in 1.8.9. The
+one extra thing the translucent layer does is re-sort its quads by distance when the
+player moves more than a block, and `RenderGlobal.renderBlockLayer` hands that to
+`updateTransparencyLater`, which runs on the chunk builder thread. It is not in the frame.
+
+OptiFine adds nothing here either: `ClearWater` changes water opacity, `ConnectedTextures`
+and `CustomBlockLayers` are net costs, and no renderer for glass exists to optimise.
+
+### The enchanting table specifically
+
+No change made. `TileEntityEnchantmentTableRenderer` is a translate, two rotates, a texture
+bind and a six-box book model, and OptiFine does not touch it. Measured at ~2us, the same
+as every other block entity, which says the cost is the per-block overhead rather than
+anything about the book. The only thing that moves it is not drawing it, which is what
+`BlockEntityCulling` does for every block entity at once rather than for this one.
+
+### The armour texture cache, re-measured with the interference gone
+
+Supersedes the undecided result above. Same series shape, clean machine, p50 band 2.74%:
+
+| | off | off2 | on |
+| --- | ---: | ---: | ---: |
+| p50 frame | 1.3ms | -0.8% | **+1.1%** |
+| entityLayers cpu p50 | 351us | +9.4% | **+8.8%** |
+| frameTotal cpu p50 | 848us | +0.2% | +1.0% |
+| cache hits per frame | 0 | 0 | 14.7 |
+
+Per-pass p50 for `on`: -0.0%, +7.3%, -3.9% -- mixed in sign, and the duplicate baseline
+moves the section by more than the change does. **Within noise.**
+
+The counter proves the mechanism: 14.7 `String.format` calls a frame removed, returning
+the identical `ResourceLocation`. It is simply too small to see -- 14.7 calls at roughly
+1.5us is 2% of the frame in theory and nothing in practice.
+
+This is the same verdict, on the same evidence standard, that removed `ReuseRenderInfos`
+(+2.2%) and `CacheModelLists` (+0.4%). By that standard `CacheArmorTextures` should be
+deleted rather than shipped: an unmeasurable change still costs a mixin, a setting and two
+language entries. It is left in place pending that call.
+
+## Default set narrowed to what is invisible
+
+Three settings that removed visible content were moved to off by default, leaving
+`SignTextCulling`, `ParticlesLimit` and `LimitChunks` as the only defaults in that group:
+
+| setting | was | now | what it was removing |
+| --- | --- | --- | --- |
+| `IgnoreStands` | on | **off** | the name label above every armour stand -- which is every hologram, shop label and floating kill feed a server puts in the world |
+| `StaticParticleColor` | on | **off** | particle lighting; they rendered at full brightness regardless of the light around them |
+| `LowAnimationTick` | on | **off** | nine tenths of the ambient particles, by cutting `doVoidFogParticles` from 1000 samples to 100 |
+| `FPSLimit` | 30 | **0** | nothing visible, but it capped the game at 30 fps whenever the window lost focus |
+
+The point is what they were worth. Priced individually on the pit recording against a
+±2.5% avg fps band:
+
+| | avg fps vs off | p50 | entities cpu p50 |
+| --- | ---: | ---: | ---: |
+| `IgnoreStands` alone | −5.3% | +2.3% | +2.6% |
+| `StaticParticleColor` alone | +4.4% | −3.6% | −4.5% |
+| `LowAnimationTick` alone | −1.0% | +1.5% | +0.2% |
+
+Two of the three do not even move in the right direction, and none of them clears the
+band. They were removing things the player can see, in exchange for nothing that could be
+measured. `IgnoreStands` was the worst of the three on both counts: the largest visible
+loss and the least evidence of a gain.
+
+`FPSLimit` additionally only ever took effect when the player's own frame rate limit was
+already below Unlimited -- vanilla guards the `Display.sync` call with
+`isFramerateLimitBelowMax`, which reads the game setting rather than this one.
+
+**The cost of the change itself could not be measured.** A paired series against the old
+default set was attempted on both recordings and has to be discarded: the duplicate
+control (`newdef` against `newdef2`, the same configuration twice) came out at 1.583 vs
+2.918ms and 2.158 vs 1.362ms on the pit recording, and the bedwars runs carried single
+frames of 1.0 to 1.7 seconds with p50 at 14-22ms against the 1.245ms measured earlier the
+same day. GPU clocks, temperature, power plan and free memory were all normal, and the
+remote-desktop agent was still stopped, so the cause is unidentified. The per-feature
+figures above, measured earlier on a better-behaved machine, are the evidence this change
+rests on.
