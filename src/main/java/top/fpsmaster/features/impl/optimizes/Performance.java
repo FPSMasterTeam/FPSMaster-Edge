@@ -37,6 +37,17 @@ public class Performance extends Module {
      * are not the same shape and the replacement is the narrower of them.
      */
     public static BooleanSetting customHudFont = new BooleanSetting("CustomHudFont", false);
+
+    /**
+     * Draws straight to the back buffer instead of through a framebuffer.
+     *
+     * <p>Saves a full-screen write and a full-screen textured draw every frame, and gives up
+     * everything that reads the frame back — the client's blur, its motion blur, the minimap and
+     * the shader helpers all stand down while it is on. Off by default, and not yet measurable:
+     * it changes what the graphics card does, and the only machine available is limited by the
+     * graphics card, so three paired runs put it anywhere between -3.9% and +5.3%.
+     */
+    public static BooleanSetting fastRender = new BooleanSetting("FastRender", false);
     public static BooleanSetting cullPlayers =
             new BooleanSetting("CullPlayers", false, () -> entityCulling.getValue());
 
@@ -88,7 +99,7 @@ public class Performance extends Module {
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, staticParticleColor, limitChunks, chunkUpdateLimit,
                 downscalePackIcons, particleCulling, entityCulling, cullPlayers,
-                entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont, customHudFontSize);
+                entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont, customHudFontSize, fastRender);
     }
 
 

@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.render;
 
+import top.fpsmaster.utils.render.FastRender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.EntityRenderer;
@@ -55,7 +56,7 @@ public class MotionBlur extends Module {
     public void onEnable() {
         super.onEnable();
         shaderLoadFailed = false;
-        if (OptifineUtil.isFastRender()) {
+        if (FastRender.isActive()) {
             OptifineUtil.setFastRender(false);
             Utility.sendClientNotify(FPSMaster.i18n.get("motionblur.fast_render"));
         }

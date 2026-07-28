@@ -1,5 +1,6 @@
 package top.fpsmaster.utils.render.shader;
 
+import top.fpsmaster.utils.render.FastRender;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.modules.logger.ClientLogger;
@@ -86,7 +87,7 @@ public class ShaderUtil extends Utility {
     }
 
     public static void drawQuads(float x, float y, float width, float height) {
-        if (OptifineUtil.isFastRender()) return;
+        if (FastRender.isActive()) return;
         glBegin(GL_QUADS);
         glTexCoord2f(0, 0);
         glVertex2f(x, y);
@@ -100,7 +101,7 @@ public class ShaderUtil extends Utility {
     }
 
     public static void drawQuads() {
-        if (OptifineUtil.isFastRender()) {
+        if (FastRender.isActive()) {
             return;
         }
         ScaledResolution sr = new ScaledResolution(mc);

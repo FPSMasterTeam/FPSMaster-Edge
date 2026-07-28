@@ -33,6 +33,7 @@ import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventMouseClick;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.optimizes.Performance;
+import top.fpsmaster.utils.render.FastRender;
 
 import javax.annotation.Nullable;
 import java.awt.*;
@@ -176,6 +177,11 @@ public abstract class MixinMinecraft implements IMinecraft {
      * interval. This is the only per-frame hook that also fires outside a world; the client's
      * {@code EventRender2D} rides the in-world HUD path and would miss menu frames entirely.
      */
+    @Inject(method = "runGameLoop", at = @At("HEAD"))
+    private void edge$latchFastRender(CallbackInfo ci) {
+        FastRender.beginFrame();
+    }
+
     @Inject(
             method = "runGameLoop",
             at = @At(
