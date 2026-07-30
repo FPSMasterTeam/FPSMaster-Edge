@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.*;
@@ -52,6 +53,15 @@ public class MixinRenderManager implements IRenderManager {
         if (BenchmarkMode.ACTIVE) {
             BenchCounters.entitiesAttempted++;
             BenchProfiler.begin(BenchProfiler.SECTION_ENTITY_RENDER);
+        }
+        // Before the culling check, because this one is unconditional and cheaper: the stand is not
+        // being drawn either way, so there is no point probing whether it is visible first.
+        if (Performance.using && Performance.hideArmorStands.getValue() && entity instanceof EntityArmorStand) {
+            if (BenchmarkMode.ACTIVE) {
+                BenchProfiler.end(BenchProfiler.SECTION_ENTITY_RENDER);
+            }
+            cir.setReturnValue(false);
+            return;
         }
         if (Performance.using && Performance.entityCulling.getValue()
                 && entity != Minecraft.getMinecraft().getRenderViewEntity()

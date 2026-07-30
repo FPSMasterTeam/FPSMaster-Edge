@@ -2,9 +2,12 @@ package top.fpsmaster.features.impl.optimizes;
 
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.utils.render.culling.EntityCulling;
+
+import static top.fpsmaster.utils.core.Utility.mc;
 
 
 public class Performance extends Module {
@@ -161,13 +164,78 @@ public class Performance extends Module {
     public static NumberSetting customHudFontSize =
             new NumberSetting("CustomHudFontSize", 16, 12, 28, 1, () -> customHudFont.getValue());
 
+    /**
+     * Stops the six block switches below from being drawn into the chunk mesh.
+     *
+     * <p>These are content removal rather than optimisation — they trade something the player can
+     * see for the geometry it costs, so all of them are off by default and none of them is counted
+     * as a same-picture gain. What they are worth depends entirely on the world: a flower forest or
+     * a fence-heavy build puts thousands of these in a chunk, and a Hypixel lobby has none.
+     *
+     * <p>Grass and flowers are separated from their double-height forms because the double plants
+     * are one block class with a variant, and a player hiding decoration usually does not want the
+     * two-block-tall ones to become one-block stumps.
+     */
+    public static BooleanSetting hideTallGrass = new BooleanSetting("HideTallGrass", false);
+    public static BooleanSetting hideDoubleTallGrass = new BooleanSetting("HideDoubleTallGrass", false);
+    public static BooleanSetting hideFlowers = new BooleanSetting("HideFlowers", false);
+    public static BooleanSetting hideDoubleTallFlowers = new BooleanSetting("HideDoubleTallFlowers", false);
+    public static BooleanSetting hideFences = new BooleanSetting("HideFences", false);
+    public static BooleanSetting hideFenceGates = new BooleanSetting("HideFenceGates", false);
+
+    /**
+     * Skips drawing skull block entities — heads on the floor or the wall, and the player heads a
+     * server uses as decoration. The block itself has no chunk geometry in 1.8.9, so this is the
+     * whole of it.
+     */
+    public static BooleanSetting hideSkulls = new BooleanSetting("HideSkulls", false);
+
+    /**
+     * Skips rendering armour stands entirely, model and all.
+     *
+     * <p>Distinct from {@link #ignoreStands}, which only hides their name labels: this removes the
+     * stand as well, so a server's armour-stand furniture, item displays and posed models disappear
+     * along with the invisible ones holding up holograms.
+     */
+    public static BooleanSetting hideArmorStands = new BooleanSetting("HideArmorStands", false);
+
+    /**
+     * True while any of the six block switches is on.
+     *
+     * <p>The injection that implements them is on {@code renderBlock}, which runs once per block per
+     * render layer on every chunk rebuild — the busiest loop the chunk builder has. All six are off
+     * by default, so that case has to cost one field read rather than a chain of instanceof tests.
+     * Written from the settings' change listener, read from the chunk builder thread.
+     */
+    public static volatile boolean hidingBlocks = false;
+
     public Performance() {
         super("Performance", Category.OPTIMIZE);
         addSettings(ignoreStands, fastLoad, batchModelRendering, lowAnimationTick, fpsLimit,
                 particlesLimit, staticParticleColor, limitChunks, chunkUpdateLimit,
                 downscalePackIcons, particleCulling, entityCulling, cacheArmorTextures,
                 signTextCulling, blockEntityCulling, blockEntityDistance, cullPlayers,
-                entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont, customHudFontSize, fastRender);
+                entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont,
+                customHudFontSize, fastRender, hideTallGrass, hideDoubleTallGrass, hideFlowers,
+                hideDoubleTallFlowers, hideFences, hideFenceGates, hideSkulls, hideArmorStands);
+
+        // Chunk meshes are built once and kept, so toggling one of these changes nothing that is
+        // already on screen until every chunk is rebuilt. loadRenderers does that and is what
+        // vanilla itself calls when a graphics setting changes the mesh.
+        Setting.ChangeListener<Boolean> rebuildChunks = (setting, oldValue, newValue) -> {
+            hidingBlocks = hideTallGrass.getValue() || hideDoubleTallGrass.getValue()
+                    || hideFlowers.getValue() || hideDoubleTallFlowers.getValue()
+                    || hideFences.getValue() || hideFenceGates.getValue();
+            if (mc.renderGlobal != null && mc.theWorld != null) {
+                mc.renderGlobal.loadRenderers();
+            }
+        };
+        hideTallGrass.addChangeListener(rebuildChunks);
+        hideDoubleTallGrass.addChangeListener(rebuildChunks);
+        hideFlowers.addChangeListener(rebuildChunks);
+        hideDoubleTallFlowers.addChangeListener(rebuildChunks);
+        hideFences.addChangeListener(rebuildChunks);
+        hideFenceGates.addChangeListener(rebuildChunks);
     }
 
 
@@ -175,11 +243,24 @@ public class Performance extends Module {
     public void onEnable() {
         super.onEnable();
         using = true;
+        rebuildChunksIfHidingBlocks();
     }
 
     @Override
     public void onDisable() {
         super.onDisable();
         using = false;
+        rebuildChunksIfHidingBlocks();
+    }
+
+    /**
+     * The module switch gates the block hiding as well, so turning the module off has to put the
+     * hidden blocks back and turning it on has to take them away again. Nothing to do when none of
+     * the six is on, which is the default and the usual case.
+     */
+    private void rebuildChunksIfHidingBlocks() {
+        if (hidingBlocks && mc.renderGlobal != null && mc.theWorld != null) {
+            mc.renderGlobal.loadRenderers();
+        }
     }
 }
