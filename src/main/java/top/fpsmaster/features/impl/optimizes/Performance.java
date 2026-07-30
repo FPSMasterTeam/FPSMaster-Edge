@@ -191,13 +191,79 @@ public class Performance extends Module {
     public static BooleanSetting hideSkulls = new BooleanSetting("HideSkulls", false);
 
     /**
-     * Skips rendering armour stands entirely, model and all.
+     * Skips the armour stand's model, its armour and whatever it is holding — but not its name.
      *
-     * <p>Distinct from {@link #ignoreStands}, which only hides their name labels: this removes the
-     * stand as well, so a server's armour-stand furniture, item displays and posed models disappear
-     * along with the invisible ones holding up holograms.
+     * <p>The name is the point. A hologram is an invisible armour stand whose entire content is the
+     * text above it, so a switch that took the text with the model would delete every shop label and
+     * floating kill feed on the server, which is exactly what made {@link #ignoreStands} a bad
+     * default. Those two are complementary rather than overlapping: this one drops the body and
+     * keeps the label, {@code IgnoreStands} drops the label and keeps the body.
      */
     public static BooleanSetting hideArmorStands = new BooleanSetting("HideArmorStands", false);
+
+    /** Skips the item frame's frame and contents, keeping its name label for the same reason. */
+    public static BooleanSetting hideItemFrames = new BooleanSetting("HideItemFrames", false);
+
+    /**
+     * Skips only the map inside an item frame, leaving the frame itself.
+     *
+     * <p>A framed map is drawn as a full map render — the map texture plus every icon on it — where
+     * an ordinary framed item is one small model. On a build with a map wall this is most of what
+     * item frames cost, and unlike {@link #hideItemFrames} it leaves the frames visible.
+     */
+    public static BooleanSetting hideMapsInItemFrames = new BooleanSetting("HideMapsInItemFrames", false);
+
+    /** Skips the arrows sticking out of a player who has been hit. */
+    public static BooleanSetting hideStuckArrows = new BooleanSetting("HideStuckArrows", false);
+
+    /** Skips arrows that have landed and stopped. Arrows still in flight are unaffected. */
+    public static BooleanSetting hideGroundArrows = new BooleanSetting("HideGroundArrows", false);
+
+    /**
+     * Stops lava blocks throwing their ambient sparks.
+     *
+     * <p>Cut at the source — the block's own random display tick — rather than at the particle
+     * renderer, so the particle is never constructed, ticked or stored.
+     */
+    public static BooleanSetting hideLavaParticles = new BooleanSetting("HideLavaParticles", false);
+
+    /** Stops mob spawners smoking. The spawner still counts down and its mob still spins. */
+    public static BooleanSetting hideSpawnerParticles = new BooleanSetting("HideSpawnerParticles", false);
+
+    /**
+     * Skips the miniature mob spinning inside a spawner.
+     *
+     * <p>The most expensive of this group by some way: that mob goes through the full entity
+     * renderer — model, texture, layers and all — once per spawner per frame.
+     */
+    public static BooleanSetting hideMobInSpawner = new BooleanSetting("HideMobInSpawner", false);
+
+    /**
+     * Stops nether and end portals throwing particles. The portal's sound is unaffected.
+     */
+    public static BooleanSetting hidePortalParticles = new BooleanSetting("HidePortalParticles", false);
+
+    /**
+     * Per-category render distance, as a fraction of the distance the game would use anyway.
+     *
+     * <p>Vanilla has one rule for every entity: an entity is drawn while it is within its own
+     * bounding box's average edge times 64 times its {@code renderDistanceWeight}. These scale that
+     * limit for four groups separately, so dropped items can stop being drawn at a third of the
+     * range while players are still visible to the horizon.
+     *
+     * <p>A multiplier rather than a distance in blocks, because the vanilla limit already varies per
+     * entity — a fixed number would treat a dropped item and an ender dragon the same.
+     *
+     * <p>1.0 is vanilla and costs nothing: the check is skipped entirely when nothing is scaled.
+     */
+    public static NumberSetting playerRenderDistance =
+            new NumberSetting("PlayerRenderDistance", 1.0, 0.1, 1.0, 0.05);
+    public static NumberSetting passiveRenderDistance =
+            new NumberSetting("PassiveRenderDistance", 1.0, 0.1, 1.0, 0.05);
+    public static NumberSetting hostileRenderDistance =
+            new NumberSetting("HostileRenderDistance", 1.0, 0.1, 1.0, 0.05);
+    public static NumberSetting miscRenderDistance =
+            new NumberSetting("MiscRenderDistance", 1.0, 0.1, 1.0, 0.05);
 
     /**
      * True while any of the six block switches is on.
@@ -217,7 +283,11 @@ public class Performance extends Module {
                 signTextCulling, blockEntityCulling, blockEntityDistance, cullPlayers,
                 entityCullingInterval, entityCullingMinEntities, cacheSkyColor, customHudFont,
                 customHudFontSize, fastRender, hideTallGrass, hideDoubleTallGrass, hideFlowers,
-                hideDoubleTallFlowers, hideFences, hideFenceGates, hideSkulls, hideArmorStands);
+                hideDoubleTallFlowers, hideFences, hideFenceGates, hideSkulls, hideArmorStands,
+                hideItemFrames, hideMapsInItemFrames, hideStuckArrows, hideGroundArrows,
+                hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
+                playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
+                miscRenderDistance);
 
         // Chunk meshes are built once and kept, so toggling one of these changes nothing that is
         // already on screen until every chunk is rebuilt. loadRenderers does that and is what

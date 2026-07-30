@@ -30,4 +30,16 @@ public interface ICullable {
     long fpsmaster$getLastProbeMillis();
 
     void fpsmaster$setLastProbeMillis(long millis);
+
+    /**
+     * Whether the entity was inside the view frustum the last time culling looked at it.
+     *
+     * <p>A verdict is only true for the angle it was measured from. An entity that was behind a wall,
+     * left the frustum and came back — the player turned away and walked round — is being judged on
+     * where the wall used to be, and would stay invisible until its timer came round again. The
+     * transition out-of-frustum to in-frustum is the moment that verdict stops being evidence.
+     */
+    boolean fpsmaster$wasInFrustum();
+
+    void fpsmaster$setInFrustum(boolean inFrustum);
 }

@@ -8,7 +8,9 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.item.EntityArmorStand;
+import net.minecraft.entity.monster.IMob;
+import net.minecraft.entity.passive.IAnimals;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.*;
@@ -54,9 +56,9 @@ public class MixinRenderManager implements IRenderManager {
             BenchCounters.entitiesAttempted++;
             BenchProfiler.begin(BenchProfiler.SECTION_ENTITY_RENDER);
         }
-        // Before the culling check, because this one is unconditional and cheaper: the stand is not
-        // being drawn either way, so there is no point probing whether it is visible first.
-        if (Performance.using && Performance.hideArmorStands.getValue() && entity instanceof EntityArmorStand) {
+        // Before the occlusion check, because an entity outside its category's range is not being
+        // drawn either way and there is no point probing whether something is in front of it.
+        if (Performance.using && fpsmaster$isBeyondCategoryRange(entity, x, y, z)) {
             if (BenchmarkMode.ACTIVE) {
                 BenchProfiler.end(BenchProfiler.SECTION_ENTITY_RENDER);
             }
@@ -74,6 +76,41 @@ public class MixinRenderManager implements IRenderManager {
             return;
         }
         Performance.ENTITY_CULLING.countVisibility(true);
+    }
+
+    /**
+     * Applies the per-category render distance multipliers.
+     *
+     * <p>Reproduces vanilla's own limit — the bounding box's average edge times 64 times the
+     * entity's {@code renderDistanceWeight} — and scales it. Scaling rather than replacing, because
+     * that limit already differs per entity: a fixed distance in blocks would put a dropped item and
+     * a giant on the same leash.
+     *
+     * <p>The coordinates handed to this method are already relative to the camera, so their length
+     * is the distance the limit is compared against and nothing has to be recomputed.
+     */
+    @Unique
+    private static boolean fpsmaster$isBeyondCategoryRange(Entity entity, double x, double y, double z) {
+        double multiplier;
+        if (entity instanceof EntityPlayer) {
+            multiplier = Performance.playerRenderDistance.getValue().doubleValue();
+        } else if (entity instanceof IMob) {
+            // Checked before IAnimals: IMob extends it, so the passive test would swallow hostiles.
+            multiplier = Performance.hostileRenderDistance.getValue().doubleValue();
+        } else if (entity instanceof IAnimals) {
+            multiplier = Performance.passiveRenderDistance.getValue().doubleValue();
+        } else {
+            multiplier = Performance.miscRenderDistance.getValue().doubleValue();
+        }
+        if (multiplier >= 1.0d) {
+            return false;
+        }
+        double edge = entity.getEntityBoundingBox().getAverageEdgeLength();
+        if (Double.isNaN(edge)) {
+            edge = 1.0d;
+        }
+        double limit = edge * 64.0d * entity.renderDistanceWeight * multiplier;
+        return x * x + y * y + z * z > limit * limit;
     }
 
     /**

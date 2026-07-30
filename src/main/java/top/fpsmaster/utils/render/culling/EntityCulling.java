@@ -8,6 +8,8 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityArmorStand;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import org.lwjgl.opengl.GL11;
@@ -64,6 +66,16 @@ public final class EntityCulling {
 
     /** Bounding boxes are grown slightly so a probe cannot fall inside its own model's geometry. */
     private static final double PROBE_EXPANSION = 0.15d;
+
+    /**
+     * Extra height added to a player's probe box.
+     *
+     * <p>A player's bounding box stops at the top of their head, but what is drawn does not: the
+     * name label floats above it. Probing the body alone would hide the label of anyone standing
+     * behind a wall with their tag showing over the top of it — the label is the part that is still
+     * visible, and it is the part that matters in a fight. One body height clears it.
+     */
+    private static final double NAMEPLATE_HEADROOM = 1.8d;
 
     /** How many verdicts the occlusion rate is judged over before the interval is reconsidered. */
     private static final int RATE_WINDOW = 256;
@@ -130,14 +142,31 @@ public final class EntityCulling {
     }
 
     /**
-     * Players are excluded by default.
+     * The three kinds of entity worth spending a query on, and the one exception.
      *
-     * <p>Skipping an entity's render also skips its nameplate, and this client has a NameTags
-     * feature built on that. Hiding a player's tag because a wall is in the way is a change in what
-     * the client shows, not a rendering optimisation, so it is opt-in rather than a side effect.
+     * <p>Probing everything is not free — each entity costs a query object, a box and a slot in the
+     * pass — and most kinds cannot pay it back. In the scenes this runs in, the entity count is
+     * players, the armour stands a server decorates with, and dropped items; mobs, projectiles,
+     * minecarts and the rest turn up in numbers where the probes cost more than the models. So the
+     * set is named rather than defined by exclusion.
+     *
+     * <p>Players are further gated behind a setting, because culling a player also culls the tag
+     * this client's NameTags feature draws. With {@link #NAMEPLATE_HEADROOM} the probe now covers
+     * where that tag is drawn, so the two agree — but it stays opt-in, since a player who cannot see
+     * an opponent's tag has no way to guess which setting did it.
+     *
+     * <p>Anything with a custom name is never culled whatever its kind. A named armour stand is a
+     * hologram, and the text is its entire content — culling it deletes the shop label rather than
+     * saving the model behind it.
      */
     private static boolean isCullable(Entity entity, boolean cullPlayers) {
-        return cullPlayers || !(entity instanceof EntityPlayer);
+        if (entity.hasCustomName()) {
+            return false;
+        }
+        if (entity instanceof EntityPlayer) {
+            return cullPlayers;
+        }
+        return entity instanceof EntityArmorStand || entity instanceof EntityItem;
     }
 
     /**
@@ -186,6 +215,7 @@ public final class EntityCulling {
                 continue;
             }
             if (!manager.shouldRender(entity, camera, renderPosX, renderPosY, renderPosZ)) {
+                ((ICullable) entity).fpsmaster$setInFrustum(false);
                 continue;
             }
             candidates.add(entity);
@@ -219,13 +249,25 @@ public final class EntityCulling {
             for (int i = 0; i < candidates.size(); i++) {
                 Entity entity = candidates.get(i);
                 ICullable state = (ICullable) entity;
+                // Coming back into view retires the old verdict rather than waiting out the timer:
+                // it was measured against whatever was in the way from the previous angle, and the
+                // camera no longer has that angle. Clearing it to visible is the safe direction —
+                // the entity draws for one frame until the fresh probe lands.
+                boolean reentered = !state.fpsmaster$wasInFrustum();
+                state.fpsmaster$setInFrustum(true);
+                if (reentered) {
+                    state.fpsmaster$setOccluded(false);
+                }
                 if (state.fpsmaster$isQueryPending()
-                        || now - state.fpsmaster$getLastProbeMillis() < interval) {
+                        || (!reentered && now - state.fpsmaster$getLastProbeMillis() < interval)) {
                     continue;
                 }
 
                 AxisAlignedBB box = entity.getEntityBoundingBox().expand(
                         PROBE_EXPANSION, PROBE_EXPANSION, PROBE_EXPANSION);
+                if (entity instanceof EntityPlayer) {
+                    box = box.addCoord(0.0d, NAMEPLATE_HEADROOM, 0.0d);
+                }
                 if (containsCamera(box, renderPosX, renderPosY, renderPosZ)) {
                     // Front faces only means a box around the camera rasterises nothing.
                     state.fpsmaster$setOccluded(false);
@@ -377,6 +419,7 @@ public final class EntityCulling {
             ICullable state = (ICullable) pendingProbes.get(i);
             state.fpsmaster$setQueryPending(false);
             state.fpsmaster$setOccluded(false);
+            state.fpsmaster$setInFrustum(false);
             freeQueries.addLast(state.fpsmaster$getQueryId());
         }
         pendingProbes.clear();

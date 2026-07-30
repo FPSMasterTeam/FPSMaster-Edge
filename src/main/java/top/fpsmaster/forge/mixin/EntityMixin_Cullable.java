@@ -21,6 +21,8 @@ public abstract class EntityMixin_Cullable implements ICullable {
     private boolean fpsmaster$queryPending;
     @Unique
     private long fpsmaster$lastProbeMillis;
+    @Unique
+    private boolean fpsmaster$inFrustum;
 
     @Override
     public boolean fpsmaster$isOccluded() {
@@ -60,5 +62,15 @@ public abstract class EntityMixin_Cullable implements ICullable {
     @Override
     public void fpsmaster$setLastProbeMillis(long millis) {
         this.fpsmaster$lastProbeMillis = millis;
+    }
+
+    @Override
+    public boolean fpsmaster$wasInFrustum() {
+        return fpsmaster$inFrustum;
+    }
+
+    @Override
+    public void fpsmaster$setInFrustum(boolean inFrustum) {
+        this.fpsmaster$inFrustum = inFrustum;
     }
 }
