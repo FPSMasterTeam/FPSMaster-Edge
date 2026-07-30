@@ -4,7 +4,9 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
+import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
+import top.fpsmaster.utils.render.TextureResolution;
 import top.fpsmaster.utils.render.culling.EntityCulling;
 
 import static top.fpsmaster.utils.core.Utility.mc;
@@ -266,6 +268,21 @@ public class Performance extends Module {
             new NumberSetting("MiscRenderDistance", 1.0, 0.1, 1.0, 0.05);
 
     /**
+     * How far down the block atlas's mipmap chain to start sampling.
+     *
+     * <p>Each step halves the resolution in both axes, so the names are what the texture is worth
+     * rather than a pixel count: a 16x pack at Quarter is being drawn at 4x. A pixel count would be
+     * a lie anyway, since the same setting has to mean something on a 16x pack and a 512x one.
+     *
+     * <p>The index is the LOD floor itself, which is why it is a mode rather than a number: the
+     * levels that exist are the levels the atlas was built with, and there is no meaning between
+     * them. See {@link top.fpsmaster.utils.render.TextureResolution} for why this is a sampling
+     * setting rather than an image one.
+     */
+    public static ModeSetting textureResolution = new ModeSetting("TextureResolution", 0,
+            "Default", "Half", "Quarter", "Eighth", "Sixteenth");
+
+    /**
      * True while any of the six block switches is on.
      *
      * <p>The injection that implements them is on {@code renderBlock}, which runs once per block per
@@ -287,7 +304,10 @@ public class Performance extends Module {
                 hideItemFrames, hideMapsInItemFrames, hideStuckArrows, hideGroundArrows,
                 hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
                 playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
-                miscRenderDistance);
+                miscRenderDistance, textureResolution);
+
+        textureResolution.addChangeListener(
+                (setting, oldValue, newValue) -> TextureResolution.apply());
 
         // Chunk meshes are built once and kept, so toggling one of these changes nothing that is
         // already on screen until every chunk is rebuilt. loadRenderers does that and is what
@@ -314,6 +334,7 @@ public class Performance extends Module {
         super.onEnable();
         using = true;
         rebuildChunksIfHidingBlocks();
+        TextureResolution.apply();
     }
 
     @Override
@@ -321,6 +342,7 @@ public class Performance extends Module {
         super.onDisable();
         using = false;
         rebuildChunksIfHidingBlocks();
+        TextureResolution.apply();
     }
 
     /**

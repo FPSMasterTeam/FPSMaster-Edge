@@ -14,6 +14,7 @@
     "MixinSplashScreen",
     "ModelRendererMixin_BatchDrawing",
     "TextureMapMixin_AnimationTiming",
+    "TextureMapMixin_Resolution",
     "TexturedQuadMixin_BatchDraw"
   ],
   "client": [
@@ -92,6 +93,7 @@
     "RenderGlobalMixin_SkyProbe",
     "accessor.RenderAccessor",
     "accessor.EntityArrowAccessor",
+    "accessor.TextureMapAccessor",
     "accessor.ChunkProviderClientAccessor",
     "accessor.NetHandlerPlayClientAccessor",
     "accessor.FontRendererAccessor",
