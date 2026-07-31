@@ -14,6 +14,7 @@ import net.minecraft.network.EnumPacketDirection;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.play.server.S01PacketJoinGame;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
 import net.minecraft.network.play.server.S0BPacketAnimation;
 import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
@@ -130,6 +131,8 @@ public final class ReplayPlayer {
     private boolean restarting;
     private boolean seeking;
     private int seekTarget;
+    /** The recorder's own entity id, from JoinGame. Zero until the first one is applied. */
+    private int recorderEntityId;
     private float speed = 1.0f;
 
     private ReplayPlayer() {
@@ -216,7 +219,7 @@ public final class ReplayPlayer {
         state.addProperty("yaw", Float.valueOf(current.rotationYaw));
         state.addProperty("pitch", Float.valueOf(current.rotationPitch));
         state.addProperty("inWorld", Boolean.valueOf(current.isEntityAlive() && current.worldObj != null
-                && current.worldObj.getEntityByID(AVATAR_ENTITY_ID) == current));
+                && current.worldObj.getEntityByID(avatarEntityId()) == current));
         StringBuilder equipment = new StringBuilder();
         for (int slot = 0; slot < 5; slot++) {
             ItemStack held = current.getEquipmentInSlot(slot);
@@ -253,6 +256,7 @@ public final class ReplayPlayer {
         this.loggedFailures = 0;
         this.seeking = false;
         this.seekTarget = 0;
+        this.recorderEntityId = 0;
         this.speed = 1.0f;
         queue.clear();
 
@@ -488,6 +492,28 @@ public final class ReplayPlayer {
      * neither rendered nor updated; and possession keeps pointing at it. It also leaves the terrain
      * loading screen up, because the packet that would dismiss it is one playback drops.
      */
+    /**
+     * The id the avatar is registered under, which is the recorder's own wherever that is known.
+     *
+     * <p>The server addresses things to a player by entity id, and the recorder's id refers to
+     * nothing in a replay: the client never receives a spawn packet for itself, so the avatar is
+     * built from the movement track instead and used to carry a made-up id. Everything sent about
+     * the recorder then landed on nothing, and vanilla's handlers do not treat that as an error —
+     * they substitute or give up. Picking an item up looked the collector up, failed, and fell back
+     * to {@code thePlayer}, so every dropped item flew to the viewer's camera. Casting a fishing rod
+     * looked the owner up, failed the {@code instanceof EntityPlayer} test and never built the
+     * bobber, so rods appeared to do nothing at all.
+     *
+     * <p>Giving the avatar the recorder's real id fixes the class rather than the two symptoms. It
+     * is safe to take: the id belonged to that player on that server for the length of the
+     * recording, so nothing else in the stream can be using it, and a world switch issues a new one
+     * in its own JoinGame — which is also when {@link #reestablish} drops the avatar, so the next
+     * one is built under the new id.
+     */
+    private int avatarEntityId() {
+        return recorderEntityId != 0 ? recorderEntityId : AVATAR_ENTITY_ID;
+    }
+
     private void reestablish(Minecraft mc) {
         lastWorld = mc.theWorld;
         lastCameraPlayer = mc.thePlayer;
@@ -619,6 +645,11 @@ public final class ReplayPlayer {
         if (rewritesTheViewer(frame.packet)) {
             return;
         }
+        if (frame.packet instanceof S01PacketJoinGame) {
+            // The one packet that says which entity the recorder was. Everything the server
+            // addressed to them by id is unusable without it — see the avatar's own id below.
+            recorderEntityId = ((S01PacketJoinGame) frame.packet).getEntityId();
+        }
         if (frame.packet instanceof S0CPacketSpawnPlayer) {
             ensureNamed((S0CPacketSpawnPlayer) frame.packet);
         }
@@ -687,11 +718,11 @@ public final class ReplayPlayer {
         }
         if (avatar == null) {
             avatar = new EntityOtherPlayerMP(mc.theWorld, recorderProfile);
-            avatar.setEntityId(AVATAR_ENTITY_ID);
+            avatar.setEntityId(avatarEntityId());
             avatar.setPositionAndRotation(frame.x, frame.y, frame.z, frame.yaw, frame.pitch);
             avatar.rotationYawHead = frame.yaw;
             avatar.prevRotationYawHead = frame.yaw;
-            mc.theWorld.addEntityToWorld(AVATAR_ENTITY_ID, avatar);
+            mc.theWorld.addEntityToWorld(avatarEntityId(), avatar);
             // Put the free camera where the recorder was, otherwise it starts at the world origin
             // and the viewer opens on nothing.
             mc.thePlayer.setPositionAndRotation(frame.x, frame.y, frame.z, frame.yaw, frame.pitch);
