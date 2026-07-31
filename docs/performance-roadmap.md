@@ -14,6 +14,47 @@
 
 ## 二、统一验收标准
 
+### 2.0 五分钟闸门（常规验证的默认档）
+
+**一次小改动的验证不得超过 5 分钟。** 实测单次客户端启动的固定开销是 **48s**（JVM + Forge + mixin 初始化 + 世界加载 + settle），场景本身只占几十秒，所以 5 分钟的预算换算下来就是**四次启动**。
+
+默认命令：
+
+```powershell
+.enchmark
+un-series.ps1 -Scenario text-dense-quick -Runs 1 -DiscardPasses 1 `
+    -Variants ([ordered]@{ off = @{ 'X' = $false }; on = @{ 'X' = $true } })
+```
+
+四次启动 = 每个变体一轮丢弃 + 一轮测量，实测约 4.5 分钟。`text-dense-quick` 的截图放在预热段内（camera t=1000/3000/5000，测量窗口 t=7000 才打开），所以**像素闸门是白拿的** —— 回读会打断管线，不能从它要陪跑的那份时间里出。
+
+**这一档是筛子，不是判决。** 每变体只有一轮，看不见轮间方差，而本项目已经三次把轮间噪声读成效果。规则：
+
+- 方向不明或区间可能重叠 → 升级到长系列（`-Runs 3 -DiscardPasses 2`，约 20 分钟）
+- 要改默认值、或要写进结论 → 必须有长系列背书
+- 只是想知道"这个改动是不是明显反向" → 五分钟档够了
+
+**这一档的噪声地板是逐 section 的，差别巨大。** 同配置对同配置的空对照（`nullcontrol`，两次启动）实测：
+
+| 同配置两轮 | a | b | 离散 |
+|---|---:|---:|---:|
+| avg fps | 474.7 | 374.0 | **21%** |
+| `frameTotal` p50 | 1416 us | 1546 us | 9.2% |
+| `terrainSetup` | 370 us | 489 us | **32%** |
+| `entities` | 704 us | 736 us | 4.5% |
+| `hud` | 53 us | 55 us | **3.8%（2us）** |
+
+所以这一档：
+
+- **对 `hud` 级的改动可用** —— 2us 地板，字体那两项合并的 −12us 是它的六倍
+- **对 `terrainSetup`、整帧、avg fps 不可用** —— 地板比大多数候选效果还大，读出来的任何方向都是运气
+
+噪声估计本身只有一对样本（n=1），别当精确值用；它的作用是把"哪些 section 值得在这一档上看"这件事定下来。
+
+**像素闸门对改变帧率的优化有结构性缺陷。** 手臂旋转与实体动画都是朝目标值平滑插值的，插值步数取决于跑了多少帧；帧率一变，它们就停在不同相位。实测：同配置空对照 363 像素，off/on 6102 像素，而其中 HUD 文字区域两者都是 0。**判定必须配合区域定位来读**，只看总百分比会连续得出错误结论。不加区域白名单 —— 那会让闸门同时不再能抓缺地形，而缺地形会让帧时间变好、时间报告分辨不出来，那是它存在的首要理由。
+
+**像素闸门在这一档是免费的，但对截图时刻敏感。** 截图放在 t=1000 时，同一份构建的两轮在第一人称手臂上差 5877 像素（0.552%），越过 0.5% 门限 —— 手持物品的装备动画那时还在插值。移到 t=3200/4500/5800 后空对照三张全过（0.028% / 0.092% / 0.192%），最差的一张仍有 2.6 倍余量。**新增截图时刻必须先跑空对照**，否则闸门会以与被测改动无关的理由否掉每一个候选。
+
 ### 2.1 Benchmark 方法
 
 每个核心优化至少覆盖以下负载：
@@ -375,7 +416,7 @@ Forge 1.8.9 的 `TextureUtil` 已经持有并复用一个静态 4,194,304-int di
 | 工作项 | 实测 | 阻碍 |
 |---|---|---|
 | **实体模型渲染** | `renderModel` 占实体渲染 69.2%；每 box **0.72us ≈ 2200 周期**，而它只做 translate + rotate + `glCallList`。目标 620us（pit）～830us（entity-dense） | 需重构模型渲染路径；见 §4.7 |
-| **HUD 文字第二期** | 剩余 **~165us/帧**：顶点提交 ~102us + 每条字符串一次 draw call（40–56 次/帧） | 需持久顶点缓冲 + 分组合批；本项目否决过 `BatchFontRendering`（−1.2%） |
+| **HUD 文字第二期** | 剩余 **~165us/帧**：顶点提交 ~102us + 每条字符串一次 draw call（40–56 次/帧） | 需持久顶点缓冲 + 分组合批，见 §13。（注：−1.2% 的 `BatchFontRendering` 是 **OptiFine 自己的设置**在调研里的实测，不是本项目的设计被否过） |
 | **天空** | 超平坦、关云仍占 **134.8us / 5.3%** | 无。从没人查过，是最便宜的一条线索 |
 
 ### 9.2 已实现、默认关，等实机验证
@@ -492,3 +533,218 @@ translate(-offsetX/Y/Z)
 - `entity-dense` 与两段 Hypixel 录像上，`renderModel` section 显著下降，且**截图与原版一致**
 - 三组交错配对，方向一致，区间不重叠（仪器已具备 0.9% 复现度）
 - 性能监视 HUD 上 1% low 不劣化 —— 一个把成本从每帧摊平改为集中在某几帧的改动会赢在均值输在尾部
+
+## 十一、原版字体批量绘制（§9.1 "HUD 文字第二期"的另一条路）
+
+### 11.1 问题
+
+`CustomHudFont` 是本项目单项收益最大的开关，但默认关着，原因不是性能而是**字形不是 Minecraft 的**。愿意换帧率的人已经开了；不愿意的人一直在付原版的全价。
+
+原版的价格来自 `FontRenderer.renderDefaultChar`：
+
+```java
+this.bindTexture(this.locationFontTexture);
+GL11.glBegin(5);                       // GL_TRIANGLE_STRIP
+GL11.glTexCoord2f(...); GL11.glVertex3f(...);   // x4
+GL11.glEnd();
+```
+
+**每个字符**一次 bind + 一次 `glBegin`/`glEnd`。一屏繁忙 HUD 是几千次立即模式提交。
+
+### 11.2 Badlion 做了什么（结论：这条路他们没走）
+
+从 `tools/dumper-agent/out` 反编译确认三件事：
+
+1. **他们没有优化原版逐字符路径。** `avn`（= `FontRenderer`）的 `renderDefaultChar` 依旧是每字符 `glBegin(5)`，和原版逐行一致。
+2. **他们在字符串层拦截并回退**，与本项目 `CustomHudFont` 同构：
+
+   ```java
+   int var6 = db.customFontManager.drawMCString(var2, var3, var1, var4);
+   if (var6 != -1) return var6;   // 自定义字体接管
+   else { ...原版逐字符路径... }
+   ```
+
+3. **他们的字体不是原版风格，也不兼容原版贴图与材质包。** `KN`（CustomFontManager）import `com.mlomb.freetypejni`，运行时用 FreeType 栅格化真实 TTF／系统字体（日志 `[CustomFontManager] Found N system font files`），自建图集走 GL15/GL20/GL30 的 VBO 路径，与 `textures/font/ascii.png` 无关。
+
+附带发现一个方向相反的功能：`aox.aca()` 绕过材质包，直接从 `getMcDefaultResourcePack()` 读原始 `ascii.png` 上传成独立纹理，配合 `net.badlion.clientcommon.util.h.k(char)` 的硬编码宽表；`abZ()` 才是走材质包的 `locationFontTexture`，由 `usesVanillaFont()` 二选一。这是"强制默认字体、无视材质包"，与性能无关。
+
+**所以批量化原版字体没有现成先例可抄。**
+
+### 11.3 方案
+
+`VanillaFontBatch` + `FontRendererMixin_BatchVanilla`：把 `renderDefaultChar` / `renderUnicodeChar` 的四个顶点原样写进一个共享的 `POSITION_TEX` 批次，每条字符串结束时提交一次。
+
+**顶点常量逐个对照过原版**（`7.99F`、`0.01F`、`0.02F`、`15.98F` 是它的溢出防护，动一位小数就改变边缘采样的 texel）。唯一的改动是把三角带顺序改写成四边形绕序 —— 原版第三、四顶点是另一条对角线，照抄进 `GL_QUADS` 会把字形折叠。
+
+三处必须提前提交：
+
+| 触发 | 原因 |
+|---|---|
+| 页切换 | 一个批次只有一张纹理 |
+| `setColor` | 批次不带逐顶点颜色 |
+| `doDraw`（仅删除线/下划线开启时） | 它用同一个 `Tessellator` 画线，会和打开的批次撞车 |
+| `renderStringAtPos` 返回 | 留到下一条会被用错颜色画出来 |
+
+`flush()` 同时清掉记住的页：两条字符串之间任何代码都可能 bind 别的纹理，沿用缓存等于跳过一次已经不成立的 bind。代价是每条字符串一次 bind —— 原版是每字符一次。
+
+### 11.4 Mixin 环境注意
+
+`setColor`、`doDraw`、`bindTexture` 是 Forge 补丁加进 `FontRenderer` 的，**没有 SRG 映射**，必须 `remap = false`；`@Inject` 会直接编译报错，`@Shadow` 只警告然后在运行时静默失效。`loadGlyphTexture` 同样解析不到，改为在 mixin 内自己缓存 `unicode_page_%02x.png` 的 `ResourceLocation`。
+
+### 11.5 结果：像素过关，收益接近零
+
+**像素**：同一系列内 on 对 off，三张截图在第一人称手臂之外**差异像素为 0**。计分板、物品栏逐位相同，顶点数学验证无误。
+
+**收益**：两版实现，`text-dense` 三轮交错（完整数字见 `RESULTS.md`）：
+
+| 实现 | `hud` p50 off | `hud` p50 on |
+|---|---|---|
+| 收集进 `WorldRenderer` | 49–50us | **64–65us（+30%，反向）** |
+| 立即模式，只把 `glBegin`/`glEnd` 提到字符串级 | 49–50us | 48us（−2.7%） |
+
+第一版为什么是反向的，值得记住：**mixin 的逐字符注入回调在 off 侧同样执行、同样分配 `CallbackInfoReturnable`，那份开销已经在基线里**，所以多出来的 15us 只能是收集本身 —— `pos().tex().endVertex()` 每顶点的偏移算术加容量检查，四顶点一字形，比省掉的 `glBegin`/`glEnd` 还贵。
+
+两个数一起读出结论：**每字符一对 `glBegin`/`glEnd` 在这台驱动上约 3ns/字形，几乎免费。** 原版字体的成本不在批量化能拆的地方。
+
+`BatchVanillaFont` 保留、默认关（正收益、像素一致、不引入新失效模式，但 1.3us 不值得在聊天／GUI／告示牌／书本这些同走 `FontRenderer` 的路径实机验证前默认打开）。
+
+### 11.6 盘子有多大，以及剩下的成本在哪
+
+`replay-pit` 上量 `CustomHudFont` off/on（三轮，区间不重叠）：`hud` **224/235/229us → 183/177/179us**，
+即 **−50us / −21.7%**，约占 763us 整帧的 6.5%。批量化拿到的 1.3us 只占其中 2.6%。
+
+剩下的 48us 是读原版源码找到的，不是猜的：`FontRenderer` 用 `indexOf` 在一个 **256 字符**常量串里
+找字形位置，**三个调用点全是每字符一次** ——
+
+| 位置 | 频率 |
+|---|---|
+| `renderStringAtPos` | 每渲染字符一次（决定阴影偏移） |
+| `renderChar` | 每渲染字符一次，粗体再一次（选默认页还是 unicode 页） |
+| `getCharWidth` | 每**测量**字符一次 —— `getStringWidth` 逐字符调它，HUD 为了居中／右对齐几乎对每条串都测一遍 |
+
+画一个字符至少两次 256 长度线性扫描，量一个字符再加一次。**成本在 CPU 侧的查找，不在 GL 调用上**，
+这与 11.5 的结论互为佐证。
+
+## 十二、字形查表（`FastGlyphLookup`）
+
+`FontRendererMixin_GlyphIndex` 把那三处 `indexOf` 重定向到一张按字符索引的 `short[]`。返回值与原版
+逐个相同，只是找法不同 —— 所以选中的字形和量出的宽度都不变。
+
+**查表在运行时从接收者自身构建、按引用识别**：那个常量在 `FontRenderer` 字节码里是内联字面量，
+1.8.9 没有字段持有它（`ChatAllowedCharacters` 暴露的 `char[]` 是另一个集合），把 256 个制表符和
+带音标拉丁字母抄进源文件是白担一份正确性风险。`renderStringAtPos` 里还有一处 22 字符的颜色码
+`indexOf`，按长度区分走原路。倒序填表，因为 `indexOf` 返回首次出现而那个串里有重复的 NUL 填充。
+
+### 12.1 结果
+
+| `replay-pit`（长系列，三轮） | off | on |
+|---|---:|---:|
+| `hud` p50 | 223, 226, 229 us | **202, 194, 201 us（−27us，−11.9%）** |
+
+区间不重叠。对照上面 50us 的差值：**查表一项拿回 54%，画面不变。**
+
+| `text-dense-quick`（五分钟档，各一轮） | 两项全关 | 两项全开 |
+|---|---:|---:|
+| `hud` p50 | 50 us | **38 us（−24%）** |
+
+**像素**：三张截图的差异像素全部落在第一人称手臂区域，文字区域为 0。
+
+**默认开**，因为它只删工作不加工作，且不付出 Minecraft 观感的代价。
+
+### 12.2 尚未验证
+
+两项都**没有在真实客户端里跑过**。聊天、GUI 界面、物品提示、告示牌、书本全都走 `FontRenderer`，
+`replay-pit` 和 `text-dense` 覆盖的只有计分板、玩家列表和物品栏。上线前需要实机走一遍这些路径。
+
+## 十三、HUD 文字提交合批（存档思路，未实施）
+
+**性价比不足，暂不做。** 记在这里是因为分析已经做完，丢掉可惜。
+
+### 13.1 问题
+
+`TextRenderer.drawCached()` 每条字符串一次 `Tessellator.draw()`。pit 上 40–47 条/帧，bedwars 51–71 条/帧。
+
+### 13.2 成本在字符串条数，不在顶点
+
+有一个不依赖任何拟合的交叉观察：
+
+| | 字形四边形 | 字符串 | `text:submit` |
+|---|---:|---:|---:|
+| pit | 592–790 | 40.0–47.4 | 59.9–65.0 us |
+| bedwars | 355–698 | 51.4–70.6 | **68.9–75.1 us** |
+
+**bedwars 的顶点比 pit 少 24%，提交成本却高 15%。** 顶点解释不了这个方向，字符串条数可以。
+
+两组中位数反解（两场景两未知数，**两点拟合，不是测量值**）：每条字符串 0.88us，每顶点 8.7ns；
+pit 上字符串占 62%，bedwars 占 75%。
+
+`text:setup` 这个 bracket 已经把状态设置单独计过（pit 4.2–4.5us / 40–47 条 ≈ **0.1us 每条**），
+所以那 0.88us 几乎全在 `Tessellator.draw()` 本身 —— 驱动侧指针设置、客户端状态开关、
+`glDrawArrays`，约 3000 周期。
+
+### 13.3 方案与障碍
+
+不能简单地把批次开着跨字符串：计分板是「背景矩形、一行字、再一条矩形」交替，而矩形走**同一个**
+`Tessellator`，批次每行都会被打断。
+
+要用**自己的持久 direct ByteBuffer**，不共用 `Tessellator`：自己的
+`glVertexPointer`/`glTexCoordPointer`/`glColorPointer` + `glDrawArrays`；每条字符串按 origin 偏移
+追加、不画；整个 HUD 结束时一次 `glDrawArrays`；只有图集 generation 变化才中途 flush。
+
+**代价是 z 序** —— 所有文字被推迟到最后画。计分板那种「每行字在自己背景之上、背景互不重叠」的
+结构推迟后视觉相同，但如果有 HUD 元素本该盖住文字就会露出来。必须靠 `text-dense` 的像素闸门守。
+
+**预期**：pit 38.5us、bedwars 53.7us 中的大部分，约整帧 5–7%。
+
+### 13.4 动手前必须先做的探针
+
+上面的分解是两点拟合，而本轮已经在字体成本位置上错过一次。把 `text:submit` 拆成 `write`
+（顶点循环）和 `draw`（`Tessellator.draw()`）两个 bracket，跑一次就知道 0.88us 是不是真在 draw 里。
+
+### 13.5 前提
+
+只在 `CustomHudFont` 开启时有效。默认关闭时 `TextRenderer` 每帧只画 3 条字符串。
+
+
+## 十四、字体工作收尾
+
+### 14.1 交付了什么
+
+| 开关 | 收益 | 画面 | 默认 |
+|---|---|---|---|
+| `FastGlyphLookup` | `replay-pit` `hud` **−27us / −11.9%**，长系列三轮区间不重叠 | 逐位一致 | **开** |
+| `MergeTextShadow` | `text-dense-quick` `hud` **−4~−6us**，两轮独立复现；`replay-pit` 总 draw call −23% | HUD 文字逐位一致 | **开** |
+| `BatchVanillaFont` | `text-dense` `hud` −1.3us | 逐位一致 | 关 |
+| `SlowObfuscation` | 机制成立（命中率 98.0%），**收益未证实**（配对受扰） | **改变**（20Hz vs 帧率） | 关 |
+
+起点是"原版字体能否达到自定义字体的性能水平"。`replay-pit` 上量出的差值是 `hud` **−50us**；
+`FastGlyphLookup` 一项拿回 54%，`MergeTextShadow` 与 `BatchVanillaFont` 各自再补一点。**剩余差值
+约 20us**，且 `MergeTextShadow` 同时也让自定义字体那条路更快，所以差值不会被完全抹平。
+
+### 14.2 三个被推翻的假设
+
+按顺序，全部是先测才发现的：
+
+1. **以为成本在每字符的 `glBegin`/`glEnd`。** 第一版批量化（收集进 `WorldRenderer`）`hud` 从 50us
+   涨到 65us；改成立即模式只把括号提出循环后是 −1.3us。结论：那对括号在这台驱动上约 3ns/字形。
+2. **真正的成本是每字符三次 256 长度线性扫描**（`renderStringAtPos`、`renderChar`、`getCharWidth`），
+   读源码找到的。换成一次数组读 = −27us。
+3. **以为阴影只能画两遍。** `record()` 里 `shadowPass` 只影响颜色，几何完全相同 —— 一条带阴影的
+   字符串原本存着两份一模一样的几何。
+
+### 14.3 `SlowObfuscation` 的悬案
+
+命中率 98.0% 是计数，成立无疑；但 `hud` 测出 +5us，而那一对 avg fps 差 21%、p99 双双 13–14ms，
+是机器受扰的特征。按早前探针推算应当是 −11us。**两个数字矛盾且没有第三次运行来分辨。**
+
+它是四个开关里唯一改画面的，天花板又随服务器的混淆文字量变化（这段录像每帧 9.2 条）。
+所以：保持默认关，要么补一次长系列定案，要么连设置项一起删掉。**不要在没有数字的情况下把它打开。**
+
+### 14.4 未验证（上线前必须补）
+
+**四个开关都没有在真实客户端里跑过。** 聊天、GUI 界面、物品提示、告示牌、书本全部走
+`FontRenderer`，而 `replay-pit` / `text-dense` 只覆盖计分板、玩家列表和物品栏。
+
+`MergeTextShadow` 的风险点具体是：它挂在 `drawString` 上并取消整个方法，`resetStyles()` 的语义
+是手工复刻的（`@Shadow` 那五个样式字段），回落到原版渲染器的路径（bidi 文本、银河文字）没被
+任何场景覆盖过。
