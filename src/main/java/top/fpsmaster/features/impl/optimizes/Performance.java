@@ -324,6 +324,20 @@ public class Performance extends Module {
     public static BooleanSetting fastTextureUpload = new BooleanSetting("FastTextureUpload", true);
 
     /**
+     * Keeps the visible-chunk list across frames in which the camera has barely moved.
+     *
+     * <p>The walk that builds it is 41% of the frame on a moving camera, and Forge rebuilds it on
+     * any movement at all — including one sub-pixel frame to the next. See
+     * {@code RenderGlobalMixin_ReuseVisibleList} for the thresholds and for what is deliberately
+     * not suppressed.
+     *
+     * <p>Off by default until it has been watched for holes: an over-reused visibility list is
+     * missing terrain, and missing terrain makes frame times better, so the timing report cannot
+     * tell this working from this broken.
+     */
+    public static BooleanSetting reuseVisibleChunks = new BooleanSetting("ReuseVisibleChunks", false);
+
+    /**
      * True while any of the six block switches is on.
      *
      * <p>The injection that implements them is on {@code renderBlock}, which runs once per block per
@@ -346,7 +360,7 @@ public class Performance extends Module {
                 hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
                 playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
                 miscRenderDistance, textureResolution, fastCollision, adaptiveChunkBudget,
-                fastTextureUpload);
+                fastTextureUpload, reuseVisibleChunks);
 
         textureResolution.addChangeListener(
                 (setting, oldValue, newValue) -> TextureResolution.apply());

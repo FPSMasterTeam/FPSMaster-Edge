@@ -68,6 +68,7 @@
     "MixinRenderManager",
     "RenderGlobalMixin_SectionTiming",
     "RenderGlobalMixin_TerrainProbe",
+    "RenderGlobalMixin_ReuseVisibleList",
     "ContainerLocalRenderInformationMixin_Probe",
     "WorldMixin_CollisionProbe",
     "WorldMixin_FastCollision",

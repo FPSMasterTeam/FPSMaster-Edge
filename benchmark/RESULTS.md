@@ -1540,3 +1540,44 @@ it.
 So the roadmap's §4.1 stands, with one correction to how it should be judged: the recorded
 matches cannot price it, because their cameras are stationary and the whole question is what
 happens when a camera moves. Flat-orbit or a walked scenario is the instrument for this one.
+
+## Reusing the visible-chunk list: the walk drops by a third
+
+Forge rebuilds the visible list on any camera movement at all, tested by exact inequality, so a
+sub-pixel frame counts. The reuse keeps the list until the camera has left a threshold measured
+from where the list was last actually built — not from the previous frame, which is the version
+that never fires because the anchor follows the camera and the movement never accumulates.
+
+Thresholds: a quarter of a block, half a degree, any chunk crossing, any change to field of view
+or window size, and a rebuild at least every 200ms regardless. That last one is not for any
+invalidation named above; it is for the ones that are not, so a missed case is a fifth of a
+second of stale visibility rather than a hole that stays until the player turns around.
+
+flat-orbit, `terrainProbe`, off then on:
+
+| | off | on |
+| --- | ---: | ---: |
+| frames that rebuilt | 100% | **56.3-62.5%** |
+| **the walk** | 836-838us | **493-587us** |
+| `setupTerrain` amortised | 886-891us | **500-596us** |
+| containers built per frame | 2121-2239 | 1213-1371 |
+
+**A third to two fifths off the walk**, which is roughly 300us a frame on this scenario.
+
+The reuse rate is 37-44%, not the 89% the rotation rate and threshold predict — flat-orbit
+moves as well as turns, and more to the point it is still streaming chunks, so
+`chunksToUpdate` is often non-empty and that forces a rebuild the thresholds never see. On a
+world that has finished loading the rate should be higher. The same thing limited the throttle
+measurements and is the same fact each time: chunk work forces the walk, and only camera
+movement is negotiable.
+
+**Screenshots are identical** — 0.000%, 0.206% and 0.057% of pixels differ on entity-dense
+against a 0.5% limit. This is the check that matters here more than any timing: an over-reused
+visibility list is missing terrain, missing terrain makes frame times *better*, and a timing
+report cannot tell this working from this broken.
+
+**No frame rate claim.** These are single runs and one of them carried a p99 of 15.7ms against
+3.9ms, so it was disturbed. The section timing is what is being reported.
+
+**Off by default.** Three screenshots at fixed camera positions are not the same as watching a
+world for holes while flying through it, and the failure mode is quiet.
