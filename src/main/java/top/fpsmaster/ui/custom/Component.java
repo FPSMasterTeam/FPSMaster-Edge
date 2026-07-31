@@ -24,9 +24,21 @@ import java.awt.*;
 public class Component {
     private static final Color STENCIL_MASK_COLOR = new Color(255, 255, 255, 255);
 
+    private static final float MIN_SCALE = 0.5f;
+    private static final float MAX_SCALE = 4.5f;
+    private static final float HANDLE_SIZE = 6f;
+    /** Cursor travel, in screen pixels, needed to change the scale by 1x. */
+    private static final float RESIZE_SENSITIVITY = 1f / 60f;
+
     private float dragX = 0f;
 
     private float dragY = 0f;
+
+    private float resizeStartScale = 1f;
+
+    private int resizeStartMouseX;
+
+    private int resizeStartMouseY;
 
     public InterfaceModule mod;
 
@@ -197,18 +209,24 @@ public class Component {
         if ((Utility.mc.currentScreen instanceof GuiChat || Utility.mc.currentScreen instanceof MainPanel)) {
             float scaledWidth = width * scale;
             float scaledHeight = height * scale;
-            boolean drag = FPSMaster.componentsManager.dragLock.equals(mod.name);
+            ComponentsManager manager = FPSMaster.componentsManager;
+            boolean drag = manager.dragTarget == this;
+            boolean hovered = Hover.is(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY);
+            boolean overHandle = allowScale && isOverResizeHandle(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY);
 
-            alpha = (float) ((Hover.is(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) ?
+            alpha = (float) ((hovered || overHandle || drag) ?
                     AnimMath.base(alpha, 1f, 0.2f) : AnimMath.base(alpha, 0.0f, 0.2f));
 
             Rects.fill(rX - 2, rY - 2, scaledWidth + 4, scaledHeight + 4, new Color(0, 0, 0, (int) (alpha * 80)));
             draw(rX, rY);
             GL11.glColor4f(1, 1, 1, 1);
-            if (!Mouse.isButtonDown(0)) {
-                FPSMaster.componentsManager.dragLock = "";
+
+            if (alpha > 0.01f && hasResizeHandle(scaledWidth, scaledHeight)) {
+                drawResizeHandle(rX, rY, scaledWidth, scaledHeight,
+                        overHandle || (drag && manager.dragMode == ComponentsManager.DragMode.RESIZE));
             }
-            if (Hover.is(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY) || drag) {
+
+            if (hovered || overHandle || drag) {
                 if (Utility.mc.currentScreen instanceof MainPanel && ((MainPanel) Utility.mc.currentScreen).hasPointerCapture())
                     return;
                 if (allowScale && ClientSettings.isZoomBindDown()) {
@@ -216,19 +234,30 @@ public class Component {
                     if (dWheel > 0) scaleUp();
                     else if (dWheel < 0) scaleDown();
                 }
-                FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get(mod.name.toLowerCase()) + " " + (scale * 10) / 10f + "x", rX, rY - 10, new Color(255, 255, 255, (int) (alpha * 255)).getRGB());
+                FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get(mod.name.toLowerCase()) + " " + Math.round(scale * 10) / 10f + "x", rX, rY - 10, new Color(255, 255, 255, (int) (alpha * 255)).getRGB());
 
                 if (!Mouse.isButtonDown(0)) return;
 
-                if (!drag && FPSMaster.componentsManager.dragLock.isEmpty()) {
-                    dragX = mouseX - rX;
-                    dragY = mouseY - rY;
-                    FPSMaster.componentsManager.dragLock = mod.name;
+                if (manager.dragTarget == null) {
+                    manager.dragTarget = this;
+                    if (overHandle) {
+                        manager.dragMode = ComponentsManager.DragMode.RESIZE;
+                        resizeStartScale = scale;
+                        resizeStartMouseX = mouseX;
+                        resizeStartMouseY = mouseY;
+                    } else {
+                        manager.dragMode = ComponentsManager.DragMode.MOVE;
+                        dragX = mouseX - rX;
+                        dragY = mouseY - rY;
+                    }
                 }
 
-                if (FPSMaster.componentsManager.dragLock.equals(mod.name)) {
-                    move(mouseX, mouseY);
-                    FPSMaster.componentsManager.dragLock = mod.name;
+                if (manager.dragTarget == this) {
+                    if (manager.dragMode == ComponentsManager.DragMode.RESIZE) {
+                        resizeTo(mouseX, mouseY);
+                    } else {
+                        move(mouseX, mouseY);
+                    }
                 }
             }
         } else {
@@ -237,11 +266,51 @@ public class Component {
     }
 
     public void scaleUp() {
-        if (scale < 4.5f) scale = (int) (scale * 10 + 1) / 10f;
+        if (scale < MAX_SCALE) scale = (int) (scale * 10 + 1) / 10f;
     }
 
     public void scaleDown() {
-        if (scale > 0.5f) scale = (int) (scale * 10 - 1) / 10f;
+        if (scale > MIN_SCALE) scale = (int) (scale * 10 - 1) / 10f;
+    }
+
+    /**
+     * The handle is suppressed on components smaller than this, where its grab area would swallow most
+     * of the body and leave no room to start a move.
+     */
+    private boolean hasResizeHandle(float scaledWidth, float scaledHeight) {
+        return allowScale && scaledWidth >= HANDLE_SIZE * 3f && scaledHeight >= HANDLE_SIZE * 3f;
+    }
+
+    /** Bottom-right corner box the user grabs to resize. Sized in screen pixels, deliberately not
+     *  scaled — otherwise a component shrunk to 0.5x would have a handle too small to hit. */
+    private boolean isOverResizeHandle(float rX, float rY, float scaledWidth, float scaledHeight, int mouseX, int mouseY) {
+        if (!hasResizeHandle(scaledWidth, scaledHeight)) {
+            return false;
+        }
+        return Hover.is(rX + scaledWidth - HANDLE_SIZE, rY + scaledHeight - HANDLE_SIZE,
+                HANDLE_SIZE * 2f, HANDLE_SIZE * 2f, mouseX, mouseY);
+    }
+
+    private void drawResizeHandle(float rX, float rY, float scaledWidth, float scaledHeight, boolean active) {
+        float handleX = rX + scaledWidth - HANDLE_SIZE;
+        float handleY = rY + scaledHeight - HANDLE_SIZE;
+        int shade = (int) (alpha * (active ? 255 : 160));
+        Rects.rounded(handleX, handleY, HANDLE_SIZE, HANDLE_SIZE, 2, new Color(255, 255, 255, shade).getRGB());
+        Rects.rounded(handleX + 1f, handleY + 1f, HANDLE_SIZE - 2f, HANDLE_SIZE - 2f, 1,
+                new Color(0, 0, 0, (int) (alpha * 140)).getRGB());
+    }
+
+    /**
+     * Resizes from how far the cursor has travelled since the grab, not from its distance to the
+     * component's origin: for right/bottom-anchored components the origin itself moves as the scale
+     * changes, which would feed back into the next frame's delta and run away.
+     */
+    private void resizeTo(int mouseX, int mouseY) {
+        float delta = ((mouseX - resizeStartMouseX) + (mouseY - resizeStartMouseY)) / 2f;
+        float target = resizeStartScale + delta * RESIZE_SENSITIVITY;
+        // Quantise to the same 0.1 steps the scroll wheel uses so both paths agree.
+        target = Math.round(target * 10f) / 10f;
+        scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, target));
     }
 
     private void move(int x, int y) {

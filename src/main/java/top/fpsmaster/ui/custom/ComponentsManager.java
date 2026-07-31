@@ -15,8 +15,22 @@ public class ComponentsManager {
     // List to hold all components
     public final ArrayList<Component> components = new ArrayList<>();
 
-    // Variable to track drag lock state
-    public String dragLock = "";
+    /** What a drag gesture is doing to {@link #dragTarget}. */
+    public enum DragMode {
+        MOVE,
+        RESIZE
+    }
+
+    /**
+     * The component currently being dragged, or {@code null}. Previously this was the module's name as
+     * a String, which cost a string compare per component per frame and could collide when a component
+     * fell back to a synthesised module. More importantly the "mouse released → unlock" rule was
+     * evaluated inside each component's own display(), so if every HUD element happened to be hidden
+     * mid-drag the lock was never cleared and nothing could be dragged again.
+     */
+    public Component dragTarget;
+
+    public DragMode dragMode = DragMode.MOVE;
 
     // Initialize all components
     public void init() {
@@ -142,6 +156,12 @@ public class ComponentsManager {
         mouseY = mouseY * scaleFactor / 2;
 
         GuiScale.fixScale();
+
+        // Releasing the button ends any drag — decided once per frame here rather than inside each
+        // component, so it holds even when no component is visible to run the check.
+        if (!org.lwjgl.input.Mouse.isButtonDown(0)) {
+            dragTarget = null;
+        }
 
         // Draw all components that should be displayed
         int finalMouseX = mouseX;
