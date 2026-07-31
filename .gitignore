@@ -9,3 +9,15 @@ benchmark/worlds/
 benchmark/results/
 benchmark/replays/
 remeasure.ps1
+
+# A dev client launched from the project root writes its game directory here. benchmark/run-dev.ps1
+# no longer does that, but a stray launch or an IDE run config still can.
+/logs/
+/saves/
+/config/
+/crash-reports/
+/.mixin.out/
+/options.txt
+/usercache.json
+/usernamecache.json
+/FPSMaster Edge/

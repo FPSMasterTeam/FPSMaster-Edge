@@ -58,7 +58,7 @@ public class MixinRenderManager implements IRenderManager {
         }
         // Before the occlusion check, because an entity outside its category's range is not being
         // drawn either way and there is no point probing whether something is in front of it.
-        if (Performance.using && fpsmaster$isBeyondCategoryRange(entity, x, y, z)) {
+        if (Performance.using && edge$isBeyondCategoryRange(entity, x, y, z)) {
             if (BenchmarkMode.ACTIVE) {
                 BenchProfiler.end(BenchProfiler.SECTION_ENTITY_RENDER);
             }
@@ -81,6 +81,15 @@ public class MixinRenderManager implements IRenderManager {
     /**
      * Applies the per-category render distance multipliers.
      *
+     * <p>Named {@code edge$} rather than {@code fpsmaster$} on purpose. This class carries an
+     * {@code @Implements} with that prefix, which means every method starting with it is treated as
+     * a soft implementation of an {@link IRenderManager} method — so a helper called
+     * {@code fpsmaster$isBeyondCategoryRange} makes Mixin look for that name on the interface, not
+     * find it, and refuse to apply the mixin at all. Which is how this shipped: the render
+     * distances did nothing, {@code FreeLook}'s overwrite in this class did nothing, and entity
+     * occlusion culling crashed on casting a {@code RenderManager} that no longer implemented the
+     * interface.
+     *
      * <p>Reproduces vanilla's own limit — the bounding box's average edge times 64 times the
      * entity's {@code renderDistanceWeight} — and scales it. Scaling rather than replacing, because
      * that limit already differs per entity: a fixed distance in blocks would put a dropped item and
@@ -90,7 +99,7 @@ public class MixinRenderManager implements IRenderManager {
      * is the distance the limit is compared against and nothing has to be recomputed.
      */
     @Unique
-    private static boolean fpsmaster$isBeyondCategoryRange(Entity entity, double x, double y, double z) {
+    private static boolean edge$isBeyondCategoryRange(Entity entity, double x, double y, double z) {
         double multiplier;
         if (entity instanceof EntityPlayer) {
             multiplier = Performance.playerRenderDistance.getValue().doubleValue();
