@@ -55,6 +55,7 @@ public class ChatAvatarCache {
     private static final long MIN_REQUEST_INTERVAL_MS = 750L;
     private static final int MAX_PARALLEL_REQUESTS = 2;
     private static final int MAX_SENDER_SEPARATOR_DISTANCE = 16;
+    private static final int MIN_DISPLAY_NAME_SUFFIX_LENGTH = 3;
 
     private static final LinkedHashMap<String, AvatarEntry> CACHE = new LinkedHashMap<String, AvatarEntry>(32, 0.75F, true) {
         @Override
@@ -240,7 +241,32 @@ public class ChatAvatarCache {
         if (best != null) {
             return best;
         }
+        best = findBestDisplayNameSuffix(head, candidates);
+        if (best != null) {
+            return best;
+        }
         return firstDelimiter(head) < 0 ? findBestOnlinePlayer(head, candidates, false) : null;
+    }
+
+    private static PlayerCandidate findBestDisplayNameSuffix(String text, List<PlayerCandidate> candidates) {
+        String senderName = extractSenderDisplayName(text);
+        if (senderName.isEmpty()) {
+            return null;
+        }
+
+        PlayerCandidate best = null;
+        int bestLength = 0;
+        for (PlayerCandidate candidate : candidates) {
+            if (candidate == null || candidate.matchName == null || candidate.matchName.isEmpty()) {
+                continue;
+            }
+            int suffixLength = commonSuffixLength(senderName, candidate.matchName);
+            if (suffixLength >= MIN_DISPLAY_NAME_SUFFIX_LENGTH && suffixLength > bestLength) {
+                best = candidate;
+                bestLength = suffixLength;
+            }
+        }
+        return best;
     }
 
     private static PlayerCandidate findBestOnlinePlayer(String text, List<PlayerCandidate> candidates, boolean requireChatSeparator) {
@@ -350,6 +376,39 @@ public class ChatAvatarCache {
             }
         }
         return false;
+    }
+
+    private static String extractSenderDisplayName(String text) {
+        int delimiter = firstDelimiter(text);
+        if (delimiter < 0) {
+            return "";
+        }
+        int start = delimiter;
+        while (start > 0 && Character.isWhitespace(text.charAt(start - 1))) {
+            start--;
+        }
+        int nameStart = start;
+        while (nameStart > 0 && !Character.isWhitespace(text.charAt(nameStart - 1)) && text.charAt(nameStart - 1) != ']') {
+            nameStart--;
+        }
+        return text.substring(nameStart, start).trim();
+    }
+
+    private static int commonSuffixLength(String first, String second) {
+        int firstIndex = first.length() - 1;
+        int secondIndex = second.length() - 1;
+        int length = 0;
+        while (firstIndex >= 0 && secondIndex >= 0) {
+            char firstChar = Character.toLowerCase(first.charAt(firstIndex));
+            char secondChar = Character.toLowerCase(second.charAt(secondIndex));
+            if (firstChar != secondChar) {
+                break;
+            }
+            length++;
+            firstIndex--;
+            secondIndex--;
+        }
+        return length;
     }
 
     private static String extractLikelySenderName(String text) {
