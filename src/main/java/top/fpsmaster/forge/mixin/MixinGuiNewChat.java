@@ -18,9 +18,9 @@ import top.fpsmaster.features.impl.render.ChatAvatarCache;
 import top.fpsmaster.features.impl.render.ChatAvatars;
 
 import java.awt.*;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 import static top.fpsmaster.utils.core.Utility.mc;
 
@@ -56,7 +56,10 @@ public abstract class MixinGuiNewChat {
     @Shadow @Final private List<ChatLine> chatLines;
 
     @Unique
-    private final Map<IChatComponent, IChatComponent> fpsmaster$chatMessageSources = new WeakHashMap<>();
+    private static final int FPSMASTER_MAX_CHAT_MESSAGE_SOURCES = 512;
+
+    @Unique
+    private final Map<IChatComponent, IChatComponent> fpsmaster$chatMessageSources = new IdentityHashMap<>();
 
     /**
      * @author SuperSkidder
@@ -270,6 +273,9 @@ public abstract class MixinGuiNewChat {
 
     @Unique
     private void fpsmaster$rememberChatMessageSource(IChatComponent source, List<IChatComponent> lines) {
+        if (fpsmaster$chatMessageSources.size() >= FPSMASTER_MAX_CHAT_MESSAGE_SOURCES) {
+            fpsmaster$chatMessageSources.clear();
+        }
         for (IChatComponent line : lines) {
             fpsmaster$chatMessageSources.put(line, source);
         }
