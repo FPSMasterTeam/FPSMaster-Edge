@@ -1026,3 +1026,42 @@ easy to repeat.
   inside the text path, and a text cache would cover it.
 
 So the text figures above stand on their own, and there is no second target beside them.
+
+## Caching HUD text geometry: the layout was never the cost
+
+The reuse figures above said 99.7% of strings on the pit recording are identical to the
+previous frame's, and `text:emit` was 125.6us a frame, so caching the laid-out geometry
+looked like it would take most of that. It takes about a fifth of it, because the emit
+bracket was not measuring what it looked like it was measuring.
+
+`TextRenderer` now records each string's quads once, in coordinates local to its own origin
+and with the caller's colour left out so a moved or re-coloured string still hits, keyed on
+the text and the shadow pass, dropped when the atlas generation changes and never taken for
+obfuscated strings. Pit recording, `CustomHudFont` on, 600-frame windows:
+
+| | before | after |
+| --- | ---: | ---: |
+| `text:prewarm` | 11.0us | — |
+| `text:hit` (cache lookup) | — | 9.1-9.8us |
+| `text:setup` | 4.2us | 4.8-4.9us |
+| `text:emit` | 125.6us | — (below reporting threshold) |
+| `text:submit` | 62.8us | 164.8-181.0us |
+| **per string** | **5.07us** | **4.14-4.32us** |
+
+The layout genuinely stopped happening: `emit` fell off the report entirely, which at these
+hit rates it should. But `submit` rose by about 102us, and that is not a regression -- it is
+the same work under a different bracket. Pushing the vertices was always inside `emit`, and
+moving it into the submission step is what the numbers are showing.
+
+So the emit bracket was 102us of vertex writing and about 24us of actual layout. **The glyph
+loop, the format parsing and the atlas lookups were a fifth of what they appeared to be**, and
+the real cost is 600 to 800 quads a frame going through
+`pos().tex().color().endVertex()` -- sixteen calls per quad, some twelve thousand a frame --
+plus a `Tessellator.draw()` per string.
+
+Net: 15-18% off the text path, roughly 32us a frame, **about 1.8% of the frame**. That is
+below this project's own 3% entry threshold and inside the noise band, so it is not a result
+on its own. What it is is the input the next step needs: geometry that is already laid out,
+position-independent and stable across frames is exactly what can be uploaded once to a
+buffer instead of rewritten every frame. Cutting the remaining ~165us means not rewriting
+those vertices and not issuing a draw per string, and neither is reachable without that.

@@ -9,6 +9,7 @@ import org.lwjgl.opengl.GL11;
 
 import java.awt.Font;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -61,6 +62,14 @@ public final class TextRenderer {
     /** Vanilla's 16 colour codes, in the order the formatting characters index them. */
     private static final int[] COLOR_CODES = new int[16];
 
+    /** Stands in for "whatever colour the caller asked for", resolved when the quad is submitted. */
+    private static final int BASE_COLOUR = -1;
+
+    /** Obfuscated strings are re-scrambled every frame, so a recording of one would freeze it. */
+    private static final String OBFUSCATION_CODE = "§k";
+
+    private static final int GEOMETRY_CACHE_LIMIT = 512;
+
     static {
         for (int i = 0; i < 16; i++) {
             int base = (i >> 3 & 1) * 85;
@@ -80,16 +89,23 @@ public final class TextRenderer {
     /** Pool characters grouped by width, so a stand-in can be picked without a search. */
     private Map<Integer, char[]> scrambleBuckets;
 
+    private final Recorder recorder = new Recorder();
+
     /**
-     * Strikethrough and underline bars, held back until the glyphs have been drawn.
+     * Laid-out geometry by string, so a string that has not changed is not laid out again.
      *
-     * <p>They are untextured, and a batch cannot change that halfway through, so emitting them as
-     * they are met would mean ending the glyph batch at every decorated character. Four coordinates
-     * per bar, with its colour alongside.
+     * <p>Access-ordered and bounded: a session can produce an unbounded number of distinct strings —
+     * every coordinate readout, every timer — and the ones worth keeping are the ones being drawn
+     * now. Held per renderer, so each font size has its own and none of them can serve another's
+     * glyphs.
      */
-    private float[] decorations = new float[4 * 16];
-    private int[] decorationColors = new int[16];
-    private int decorationCount;
+    private final Map<String, Recorded> geometryCache =
+            new LinkedHashMap<String, Recorded>(64, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Recorded> eldest) {
+                    return size() > GEOMETRY_CACHE_LIMIT;
+                }
+            };
 
     public TextRenderer(Font font) {
         this.atlas = new GlyphAtlas(font);
@@ -154,50 +170,44 @@ public final class TextRenderer {
      * actually drawn, which is the failure that produces text overflowing its own background.
      */
     private float layout(String text, float x, float y, int argb, boolean draw, boolean shadowPass) {
-        WorldRenderer worldRenderer = null;
-        long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
         if (draw) {
-            if (atlas.textureId() == -1) {
-                // Force the atlas into existence before the batch opens: rasterising a glyph binds a
-                // texture and uploads, which cannot happen between begin() and draw().
-                atlas.glyph(' ');
-            }
-            prewarm(text);
-            if (mark != 0L) {
-                HudBreakdown.record("text:prewarm", System.nanoTime() - mark);
-                mark = System.nanoTime();
-            }
-
-            GlStateManager.enableTexture2D();
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-            GlStateManager.bindTexture(atlas.textureId());
-            worldRenderer = Tessellator.getInstance().getWorldRenderer();
-            worldRenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
-            if (mark != 0L) {
-                HudBreakdown.record("text:setup", System.nanoTime() - mark);
-                mark = System.nanoTime();
-            }
+            return drawCached(text, x, y, argb, shadowPass);
         }
+        return record(text, shadowPass, false).advance;
+    }
 
+    /**
+     * Runs the single pass, into the recorder rather than onto the screen.
+     *
+     * <p>Everything is in coordinates local to the string's own origin, so the same recording serves
+     * wherever it is drawn next: a chat line that scrolls up a row, or a scoreboard that shifts when
+     * an entry is added, is the same glyphs in the same relative places.
+     *
+     * <p>Colour is left out of it where it can be. A quad whose colour came from the caller rather
+     * than from a formatting code is marked as such and resolved at submission, so the same
+     * recording covers a line that fades out, or one drawn in a different colour, without being
+     * built again.
+     */
+    private Recorded record(String text, boolean shadowPass, boolean collect) {
+        if (collect) {
+            recorder.reset();
+        }
         // Alpha passes through exactly as given, including zero. Treating zero as opaque - which
         // vanilla's own renderer does - breaks the client's fade animations: Alpha.apply multiplies
         // every colour by a global factor, so a fade that reaches zero would flash back to fully
         // opaque instead of disappearing.
-        int alpha = (argb >> 24) & 0xFF;
-        int baseRgb = argb & 0xFFFFFF;
-        int currentRgb = baseRgb;
+        int currentRgb = 0;
+        boolean baseColour = true;
         boolean bold = false;
         boolean italic = false;
         boolean obfuscated = false;
         boolean strikethrough = false;
         boolean underline = false;
-        decorationCount = 0;
 
-        // Snapped to whole pixels like the renderer this replaces, so glyphs land on texel centres
-        // instead of being resampled across two of them.
-        float penX = Math.round(x);
-        float baseline = Math.round(y) + atlas.inkAscent() * RENDER_SCALE;
+        // Local origin. The pixel snapping that used to happen here now happens at submission, on
+        // the string's position rather than on every glyph in it, which is the same thing done once.
+        float penX = 0f;
+        float baseline = 0f;
         float strikeY = baseline - atlas.inkAscent() * RENDER_SCALE * 0.42f;
         // Advance is accumulated separately from the pen, so the pixel snapping above cannot leak
         // into a measured width and make layout disagree with what was drawn.
@@ -218,6 +228,7 @@ public final class TextRenderer {
                     currentRgb = shadowPass
                             ? (COLOR_CODES[code < 0 ? 15 : code] & 0xFCFCFC) >> 2
                             : COLOR_CODES[code < 0 ? 15 : code];
+                    baseColour = false;
                     bold = italic = obfuscated = strikethrough = underline = false;
                 } else if (code == 16) {
                     obfuscated = true;
@@ -230,7 +241,7 @@ public final class TextRenderer {
                 } else if (code == 20) {
                     italic = true;
                 } else {
-                    currentRgb = baseRgb;
+                    baseColour = true;
                     bold = italic = obfuscated = strikethrough = underline = false;
                 }
                 i++;
@@ -240,20 +251,21 @@ public final class TextRenderer {
             GlyphAtlas.Glyph glyph = atlas.glyph(character);
             float step = glyph.advance * RENDER_SCALE + (bold ? BOLD_OFFSET : 0f);
 
-            if (draw) {
+            if (collect) {
                 GlyphAtlas.Glyph shown = obfuscated ? atlas.glyph(scramble(character)) : glyph;
                 float shear = italic ? ITALIC_SHEAR : 0f;
+                int colour = baseColour ? BASE_COLOUR : currentRgb;
                 if (shown.width > 0) {
-                    emit(worldRenderer, shown, penX, baseline, currentRgb, alpha, shear);
+                    recorder.quad(shown, penX, baseline, colour, shear);
                     if (bold) {
-                        emit(worldRenderer, shown, penX + BOLD_OFFSET, baseline, currentRgb, alpha, shear);
+                        recorder.quad(shown, penX + BOLD_OFFSET, baseline, colour, shear);
                     }
                 }
                 if (strikethrough) {
-                    addDecoration(penX, strikeY, penX + step, strikeY + 1f, currentRgb);
+                    recorder.decoration(penX, strikeY, penX + step, strikeY + 1f, colour);
                 }
                 if (underline) {
-                    addDecoration(penX - 1f, baseline + 1f, penX + step, baseline + 2f, currentRgb);
+                    recorder.decoration(penX - 1f, baseline + 1f, penX + step, baseline + 2f, colour);
                 }
             }
 
@@ -261,19 +273,78 @@ public final class TextRenderer {
             advance += step;
         }
 
-        if (draw) {
+        return collect ? recorder.finish(advance, atlas.generation()) : recorder.measured(advance);
+    }
+
+    /**
+     * Draws a string, building its geometry only the first time it is seen.
+     *
+     * <p>The overlay is rebuilt every frame while its contents change at most once a tick, which at
+     * these frame rates is fifteen to twenty-five frames in which the same strings are laid out
+     * again to the same answer. Measured on the recorded Hypixel matches: 99.7% of strings on The
+     * Pit and around 70% on Bed Wars are identical to the previous frame's.
+     *
+     * <p>Obfuscated strings are never cached. Their text is stable while their glyphs are chosen
+     * afresh every frame, so a recording of one would freeze the scramble it happened to record.
+     */
+    private float drawCached(String text, float x, float y, int argb, boolean shadowPass) {
+        long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
+        if (atlas.textureId() == -1) {
+            // Force the atlas into existence before the batch opens: rasterising a glyph binds a
+            // texture and uploads, which cannot happen between begin() and draw().
+            atlas.glyph(' ');
+        }
+
+        boolean cacheable = text.indexOf(OBFUSCATION_CODE) < 0;
+        Recorded geometry = cacheable ? geometryCache.get(cacheKey(text, shadowPass)) : null;
+        if (geometry == null || geometry.generation != atlas.generation()) {
+            prewarm(text);
+            if (mark != 0L) {
+                HudBreakdown.record("text:prewarm", System.nanoTime() - mark);
+                mark = System.nanoTime();
+            }
+            geometry = record(text, shadowPass, true);
+            if (cacheable) {
+                geometryCache.put(cacheKey(text, shadowPass), geometry);
+            }
             if (mark != 0L) {
                 HudBreakdown.record("text:emit", System.nanoTime() - mark);
                 mark = System.nanoTime();
             }
-            Tessellator.getInstance().draw();
-            drawDecorations(alpha);
-            GlStateManager.disableBlend();
-            if (mark != 0L) {
-                HudBreakdown.record("text:submit", System.nanoTime() - mark);
-            }
+        } else if (mark != 0L) {
+            HudBreakdown.record("text:hit", System.nanoTime() - mark);
+            mark = System.nanoTime();
         }
-        return advance;
+
+        GlStateManager.enableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+        GlStateManager.bindTexture(atlas.textureId());
+        WorldRenderer worldRenderer = Tessellator.getInstance().getWorldRenderer();
+        worldRenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+        if (mark != 0L) {
+            HudBreakdown.record("text:setup", System.nanoTime() - mark);
+            mark = System.nanoTime();
+        }
+
+        // Snapped to whole pixels like the renderer this replaces, so glyphs land on texel centres
+        // instead of being resampled across two of them.
+        float originX = Math.round(x);
+        float originY = Math.round(y) + atlas.inkAscent() * RENDER_SCALE;
+        int alpha = (argb >> 24) & 0xFF;
+        int baseRgb = argb & 0xFFFFFF;
+        geometry.submit(worldRenderer, originX, originY, baseRgb, alpha);
+        Tessellator.getInstance().draw();
+        geometry.submitDecorations(originX, originY, baseRgb, alpha);
+        GlStateManager.disableBlend();
+        if (mark != 0L) {
+            HudBreakdown.record("text:submit", System.nanoTime() - mark);
+        }
+        return geometry.advance;
+    }
+
+    private static String cacheKey(String text, boolean shadowPass) {
+        return shadowPass ? "s" + text : text;
     }
 
     /**
@@ -312,49 +383,151 @@ public final class TextRenderer {
         scrambleBuckets = buckets;
     }
 
-    private void addDecoration(float x0, float y0, float x1, float y1, int rgb) {
-        if (decorationCount * 4 == decorations.length) {
-            float[] widerRects = new float[decorations.length * 2];
-            System.arraycopy(decorations, 0, widerRects, 0, decorations.length);
-            decorations = widerRects;
-            int[] widerColors = new int[decorationColors.length * 2];
-            System.arraycopy(decorationColors, 0, widerColors, 0, decorationColors.length);
-            decorationColors = widerColors;
+    /** Scratch the single pass writes into, reused so laying a string out allocates only its result. */
+    private static final class Recorder {
+
+        private float[] quads = new float[16 * 64];
+        private int[] colours = new int[64];
+        private int quadCount;
+        private float[] decorations = new float[4 * 16];
+        private int[] decorationColours = new int[16];
+        private int decorationCount;
+
+        void reset() {
+            quadCount = 0;
+            decorationCount = 0;
         }
-        int base = decorationCount * 4;
-        decorations[base] = x0;
-        decorations[base + 1] = y0;
-        decorations[base + 2] = x1;
-        decorations[base + 3] = y1;
-        decorationColors[decorationCount] = rgb;
-        decorationCount++;
+
+        /** {@code shear} leans the top edge right and the bottom edge left, which is italic. */
+        void quad(GlyphAtlas.Glyph glyph, float penX, float baseline, int colour, float shear) {
+            if ((quadCount + 1) * 16 > quads.length) {
+                float[] wider = new float[quads.length * 2];
+                System.arraycopy(quads, 0, wider, 0, quads.length);
+                quads = wider;
+                int[] widerColours = new int[colours.length * 2];
+                System.arraycopy(colours, 0, widerColours, 0, colours.length);
+                colours = widerColours;
+            }
+            float x0 = penX + glyph.offsetX * RENDER_SCALE;
+            float y0 = baseline + glyph.offsetY * RENDER_SCALE;
+            float x1 = x0 + glyph.width * RENDER_SCALE;
+            float y1 = y0 + glyph.height * RENDER_SCALE;
+            int base = quadCount * 16;
+            quads[base] = x0 - shear;      quads[base + 1] = y1;
+            quads[base + 2] = glyph.u0;    quads[base + 3] = glyph.v1;
+            quads[base + 4] = x1 - shear;  quads[base + 5] = y1;
+            quads[base + 6] = glyph.u1;    quads[base + 7] = glyph.v1;
+            quads[base + 8] = x1 + shear;  quads[base + 9] = y0;
+            quads[base + 10] = glyph.u1;   quads[base + 11] = glyph.v0;
+            quads[base + 12] = x0 + shear; quads[base + 13] = y0;
+            quads[base + 14] = glyph.u0;   quads[base + 15] = glyph.v0;
+            colours[quadCount] = colour;
+            quadCount++;
+        }
+
+        /**
+         * Strikethrough and underline bars, held back until the glyphs have been drawn.
+         *
+         * <p>They are untextured, and a batch cannot change that halfway through, so emitting them
+         * as they are met would mean ending the glyph batch at every decorated character.
+         */
+        void decoration(float x0, float y0, float x1, float y1, int colour) {
+            if (decorationCount * 4 == decorations.length) {
+                float[] wider = new float[decorations.length * 2];
+                System.arraycopy(decorations, 0, wider, 0, decorations.length);
+                decorations = wider;
+                int[] widerColours = new int[decorationColours.length * 2];
+                System.arraycopy(decorationColours, 0, widerColours, 0, decorationColours.length);
+                decorationColours = widerColours;
+            }
+            int base = decorationCount * 4;
+            decorations[base] = x0;
+            decorations[base + 1] = y0;
+            decorations[base + 2] = x1;
+            decorations[base + 3] = y1;
+            decorationColours[decorationCount] = colour;
+            decorationCount++;
+        }
+
+        Recorded finish(float advance, int generation) {
+            return new Recorded(
+                    java.util.Arrays.copyOf(quads, quadCount * 16),
+                    java.util.Arrays.copyOf(colours, quadCount),
+                    java.util.Arrays.copyOf(decorations, decorationCount * 4),
+                    java.util.Arrays.copyOf(decorationColours, decorationCount),
+                    advance, generation);
+        }
+
+        Recorded measured(float advance) {
+            return new Recorded(null, null, null, null, advance, -1);
+        }
     }
 
-    private void drawDecorations(int alpha) {
-        if (decorationCount == 0) {
-            return;
+    /** One string's geometry, in coordinates local to its own origin and without its colour. */
+    private static final class Recorded {
+
+        private final float[] quads;
+        private final int[] colours;
+        private final float[] decorations;
+        private final int[] decorationColours;
+        final float advance;
+        final int generation;
+
+        Recorded(float[] quads, int[] colours, float[] decorations, int[] decorationColours,
+                 float advance, int generation) {
+            this.quads = quads;
+            this.colours = colours;
+            this.decorations = decorations;
+            this.decorationColours = decorationColours;
+            this.advance = advance;
+            this.generation = generation;
         }
-        GlStateManager.disableTexture2D();
-        WorldRenderer worldRenderer = Tessellator.getInstance().getWorldRenderer();
-        worldRenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
-        for (int i = 0; i < decorationCount; i++) {
-            int base = i * 4;
-            float x0 = decorations[base];
-            float y0 = decorations[base + 1];
-            float x1 = decorations[base + 2];
-            float y1 = decorations[base + 3];
-            int rgb = decorationColors[i];
-            int red = (rgb >> 16) & 0xFF;
-            int green = (rgb >> 8) & 0xFF;
-            int blue = rgb & 0xFF;
-            worldRenderer.pos(x0, y1, 0.0d).color(red, green, blue, alpha).endVertex();
-            worldRenderer.pos(x1, y1, 0.0d).color(red, green, blue, alpha).endVertex();
-            worldRenderer.pos(x1, y0, 0.0d).color(red, green, blue, alpha).endVertex();
-            worldRenderer.pos(x0, y0, 0.0d).color(red, green, blue, alpha).endVertex();
+
+        void submit(WorldRenderer worldRenderer, float originX, float originY, int baseRgb, int alpha) {
+            for (int i = 0; i < colours.length; i++) {
+                if (HudBreakdown.enabled()) {
+                    HudBreakdown.quad();
+                }
+                int rgb = colours[i] == BASE_COLOUR ? baseRgb : colours[i];
+                int red = (rgb >> 16) & 0xFF;
+                int green = (rgb >> 8) & 0xFF;
+                int blue = rgb & 0xFF;
+                int base = i * 16;
+                for (int vertex = 0; vertex < 4; vertex++) {
+                    int at = base + vertex * 4;
+                    worldRenderer.pos(originX + quads[at], originY + quads[at + 1], 0.0d)
+                            .tex(quads[at + 2], quads[at + 3])
+                            .color(red, green, blue, alpha)
+                            .endVertex();
+                }
+            }
         }
-        Tessellator.getInstance().draw();
-        GlStateManager.enableTexture2D();
-        decorationCount = 0;
+
+        void submitDecorations(float originX, float originY, int baseRgb, int alpha) {
+            if (decorationColours.length == 0) {
+                return;
+            }
+            GlStateManager.disableTexture2D();
+            WorldRenderer worldRenderer = Tessellator.getInstance().getWorldRenderer();
+            worldRenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+            for (int i = 0; i < decorationColours.length; i++) {
+                int base = i * 4;
+                float x0 = originX + decorations[base];
+                float y0 = originY + decorations[base + 1];
+                float x1 = originX + decorations[base + 2];
+                float y1 = originY + decorations[base + 3];
+                int rgb = decorationColours[i] == BASE_COLOUR ? baseRgb : decorationColours[i];
+                int red = (rgb >> 16) & 0xFF;
+                int green = (rgb >> 8) & 0xFF;
+                int blue = rgb & 0xFF;
+                worldRenderer.pos(x0, y1, 0.0d).color(red, green, blue, alpha).endVertex();
+                worldRenderer.pos(x1, y1, 0.0d).color(red, green, blue, alpha).endVertex();
+                worldRenderer.pos(x1, y0, 0.0d).color(red, green, blue, alpha).endVertex();
+                worldRenderer.pos(x0, y0, 0.0d).color(red, green, blue, alpha).endVertex();
+            }
+            Tessellator.getInstance().draw();
+            GlStateManager.enableTexture2D();
+        }
     }
 
     /**
@@ -400,23 +573,4 @@ public final class TextRenderer {
         } while (generation != atlas.generation() && ++attempts < MAX_PREWARM_PASSES);
     }
 
-    /** {@code shear} leans the top edge right and the bottom edge left, which is italic. */
-    private static void emit(WorldRenderer worldRenderer, GlyphAtlas.Glyph glyph,
-                             float penX, float baseline, int rgb, int alpha, float shear) {
-        if (HudBreakdown.enabled()) {
-            HudBreakdown.quad();
-        }
-        float x0 = penX + glyph.offsetX * RENDER_SCALE;
-        float y0 = baseline + glyph.offsetY * RENDER_SCALE;
-        float x1 = x0 + glyph.width * RENDER_SCALE;
-        float y1 = y0 + glyph.height * RENDER_SCALE;
-        int red = (rgb >> 16) & 0xFF;
-        int green = (rgb >> 8) & 0xFF;
-        int blue = rgb & 0xFF;
-
-        worldRenderer.pos(x0 - shear, y1, 0.0d).tex(glyph.u0, glyph.v1).color(red, green, blue, alpha).endVertex();
-        worldRenderer.pos(x1 - shear, y1, 0.0d).tex(glyph.u1, glyph.v1).color(red, green, blue, alpha).endVertex();
-        worldRenderer.pos(x1 + shear, y0, 0.0d).tex(glyph.u1, glyph.v0).color(red, green, blue, alpha).endVertex();
-        worldRenderer.pos(x0 + shear, y0, 0.0d).tex(glyph.u0, glyph.v0).color(red, green, blue, alpha).endVertex();
-    }
 }
