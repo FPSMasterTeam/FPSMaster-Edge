@@ -28,11 +28,12 @@ public final class BenchScenario {
     private final long warmupMillis;
     private final long discardMillis;
     private final long measureMillis;
+    private final long replayMeasureFromMillis;
 
     private BenchScenario(String id, JsonObject world, String replay, BenchCamera camera,
                           BenchScreenshots screenshots, BenchStress stress, int settleSeconds,
                           long settleTimeoutMillis, long warmupMillis, long discardMillis,
-                          long measureMillis) {
+                          long measureMillis, long replayMeasureFromMillis) {
         this.id = id;
         this.world = world;
         this.replay = replay;
@@ -44,6 +45,7 @@ public final class BenchScenario {
         this.warmupMillis = warmupMillis;
         this.discardMillis = discardMillis;
         this.measureMillis = measureMillis;
+        this.replayMeasureFromMillis = replayMeasureFromMillis;
     }
 
     public static BenchScenario load(File gameDir, String id) throws IOException {
@@ -64,7 +66,9 @@ public final class BenchScenario {
                 json.has("settleTimeoutMillis") ? json.get("settleTimeoutMillis").getAsLong() : 120_000L,
                 json.has("warmupMillis") ? json.get("warmupMillis").getAsLong() : 30_000L,
                 json.has("discardMillis") ? json.get("discardMillis").getAsLong() : 1_000L,
-                json.has("measureMillis") ? json.get("measureMillis").getAsLong() : 90_000L);
+                json.has("measureMillis") ? json.get("measureMillis").getAsLong() : 90_000L,
+                json.has("replayMeasureFromMillis")
+                        ? json.get("replayMeasureFromMillis").getAsLong() : -1L);
     }
 
     private static JsonObject object(JsonObject json, String key) {
@@ -133,6 +137,22 @@ public final class BenchScenario {
      */
     public long discardMillis() {
         return discardMillis;
+    }
+
+    /**
+     * Replay position the measured window opens at, or -1 to keep the wall-clock behaviour.
+     *
+     * <p>Without this a replay run measures a wall-clock slice, and the slice lands wherever the
+     * recording happened to be when settle and discard finished — discard ends on a steady frame
+     * time rather than a clock, so a slower run starts later in the recording and sees a different
+     * scene. Measured on {@code replay-pit}: three variants of one ceiling probe rendered 21.5, 23.0
+     * and 24.9 entities a frame, a 16% spread in the workload the probe was trying to hold still.
+     *
+     * <p>With it, every run measures the same span of the recording, so two runs are comparable
+     * frame for frame.
+     */
+    public long replayMeasureFromMillis() {
+        return replayMeasureFromMillis;
     }
 
     public long measureMillis() {

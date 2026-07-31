@@ -33,7 +33,8 @@ public final class BenchReport {
     }
 
     public static void write(File gameDir, FrameSampler sampler, DisplayWatch displayWatch,
-                             long[] countersAtMeasureStart, long gcCountBefore, long gcMillisBefore)
+                             long[] countersAtMeasureStart, long gcCountBefore, long gcMillisBefore,
+                             int replayFromMillis, int replayToMillis)
             throws IOException {
         long[] samples = sampler.samples();
 
@@ -43,6 +44,14 @@ public final class BenchReport {
         root.addProperty("wallClockUtcMillis", System.currentTimeMillis());
         if (BenchmarkMode.overrides() != null) {
             root.add("overrides", BenchmarkMode.overrides());
+        }
+        // Which span of the recording this measured. Two replay runs are only comparable frame for
+        // frame if these match; without them, an analysis has to assume alignment it cannot check.
+        if (replayFromMillis >= 0) {
+            JsonObject window = new JsonObject();
+            window.addProperty("fromMillis", Integer.valueOf(replayFromMillis));
+            window.addProperty("toMillis", Integer.valueOf(replayToMillis));
+            root.add("replayWindow", window);
         }
         root.add("gl", describeGl());
         root.add("java", describeJava());

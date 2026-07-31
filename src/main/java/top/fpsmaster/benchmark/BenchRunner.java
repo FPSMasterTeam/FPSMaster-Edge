@@ -46,6 +46,9 @@ public final class BenchRunner {
     }
 
     private final FrameSampler sampler = new FrameSampler(SAMPLE_CAPACITY);
+    /** How far past the anchor the window may open before the pin is reported as not holding. */
+    private static final long ANCHOR_TOLERANCE_MILLIS = 50L;
+
     private final SteadyState steadyState = new SteadyState();
     private long lastFrameNanos;
     private final DisplayWatch displayWatch = new DisplayWatch();
@@ -54,6 +57,9 @@ public final class BenchRunner {
     private BenchWorld.SettleTracker settleTracker;
     private boolean setupIssued;
     private long phaseStartMillis;
+
+    /** Recording position the measured window opened at, or -1 when this is not a replay. */
+    private int replayAtMeasureStart = -1;
     private long pathStartMillis;
     private long[] countersAtMeasureStart;
     private long gcCountAtStart;
@@ -170,9 +176,29 @@ public final class BenchRunner {
                 // the run has stopped getting faster, because how long that takes is itself variable
                 // -- the same scenario has settled in a tenth of one run and three tenths of another.
                 boolean waitedLongEnough = now - phaseStartMillis >= scenario.discardMillis();
-                if (waitedLongEnough && steadyState.isSteady()) {
+                // On a replay, the window also has to open at a fixed point in the recording. Steady
+                // state is reached at a different wall-clock moment every run, and a replay keeps
+                // playing while we wait, so without this the measured span lands somewhere different
+                // each time and the scene differs with it.
+                long anchor = edge$replayAnchor();
+                boolean replayReady = anchor < 0L || ReplayPlayer.instance().elapsedMillis() >= anchor;
+                if (waitedLongEnough && steadyState.isSteady() && replayReady) {
+                    int at = scenario.replay() == null
+                            ? -1 : ReplayPlayer.instance().elapsedMillis();
+                    // The anchor is only worth having if it is what the window waits on. When steady
+                    // state arrives after the recording has already passed it, the start is decided
+                    // by the frame rate again and two runs drift apart -- measured at 249ms apart,
+                    // enough to change the visible crowd by 22%. Raise the anchor past the worst
+                    // steady time rather than leaving this warning to be ignored.
+                    if (anchor >= 0L && at > anchor + ANCHOR_TOLERANCE_MILLIS) {
+                        ClientLogger.warn("benchmark: replay had already reached " + at + "ms when"
+                                + " the run steadied, past the " + anchor + "ms anchor. The window is"
+                                + " not pinned and this run is not comparable frame for frame --"
+                                + " raise replayMeasureFromMillis above " + at + ".");
+                    }
                     ClientLogger.info("benchmark", "steady after " + (now - phaseStartMillis)
-                            + "ms of discard, measuring " + scenario.measureMillis() + "ms");
+                            + "ms of discard, measuring " + scenario.measureMillis() + "ms"
+                            + (anchor < 0L ? "" : " from replay t=" + at + "ms (anchor " + anchor + ")"));
                     enterMeasure(now);
                 } else if (now - phaseStartMillis >= DISCARD_CEILING_MILLIS) {
                     ClientLogger.warn("benchmark: never reached a steady frame time in "
@@ -190,7 +216,14 @@ public final class BenchRunner {
                 if (scenario.stress() != null) {
                     scenario.stress().update(now);
                 }
-                if (now - phaseStartMillis >= scenario.measureMillis() || sampler.isFull()) {
+                // Closed on replay position too, so both ends of the window are the same recording
+                // moment in every run and two runs compare frame for frame.
+                long measureAnchor = edge$replayAnchor();
+                boolean windowDone = measureAnchor < 0L
+                        ? now - phaseStartMillis >= scenario.measureMillis()
+                        : ReplayPlayer.instance().elapsedMillis()
+                                >= measureAnchor + scenario.measureMillis();
+                if (windowDone || sampler.isFull()) {
                     sampler.stop();
                     BenchProfiler.instance().stop();
                     if (scenario.screenshots() == null) {
@@ -221,6 +254,20 @@ public final class BenchRunner {
             default:
                 break;
         }
+    }
+
+    /**
+     * The recording position the measured window is pinned to, or -1 when it is not pinned.
+     *
+     * <p>Only meaningful for replay scenarios. A scenario that sets it while the recording has
+     * already run past that point by the time discard ends would otherwise wait forever, so the
+     * discard ceiling still applies and the run is reported as suspect rather than hanging.
+     */
+    private long edge$replayAnchor() {
+        if (scenario.replay() == null || scenario.replayMeasureFromMillis() < 0L) {
+            return -1L;
+        }
+        return scenario.replayMeasureFromMillis();
     }
 
     private void beginRun(Minecraft mc, long now) throws Exception {
@@ -274,6 +321,8 @@ public final class BenchRunner {
         sampler.discardCollected();
         BenchProfiler.instance().discardCollected();
         displayWatch.reset();
+        replayAtMeasureStart = scenario.replay() == null
+                ? -1 : ReplayPlayer.instance().elapsedMillis();
         countersAtMeasureStart = BenchCounters.values();
         gcCountAtStart = BenchReport.gcCollectionCount();
         gcMillisAtStart = BenchReport.gcCollectionMillis();
@@ -290,7 +339,8 @@ public final class BenchRunner {
         state = State.FINISHED;
         try {
             BenchReport.write(mc.mcDataDir, sampler, displayWatch, countersAtMeasureStart,
-                    gcCountAtStart, gcMillisAtStart);
+                    gcCountAtStart, gcMillisAtStart, replayAtMeasureStart,
+                    scenario.replay() == null ? -1 : ReplayPlayer.instance().elapsedMillis());
             ClientLogger.info("benchmark", "wrote result with " + sampler.sampleCount() + " frames");
         } catch (Throwable t) {
             ClientLogger.error("benchmark", "failed to write result: " + t);
