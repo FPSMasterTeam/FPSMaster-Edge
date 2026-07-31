@@ -1114,3 +1114,41 @@ to exist than clearing a backlog faster.
 Single runs, and one of them measured 371.9 avg fps with the throttle off against 320-325 with
 it on — the opposite direction to the 7.3% loss recorded for it earlier. That needs a paired
 series before it means anything; the counts and the attribution above do not depend on it.
+
+### `LimitChunks` priced properly: better median, worse everything else
+
+Three interleaved pairs on the pit recording, first discarded.
+
+| | on | off | off vs on |
+| --- | ---: | ---: | ---: |
+| avg fps | 308.3 | 325.9 | **+5.7%** |
+| mean frame | 3.245ms | 3.069ms | −5.4% |
+| **p50** | **2.425ms** | **2.704ms** | **+11.5% worse** |
+| p95 | 7.460ms | 5.556ms | −25.5% |
+| p99 | 11.685ms | 8.692ms | **−25.6%** |
+| 1% low fps | 53.3 | 60.0 | +12.6% |
+
+No metric's three-run range overlaps between the variants, so this is not the noise band
+talking: on 302.9-317.7 avg fps against off 324.3-328.1, p50 2.342-2.527 against 2.666-2.728,
+p99 10.660-12.360 against 8.428-9.160.
+
+The throttle makes the typical frame cheaper and every other frame worse. That is what it is
+built to do on the first half — holding chunk rebuilds back keeps them from competing with the
+frame drawing what is already built. The second half is the cost measured above: the pending
+set stays occupied, a full visibility walk is forced on every frame it is occupied, and the
+work it deferred still has to happen, in bursts. p95 and p99 are a third worse and the average
+is 5.7% down.
+
+This project's standing rule is to take verdicts on p50 because the instrument's average and
+tails are unreliable. That rule exists for noise, and this is not noise — p50 disagrees with
+five other metrics, all of them separated, all in the same direction. It is a real trade
+rather than a measurement artefact, and which side of it is right depends on whether a client
+is being tuned for a smooth median or against stutter.
+
+**One confound, stated rather than buried.** These `on` runs include the dynamic budget from
+the same commit, and the pit recording's free camera does not move, so the budget spent the
+run in its stationary branch — twice the configured allowance. This is therefore a comparison
+of a doubled throttle against no throttle, not of the old fixed one. Separating the three
+needs a switch that does not exist yet, and the earlier record of `LimitChunks` being worth
+7.3% of frame rate was taken on a different build and workload and is not being overwritten
+by this.
