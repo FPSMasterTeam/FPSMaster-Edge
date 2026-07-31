@@ -32,6 +32,13 @@ param(
     # what other clients call an optimisation is a vanilla option, and those are worth pricing
     # before any code is written for them.
     [hashtable] $GameOptions,
+    # Window size. The point is not the window: it is which end of the pipeline binds.
+    # This machine renders both benchmark scenes GPU-bound at 1280x720 -- frame GPU 1553us
+    # against CPU 941us on the pit -- so a CPU optimisation measures as exactly no change in
+    # frame rate, and "no effect" cannot be told from "no headroom". A quarter of the pixels
+    # moves the limit back to the CPU and lets the same change be judged.
+    [int] $WindowWidth,
+    [int] $WindowHeight,
     [int]       $TimeoutSec = 420,
     [string]    $RecordReplay,
     [string[]]  $Experiments,
@@ -94,6 +101,16 @@ if (Test-Path $gameDir) {
 New-Item -ItemType Directory -Path $gameDir | Out-Null
 $optionsPath = Join-Path $gameDir 'options.txt'
 Copy-Item (Join-Path $PSScriptRoot 'options.benchmark.txt') $optionsPath
+# Through options.txt, not through --width/--height. 1.8.9 lets overrideWidth in options.txt
+# win over the launch argument, and options.benchmark.txt pins 1280x720 -- so the argument
+# was accepted, ignored, and reported back as 1280x720 in the result. Setting the option is
+# the mechanism that actually moves the window.
+if ($WindowWidth -gt 0 -and $WindowHeight -gt 0) {
+    if (-not $GameOptions) { $GameOptions = @{} }
+    $GameOptions['overrideWidth']  = $WindowWidth
+    $GameOptions['overrideHeight'] = $WindowHeight
+}
+
 if ($GameOptions) {
     $lines = [System.Collections.Generic.List[string]](Get-Content $optionsPath)
     foreach ($key in $GameOptions.Keys) {

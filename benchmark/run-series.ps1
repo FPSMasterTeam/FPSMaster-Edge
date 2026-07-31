@@ -38,6 +38,10 @@ param(
     # Per-variant ceiling probes, e.g. @{ nosky = @('noSky') }. These delete work rather
     # than optimise it, so they only ever answer what a pass is worth, never ship.
     [System.Collections.IDictionary] $VariantExperiments,
+    # Passed through to every run. See run-client.ps1 -- a smaller window is how a CPU-side
+    # change becomes measurable on a machine whose GPU is the limit at full size.
+    [int] $WindowWidth,
+    [int] $WindowHeight,
     # Per-variant vanilla settings, e.g. @{ nofbo = @{ fboEnable = 'false' } }.
     [System.Collections.IDictionary] $VariantGameOptions
 )
@@ -75,7 +79,8 @@ for ($pass = 0; $pass -lt $totalPasses; $pass++) {
         $opts = $null
         if ($VariantGameOptions -and $VariantGameOptions.Contains($name)) { $opts = $VariantGameOptions[$name] }
         $result = & $runClient -Scenario $Scenario -Variant $name `
-                               -Overrides $Variants[$name] -Experiments $exp -GameOptions $opts -TimeoutSec $TimeoutSec
+                               -Overrides $Variants[$name] -Experiments $exp -GameOptions $opts `
+                               -WindowWidth $WindowWidth -WindowHeight $WindowHeight -TimeoutSec $TimeoutSec
         $src = $result.ResultFile
 
         if ($result.Outcome -ne 'OK') {

@@ -417,10 +417,22 @@ public class Performance extends Module {
      * frame, over geometry that never changes.
      *
      * <p>Same geometry, same texture, same transforms — those stay on the matrix stack outside the
-     * list, so one recording serves every entity holding that item. Tinted models are excluded,
-     * because their colour comes from the stack rather than the model.
+     * list, so one recording serves every entity holding that item. Tinted models are keyed by the
+     * colour they resolve to rather than excluded.
+     *
+     * <p><b>Off by default: the saving has never reached the frame.</b> The section drops 46% in
+     * four measurements at two resolutions with the workload counters identical, and frame time and
+     * frame rate move in neither direction in any of them. Shrinking the window to a quarter of the
+     * pixels did not move the limit either — GPU frame time stayed at 1.7-1.9ms, so this scene is
+     * bound by geometry submission rather than by fill rate and there is no CPU-bound configuration
+     * available here to judge it in.
+     *
+     * <p>Which leaves two readings and no way to separate them: the work is gone and the machine
+     * cannot show it, or the work merely moved and the profiler is charging the wait somewhere else.
+     * A section timing cannot tell those apart when the driver is the limit. Keeping it on would be
+     * asserting the first without evidence.
      */
-    public static BooleanSetting cacheItemModels = new BooleanSetting("CacheItemModels", true);
+    public static BooleanSetting cacheItemModels = new BooleanSetting("CacheItemModels", false);
 
     /**
      * True while any of the six block switches is on.
