@@ -55,7 +55,27 @@ public class Performance extends Module {
     public static BooleanSetting downscalePackIcons = new BooleanSetting("DownscalePackIcons", true);
     public static BooleanSetting particleCulling = new BooleanSetting("ParticleCulling", true);
     public static BooleanSetting cacheSkyColor = new BooleanSetting("CacheSkyColor", true);
-    public static BooleanSetting entityCulling = new BooleanSetting("EntityCulling", false);
+    /**
+     * Stops drawing entities the depth buffer says are behind something.
+     *
+     * <p>The largest single win this campaign has measured, and the only entity change that reached
+     * the frame rate. On 103 armoured stands with half of them behind a wall: <b>+22.0% frame
+     * rate</b>, p50 2.851ms to 2.345ms, and — the part that matters — <b>GPU frame time 1821us to
+     * 1505us</b>. 21840 probes issued, exactly 10920 occluded, 39.9 entities culled a frame. All ten
+     * segments of the run point the same way and the screenshots match.
+     *
+     * <p>That GPU figure is why this works where {@code CacheItemModels} did not. Both scenes here
+     * are bound by geometry submission rather than by fill rate — a quarter of the pixels left GPU
+     * frame time unchanged — so making the CPU hand work over faster buys nothing, and not handing
+     * it over at all buys everything.
+     *
+     * <p>Players are excluded unless {@link #cullPlayers} is turned on, which keeps the failure that
+     * would matter most out of the default: an occlusion test is a frame behind the world, and a
+     * player who should have been visible is a different kind of bug from a missing armour stand.
+     * {@link #entityCullingMinEntities} keeps it out of scenes too small to pay — a recorded lobby
+     * draws fourteen entities and turning this on there measured -0.2%.
+     */
+    public static BooleanSetting entityCulling = new BooleanSetting("EntityCulling", true);
 
     /**
      * Skips rebuilding a worn armour texture path that never changes.
