@@ -1,11 +1,11 @@
 package top.fpsmaster.ui.custom.impl;
 
-import top.fpsmaster.features.impl.interfaces.PingDisplay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import top.fpsmaster.ui.custom.Component;
+import top.fpsmaster.features.impl.interfaces.PingDisplay;
+import top.fpsmaster.ui.custom.TextComponent;
 
-public class PingDisplayComponent extends Component {
+public class PingDisplayComponent extends TextComponent {
 
     public PingDisplayComponent() {
         super(PingDisplay.class);
@@ -13,26 +13,22 @@ public class PingDisplayComponent extends Component {
     }
 
     @Override
-    public void draw(float x, float y) {
-        super.draw(x, y);
-        
-        // Get ping of connection
+    protected String text() {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null || mc.getNetHandler() == null) {
-            return;
+            return null;
         }
-
         NetworkPlayerInfo info = mc.getNetHandler().getPlayerInfo(mc.thePlayer.getUniqueID());
-        String ping = (info != null ? info.getResponseTime() : 0) + "ms";
-        String text = "Ping: " + ping;
+        return "Ping: " + (info != null ? info.getResponseTime() : 0) + "ms";
+    }
 
-        width = getStringWidth(16, text) + 4;
-        height = 14f;
+    @Override
+    protected int fontSize() {
+        return 16;
+    }
 
-        drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
-        drawString(16, text, x, y + 2, PingDisplay.textColor.getRGB());
+    @Override
+    protected int textColor() {
+        return PingDisplay.textColor.getRGB();
     }
 }
-
-
-

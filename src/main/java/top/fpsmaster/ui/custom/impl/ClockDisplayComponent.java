@@ -1,13 +1,13 @@
 package top.fpsmaster.ui.custom.impl;
 
-import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ClockDisplay;
-import top.fpsmaster.ui.custom.Component;
+import top.fpsmaster.ui.custom.TextComponent;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class ClockDisplayComponent extends Component {
+public class ClockDisplayComponent extends TextComponent {
+
     public ClockDisplayComponent() {
         super(ClockDisplay.class);
         x = 0.60f;
@@ -16,10 +16,8 @@ public class ClockDisplayComponent extends Component {
     }
 
     @Override
-    public void draw(float x, float y) {
-        super.draw(x, y);
+    protected String text() {
         ClockDisplay module = getModule();
-
         String pattern = module.hour24Mode.getValue() ? "HH:mm" : "hh:mm";
         if (module.showSeconds.getValue()) {
             pattern += ":ss";
@@ -27,30 +25,38 @@ public class ClockDisplayComponent extends Component {
         if (!module.hour24Mode.getValue()) {
             pattern += " a";
         }
-
-        String timeStr = new SimpleDateFormat(pattern).format(new Date());
-        String text = getLabel(module) + timeStr;
-
-        width = getStringWidth(16, text) + 8;
-        height = 16f;
-
-        drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
-        drawString(16, text, x + 2, y + 3, module.textColor.getRGB());
+        String label = resolveLabel(module.label.getValue(), "clockdisplay.defaultlabel", "Time: ");
+        return label + new SimpleDateFormat(pattern).format(new Date());
     }
 
-    private String getLabel(ClockDisplay module) {
-        String label = module.label.getValue();
-        if (label == null || label.trim().isEmpty()) {
-            label = FPSMaster.i18n.get("clockdisplay.defaultlabel");
-            if ("clockdisplay.defaultlabel".equals(label)) {
-                label = "Time: ";
-            }
-            module.label.setValue(label);
-        }
-        if (!label.endsWith("：") && !label.endsWith(":") && !label.endsWith(" ")) {
-            label += ": ";
-        }
-        return label;
+    @Override
+    protected int fontSize() {
+        return 16;
+    }
+
+    @Override
+    protected int textColor() {
+        return getModule().textColor.getRGB();
+    }
+
+    @Override
+    protected float horizontalPadding() {
+        return 8f;
+    }
+
+    @Override
+    protected float boxHeight() {
+        return 16f;
+    }
+
+    @Override
+    protected float textOffsetX() {
+        return 2f;
+    }
+
+    @Override
+    protected float textOffsetY() {
+        return 3f;
     }
 
     private ClockDisplay getModule() {

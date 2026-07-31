@@ -1,9 +1,9 @@
 package top.fpsmaster.ui.custom.impl;
 
 import top.fpsmaster.features.impl.interfaces.ReachDisplay;
-import top.fpsmaster.ui.custom.Component;
+import top.fpsmaster.ui.custom.TextComponent;
 
-public class ReachDisplayComponent extends Component {
+public class ReachDisplayComponent extends TextComponent {
 
     public ReachDisplayComponent() {
         super(ReachDisplay.class);
@@ -11,15 +11,17 @@ public class ReachDisplayComponent extends Component {
     }
 
     @Override
-    public void draw(float x, float y) {
-        super.draw(x, y);
-        String s = ReachDisplay.reach + " b";
-        width = getStringWidth(18, s) + 4;
-        height = 14f;
-        drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
-        drawString(18, s, x, y + 2, ReachDisplay.textColor.getRGB());
+    protected String text() {
+        return ReachDisplay.reach + " b";
+    }
+
+    @Override
+    protected int fontSize() {
+        return 18;
+    }
+
+    @Override
+    protected int textColor() {
+        return ReachDisplay.textColor.getRGB();
     }
 }
-
-
-

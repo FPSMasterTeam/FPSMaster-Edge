@@ -1,9 +1,9 @@
 package top.fpsmaster.ui.custom.impl;
 
 import top.fpsmaster.features.impl.interfaces.ComboDisplay;
-import top.fpsmaster.ui.custom.Component;
+import top.fpsmaster.ui.custom.TextComponent;
 
-public class ComboDisplayComponent extends Component {
+public class ComboDisplayComponent extends TextComponent {
 
     public ComboDisplayComponent() {
         super(ComboDisplay.class);
@@ -11,21 +11,27 @@ public class ComboDisplayComponent extends Component {
     }
 
     @Override
-    public void draw(float x, float y) {
-        super.draw(x, y);
-        String text = "Combo: " + ComboDisplay.combo;
-        if (ComboDisplay.combo == 0) {
-            text = "No Combo";
-        }
-        
-        width = getStringWidth(16, text) + 4;
-        height = 16;
-        
-        drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
-        drawString(16, text, x, y + 4, ComboDisplay.textColor.getRGB());
+    protected String text() {
+        return ComboDisplay.combo == 0 ? "No Combo" : "Combo: " + ComboDisplay.combo;
+    }
 
+    @Override
+    protected int fontSize() {
+        return 16;
+    }
+
+    @Override
+    protected int textColor() {
+        return ComboDisplay.textColor.getRGB();
+    }
+
+    @Override
+    protected float boxHeight() {
+        return 16f;
+    }
+
+    @Override
+    protected float textOffsetY() {
+        return 4f;
     }
 }
-
-
-

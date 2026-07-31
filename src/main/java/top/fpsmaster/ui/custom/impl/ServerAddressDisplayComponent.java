@@ -4,9 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ServerAddressDisplay;
-import top.fpsmaster.ui.custom.Component;
+import top.fpsmaster.ui.custom.TextComponent;
 
-public class ServerAddressDisplayComponent extends Component {
+public class ServerAddressDisplayComponent extends TextComponent {
     public ServerAddressDisplayComponent() {
         super(ServerAddressDisplay.class);
         x = 0.02f;
@@ -15,21 +15,43 @@ public class ServerAddressDisplayComponent extends Component {
     }
 
     @Override
-    public void draw(float x, float y) {
-        super.draw(x, y);
-        ServerAddressDisplay module = getModule();
-
+    protected String text() {
         String address = getServerAddress();
         if (address == null) {
-            return;
+            return null;
         }
+        ServerAddressDisplay module = getModule();
+        return resolveLabel(module.label.getValue(), "serveraddressdisplay.defaultlabel", "Server: ") + address;
+    }
 
-        String text = getLabel(module) + address;
-        width = getStringWidth(16, text) + 8;
-        height = 16f;
+    @Override
+    protected int fontSize() {
+        return 16;
+    }
 
-        drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
-        drawString(16, text, x + 2, y + 3, module.textColor.getRGB());
+    @Override
+    protected int textColor() {
+        return getModule().textColor.getRGB();
+    }
+
+    @Override
+    protected float horizontalPadding() {
+        return 8f;
+    }
+
+    @Override
+    protected float boxHeight() {
+        return 16f;
+    }
+
+    @Override
+    protected float textOffsetX() {
+        return 2f;
+    }
+
+    @Override
+    protected float textOffsetY() {
+        return 3f;
     }
 
     @Override
@@ -53,20 +75,6 @@ public class ServerAddressDisplayComponent extends Component {
         return null;
     }
 
-    private String getLabel(ServerAddressDisplay module) {
-        String label = module.label.getValue();
-        if (label == null || label.trim().isEmpty()) {
-            label = FPSMaster.i18n.get("serveraddressdisplay.defaultlabel");
-            if ("serveraddressdisplay.defaultlabel".equals(label)) {
-                label = "Server: ";
-            }
-            module.label.setValue(label);
-        }
-        if (!label.endsWith("：") && !label.endsWith(":") && !label.endsWith(" ")) {
-            label += ": ";
-        }
-        return label;
-    }
 
     private ServerAddressDisplay getModule() {
         return (ServerAddressDisplay) mod;
