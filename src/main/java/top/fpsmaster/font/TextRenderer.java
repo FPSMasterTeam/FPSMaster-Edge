@@ -1,7 +1,10 @@
 package top.fpsmaster.font;
 
 import net.minecraft.client.renderer.GlStateManager;
+import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.benchmark.HudBreakdown;
+import top.fpsmaster.features.impl.optimizes.Performance;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -68,6 +71,21 @@ public final class TextRenderer {
     /** Obfuscated strings are re-scrambled every frame, so a recording of one would freeze it. */
     private static final String OBFUSCATION_CODE = "§k";
 
+    /**
+     * How long one scramble of an obfuscated string is kept before it is rolled again.
+     *
+     * <p>Vanilla re-scrambles every frame, which at 400fps is 400 rolls a second — two orders of
+     * magnitude past the rate at which anyone can tell one roll from the next, and the reason
+     * obfuscated text is the one thing the geometry cache cannot hold. One tick still reads as
+     * flickering garbage and lets the recording be reused for the fifteen to twenty-five frames
+     * that share it.
+     *
+     * <p>Bed Wars draws 13.7 to 20.7 obfuscated strings a frame against 51.4 to 70.6 total; the pit
+     * draws none. So this is worth a fifth of the layout cost on one recording and nothing at all on
+     * the other, which is what a server-specific effect looks like.
+     */
+    private static final long OBFUSCATION_HOLD_MILLIS = 50L;
+
     private static final int GEOMETRY_CACHE_LIMIT = 512;
 
     static {
@@ -99,6 +117,17 @@ public final class TextRenderer {
      * now. Held per renderer, so each font size has its own and none of them can serve another's
      * glyphs.
      */
+    /**
+     * Scrambled recordings for the current epoch, dropped whole when it advances.
+     *
+     * <p>Separate from {@link #geometryCache} rather than sharing it with an epoch in the key: these
+     * are worthless the moment the epoch turns, and mixing them in would push live entries out of a
+     * bounded LRU to make room for ones that are already stale.
+     */
+    private final Map<String, Recorded> obfuscatedCache = new HashMap<String, Recorded>();
+
+    private long obfuscationEpochStarted;
+
     private final Map<String, Recorded> geometryCache =
             new LinkedHashMap<String, Recorded>(64, 0.75f, true) {
                 @Override
@@ -161,6 +190,22 @@ public final class TextRenderer {
             HudBreakdown.string(text, x, y, argb, shadowPass);
         }
         return layout(text, x, y, argb, true, shadowPass);
+    }
+
+    /**
+     * Draws the string with its shadow behind it, in one recording and one draw call.
+     *
+     * <p>The colour is the undarkened one the caller asked for; the shadow's quarter intensity is
+     * applied at submission, to the base colour and to every colour the string names itself.
+     */
+    public float drawWithShadow(String text, float x, float y, int argb) {
+        if (text == null || text.isEmpty()) {
+            return 0f;
+        }
+        if (HudBreakdown.enabled()) {
+            HudBreakdown.string(text, x, y, argb, true);
+        }
+        return drawCached(text, x, y, argb, false, true);
     }
 
     /**
@@ -288,6 +333,24 @@ public final class TextRenderer {
      * afresh every frame, so a recording of one would freeze the scramble it happened to record.
      */
     private float drawCached(String text, float x, float y, int argb, boolean shadowPass) {
+        return drawCached(text, x, y, argb, shadowPass, false);
+    }
+
+    /**
+     * Draws the string, optionally with its own shadow behind it in the same batch.
+     *
+     * <p>Vanilla asks for a shadow as a second whole call at an offset, so this renderer used to see
+     * two unrelated draws: two recordings, two cache entries holding <b>identical geometry</b>, two
+     * lookups and two draw calls. {@code shadowPass} only ever changed the colour a formatting code
+     * resolved to — every position, advance and shear is the same number in both — so the recording
+     * is shared and the quarter-intensity tint moved to submission time, where it costs a shift.
+     *
+     * <p>That leaves one draw call for a shadowed string instead of two, which is the point: the
+     * per-string cost of submission is about nine times the per-vertex cost, so halving the strings
+     * is worth much more than the vertices it does not remove.
+     */
+    private float drawCached(String text, float x, float y, int argb, boolean shadowPass,
+                             boolean withShadow) {
         long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
         if (atlas.textureId() == -1) {
             // Force the atlas into existence before the batch opens: rasterising a glyph binds a
@@ -295,8 +358,16 @@ public final class TextRenderer {
             atlas.glyph(' ');
         }
 
-        boolean cacheable = text.indexOf(OBFUSCATION_CODE) < 0;
-        Recorded geometry = cacheable ? geometryCache.get(cacheKey(text, shadowPass)) : null;
+        boolean obfuscated = text.indexOf(OBFUSCATION_CODE) >= 0;
+        Map<String, Recorded> cache = obfuscated ? edge$obfuscatedCacheForNow() : geometryCache;
+        boolean cacheable = cache != null;
+        Recorded geometry = cacheable ? cache.get(cacheKey(text, shadowPass)) : null;
+        if (obfuscated && BenchmarkMode.ACTIVE) {
+            BenchCounters.obfuscatedStrings++;
+            if (geometry != null) {
+                BenchCounters.obfuscatedCacheHits++;
+            }
+        }
         if (geometry == null || geometry.generation != atlas.generation()) {
             prewarm(text);
             if (mark != 0L) {
@@ -305,7 +376,7 @@ public final class TextRenderer {
             }
             geometry = record(text, shadowPass, true);
             if (cacheable) {
-                geometryCache.put(cacheKey(text, shadowPass), geometry);
+                cache.put(cacheKey(text, shadowPass), geometry);
             }
             if (mark != 0L) {
                 HudBreakdown.record("text:emit", System.nanoTime() - mark);
@@ -333,14 +404,47 @@ public final class TextRenderer {
         float originY = Math.round(y) + atlas.inkAscent() * RENDER_SCALE;
         int alpha = (argb >> 24) & 0xFF;
         int baseRgb = argb & 0xFFFFFF;
-        geometry.submit(worldRenderer, originX, originY, baseRgb, alpha);
+        // Shadow first, so it lands under the text rather than over it — inside one primitive the
+        // order vertices are written is the order they are drawn.
+        //
+        // Only the offset pass tints. The unoffset one never does, in either mode, and passing
+        // shadowPass here instead of false darkened the legacy path a second time: its caller has
+        // already quartered the colour it hands in and record() has already baked the quartered
+        // form of every colour the string names itself. White text came out at 0x0F0F0F where
+        // vanilla draws 0x3F3F3F — caught by the screenshot gate, which reported the *unmerged*
+        // variant as the changed one. The gate compares; it does not say which side is right.
+        if (withShadow) {
+            geometry.submit(worldRenderer, originX + 1f, originY + 1f, baseRgb, alpha, true);
+        }
+        geometry.submit(worldRenderer, originX, originY, baseRgb, alpha, false);
         Tessellator.getInstance().draw();
-        geometry.submitDecorations(originX, originY, baseRgb, alpha);
+        if (withShadow) {
+            geometry.submitDecorations(originX + 1f, originY + 1f, baseRgb, alpha, true);
+        }
+        geometry.submitDecorations(originX, originY, baseRgb, alpha, false);
         GlStateManager.disableBlend();
         if (mark != 0L) {
             HudBreakdown.record("text:submit", System.nanoTime() - mark);
         }
         return geometry.advance;
+    }
+
+    /**
+     * The scramble cache, emptied when the epoch it belongs to has run out.
+     *
+     * <p>Returns null when the hold is off, which puts obfuscated strings back on the uncached path
+     * rather than serving them a frozen scramble.
+     */
+    private Map<String, Recorded> edge$obfuscatedCacheForNow() {
+        if (!Performance.using || !Performance.slowObfuscation.getValue()) {
+            return null;
+        }
+        long now = System.currentTimeMillis();
+        if (now - obfuscationEpochStarted >= OBFUSCATION_HOLD_MILLIS) {
+            obfuscationEpochStarted = now;
+            obfuscatedCache.clear();
+        }
+        return obfuscatedCache;
     }
 
     private static String cacheKey(String text, boolean shadowPass) {
@@ -483,12 +587,16 @@ public final class TextRenderer {
             this.generation = generation;
         }
 
-        void submit(WorldRenderer worldRenderer, float originX, float originY, int baseRgb, int alpha) {
+        void submit(WorldRenderer worldRenderer, float originX, float originY, int baseRgb, int alpha,
+                    boolean shadow) {
             for (int i = 0; i < colours.length; i++) {
                 if (HudBreakdown.enabled()) {
                     HudBreakdown.quad();
                 }
                 int rgb = colours[i] == BASE_COLOUR ? baseRgb : colours[i];
+                if (shadow) {
+                    rgb = (rgb & 0xFCFCFC) >> 2;
+                }
                 int red = (rgb >> 16) & 0xFF;
                 int green = (rgb >> 8) & 0xFF;
                 int blue = rgb & 0xFF;
@@ -503,7 +611,7 @@ public final class TextRenderer {
             }
         }
 
-        void submitDecorations(float originX, float originY, int baseRgb, int alpha) {
+        void submitDecorations(float originX, float originY, int baseRgb, int alpha, boolean shadow) {
             if (decorationColours.length == 0) {
                 return;
             }
@@ -517,6 +625,9 @@ public final class TextRenderer {
                 float x1 = originX + decorations[base + 2];
                 float y1 = originY + decorations[base + 3];
                 int rgb = decorationColours[i] == BASE_COLOUR ? baseRgb : decorationColours[i];
+                if (shadow) {
+                    rgb = (rgb & 0xFCFCFC) >> 2;
+                }
                 int red = (rgb >> 16) & 0xFF;
                 int green = (rgb >> 8) & 0xFF;
                 int blue = rgb & 0xFF;

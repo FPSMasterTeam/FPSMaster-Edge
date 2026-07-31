@@ -201,6 +201,11 @@ public class UFontRenderer extends FontRenderer {
         return textRenderer.draw(text, x, y, argb, shadowPass);
     }
 
+    /** The shadowed form of {@link #drawRaw}, as one recording and one draw rather than two. */
+    public float drawRawWithShadow(String text, float x, float y, int argb) {
+        return textRenderer.drawWithShadow(text, x, y, argb);
+    }
+
     /** Advance of one character, for vanilla's per-character layout. */
     public float advanceOf(char character) {
         return textRenderer.advance(character);

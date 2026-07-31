@@ -349,6 +349,65 @@ public class Performance extends Module {
             new BooleanSetting("ComposedModelTransform", false);
 
     /**
+     * Draws vanilla's font one string at a time instead of one character at a time.
+     *
+     * <p>{@code CustomHudFont} is the larger win and it is off by default, because it does not look
+     * like Minecraft and enough people would rather have the frames than not. This is for them: the
+     * same glyphs, the same texture, the same vertices, submitted once per string instead of once
+     * per character. <b>The picture is identical</b> — that is the entire design constraint, and it
+     * is why this is worth having next to a faster option that already exists.
+     *
+     * <p>Off by default only until the pixel comparison has been run; there is no visual tradeoff to
+     * weigh once it passes. See {@code FontRendererMixin_BatchVanilla}.
+     */
+    public static BooleanSetting batchVanillaFont = new BooleanSetting("BatchVanillaFont", false);
+
+    /**
+     * Looks a glyph up in a table instead of scanning a 256-character string for it.
+     *
+     * <p>Vanilla does that scan three times per character — twice to draw one, once more to measure
+     * it, and the HUD measures nearly every string it draws in order to align it. The answer is
+     * identical, so nothing about the text changes.
+     *
+     * <p>On by default. It removes work and adds none, and it is the larger half of what separates
+     * vanilla's font from {@code CustomHudFont} — the half that does not cost the Minecraft look.
+     * See {@code FontRendererMixin_GlyphIndex}.
+     */
+    public static BooleanSetting fastGlyphLookup = new BooleanSetting("FastGlyphLookup", true);
+
+    /**
+     * Rolls an obfuscated string's scramble once a tick instead of once a frame.
+     *
+     * <p>Obfuscated text is the one thing the HUD geometry cache cannot hold, because a recording of
+     * it would freeze the scramble it happened to catch. Rolling on a clock instead of on the frame
+     * makes it cacheable for the fifteen to twenty-five frames that share a tick.
+     *
+     * <p><b>This changes what is on screen</b>, unlike the rest of the font work: the scramble runs
+     * at 20Hz rather than at the frame rate. Both are far past the rate at which one roll can be
+     * told from the next, and it still reads as flickering garbage — but it is not the same pixels,
+     * so it is a setting rather than a silent change.
+     *
+     * <p>Worth about a fifth of the layout cost on Bed Wars, which draws 13.7 to 20.7 obfuscated
+     * strings a frame, and nothing at all on the pit, which draws none.
+     */
+    public static BooleanSetting slowObfuscation = new BooleanSetting("SlowObfuscation", false);
+
+    /**
+     * Draws a shadowed string and its shadow in one recording and one draw call.
+     *
+     * <p>Vanilla asks for a shadow as a second whole call at an offset, so the client's renderer used
+     * to lay the string out twice and store two cache entries holding <b>identical geometry</b> — the
+     * shadow pass only ever changed which colour a formatting code resolved to. Sharing the recording
+     * and tinting at submission halves the draw calls for shadowed text, and submission costs about
+     * nine times as much per string as it does per vertex.
+     *
+     * <p>Pixel-identical except on obfuscated text, where vanilla scrambles the shadow independently
+     * of the text in front of it and this scrambles them together. That difference is a
+     * quarter-intensity copy one pixel behind, re-rolled faster than it can be read.
+     */
+    public static BooleanSetting mergeTextShadow = new BooleanSetting("MergeTextShadow", true);
+
+    /**
      * True while any of the six block switches is on.
      *
      * <p>The injection that implements them is on {@code renderBlock}, which runs once per block per
@@ -371,7 +430,8 @@ public class Performance extends Module {
                 hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
                 playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
                 miscRenderDistance, textureResolution, fastCollision, adaptiveChunkBudget,
-                fastTextureUpload, reuseVisibleChunks, composedModelTransform);
+                fastTextureUpload, reuseVisibleChunks, composedModelTransform, batchVanillaFont,
+                fastGlyphLookup, slowObfuscation, mergeTextShadow);
 
         textureResolution.addChangeListener(
                 (setting, oldValue, newValue) -> pendingWorldRefresh = true);

@@ -31,6 +31,8 @@
     "MixinEntityRenderer",
     "EntityRendererMixin_SectionTiming",
     "FontRendererMixin_CustomFont",
+    "FontRendererMixin_BatchVanilla",
+    "FontRendererMixin_GlyphIndex",
     "ChunkMixin_EntityWalkProbe",
     "OpenGlHelperMixin_FastRender",
     "RenderChunkMixin_BuildProbe",

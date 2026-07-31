@@ -2,6 +2,7 @@ package top.fpsmaster.forge.mixin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -10,6 +11,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.modules.client.GlobalTextFilter;
@@ -45,6 +48,16 @@ public abstract class FontRendererMixin_CustomFont {
 
     @Shadow
     private boolean bidiFlag;
+    @Shadow
+    private boolean randomStyle;
+    @Shadow
+    private boolean boldStyle;
+    @Shadow
+    private boolean italicStyle;
+    @Shadow
+    private boolean underlineStyle;
+    @Shadow
+    private boolean strikethroughStyle;
 
     @Unique
     private UFontRenderer edge$font;
@@ -79,6 +92,60 @@ public abstract class FontRendererMixin_CustomFont {
     }
 
     /**
+     * Takes the shadowed form whole, so the two passes become one recording and one draw call.
+     *
+     * <p>Vanilla issues a shadow as a second {@code renderString} at an offset, and the hook below
+     * sees the two as unrelated strings — two recordings of geometry that is identical in every
+     * number except the colour a formatting code resolves to, two cache entries, two draw calls.
+     * Intercepting the method that issues both lets them share all of it.
+     *
+     * <p>Falls through to the per-pass hook when the merge is off, or when there is no shadow to
+     * merge, so the unshadowed path is untouched either way.
+     *
+     * <p>The return value is vanilla's and is easy to get wrong: {@code renderString} answers with
+     * the pen after the string, the shadow pass starts a pixel further right, and {@code drawString}
+     * takes the larger of the two — so a shadowed string reports {@code x + 1 + advance}, not
+     * {@code x + advance}. Layout that centres or right-aligns reads this number.
+     */
+    @Inject(method = "drawString(Ljava/lang/String;FFIZ)I", at = @At("HEAD"), cancellable = true)
+    private void edge$drawMergedShadow(String text, float x, float y, int color, boolean dropShadow,
+                                       CallbackInfoReturnable<Integer> callback) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchCounters.drawStringCalls++;
+            if (dropShadow) {
+                BenchCounters.drawStringShadowed++;
+            }
+        }
+        if (!dropShadow || !Performance.mergeTextShadow.getValue()) {
+            return;
+        }
+        UFontRenderer font = edge$font();
+        if (font == null || text == null || this.bidiFlag) {
+            return;
+        }
+        GlStateManager.enableAlpha();
+        // Vanilla clears these here, before either pass. Cancelling the method takes that with it,
+        // and a string that falls through to vanilla's renderer later — bidi text, the galactic
+        // font — would inherit whatever the last formatted string left set.
+        randomStyle = false;
+        boldStyle = false;
+        italicStyle = false;
+        underlineStyle = false;
+        strikethroughStyle = false;
+        if ((color & 0xFC000000) == 0) {
+            color |= 0xFF000000;
+        }
+        if (!GL11.glIsEnabled(GL11.GL_BLEND)) {
+            color |= 0xFF000000;
+        }
+        if (BenchmarkMode.ACTIVE) {
+            BenchCounters.mergedShadowDraws++;
+        }
+        float advance = font.drawRawWithShadow(GlobalTextFilter.filter(text), x, y, color);
+        callback.setReturnValue(Integer.valueOf((int) (x + 1.0f + advance)));
+    }
+
+    /**
      * Vanilla resolves the colour after this point, so the same two rules are applied here: a colour
      * with no alpha set means opaque, and a shadow pass is the same colour at a quarter intensity.
      * The shadow itself needs no special handling — vanilla asks for it as a second call at an
@@ -104,6 +171,9 @@ public abstract class FontRendererMixin_CustomFont {
         // so the alpha has to be dropped where vanilla's would not have applied.
         if (!GL11.glIsEnabled(GL11.GL_BLEND)) {
             color |= 0xFF000000;
+        }
+        if (BenchmarkMode.ACTIVE) {
+            BenchCounters.clientFontDraws++;
         }
         float advance = font.drawRaw(GlobalTextFilter.filter(text), x, y, color, dropShadow);
         callback.setReturnValue(Integer.valueOf((int) (x + advance)));
