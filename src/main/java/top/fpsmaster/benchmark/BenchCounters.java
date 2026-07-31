@@ -62,6 +62,10 @@ public final class BenchCounters {
     public static long drawStringCalls;
     public static long drawStringShadowed;
 
+    /** Item models replayed from a display list, and how many lists were recorded. */
+    public static long itemModelListHits;
+    public static long itemModelListsRecorded;
+
     /** Obfuscated strings drawn, and how many of those were served from the scramble cache. */
     public static long obfuscatedStrings;
     public static long obfuscatedCacheHits;
@@ -116,7 +120,7 @@ public final class BenchCounters {
             "chunkRebuilds", "terrainDrawCalls", "chunkThrottleSleeps", "entityListLookups", "entityListNonEmpty",
             "chunkBudgetMovingTicks", "chunkBudgetStillTicks", "collisionQueriesSkipped",
             "textureUploads", "textureUploadsDirect", "textureUploadPixels", "visibleListReused",
-            "modelCallLists", "modelComposedTransforms", "mergedShadowDraws", "clientFontDraws", "drawStringCalls", "drawStringShadowed", "obfuscatedStrings", "obfuscatedCacheHits",
+            "modelCallLists", "modelComposedTransforms", "mergedShadowDraws", "clientFontDraws", "drawStringCalls", "drawStringShadowed", "obfuscatedStrings", "obfuscatedCacheHits", "itemModelListHits", "itemModelListsRecorded",
             "cullCandidates", "cullDormantFrames", "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "displayListsAllocated", "displayListsReleased",
             "texturesAllocated", "texturesReleased",
@@ -142,7 +146,7 @@ public final class BenchCounters {
                 entityListLookups, entityListNonEmpty,
                 chunkBudgetMovingTicks, chunkBudgetStillTicks, collisionQueriesSkipped,
                 textureUploads, textureUploadsDirect, textureUploadPixels, visibleListReused,
-                modelCallLists, modelComposedTransforms, mergedShadowDraws, clientFontDraws, drawStringCalls, drawStringShadowed, obfuscatedStrings, obfuscatedCacheHits,
+                modelCallLists, modelComposedTransforms, mergedShadowDraws, clientFontDraws, drawStringCalls, drawStringShadowed, obfuscatedStrings, obfuscatedCacheHits, itemModelListHits, itemModelListsRecorded,
                 cullCandidates, cullDormantFrames, cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 displayListsAllocated, displayListsReleased,
                 texturesAllocated, texturesReleased,

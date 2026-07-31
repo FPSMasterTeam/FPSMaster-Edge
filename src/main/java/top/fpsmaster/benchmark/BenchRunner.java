@@ -321,6 +321,12 @@ public final class BenchRunner {
         sampler.discardCollected();
         BenchProfiler.instance().discardCollected();
         displayWatch.reset();
+        // Restart the camera path with the window, for the same reason the replay window is pinned:
+        // discard ends on a steady frame time rather than a clock, so without this the window opens
+        // at a different point of the path every run and averages a different slice of the scene.
+        // Measured on armor-dense-quick before the reset: two runs of one A/B averaged 102.6 and
+        // 112.8 rendered entities a frame, a 10% difference in a scenario whose entities do not move.
+        pathStartMillis = now;
         replayAtMeasureStart = scenario.replay() == null
                 ? -1 : ReplayPlayer.instance().elapsedMillis();
         countersAtMeasureStart = BenchCounters.values();

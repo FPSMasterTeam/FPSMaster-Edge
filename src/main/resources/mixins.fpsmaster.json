@@ -33,6 +33,8 @@
     "FontRendererMixin_CustomFont",
     "FontRendererMixin_BatchVanilla",
     "FontRendererMixin_GlyphIndex",
+    "RenderItemMixin_CacheModels",
+    "ModelManagerMixin_InvalidateItemLists",
     "ChunkMixin_EntityWalkProbe",
     "OpenGlHelperMixin_FastRender",
     "RenderChunkMixin_BuildProbe",

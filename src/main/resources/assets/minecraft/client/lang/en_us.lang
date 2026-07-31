@@ -407,6 +407,7 @@ performance.batchvanillafont=Batch Vanilla Font
 performance.fastglyphlookup=Fast Glyph Lookup
 performance.slowobfuscation=Slow Obfuscated Text
 performance.mergetextshadow=Merge Text Shadow Pass
+performance.cacheitemmodels=Cache Item Models
 performancehud=Performance Monitor
 performancehud.desc=Frame rate, frame time distribution, memory and GC
 performancehud.showgraph=Show Frame Time Graph
