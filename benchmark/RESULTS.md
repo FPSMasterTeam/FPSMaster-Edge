@@ -1424,3 +1424,42 @@ nine points, and this series does not reproduce it.
 So the honest state of the chunk-throttle question is: unresolved, with two independent series
 agreeing only that the throttle helps p50, and the counters still saying it draws 26% fewer
 chunks while doing it.
+
+## The noise was the setting under test
+
+Two discarded passes instead of one, on top of the steady-state gate. The series trend goes
+from +11.2% across nine runs to −4.7%, so the cold start is handled. What that reveals is not
+a better instrument reading — it is which variant was carrying the noise.
+
+| variant | avg fps spread | draws/frame | spread | chunk rebuilds | spread |
+| --- | ---: | :---: | ---: | :---: | ---: |
+| **off** | **0.9%** | 332.8 [330.9, 335.4] | **1.4%** | 7286 | 13.2% |
+| fixed | 26.2% | 268.8 [243.8, 301.1] | 21.3% | 1114 [795, 1442] | 58.1% |
+| adaptive | 27.2% | 315.1 [293.7, 328.8] | 11.1% | 2517 | 41.8% |
+
+**With the throttle off, three runs land within 0.9% of each other on frame rate and 1.4% on
+terrain draw calls.** That is not a machine that cannot be measured on. It is close to the best
+this harness has ever produced.
+
+With the throttle on, the same three runs scatter by 26%, and the reason is in the columns
+beside it: how many chunks get rebuilt during a run varies by 58%, and how many end up being
+drawn by 21%. The throttle defers rebuilds, how many it manages depends on timing, and what is
+not rebuilt is not drawn. **Each run renders a different amount of world.**
+
+So the instrument problem that has been in this document since the campaign started, and that
+three separate series were written off against, was substantially this setting. Every series
+that included a throttled variant inherited its nondeterminism and reported it as noise.
+
+Two conclusions follow, and the second supersedes a lot of argument.
+
+**On p50, the fixed throttle beats no throttle, and the ranges do not overlap** — 1.937-2.135
+against 2.145-2.166. Three independent series now agree on that and nothing has ever disagreed.
+The adaptive budget is separable from neither and stays off.
+
+**But `LimitChunks` is not a same-picture optimisation and cannot be priced as one.** It draws
+269 terrain chunks a frame against 333 with it off, 19% fewer, and that figure itself moves 21%
+between runs. It belongs with the visual culling group in section five of the roadmap: a knob
+that trades something the player can see — how complete the world is — for frame time. Its p50
+win is real and is partly just drawing less. What its default should be is a product decision
+about whether a smoother frame is worth a world that fills in more slowly, and no amount of
+further benchmarking will answer that, because the two sides are in different units.

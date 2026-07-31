@@ -11,7 +11,10 @@
     inside one VM invocation are not a substitute for repeated invocations: JIT
     state, heap layout and OS page cache all differ on a cold start.
 
-    The first run of a series is discarded by default (cold page cache).
+    The first two passes are discarded by default. One was not enough: measured across
+    nine runs, frame rate climbed +11% to +22% from the first to the last, and the shape
+    of it was a cold start rather than a slide - the first three runs averaged 367 fps
+    and the last six averaged 400. Two passes puts the measured runs past that.
 
 .PARAMETER Variants
     Ordered hashtable of variant name -> override hashtable. Use @{} for stock
@@ -20,7 +23,7 @@
                                on  = @{ 'Performance.EntitiesOptimize' = $true  } })
 
 .PARAMETER Runs
-    Measured runs per variant, after the discarded warm-up run.
+    Measured runs per variant, after the discarded warm-up passes.
 #>
 [CmdletBinding()]
 param(
@@ -30,6 +33,8 @@ param(
     [string] $Tag,
     [int]    $TimeoutSec = 420,
     [switch] $NoDiscardFirst,
+    # Passes run and thrown away before measuring starts. Two by default; see the note above.
+    [int]    $DiscardPasses = 2,
     # Per-variant ceiling probes, e.g. @{ nosky = @('noSky') }. These delete work rather
     # than optimise it, so they only ever answer what a pass is worth, never ship.
     [System.Collections.IDictionary] $VariantExperiments,
@@ -48,12 +53,14 @@ $names = @($Variants.Keys)
 $log = [System.Collections.Generic.List[object]]::new()
 $consecutiveFailures = 0
 
-# Discarded warm-up run on the first variant only: it exists to warm the OS page
-# cache and the GPU clock state, not to be compared against anything.
-$totalPasses = if ($NoDiscardFirst) { $Runs } else { $Runs + 1 }
+# Discarded warm-up passes: they exist to warm the OS page cache and the GPU clock
+# state, not to be compared against anything. Every variant runs in them, because the
+# thing being warmed is shared and one variant's run warms it for all of them.
+$warmupPasses = if ($NoDiscardFirst) { 0 } else { [Math]::Max(0, $DiscardPasses) }
+$totalPasses = $Runs + $warmupPasses
 
 for ($pass = 0; $pass -lt $totalPasses; $pass++) {
-    $discard = (-not $NoDiscardFirst) -and ($pass -eq 0)
+    $discard = $pass -lt $warmupPasses
 
     # Counterbalance the order. Position within a pass turned out to carry a systematic
     # 5-6% difference in an A-vs-A series: whichever variant ran second was consistently
