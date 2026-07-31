@@ -3,7 +3,8 @@
   "replay": "pit",
   "settleSeconds": 5,
   "settleTimeoutMillis": 60000,
-  "warmupMillis": 2000,
-  "discardMillis": 500,
-  "measureMillis": 15000
+  "warmupMillis": 10000,
+  "discardMillis": 3000,
+  "measureMillis": 15000,
+  "_warmup_note": "Raised from 2000/500 after the opening of the measured window was found to be systematically slower: the first 30% of frames ran 3-7ms against a 2ms steady state, and dropping them cut the within-variant spread on a throttled variant from 22% to 9%."
 }

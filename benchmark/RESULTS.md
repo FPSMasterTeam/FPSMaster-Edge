@@ -1334,3 +1334,56 @@ the fixed budget unless it does. The switch stays so the question can be asked a
 And the standing instrument problem is still standing. The counters remain trustworthy — the
 terrain probe's finding that the throttle takes visible-list rebuilds from 32-37% of frames to
 90-100% is a count, and does not care how noisy the clock is.
+
+## Where the noise comes from: two systematic artefacts, neither of them the machine
+
+The three-way above spanned 285 to 417 fps for one configuration and was written off as the
+instrument being unusable. It is not unusable; it has two identifiable faults, and with both
+removed the same nine runs separate cleanly.
+
+**One: the opening of every measured window is slower than the rest of it.** Median frame time
+per tenth of each run:
+
+| run | avg fps | 0 | 1 | 2 | 3-9 |
+| --- | ---: | ---: | ---: | ---: | :---: |
+| adaptive | 285.4 | **4.76** | **4.60** | **4.30** | 2.05-3.91 |
+| fixed | 402.4 | 1.73 | 1.94 | 1.99 | 1.85-2.64 |
+| off | 316.0 | **3.07** | 2.56 | **3.12** | 2.08-3.72 |
+| fixed | 327.5 | **6.81** | **4.33** | 1.57 | 1.65-2.48 |
+| adaptive | 416.7 | 1.77 | 2.05 | 1.86 | 1.76-2.51 |
+
+Every slow run has a slow start and an ordinary middle. Dropping the first 30% of frames takes
+the within-variant spread from 22.0% to 9.2% on the fixed budget and from 38.4% to 17.3% on the
+adaptive one. `warmupMillis` was 2000 and `discardMillis` 500 on these scenarios; the transient
+lasts several seconds.
+
+**Two: the whole series drifts upward.** Steady-state fps by position in the run order, across
+all nine: **+9.0 fps per run, +21.7% from first to last.** Each run is a fresh JVM, so this is
+not JIT — the likeliest candidate is the OS page cache filling with the jar, the assets and the
+recording. The harness discards one run per variant for exactly this reason and one is not
+enough.
+
+**With both removed, the variants separate and do not overlap.** Residuals after detrending:
+
+| | mean | range |
+| --- | ---: | :---: |
+| fixed | **+25.7** | +19.1 to +36.5 |
+| adaptive | +7.0 | −0.3 to +10.9 |
+| off | **−32.7** | −44.6 to −22.2 |
+
+Ordering: **fixed > adaptive > off**, by about 58 fps between the ends. Which reverses the
+conclusion drawn from the raw numbers twice over — the earlier series said the throttle lost
+5.7% of average fps, and this one raw said nothing at all.
+
+Two things follow, and the second matters more than the first.
+
+`warmupMillis` and `discardMillis` are raised to 10000 and 3000 on both recorded scenarios. The
+series drift needs more discarded runs than one per variant, or a detrend, and until one of
+those exists a nine-run series is not evidence on its own.
+
+And **fps is the wrong instrument for this particular setting regardless.** The throttle draws
+243 terrain chunks a frame against 330 with it off — 26% fewer — because deferring a rebuild
+means the chunk is not drawn yet. It is not a same-picture optimisation, so a frame rate
+comparison against no throttle is comparing two different pictures and will favour the throttle
+whatever else is true. What it should be judged on is frame time at equal drawn-chunk counts,
+plus how long the world takes to become complete.
