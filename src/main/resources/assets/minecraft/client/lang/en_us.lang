@@ -402,6 +402,7 @@ performance.textureresolution.sixteenth=Sixteenth
 performance.fastcollision=Fast Entity Collision
 performance.fasttextureupload=Fast Texture Upload
 performance.reusevisiblechunks=Reuse Visible Chunk List
+performance.composedmodeltransform=Composed Model Transform
 performancehud=Performance Monitor
 performancehud.desc=Frame rate, frame time distribution, memory and GC
 performancehud.showgraph=Show Frame Time Graph

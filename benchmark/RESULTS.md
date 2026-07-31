@@ -1581,3 +1581,47 @@ report cannot tell this working from this broken.
 
 **Off by default.** Three screenshots at fixed camera positions are not the same as watching a
 world for holes while flying through it, and the failure mode is quiet.
+
+## Entity model transforms: the assumption was backwards, and the fix is the small one
+
+**The machine changed under this campaign.** The development machine's CPU scheduling was
+corrected between the earlier sections of this document and this one. A model box measured at
+720ns before and measures at **128ns** now — 5.6 times. Every timing baseline above this point
+is from the slower machine and needs re-taking; the counts and ratios do not.
+
+The plan for entity rendering rested on display lists being emulated, so twelve `callList` calls
+an entity being twelve emulation costs. Two ceiling probes on `entity-dense-quick`, `entityModel`
+section CPU p50:
+
+| | entityModel | vs baseline |
+| --- | ---: | ---: |
+| baseline | 135us | — |
+| `noModelCallList` — keep every transform, draw nothing | 99us | −36us (−27%) |
+| `noModelTransforms` — keep every draw, transform nothing | 62us | **−73us (−54%)** |
+
+**The transforms are twice what the list replay costs.** The hypothesis was wrong in its
+direction, which makes it the fourth assumption about where cost lives this campaign has
+overturned by measuring before building — and the first three each had code planned for them.
+
+So the geometry stays exactly where it is. Vanilla places a box with a translate for its offset,
+a translate for its rotation point and up to three rotates, then undoes the offset by hand: as
+many as six fixed-function calls per box, about a thousand boxes a frame here, each `glRotatef`
+building a rotation matrix from a sine and a cosine. `ComposedModelTransform` composes the whole
+chain into one matrix and multiplies it in once, cached on the values it was built from so a box
+whose pose has not changed does not recompute it — which is every box of every armour stand.
+
+| entity-dense | off | on |
+| --- | ---: | ---: |
+| `entityModel` | 133us | **119us (−10.5%)** |
+| `entityRender` | 345us | 337us |
+| avg fps | 497.5 | 510.8 (+2.7%) |
+
+**Screenshots identical**: 0.001%, 0.080% and 0.149% of pixels differ against a 0.5% limit,
+which is the scene's own motion. That is the check that matters — a limb placed wrong or not
+drawn makes frame time better.
+
+Small here, and kept anyway. It deletes fixed per-frame CPU work — five GL calls per box across
+a thousand boxes — on a machine whose bottleneck is elsewhere. On a CPU-bound machine that is
+the whole of the saving rather than a tenth of a section, and this client's users are not all on
+this hardware. The measurement bar for a change that draws the same picture, adds no failure
+mode and reverts cleanly is that it is not negative, not that it is visible here.

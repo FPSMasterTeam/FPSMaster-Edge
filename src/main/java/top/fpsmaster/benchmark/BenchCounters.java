@@ -49,6 +49,8 @@ public final class BenchCounters {
     public static long textureUploadsDirect;
     public static long textureUploadPixels;
     public static long visibleListReused;
+    public static long modelCallLists;
+    public static long modelComposedTransforms;
     public static long entityListLookups;
     public static long entityListNonEmpty;
 
@@ -100,6 +102,7 @@ public final class BenchCounters {
             "chunkRebuilds", "terrainDrawCalls", "chunkThrottleSleeps", "entityListLookups", "entityListNonEmpty",
             "chunkBudgetMovingTicks", "chunkBudgetStillTicks", "collisionQueriesSkipped",
             "textureUploads", "textureUploadsDirect", "textureUploadPixels", "visibleListReused",
+            "modelCallLists", "modelComposedTransforms",
             "cullCandidates", "cullDormantFrames", "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "displayListsAllocated", "displayListsReleased",
             "texturesAllocated", "texturesReleased",
@@ -125,6 +128,7 @@ public final class BenchCounters {
                 entityListLookups, entityListNonEmpty,
                 chunkBudgetMovingTicks, chunkBudgetStillTicks, collisionQueriesSkipped,
                 textureUploads, textureUploadsDirect, textureUploadPixels, visibleListReused,
+                modelCallLists, modelComposedTransforms,
                 cullCandidates, cullDormantFrames, cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 displayListsAllocated, displayListsReleased,
                 texturesAllocated, texturesReleased,

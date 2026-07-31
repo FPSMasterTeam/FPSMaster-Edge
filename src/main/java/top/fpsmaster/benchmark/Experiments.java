@@ -32,6 +32,8 @@ public final class Experiments {
 
     public static final boolean TERRAIN_PROBE = flag("terrainProbe");
     public static final boolean COLLISION_PROBE = flag("collisionProbe");
+    public static final boolean NO_MODEL_CALL_LIST = flag("noModelCallList");
+    public static final boolean NO_MODEL_TRANSFORMS = flag("noModelTransforms");
     public static final boolean NO_SKY = flag("noSky");
     public static final boolean NO_NAMEPLATES = flag("noNameplates");
     public static final boolean NO_GLINT = flag("noGlint");

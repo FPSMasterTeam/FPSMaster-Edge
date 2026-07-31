@@ -338,6 +338,17 @@ public class Performance extends Module {
     public static BooleanSetting reuseVisibleChunks = new BooleanSetting("ReuseVisibleChunks", false);
 
     /**
+     * Places each model box with one matrix instead of a chain of fixed-function calls.
+     *
+     * <p>Vanilla uses as many as six matrix-stack calls per box and there are around a thousand
+     * boxes a frame on a crowded scene. Two ceiling probes say the transforms are twice what the
+     * display list replay costs, which is the opposite of what was assumed before measuring — see
+     * {@code ModelRendererMixin_ComposedTransform}.
+     */
+    public static BooleanSetting composedModelTransform =
+            new BooleanSetting("ComposedModelTransform", false);
+
+    /**
      * True while any of the six block switches is on.
      *
      * <p>The injection that implements them is on {@code renderBlock}, which runs once per block per
@@ -360,7 +371,7 @@ public class Performance extends Module {
                 hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
                 playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
                 miscRenderDistance, textureResolution, fastCollision, adaptiveChunkBudget,
-                fastTextureUpload, reuseVisibleChunks);
+                fastTextureUpload, reuseVisibleChunks, composedModelTransform);
 
         textureResolution.addChangeListener(
                 (setting, oldValue, newValue) -> pendingWorldRefresh = true);

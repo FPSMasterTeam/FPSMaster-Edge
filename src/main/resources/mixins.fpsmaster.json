@@ -13,6 +13,8 @@
     "MixinS38PacketPlayerListItem",
     "MixinSplashScreen",
     "ModelRendererMixin_BatchDrawing",
+    "ModelRendererMixin_CostProbe",
+    "ModelRendererMixin_ComposedTransform",
     "TextureMapMixin_AnimationTiming",
     "TextureMapMixin_Resolution",
     "TexturedQuadMixin_BatchDraw"
