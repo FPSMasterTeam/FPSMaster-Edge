@@ -37,6 +37,13 @@ public final class TerrainProbe {
     /** Rebuilds attributed to the camera having moved, and to everything else. */
     private static long walkedMoved;
     private static long walkedStill;
+
+    /** The three segments of the method, and the volume the middle one gets through. */
+    private static long walkNanos;
+    private static long tailNanos;
+    private static long containers;
+    private static long walkStarted;
+    private static long tailStarted;
     private static double lastX;
     private static double lastY;
     private static double lastZ;
@@ -66,6 +73,7 @@ public final class TerrainProbe {
      */
     public static void walked(double x, double y, double z, float yaw, float pitch) {
         walkedThisFrame = true;
+        walkStarted = System.nanoTime();
         if (x != lastX || y != lastY || z != lastZ || yaw != lastYaw || pitch != lastPitch) {
             walkedMoved++;
         } else {
@@ -78,7 +86,31 @@ public final class TerrainProbe {
         lastPitch = pitch;
     }
 
+    /** One {@code ContainerLocalRenderInformation}: the walk's unit of work and of allocation. */
+    public static void container() {
+        containers++;
+    }
+
+    /** The tail begins where the walk ends — dispatcher cleanup and the dirty-chunk collection. */
+    public static void tailBegins() {
+        long now = System.nanoTime();
+        if (walkStarted != 0L) {
+            walkNanos += now - walkStarted;
+            walkStarted = 0L;
+        }
+        tailStarted = now;
+    }
+
     public static void end() {
+        long now = System.nanoTime();
+        if (walkStarted != 0L) {
+            walkNanos += now - walkStarted;
+            walkStarted = 0L;
+        }
+        if (tailStarted != 0L) {
+            tailNanos += now - tailStarted;
+            tailStarted = 0L;
+        }
         long elapsed = System.nanoTime() - started;
         if (walkedThisFrame) {
             walkedFrames++;
@@ -97,17 +129,24 @@ public final class TerrainProbe {
                 "setupTerrain over %d frames: rebuilt the visible list on %.1f%% of them,"
                         + " %.1fus when it did, %.1fus when it did not, difference %.1fus"
                         + " (%.1fus/frame amortised); of the rebuilds %.1f%% followed camera"
-                        + " movement and %.1f%% did not",
+                        + " movement and %.1f%% did not | walk %.1fus/frame over %.0f containers"
+                        + " (%.3fus each), tail %.1fus/frame",
                 total, 100.0d * walkedFrames / total, walkedMean, reusedMean,
                 walkedMean - reusedMean,
                 (walkedMean - reusedMean) * walkedFrames / total,
                 walkedFrames == 0L ? 0.0d : 100.0d * walkedMoved / walkedFrames,
-                walkedFrames == 0L ? 0.0d : 100.0d * walkedStill / walkedFrames));
+                walkedFrames == 0L ? 0.0d : 100.0d * walkedStill / walkedFrames,
+                walkNanos / 1000.0d / total, containers / (double) total,
+                containers == 0L ? 0.0d : walkNanos / 1000.0d / containers,
+                tailNanos / 1000.0d / total));
         walkedFrames = 0L;
         walkedNanos = 0L;
         reusedFrames = 0L;
         reusedNanos = 0L;
         walkedMoved = 0L;
         walkedStill = 0L;
+        walkNanos = 0L;
+        tailNanos = 0L;
+        containers = 0L;
     }
 }

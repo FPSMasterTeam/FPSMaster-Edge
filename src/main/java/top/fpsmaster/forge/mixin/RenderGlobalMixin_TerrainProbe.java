@@ -40,6 +40,16 @@ public class RenderGlobalMixin_TerrainProbe {
         }
     }
 
+    @Inject(method = "setupTerrain",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher;clearChunkUpdates()V"))
+    private void fpsmaster$walkEnded(Entity viewEntity, double partialTicks, ICamera camera,
+                                     int frameCount, boolean playerSpectator, CallbackInfo ci) {
+        if (TerrainProbe.enabled()) {
+            TerrainProbe.tailBegins();
+        }
+    }
+
     @Inject(method = "setupTerrain", at = @At("RETURN"))
     private void fpsmaster$endSetupTerrain(Entity viewEntity, double partialTicks, ICamera camera,
                                            int frameCount, boolean playerSpectator, CallbackInfo ci) {

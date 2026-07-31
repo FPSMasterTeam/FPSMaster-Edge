@@ -1497,3 +1497,46 @@ own particle and entity motion. A swapped channel would be near total.
 **No timing claim is made.** Uploads do not happen during steady rendering, so the frame rates
 these runs reported say nothing about it, and load and reload times were not measured. What is
 established is the mechanism, its coverage, and that it changes no pixels.
+
+## Inside the visible-chunk walk: the allocation is 4% of it
+
+The plan was to pool `ContainerLocalRenderInformation` and its `EnumSet`, on the reasoning that
+one of each per visible chunk per frame is allocation churn on the hot path. Splitting the
+method into its three segments first, on flat-orbit:
+
+| | |
+| --- | ---: |
+| `setupTerrain` total | 886-891us |
+| **the walk** | **836-838us (94%)** |
+| the tail: dispatcher cleanup and dirty-chunk collection | 46-50us (5%) |
+| containers built per frame | 2121-2239 |
+| **per container** | **0.375-0.395us** |
+
+At 437 fps that is 960,000 containers a second and, with the `EnumSet` each carries, about 1.9
+million objects. Which sounds like the answer and is not: 0.38us is roughly 1100 cycles, and two
+TLAB allocations are perhaps 40 of them. **Pooling would buy about 4% of the walk.** The idea is
+dropped.
+
+What the 1100 cycles actually are is six neighbour evaluations per chunk — a cached offset
+lookup, two range checks, a view-frustum array index, an `EnumSet` membership test, a visibility
+bitset check and a six-plane frustum test — at roughly 180 cycles each. There is no fat in that;
+it is the walk doing its job.
+
+**And 891us against a 2.17ms frame is 41% of it, the largest single item this campaign has
+measured.**
+
+### Which makes the idea dismissed earlier the right one after all
+
+On the pit recording only 4-6% of rebuilds followed camera movement, and that was taken as
+grounds for dropping the roadmap's plan to relax the movement threshold. That reading was wrong,
+and the reason is in the workload: **a replay's free camera does not move unless a viewer moves
+it, and nobody was moving it.** Flat-orbit, whose camera does move, attributes 100% of rebuilds
+to it — and real play is flat-orbit, not the recording.
+
+At 437 fps the camera travels a sub-pixel distance between frames, and the visible set is being
+rebuilt 437 times a second to the same answer. That is the 838us, and reuse is what addresses
+it.
+
+So the roadmap's §4.1 stands, with one correction to how it should be judged: the recorded
+matches cannot price it, because their cameras are stationary and the whole question is what
+happens when a camera moves. Flat-orbit or a walked scenario is the instrument for this one.
