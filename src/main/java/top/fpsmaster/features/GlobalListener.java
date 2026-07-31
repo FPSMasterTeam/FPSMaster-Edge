@@ -13,6 +13,7 @@ import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.benchmark.FontCompare;
 import top.fpsmaster.benchmark.FontStyles;
+import top.fpsmaster.benchmark.CollisionProbe;
 import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.replay.ReplayPlayer;
 import top.fpsmaster.benchmark.UiShot;
@@ -74,6 +75,7 @@ public class GlobalListener {
         ReplayPlayer.instance().onClientTick();
         ReplayProbe.onClientTick();
         ChunkUpdateBudget.onClientTick();
+        CollisionProbe.onClientTick();
         UiShot.onClientTick();
         PendingScreen.tick();
         long now = System.currentTimeMillis();

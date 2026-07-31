@@ -1152,3 +1152,39 @@ of a doubled throttle against no throttle, not of the old fixed one. Separating 
 needs a switch that does not exist yet, and the earlier record of `LimitChunks` being worth
 7.3% of frame rate was taken on a different build and workload and is not being overwritten
 by this.
+
+## Entity collision: 99% of the scan is waste, and the whole thing is 1% of wall clock
+
+The plan for this was "vanilla scans entities linearly, add spatial partitioning". Vanilla
+already partitions — `World` walks only the chunks the box touches and `Chunk` only the
+16-block sections it touches — so the probe counts what is actually walked instead.
+
+Bed Wars recording, three 200-tick windows:
+
+| | | | |
+| --- | ---: | ---: | ---: |
+| queries per tick | 314.4 | 115.3 | 208.0 |
+| repeats of a box already asked this tick | 2.8% | 10.5% | 5.0% |
+| chunks per query | 2.28 | 2.02 | 2.07 |
+| sections per query | 2.37 | 2.29 | 2.21 |
+| **entities examined** | **82.1** | **25.7** | **50.7** |
+| entities returned | 0.2 | 0.6 | 0.7 |
+| **kept** | **0.3%** | **2.4%** | **1.3%** |
+| per query | 1.87us | 1.35us | 1.13us |
+| **per tick** | **589.3us** | **156.0us** | **234.3us** |
+
+The waste is as bad as it could be: eighty-two entities examined to return one fifth of one.
+Which is not a bug, it is the resolution of the index — a section is sixteen blocks tall, a
+collision box is about one, and everything in the section is tested because there is nothing
+finer to test against.
+
+And it does not matter, because of the last row. 589us in the worst window, twenty ticks a
+second, is **1.2% of wall clock**; the other two windows are 0.3% and 0.5%. Removing the
+entire query — not optimising it, removing it — would buy about one per cent at its worst.
+The two fixes actually available are smaller still: the duplicate rate caps a per-tick memo
+at a tenth of that, and the per-query `ArrayList` is a few thousand small objects a second.
+
+Under the 3% entry threshold on the best window and an order of magnitude under it on the
+others, so this does not proceed. Recorded because "entity collision scans linearly" is an
+argument that will be made again, and the answer to it is 82 examined against 0.2 returned
+costing one per cent.

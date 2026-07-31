@@ -67,6 +67,8 @@
     "MixinRenderManager",
     "RenderGlobalMixin_SectionTiming",
     "RenderGlobalMixin_TerrainProbe",
+    "WorldMixin_CollisionProbe",
+    "ChunkMixin_CollisionProbe",
     "MixinRenderTNTPrimed",
     "MixinServerSelectionList",
     "MixinShaderGroup",
