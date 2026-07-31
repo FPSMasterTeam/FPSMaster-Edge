@@ -51,6 +51,20 @@ public final class BenchCounters {
     public static long visibleListReused;
     public static long modelCallLists;
     public static long modelComposedTransforms;
+
+    /** Shadowed strings drawn as one recording and one draw call instead of two. */
+    public static long mergedShadowDraws;
+
+    /** Strings drawn through the client font renderer, both passes counted separately. */
+    public static long clientFontDraws;
+
+    /** Entries into vanilla's {@code drawString}, and how many of those asked for a shadow. */
+    public static long drawStringCalls;
+    public static long drawStringShadowed;
+
+    /** Obfuscated strings drawn, and how many of those were served from the scramble cache. */
+    public static long obfuscatedStrings;
+    public static long obfuscatedCacheHits;
     public static long entityListLookups;
     public static long entityListNonEmpty;
 
@@ -102,7 +116,7 @@ public final class BenchCounters {
             "chunkRebuilds", "terrainDrawCalls", "chunkThrottleSleeps", "entityListLookups", "entityListNonEmpty",
             "chunkBudgetMovingTicks", "chunkBudgetStillTicks", "collisionQueriesSkipped",
             "textureUploads", "textureUploadsDirect", "textureUploadPixels", "visibleListReused",
-            "modelCallLists", "modelComposedTransforms",
+            "modelCallLists", "modelComposedTransforms", "mergedShadowDraws", "clientFontDraws", "drawStringCalls", "drawStringShadowed", "obfuscatedStrings", "obfuscatedCacheHits",
             "cullCandidates", "cullDormantFrames", "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "displayListsAllocated", "displayListsReleased",
             "texturesAllocated", "texturesReleased",
@@ -128,7 +142,7 @@ public final class BenchCounters {
                 entityListLookups, entityListNonEmpty,
                 chunkBudgetMovingTicks, chunkBudgetStillTicks, collisionQueriesSkipped,
                 textureUploads, textureUploadsDirect, textureUploadPixels, visibleListReused,
-                modelCallLists, modelComposedTransforms,
+                modelCallLists, modelComposedTransforms, mergedShadowDraws, clientFontDraws, drawStringCalls, drawStringShadowed, obfuscatedStrings, obfuscatedCacheHits,
                 cullCandidates, cullDormantFrames, cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 displayListsAllocated, displayListsReleased,
                 texturesAllocated, texturesReleased,

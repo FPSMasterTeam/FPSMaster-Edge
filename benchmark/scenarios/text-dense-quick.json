@@ -1,5 +1,5 @@
 {
-  "_comment": "Short text-dense: the same scoreboard and player list as text-dense, timed to fit the ten-second budget. Text volume is what this measures, so the shorter window costs nothing but wall clock.",
+  "_comment": "Short text-dense: the same scoreboard and player list as text-dense, timed so a two-variant A/B fits inside five minutes of wall clock. Text volume is what this measures, so the shorter window costs samples and nothing else.\nScreenshots sit late in the 6s warmup, before the measure window opens at t=7000. Two reasons for that placement: a readback stalls the pipeline and must not be paid for out of the timing it accompanies, and the held item's equip animation is still lerping before t=3000 — a shot at t=1000 differed by 5877 arm pixels between two runs of the same build, which is above the gate's limit and would fail every candidate for a reason that has nothing to do with it.\nThe stacked hotbar items are there on purpose: stack counts are the only thing on this scene drawn with drawStringWithShadow, and without them the scenario measured MergeTextShadow at exactly zero shadowed strings a frame — a gate that passes because the feature never ran. Slot 0 is left empty on purpose too: a held item swings, and two runs of the same build differed by 17782 pixels of stone block against a 4608-pixel budget. The counts render in every slot either way. This makes text-dense-quick diverge from text-dense; comparisons across the two are not valid.",
   "world": {
     "folder": "bench-flat",
     "seed": 20260726,
@@ -155,7 +155,15 @@
       "/scoreboard players set November bench 87",
       "/scoreboard players set Oscar bench 86",
       "/scoreboard objectives setdisplay list bench",
-      "/scoreboard objectives setdisplay sidebar bench"
+      "/scoreboard objectives setdisplay sidebar bench",
+      "/gamemode 0 @p",
+      "/replaceitem entity @p slot.hotbar.1 minecraft:stone 64",
+      "/replaceitem entity @p slot.hotbar.2 minecraft:cobblestone 48",
+      "/replaceitem entity @p slot.hotbar.3 minecraft:oak_stairs 32",
+      "/replaceitem entity @p slot.hotbar.4 minecraft:golden_apple 17",
+      "/replaceitem entity @p slot.hotbar.5 minecraft:arrow 9",
+      "/replaceitem entity @p slot.hotbar.6 minecraft:bread 5",
+      "/replaceitem entity @p slot.hotbar.7 minecraft:ender_pearl 2"
     ]
   },
   "settleSeconds": 4,
@@ -207,5 +215,19 @@
         "pitch": 0
       }
     ]
-  }
+  },
+  "screenshots": [
+    {
+      "name": "front-wide",
+      "t": 3200
+    },
+    {
+      "name": "front-angled",
+      "t": 4500
+    },
+    {
+      "name": "elevated",
+      "t": 5800
+    }
+  ]
 }

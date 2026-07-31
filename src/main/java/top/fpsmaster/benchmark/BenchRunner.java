@@ -202,6 +202,17 @@ public final class BenchRunner {
                 break;
             case SHOTS:
                 // Capture happens after the timed window, so writing PNGs never lands in the samples.
+                // Shots are posed explicitly, which is what makes them comparable between runs. A
+                // replay has no camera block — the recording drives the view — so there is nothing
+                // to pose, and the shot would land wherever the replay happened to stop, which
+                // depends on how fast the run went. Measured: two runs of the same recording
+                // differed by 65-87% of pixels. Failing here is the point; a screenshot gate that
+                // compares two different moments passes and fails for reasons of its own.
+                if (scenario.camera() == null) {
+                    throw new IllegalStateException("scenario '" + scenario.id() + "' is a replay and"
+                            + " cannot take screenshots: they are posed from a camera path, and a"
+                            + " replay has none. Remove its screenshots block.");
+                }
                 scenario.camera().apply(mc.thePlayer, scenario.screenshots().currentPathMillis());
                 if (scenario.screenshots().advance(mc)) {
                     finish(mc);
