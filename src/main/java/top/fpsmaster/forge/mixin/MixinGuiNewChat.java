@@ -19,7 +19,8 @@ import top.fpsmaster.features.impl.render.ChatAvatars;
 
 import java.awt.*;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 import static top.fpsmaster.utils.core.Utility.mc;
 
@@ -53,6 +54,9 @@ public abstract class MixinGuiNewChat {
     private boolean isScrolled;
 
     @Shadow @Final private List<ChatLine> chatLines;
+
+    @Unique
+    private final Map<IChatComponent, IChatComponent> fpsmaster$chatMessageSources = new WeakHashMap<>();
 
     /**
      * @author SuperSkidder
@@ -129,7 +133,7 @@ public abstract class MixinGuiNewChat {
                 }
             } else {
                 BetterChat module = (BetterChat) FPSMaster.moduleManager.getModule(BetterChat.class);
-                AtomicInteger i = new AtomicInteger(this.getLineCount());
+                int i = this.getLineCount();
                 int j = drawnChatLines.size();
                 float f = mc.gameSettings.chatOpacity * 0.9F + 0.1F;
                 if (j > 0) {
@@ -145,7 +149,7 @@ public abstract class MixinGuiNewChat {
                     int m;
                     int n;
                     int o;
-                    for (m = 0; m + this.scrollPos < drawnChatLines.size() && m < i.get(); ++m) {
+                    for (m = 0; m + this.scrollPos < drawnChatLines.size() && m < i; ++m) {
                         ChatLine chatLine = drawnChatLines.get(m + this.scrollPos);
                         if (chatLine != null) {
                             if (getChatOpen() && v1_8_9$isChatOpenAnimationNeed) {
@@ -211,14 +215,14 @@ public abstract class MixinGuiNewChat {
             j = MathHelper.floor_float((float) j / f) - ChatAvatars.getChatOffset();
             k = MathHelper.floor_float((float) k / f);
             if (j >= 0 && k >= 0) {
-                AtomicInteger l = new AtomicInteger(Math.min(this.getLineCount(), this.drawnChatLines.size()));
+                int lineCount = Math.min(this.getLineCount(), this.drawnChatLines.size());
                 int fontHeight = mc.fontRendererObj.FONT_HEIGHT;
                 BetterChat module = (BetterChat) FPSMaster.moduleManager.getModule(BetterChat.class);
 
                 if (BetterChat.using && module.betterFont.getValue()) {
                     fontHeight = FPSMaster.fontManager.s16.getHeight();
                 }
-                if (j <= MathHelper.floor_float((float) this.getChatWidth() / this.getChatScale()) && k < fontHeight * l.get() + l.get()) {
+                if (j <= MathHelper.floor_float((float) this.getChatWidth() / this.getChatScale()) && k < fontHeight * lineCount + lineCount) {
                     int m = k / fontHeight + this.scrollPos;
                     if (m >= 0 && m < this.drawnChatLines.size()) {
                         ChatLine chatLine = this.drawnChatLines.get(m);
@@ -254,16 +258,28 @@ public abstract class MixinGuiNewChat {
 
         int chatAvatarOffset = ChatAvatars.getChatOffset();
         int width = Math.max(20, i - chatAvatarOffset);
+        List<IChatComponent> lines;
         if (BetterChat.using && module.betterFont.getValue()) {
-            return GuiUtilRenderComponents.splitText(chatComponent, width, FPSMaster.fontManager.s16, false, false);
+            lines = GuiUtilRenderComponents.splitText(chatComponent, width, FPSMaster.fontManager.s16, false, false);
         } else {
-            return GuiUtilRenderComponents.splitText(chatComponent, width, mc.fontRendererObj, false, false);
+            lines = GuiUtilRenderComponents.splitText(chatComponent, width, mc.fontRendererObj, false, false);
+        }
+        fpsmaster$rememberChatMessageSource(chatComponent, lines);
+        return lines;
+    }
+
+    @Unique
+    private void fpsmaster$rememberChatMessageSource(IChatComponent source, List<IChatComponent> lines) {
+        for (IChatComponent line : lines) {
+            fpsmaster$chatMessageSources.put(line, source);
         }
     }
 
     @Unique
     private void drawChatAvatar(ChatLine chatLine, int x, int y, int alpha) {
-        ResourceLocation avatar = ChatAvatars.getAvatar(chatLine.getChatComponent());
+        IChatComponent line = chatLine.getChatComponent();
+        IChatComponent source = fpsmaster$chatMessageSources.get(line);
+        ResourceLocation avatar = ChatAvatars.getAvatar(source != null ? source : line);
         if (avatar != null) {
             ChatAvatarCache.drawHead(avatar, x, y, ChatAvatars.getAvatarSize(), alpha);
         }

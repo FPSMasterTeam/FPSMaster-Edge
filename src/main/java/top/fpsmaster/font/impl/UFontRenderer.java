@@ -91,14 +91,10 @@ public class UFontRenderer extends FontRenderer {
     }
 
     public String trimString(String text, float width, boolean reverse) {
-        StringBuilder stringbuilder = new StringBuilder();
-        for (char c : text.toCharArray()) {
-            if (getStringWidth(stringbuilder.toString()) < width)
-                stringbuilder.append(c);
-            else
-                break;
+        if (text == null || text.isEmpty()) {
+            return "";
         }
-        return stringbuilder.toString();
+        return stringCache.trimStringToWidth(GlobalTextFilter.filter(text), width, reverse);
     }
 
     /**
@@ -169,7 +165,7 @@ public class UFontRenderer extends FontRenderer {
     }
 
     private int drawStringInternal(String text, float x, float y, int color, boolean dropShadow) {
-        return drawStringInternal(text, x, y, color, dropShadow, 0.5f);
+        return drawStringInternal(text, x, y, color, dropShadow, 1.0f);
     }
 
     private int drawStringInternal(String text, float x, float y, int color, boolean dropShadow, float shadowOffset) {

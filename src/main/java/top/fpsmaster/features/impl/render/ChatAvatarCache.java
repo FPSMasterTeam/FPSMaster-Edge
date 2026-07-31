@@ -54,6 +54,7 @@ public class ChatAvatarCache {
     private static final long MISS_TTL_MS = 2L * 60L * 1000L;
     private static final long MIN_REQUEST_INTERVAL_MS = 750L;
     private static final int MAX_PARALLEL_REQUESTS = 2;
+    private static final int MAX_SENDER_SEPARATOR_DISTANCE = 16;
 
     private static final LinkedHashMap<String, AvatarEntry> CACHE = new LinkedHashMap<String, AvatarEntry>(32, 0.75F, true) {
         @Override
@@ -129,14 +130,16 @@ public class ChatAvatarCache {
         if (sender == null || sender.playerName == null || sender.playerName.trim().isEmpty()) {
             return null;
         }
-        if (sender.texture != null) {
-            put(sender.playerName, new AvatarEntry(State.READY, sender.texture, System.currentTimeMillis() + IN_GAME_TTL_MS));
-            return sender.texture;
-        }
         String playerName = sender.playerName;
-
         long now = System.currentTimeMillis();
         AvatarEntry entry = get(playerName);
+        if (sender.texture != null) {
+            if (entry == null || entry.state != State.READY || entry.texture != sender.texture || entry.expireAt <= now) {
+                put(playerName, new AvatarEntry(State.READY, sender.texture, now + IN_GAME_TTL_MS));
+            }
+            return sender.texture;
+        }
+
         if (entry != null && entry.expireAt > now && entry.state == State.READY) {
             return entry.texture;
         }
@@ -193,7 +196,7 @@ public class ChatAvatarCache {
         synchronized (CACHE) {
             String key = cacheKey(playerName);
             AvatarEntry previous = CACHE.put(key, entry);
-            if (previous != entry) {
+            if (previous != null && previous != entry && previous.texture != entry.texture) {
                 deleteTexture(previous);
             }
         }
@@ -233,35 +236,27 @@ public class ChatAvatarCache {
         }
 
         String head = text.substring(0, Math.min(text.length(), 96));
-        int delimiter = firstDelimiter(head);
-        String prefix = delimiter >= 0 ? head.substring(0, delimiter) : head;
-        PlayerCandidate best = findBestOnlinePlayer(prefix, candidates, true);
+        PlayerCandidate best = findBestOnlinePlayer(head, candidates, true);
         if (best != null) {
             return best;
         }
-        return delimiter >= 0 ? null : findBestOnlinePlayer(head, candidates, false);
+        return firstDelimiter(head) < 0 ? findBestOnlinePlayer(head, candidates, false) : null;
     }
 
-    private static PlayerCandidate findBestOnlinePlayer(String text, List<PlayerCandidate> candidates, boolean preferRightmost) {
+    private static PlayerCandidate findBestOnlinePlayer(String text, List<PlayerCandidate> candidates, boolean requireChatSeparator) {
         PlayerCandidate best = null;
-        int bestIndex = preferRightmost ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        int bestIndex = -1;
         int bestLength = -1;
         for (PlayerCandidate candidate : candidates) {
             if (candidate == null || candidate.matchName == null || candidate.matchName.isEmpty()) {
                 continue;
             }
-            int index = indexOfPlayerName(text, candidate.matchName, preferRightmost);
+            int index = indexOfSenderName(text, candidate.matchName, requireChatSeparator);
             if (index < 0) {
                 continue;
             }
             int length = candidate.matchName.length();
-            if (preferRightmost) {
-                if (index > bestIndex || (index == bestIndex && length > bestLength)) {
-                    bestIndex = index;
-                    bestLength = length;
-                    best = candidate;
-                }
-            } else if (index < bestIndex || (index == bestIndex && length > bestLength)) {
+            if (index > bestIndex || (index == bestIndex && length > bestLength)) {
                 bestIndex = index;
                 bestLength = length;
                 best = candidate;
@@ -325,7 +320,7 @@ public class ChatAvatarCache {
         candidates.add(new PlayerCandidate(realName, trimmed, texture));
     }
 
-    private static int indexOfPlayerName(String text, String playerName, boolean rightmost) {
+    private static int indexOfSenderName(String text, String playerName, boolean requireChatSeparator) {
         String lowerText = text.toLowerCase(Locale.ROOT);
         String lowerName = playerName.toLowerCase(Locale.ROOT);
         int best = -1;
@@ -339,15 +334,22 @@ public class ChatAvatarCache {
             int after = index + lowerName.length();
             boolean beforeOk = before < 0 || !isNameChar(lowerText.charAt(before));
             boolean afterOk = after >= lowerText.length() || !isNameChar(lowerText.charAt(after));
-            if (beforeOk && afterOk) {
+            if (beforeOk && afterOk && (!requireChatSeparator || hasChatSeparatorAfter(text, after))) {
                 best = index;
-                if (!rightmost) {
-                    return best;
-                }
             }
             from = index + 1;
         }
         return best;
+    }
+
+    private static boolean hasChatSeparatorAfter(String text, int from) {
+        int limit = Math.min(text.length(), from + MAX_SENDER_SEPARATOR_DISTANCE);
+        for (int i = from; i < limit; i++) {
+            if (isChatDelimiter(text.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String extractLikelySenderName(String text) {
@@ -367,15 +369,16 @@ public class ChatAvatarCache {
     }
 
     private static int firstDelimiter(String text) {
-        int best = -1;
-        char[] delimiters = new char[]{':', '：', '>', '»', '›'};
-        for (char delimiter : delimiters) {
-            int index = text.indexOf(delimiter);
-            if (index >= 0 && (best < 0 || index < best)) {
-                best = index;
+        for (int i = 0; i < text.length(); i++) {
+            if (isChatDelimiter(text.charAt(i))) {
+                return i;
             }
         }
-        return best;
+        return -1;
+    }
+
+    private static boolean isChatDelimiter(char character) {
+        return character == ':' || character == '：' || character == '>' || character == '»' || character == '›';
     }
 
     private static boolean isNameChar(char c) {
@@ -598,7 +601,6 @@ public class ChatAvatarCache {
     }
 
     private static String senderCacheKey(String text) {
-        String normalized = text.substring(0, Math.min(text.length(), 96)).toLowerCase(Locale.ROOT);
-        return Integer.toHexString(normalized.hashCode());
+        return text.substring(0, Math.min(text.length(), 96)).toLowerCase(Locale.ROOT);
     }
 }
