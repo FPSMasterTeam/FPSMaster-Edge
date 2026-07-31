@@ -1463,3 +1463,37 @@ that trades something the player can see — how complete the world is — for f
 win is real and is partly just drawing less. What its default should be is a product decision
 about whether a smoother frame is worth a world that fills in more slowly, and no amount of
 further benchmarking will answer that, because the two sides are in different units.
+
+## Texture upload: sixteen megabytes per image, and a per-pixel colour model
+
+`TextureUtil.uploadTextureImageSubImpl` sizes its staging array at `4194304 / width * width` —
+four million ints regardless of the texture, so a **16MB heap allocation to upload a 16x16
+icon**. It then fills that array with `BufferedImage.getRGB`, which resolves each pixel through
+the image's colour model one at a time.
+
+Neither is necessary. The array is now reused across uploads, held at the largest size any
+upload has needed. And where the image is already in a layout the upload can read — 32-bit ARGB
+backed by an int array, or the interleaved ABGR and BGR byte rasters `ImageIO` returns for PNG
+— the pixels are taken directly instead.
+
+| | |
+| --- | ---: |
+| uploads in one session | 195 |
+| taken on a direct path | **145 (74%)** |
+| pixels moved | 3,686,224 |
+| staging allocation avoided | **~3.1 GB** |
+
+The direct path was 25% before the byte rasters were handled; most PNGs do not load as
+`TYPE_INT_ARGB`. Each of the three layouts is recognised only under exact conditions — one
+bank, no offset, no per-pixel or per-row padding — and anything failing them falls back to
+`getRGB` into the same reused array, so the allocation saving is unconditional and the read
+saving is not.
+
+**Verified by screenshot rather than by counter.** A wrong channel order here is every texture
+in the game corrupted, and a counter cannot see that. `entity-dense` shot with the setting off
+and on: 0.139%, 0.253% and 0.378% of pixels differ against a 0.5% limit, which is the scene's
+own particle and entity motion. A swapped channel would be near total.
+
+**No timing claim is made.** Uploads do not happen during steady rendering, so the frame rates
+these runs reported say nothing about it, and load and reload times were not measured. What is
+established is the mechanism, its coverage, and that it changes no pixels.

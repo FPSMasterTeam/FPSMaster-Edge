@@ -313,6 +313,17 @@ public class Performance extends Module {
     public static BooleanSetting fastCollision = new BooleanSetting("FastCollision", false);
 
     /**
+     * Uploads textures without vanilla's per-upload staging allocation, and without {@code getRGB}
+     * where the image can be read directly.
+     *
+     * <p>Vanilla sizes its staging array at four million ints regardless of the texture — 16MB
+     * allocated to upload a 16x16 icon — and then fills it a pixel at a time through the image's
+     * colour model. Neither is necessary and neither changes an uploaded pixel, which is why this
+     * defaults on: it is invisible in the way the culling knobs are not.
+     */
+    public static BooleanSetting fastTextureUpload = new BooleanSetting("FastTextureUpload", true);
+
+    /**
      * True while any of the six block switches is on.
      *
      * <p>The injection that implements them is on {@code renderBlock}, which runs once per block per
@@ -334,7 +345,8 @@ public class Performance extends Module {
                 hideItemFrames, hideMapsInItemFrames, hideStuckArrows, hideGroundArrows,
                 hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
                 playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
-                miscRenderDistance, textureResolution, fastCollision, adaptiveChunkBudget);
+                miscRenderDistance, textureResolution, fastCollision, adaptiveChunkBudget,
+                fastTextureUpload);
 
         textureResolution.addChangeListener(
                 (setting, oldValue, newValue) -> TextureResolution.apply());
