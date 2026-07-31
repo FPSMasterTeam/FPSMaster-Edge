@@ -66,6 +66,7 @@
     "RendererLivingEntityMixin_SectionTiming",
     "MixinRenderManager",
     "RenderGlobalMixin_SectionTiming",
+    "RenderGlobalMixin_TerrainProbe",
     "MixinRenderTNTPrimed",
     "MixinServerSelectionList",
     "MixinShaderGroup",

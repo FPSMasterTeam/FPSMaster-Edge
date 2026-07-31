@@ -30,6 +30,7 @@ package top.fpsmaster.benchmark;
  */
 public final class Experiments {
 
+    public static final boolean TERRAIN_PROBE = flag("terrainProbe");
     public static final boolean NO_SKY = flag("noSky");
     public static final boolean NO_NAMEPLATES = flag("noNameplates");
     public static final boolean NO_GLINT = flag("noGlint");

@@ -1065,3 +1065,52 @@ on its own. What it is is the input the next step needs: geometry that is alread
 position-independent and stable across frames is exactly what can be uploaded once to a
 buffer instead of rewritten every frame. Cutting the remaining ~165us means not rewriting
 those vertices and not issuing a draw per string, and neither is reachable without that.
+
+## The terrain visibility walk is forced by our own chunk throttle, not by the camera
+
+`setupTerrain` is 14.9% of the frame and had never been looked at. The roadmap's plan for it
+was to relax the threshold at which camera movement forces the visible-chunk list to be
+rebuilt, on the theory that a PvP camera moves constantly and so rebuilds constantly. The
+probe says the theory is right about the cost and wrong about the cause.
+
+Timing the whole call and filing it under whether the walk ran that frame, rather than
+bracketing inside a method whose walk, container class and dirty assignment share one body.
+Forge already skips the walk when nothing changed, so both populations occur naturally and
+the gap between their means is what the walk costs.
+
+| | rebuilt | cost when it did | when it did not | amortised | rebuilds after camera movement |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| pit replay, `LimitChunks` on | 90-100% | 392-576us | ~48us | 392-478us | **4-6%** |
+| pit replay, `LimitChunks` off | 32-37% | 593-784us | 15-30us | 186-279us | 12-19% |
+| flat-orbit, orbiting camera | 100% | 787-848us | — | 787-848us | **100%** |
+
+Three things fall out of that.
+
+**The walk is essentially all of `setupTerrain`.** 392us against 48us on the recording, and
+787us on flat-orbit against a 2.16ms frame — **37% of that frame**. Whatever else the method
+does, the visible-chunk walk is what it costs.
+
+**On a real workload the camera is not what triggers it.** Only 4-6% of the rebuilds on the
+pit recording followed the view entity moving. The other 94-96% were forced by
+`!chunksToUpdate.isEmpty()`, which is the other half of Forge's dirty condition — and that
+half is not optional, because a chunk that has just been rebuilt has to be walked again. The
+relaxed-threshold prototype the roadmap scoped would have addressed one frame in twenty.
+Flat-orbit is the control: with a camera that really does move every frame and no chunk
+streaming, the attribution flips to 100%.
+
+**And what keeps `chunksToUpdate` non-empty is our own throttle.** Turning `LimitChunks` off
+takes the rebuild rate from 90-100% of frames to 32-37%, and the amortised cost from
+392-478us to 186-279us. The throttle holds chunk rebuilds back, the pending set stays
+occupied, and the pending set forces a full visibility walk every frame it is occupied. That
+is roughly 200us a frame being paid for a setting whose purpose is to protect frame time.
+
+That is not a verdict on the throttle — it was measured as a win before, and it is trading
+chunk-build CPU for forced walks, which is a trade that can go either way. It is a verdict on
+where to look: the lever on this section is how long the pending set stays occupied, not how
+sensitive the camera check is. The dynamic budget in the same commit raises the allowance the
+moment the player stops, which drains that set sooner, and now has a second and larger reason
+to exist than clearing a backlog faster.
+
+Single runs, and one of them measured 371.9 avg fps with the throttle off against 320-325 with
+it on — the opposite direction to the 7.3% loss recorded for it earlier. That needs a paired
+series before it means anything; the counts and the attribution above do not depend on it.

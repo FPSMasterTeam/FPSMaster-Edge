@@ -28,6 +28,7 @@ import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.notification.NotificationManager;
 import top.fpsmaster.ui.screens.replay.ReplayHud;
 import top.fpsmaster.utils.core.Utility;
+import top.fpsmaster.utils.render.ChunkUpdateBudget;
 import top.fpsmaster.utils.render.StencilUtil;
 import top.fpsmaster.utils.render.draw.Circles;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
@@ -72,6 +73,7 @@ public class GlobalListener {
         ReplayPlayer.instance().startIfRequested();
         ReplayPlayer.instance().onClientTick();
         ReplayProbe.onClientTick();
+        ChunkUpdateBudget.onClientTick();
         UiShot.onClientTick();
         PendingScreen.tick();
         long now = System.currentTimeMillis();
