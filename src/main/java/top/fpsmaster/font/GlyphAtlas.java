@@ -203,17 +203,37 @@ public final class GlyphAtlas {
             return new Glyph(0f, 0f, 0f, 0f, 0, 0, 0, 0, advance);
         }
 
-        if (!allocate(width, height) && !grow()) {
-            // Out of room and unable to grow. Returning an advance-only glyph would render the text
-            // invisible, so the last page is reused rather than dropping output; overlapping glyphs
-            // are a visible artefact, silently missing text is not.
-            shelfX = 0;
-            shelfY = 0;
-            shelfHeight = 0;
-            allocate(width, height);
+        if (!allocate(width, height)) {
+            if (grow()) {
+                // Growing resets the shelf, so the space still has to be taken on the new page.
+                // Leaving this out is what made one glyph per growth render blank: the cursor was
+                // at zero, so the x below came out negative, glTexSubImage2D rejected the upload,
+                // and the negative texture coordinates clamped to an empty column. Exactly one
+                // character was affected each time -- whichever one triggered the growth -- and it
+                // came back on the next growth, when the cache was cleared and it re-rasterised as
+                // an ordinary glyph. That is a difficult symptom to read and an easy line to omit.
+                allocate(width, height);
+            } else {
+                // Out of room and unable to grow. Returning an advance-only glyph would render the
+                // text invisible, so the last page is reused rather than dropping output;
+                // overlapping glyphs are a visible artefact, silently missing text is not.
+                shelfX = 0;
+                shelfY = 0;
+                shelfHeight = 0;
+                allocate(width, height);
+            }
         }
         int x = shelfX - width - PADDING;
         int y = shelfY;
+        if (x < 0 || y < 0 || x + width > pageSize || y + height > pageSize) {
+            // Nothing known reaches this, and it is here because the bug above did: a glyph placed
+            // outside the page uploads nothing and samples nothing, and a blank character is a far
+            // harder thing to trace back than a missing one. Give up on this glyph, keep its
+            // advance, and leave the layout intact.
+            ClientLogger.warn("font: no room for U+" + Integer.toHexString(character)
+                    + " in the " + pageSize + "px atlas; drawing it blank");
+            return new Glyph(0f, 0f, 0f, 0f, 0, 0, 0, 0, advance);
+        }
 
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
