@@ -363,7 +363,7 @@ public class Performance extends Module {
                 fastTextureUpload, reuseVisibleChunks);
 
         textureResolution.addChangeListener(
-                (setting, oldValue, newValue) -> TextureResolution.apply());
+                (setting, oldValue, newValue) -> pendingWorldRefresh = true);
 
         // Chunk meshes are built once and kept, so toggling one of these changes nothing that is
         // already on screen until every chunk is rebuilt. loadRenderers does that and is what
@@ -372,9 +372,10 @@ public class Performance extends Module {
             hidingBlocks = hideTallGrass.getValue() || hideDoubleTallGrass.getValue()
                     || hideFlowers.getValue() || hideDoubleTallFlowers.getValue()
                     || hideFences.getValue() || hideFenceGates.getValue();
-            if (mc.renderGlobal != null && mc.theWorld != null) {
-                mc.renderGlobal.loadRenderers();
-            }
+            // Deferred for the same reason as the module switch: a setting is toggled from inside
+            // the GUI's render, and rebuilding every render chunk there is not something to do to a
+            // half-drawn frame.
+            pendingWorldRefresh = true;
         };
         hideTallGrass.addChangeListener(rebuildChunks);
         hideDoubleTallGrass.addChangeListener(rebuildChunks);
@@ -385,30 +386,48 @@ public class Performance extends Module {
     }
 
 
+    /**
+     * Set when the module switch has moved and the world has not caught up with it yet.
+     *
+     * <p>Toggling happens inside the click GUI's own render, and both things that have to follow a
+     * toggle are the wrong shape to do there: {@code loadRenderers} tears down and rebuilds every
+     * render chunk, and applying the texture resolution rebinds a texture in the middle of whatever
+     * the GUI was drawing. Neither belongs in a frame that is halfway through being painted, so the
+     * work is left for the next tick.
+     */
+    private static boolean pendingWorldRefresh;
+
     @Override
     public void onEnable() {
         super.onEnable();
         using = true;
-        rebuildChunksIfHidingBlocks();
-        TextureResolution.apply();
+        pendingWorldRefresh = true;
     }
 
     @Override
     public void onDisable() {
         super.onDisable();
         using = false;
-        rebuildChunksIfHidingBlocks();
-        TextureResolution.apply();
+        pendingWorldRefresh = true;
     }
 
     /**
-     * The module switch gates the block hiding as well, so turning the module off has to put the
-     * hidden blocks back and turning it on has to take them away again. Nothing to do when none of
-     * the six is on, which is the default and the usual case.
+     * Applies what a module toggle owes the world, on a tick rather than inside a frame.
+     *
+     * <p>Driven from {@code GlobalListener}, which ticks whether or not this module is enabled —
+     * a module's own subscriptions stop with it, so it cannot clean up after itself.
      */
-    private void rebuildChunksIfHidingBlocks() {
+    public static void onClientTick() {
+        if (!pendingWorldRefresh) {
+            return;
+        }
+        pendingWorldRefresh = false;
+        // The module switch gates the block hiding as well, so turning it off has to put the hidden
+        // blocks back and turning it on has to take them away. Nothing to do when none of the six is
+        // on, which is the default and the usual case.
         if (hidingBlocks && mc.renderGlobal != null && mc.theWorld != null) {
             mc.renderGlobal.loadRenderers();
         }
+        TextureResolution.apply();
     }
 }

@@ -24,6 +24,7 @@ import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
+import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.notification.NotificationManager;
@@ -74,6 +75,7 @@ public class GlobalListener {
         ReplayPlayer.instance().startIfRequested();
         ReplayPlayer.instance().onClientTick();
         ReplayProbe.onClientTick();
+        Performance.onClientTick();
         ChunkUpdateBudget.onClientTick();
         CollisionProbe.onClientTick();
         UiShot.onClientTick();
