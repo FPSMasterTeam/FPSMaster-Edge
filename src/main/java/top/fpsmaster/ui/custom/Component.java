@@ -22,6 +22,8 @@ import top.fpsmaster.utils.math.anim.AnimMath;
 import java.awt.*;
 
 public class Component {
+    private static final Color STENCIL_MASK_COLOR = new Color(255, 255, 255, 255);
+
     private float dragX = 0f;
 
     private float dragY = 0f;
@@ -112,6 +114,20 @@ public class Component {
                 break;
         }
         return new float[]{rX, rY};
+    }
+
+    public void drawBlurMask(ScaledResolution sr) {
+        if (!mod.bg.getValue() || width <= 0f || height <= 0f) {
+            return;
+        }
+        float[] pos = getRealPosition(sr);
+        float scaledWidth = width * scale;
+        float scaledHeight = height * scale;
+        if (mod.rounded.getValue()) {
+            Rects.roundedImage(Math.round(pos[0] - 2), Math.round(pos[1]), Math.round(scaledWidth), Math.round(scaledHeight), mod.roundRadius.getValue().intValue(), STENCIL_MASK_COLOR);
+        } else {
+            Rects.fill(pos[0] - 2, pos[1], scaledWidth, scaledHeight, STENCIL_MASK_COLOR);
+        }
     }
 
     public void display(ScaledResolution sr, int mouseX, int mouseY) {

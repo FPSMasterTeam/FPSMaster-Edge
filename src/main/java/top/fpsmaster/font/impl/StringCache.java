@@ -427,7 +427,7 @@ public class StringCache {
         
         GlStateManager.disableBlend();
         
-        // 文字位置像素对齐，避免纹理采样模糊
+        // 对齐两个绘制 pass，避免粗体字形在线性过滤下因半像素阴影产生模糊光晕。
         startX = Math.round(startX);
         startY = Math.round(startY);
 

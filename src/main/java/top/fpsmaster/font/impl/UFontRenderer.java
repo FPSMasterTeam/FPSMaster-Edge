@@ -90,15 +90,16 @@ public class UFontRenderer extends FontRenderer {
         return trimString(text, width, false);
     }
 
+    /**
+     * Deliberately does <em>not</em> run {@link GlobalTextFilter}: callers such as {@code TextField} use
+     * the returned length as an index back into the original, unfiltered string, and NameProtect's
+     * substitution changes the length. Filtering belongs to the draw path only.
+     */
     public String trimString(String text, float width, boolean reverse) {
-        StringBuilder stringbuilder = new StringBuilder();
-        for (char c : text.toCharArray()) {
-            if (getStringWidth(stringbuilder.toString()) < width)
-                stringbuilder.append(c);
-            else
-                break;
+        if (text == null || text.isEmpty()) {
+            return "";
         }
-        return stringbuilder.toString();
+        return stringCache.trimStringToWidth(text, width, reverse);
     }
 
     /**
@@ -161,7 +162,11 @@ public class UFontRenderer extends FontRenderer {
         GL11.glPushMatrix();
         GL11.glScalef(inverseScale, inverseScale, 1.0f);
         try {
-            int result = renderer.drawStringInternal(text, x * actualDensityScale, y * actualDensityScale, color, dropShadow, actualDensityScale * 0.5f);
+            // Offset is expressed in the density renderer's device space, so scale the 1px GUI-space
+            // shadow by the same factor as the coordinates. Passing half of this (the old value) came
+            // back as a 0.5px GUI shadow after the inverse scale, i.e. the very offset that pixel
+            // snapping in StringCache.renderString was changed to avoid.
+            int result = renderer.drawStringInternal(text, x * actualDensityScale, y * actualDensityScale, color, dropShadow, actualDensityScale);
             return Math.round(result * inverseScale);
         } finally {
             GL11.glPopMatrix();
@@ -169,7 +174,7 @@ public class UFontRenderer extends FontRenderer {
     }
 
     private int drawStringInternal(String text, float x, float y, int color, boolean dropShadow) {
-        return drawStringInternal(text, x, y, color, dropShadow, 0.5f);
+        return drawStringInternal(text, x, y, color, dropShadow, 1.0f);
     }
 
     private int drawStringInternal(String text, float x, float y, int color, boolean dropShadow, float shadowOffset) {

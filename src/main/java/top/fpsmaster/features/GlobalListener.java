@@ -78,7 +78,7 @@ public class GlobalListener {
         if (ClientSettings.blur.getValue()) {
             StencilUtil.initStencilToWrite();
             EventDispatcher.dispatchEvent(new EventShader());
-            FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);
+            FPSMaster.componentsManager.drawBackgroundMasks();
             StencilUtil.readStencilBuffer(1);
             KawaseBlur.renderBlur(3, 3);
             StencilUtil.uninitStencilBuffer();

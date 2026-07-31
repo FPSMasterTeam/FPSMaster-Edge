@@ -38,8 +38,10 @@ public abstract class MixinRender {
 
     @Inject(method = "renderLivingLabel", at = @At("HEAD"), cancellable = true)
     protected void renderLivingLabel(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci) {
-        LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
-        ci.cancel();
+        if (LevelTag.using) {
+            LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
+            ci.cancel();
+        }
     }
 
     @Inject(method = "renderName", at = @At("HEAD"), cancellable = true)

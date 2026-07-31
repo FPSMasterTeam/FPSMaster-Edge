@@ -59,6 +59,22 @@ public class ComponentsManager {
                 .orElse(null);
     }
 
+    public void drawBackgroundMasks() {
+        GL11.glPushMatrix();
+        net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(Utility.mc);
+        GuiScale.fixScale();
+        components.forEach(component -> {
+            if (component.shouldDisplay()) {
+                try {
+                    component.drawBlurMask(sr);
+                } catch (Exception e) {
+                    ClientLogger.error("Failed to render component blur mask: " + component.mod.name);
+                }
+            }
+        });
+        GL11.glPopMatrix();
+    }
+
     // Draw all components on the screen
     public void draw(int mouseX, int mouseY) {
         GL11.glPushMatrix();
