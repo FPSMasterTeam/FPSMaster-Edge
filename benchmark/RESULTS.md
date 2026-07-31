@@ -1387,3 +1387,40 @@ means the chunk is not drawn yet. It is not a same-picture optimisation, so a fr
 comparison against no throttle is comparing two different pictures and will favour the throttle
 whatever else is true. What it should be judged on is frame time at equal drawn-chunk counts,
 plus how long the world takes to become complete.
+
+### The steady-state gate, measured
+
+Same three-way, same machine, with the discard phase now ending on a steady frame time instead
+of a 500ms clock.
+
+| | before | after |
+| --- | ---: | ---: |
+| within-variant spread, adaptive | 38.4% | **15.1%** |
+| within-variant spread, fixed | 22.0% | **11.5%** |
+| within-variant spread, off | 19.3% | 20.9% |
+| opening penalty, mean across runs | +44.5% | **+19.1%** |
+| opening penalty, worst run | +225.7% | +113.8% |
+| series trend, first run to last | +15.5% | +11.2% |
+
+Seven of the nine runs now start steady — openings within a few per cent of their own steady
+state, several of them faster. **Two do not**, at +97% and +114%, and the detector passed both:
+it declares steady on two consecutive flat 240-frame windows, and a run can plateau during a
+quiet moment and then find more work to do. Those two are named by `benchmark/analyse.py`,
+which is the point of it — a bad run that announces itself is a different thing from a bad run
+that averages into the result.
+
+**The series drift is untouched and is now the larger fault.** +4.8 fps per run, +11.2% across
+nine. It is a cold start rather than a continuous slide: the first three runs average 366.8 and
+the last six average 399.9, with the last three at 397.8. The harness discards one run per
+variant, which is three runs, and three is not enough — the discard wants to be two passes, or
+a priming run before the series.
+
+**And the three-way is still not a result.** Raw, detrended or on p50, every variant's range
+overlaps every other's: adaptive 373-434, fixed 363-407, off 333-414. The instrument is
+better and still cannot separate these three. What that says about the earlier detrended
+reading — fixed +25.7, adaptive +7.0, off −32.7, cleanly separated — is that it was a fit to
+nine points, and this series does not reproduce it.
+
+So the honest state of the chunk-throttle question is: unresolved, with two independent series
+agreeing only that the throttle helps p50, and the counters still saying it draws 26% fewer
+chunks while doing it.
