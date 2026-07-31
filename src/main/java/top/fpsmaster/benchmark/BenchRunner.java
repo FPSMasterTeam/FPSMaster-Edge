@@ -22,6 +22,14 @@ public final class BenchRunner {
      */
     private static final int SAMPLE_CAPACITY = 262_144;
 
+    /**
+     * Ceiling on waiting for a steady frame time.
+     *
+     * <p>A run that never settles is a result in itself and should be reported rather than waited
+     * on forever — it means the scenario or the machine is doing something the harness cannot see.
+     */
+    private static final long DISCARD_CEILING_MILLIS = 30_000L;
+
     private static final BenchRunner INSTANCE = new BenchRunner();
 
     private enum State {
@@ -38,6 +46,8 @@ public final class BenchRunner {
     }
 
     private final FrameSampler sampler = new FrameSampler(SAMPLE_CAPACITY);
+    private final SteadyState steadyState = new SteadyState();
+    private long lastFrameNanos;
     private final DisplayWatch displayWatch = new DisplayWatch();
     private State state = State.INIT;
     private BenchScenario scenario;
@@ -63,7 +73,12 @@ public final class BenchRunner {
         try {
             Minecraft mc = Minecraft.getMinecraft();
             long now = System.currentTimeMillis();
-            sampler.onFrame(System.nanoTime(), displayWatch.pollDisturbed());
+            long frameNanos = System.nanoTime();
+            if (state == State.DISCARD && lastFrameNanos != 0L) {
+                steadyState.record(frameNanos - lastFrameNanos);
+            }
+            lastFrameNanos = frameNanos;
+            sampler.onFrame(frameNanos, displayWatch.pollDisturbed());
             BenchProfiler.instance().endFrame();
             advance(mc, now);
         } catch (Throwable t) {
@@ -143,13 +158,26 @@ public final class BenchRunner {
                 if (now - phaseStartMillis >= scenario.warmupMillis()) {
                     sampler.start();
                     BenchProfiler.instance().start();
+                    steadyState.reset();
+                    lastFrameNanos = 0L;
                     phaseStartMillis = now;
                     state = State.DISCARD;
                 }
                 break;
             case DISCARD:
                 driveCamera(mc, now);
-                if (now - phaseStartMillis >= scenario.discardMillis()) {
+                // discardMillis is a floor now rather than the whole wait: measurement starts when
+                // the run has stopped getting faster, because how long that takes is itself variable
+                // -- the same scenario has settled in a tenth of one run and three tenths of another.
+                boolean waitedLongEnough = now - phaseStartMillis >= scenario.discardMillis();
+                if (waitedLongEnough && steadyState.isSteady()) {
+                    ClientLogger.info("benchmark", "steady after " + (now - phaseStartMillis)
+                            + "ms of discard, measuring " + scenario.measureMillis() + "ms");
+                    enterMeasure(now);
+                } else if (now - phaseStartMillis >= DISCARD_CEILING_MILLIS) {
+                    ClientLogger.warn("benchmark: never reached a steady frame time in "
+                            + DISCARD_CEILING_MILLIS + "ms of discard; measuring anyway, and this"
+                            + " run's numbers should be treated as suspect");
                     enterMeasure(now);
                 }
                 break;

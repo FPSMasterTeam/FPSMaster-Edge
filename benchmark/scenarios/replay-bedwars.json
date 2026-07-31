@@ -3,8 +3,8 @@
   "replay": "bedwars",
   "settleSeconds": 16,
   "settleTimeoutMillis": 90000,
-  "warmupMillis": 10000,
-  "discardMillis": 3000,
-  "measureMillis": 20000,
-  "_warmup_note": "Raised from 2000/500 after the opening of the measured window was found to be systematically slower: the first 30% of frames ran 3-7ms against a 2ms steady state, and dropping them cut the within-variant spread on a throttled variant from 22% to 9%."
+  "warmupMillis": 2000,
+  "discardMillis": 1000,
+  "measureMillis": 15000,
+  "_warmup_note": "warmup and discard are short because the discard phase now ends on a steady frame time rather than a clock -- see SteadyState. discardMillis is its floor. The phases have to fit inside what is left of the recording after settleSeconds, which is what a 10s warmup did not."
 }
