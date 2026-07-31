@@ -402,6 +402,13 @@ performance.textureresolution.sixteenth=十六分之一
 performance.fastcollision=快速实体碰撞
 performance.fasttextureupload=快速纹理上传
 performance.reusevisiblechunks=复用可见区块列表
+performancehud=性能监视器
+performancehud.desc=帧率、帧时间分布、内存与 GC
+performancehud.showgraph=显示帧时间折线图
+performancehud.showdistribution=显示帧时间分布
+performancehud.showmemory=显示内存占用
+performancehud.showgc=显示垃圾回收
+performancehud.colorbyhealth=按健康度着色
 
 fullbright=保持亮度
 fullbright.desc=保持视野明亮

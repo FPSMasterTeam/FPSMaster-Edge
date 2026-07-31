@@ -33,6 +33,7 @@ public class ComponentsManager {
         addComponentSafely("PlayerDisplayComponent", PlayerDisplayComponent::new);
         addComponentSafely("PingDisplayComponent", PingDisplayComponent::new);
         addComponentSafely("CoordsDisplayComponent", CoordsDisplayComponent::new);
+        addComponentSafely("PerformanceHudComponent", PerformanceHudComponent::new);
         addComponentSafely("ModsListComponent", ModsListComponent::new);
         addComponentSafely("MiniMapComponent", MiniMapComponent::new);
         addComponentSafely("SprintComponent", SprintComponent::new);

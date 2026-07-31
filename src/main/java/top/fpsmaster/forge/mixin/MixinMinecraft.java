@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.benchmark.BenchRunner;
 import top.fpsmaster.benchmark.BenchmarkMode;
+import top.fpsmaster.modules.perf.PerformanceMonitor;
 import top.fpsmaster.forge.api.IMinecraft;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventKey;
@@ -189,6 +190,7 @@ public abstract class MixinMinecraft implements IMinecraft {
                     target = "Lnet/minecraft/util/FrameTimer;addFrame(J)V",
                     shift = At.Shift.AFTER))
     private void onBenchmarkFrameBoundary(CallbackInfo ci) {
+        PerformanceMonitor.onFrame();
         if (BenchmarkMode.ACTIVE) {
             BenchRunner.instance().onFrameBoundary();
         }

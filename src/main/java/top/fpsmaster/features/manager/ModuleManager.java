@@ -127,6 +127,7 @@ public class ModuleManager {
         modules.add(new NoHitDelay());
         modules.add(new PingDisplay());
         modules.add(new CoordsDisplay());
+        modules.add(new PerformanceHud());
         modules.add(new ModsList());
 //        modules.add(new MiniMap());
         modules.add(new DirectionDisplay());
