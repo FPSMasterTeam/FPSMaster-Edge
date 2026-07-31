@@ -81,6 +81,9 @@ public final class ReplayPlayer {
     /** Enough to see the shape of a failure without filling the log with one repeat. */
     private static final int MAX_LOGGED_FAILURES = 3;
 
+    /** How long a single seek may spend applying packets on the client thread before giving up. */
+    private static final long SEEK_BUDGET_NANOS = 4_000_000_000L;
+
     private static final ReplayPlayer INSTANCE = new ReplayPlayer();
 
     private final BlockingQueue<Frame> queue = new ArrayBlockingQueue<Frame>(QUEUE_CAPACITY);
@@ -109,6 +112,8 @@ public final class ReplayPlayer {
     private boolean pauseWasDown;
     private boolean autoPlayDone;
     private int loggedFailures;
+    /** Set while a seek is rebuilding the stream, so the teardown does not surface the browser. */
+    private boolean restarting;
 
     private ReplayPlayer() {
     }
@@ -297,10 +302,77 @@ public final class ReplayPlayer {
         // Only when nothing else is up. Reaching the end of a recording leaves no screen at all and
         // the client cannot survive that, but someone who pressed Disconnect has already been sent
         // somewhere and should not be pulled out of it.
-        if (mc.currentScreen == null) {
+        if (mc.currentScreen == null && !restarting) {
             mc.displayGuiScreen(new ReplayScreen(null));
         }
+        if (restarting) {
+            return;  // the seek that asked for this is about to start the same file again
+        }
         ClientLogger.info("replay", "playback stopped");
+    }
+
+    /**
+     * Moves playback to a point in the recording.
+     *
+     * <p>A recording is a packet stream, so the world at any moment is the sum of everything before
+     * it and there is nothing to interpolate to. Forwards is therefore "apply the rest faster";
+     * backwards has no such move and can only be done by building the world again from the start.
+     * That is what happens here — the same teardown and rebuild as switching files, without landing
+     * in the browser on the way past.
+     *
+     * <p>Bounded by {@link #SEEK_BUDGET_NANOS} rather than run to completion. A long seek through a
+     * busy recording is tens of thousands of packets and the client thread is applying all of them;
+     * leaving it unbounded turns a mis-drag into a hang with no way out. Running out of budget lands
+     * short of the target and playback simply carries on from there.
+     */
+    public synchronized void seek(int targetMillis) {
+        if (!active) {
+            return;
+        }
+        int target = Math.max(0, targetMillis);
+        if (target < elapsedMillis) {
+            File replay = file;
+            restarting = true;
+            try {
+                start(replay);
+            } finally {
+                restarting = false;
+            }
+            if (!active) {
+                return;
+            }
+        }
+
+        boolean wasPaused = paused;
+        long deadline = System.nanoTime() + SEEK_BUDGET_NANOS;
+        while (active && System.nanoTime() < deadline) {
+            if (pending == null) {
+                try {
+                    pending = queue.poll(2L, java.util.concurrent.TimeUnit.MILLISECONDS);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            if (pending == null) {
+                if (readerFinished) {
+                    break;
+                }
+                continue;  // the reader is behind; it is decoding, not stuck
+            }
+            if (pending.millis > target) {
+                break;
+            }
+            apply(pending);
+            pending = null;
+        }
+
+        // Whatever was actually reached, not what was asked for: the clock has to agree with the
+        // world, or the next drain replays or skips the difference.
+        elapsedMillis = pending != null ? Math.min(target, pending.millis) : target;
+        originNanos = System.nanoTime() - elapsedMillis * 1_000_000L;
+        pausedAtMillis = elapsedMillis;
+        paused = wasPaused;
     }
 
     public void togglePause() {

@@ -988,9 +988,14 @@ machine behaving.
 
 Three things qualify the numbers before anything gets built on them:
 
-- **The replay playback overlay is in the measurement.** It brackets at 59-64us a frame and
-  exists only during benchmark playback. Some unknown share of the 40-56 strings is its. Per
-  caller attribution is needed before these figures size a real session.
+- **The replay playback overlay was in the measurement, and has since been cut.** It
+  bracketed at 59-64us a frame and exists only during benchmark playback. It was drawing two
+  rounded rectangles -- four corner textures and three fills each, for a 3-pixel bar with a
+  1-pixel radius -- and three centred strings, each of which is laid out twice, once to
+  measure and once to draw. Rewritten to plain fills and one clock string rebuilt on the
+  second rather than the frame, it now brackets at 15.3-16.5us and contributes 1 string
+  rather than 3. So roughly 7% of the string count above was the measuring apparatus; the
+  figures after this change are 33.9-40.2 strings a frame on the pit recording.
 - **All of it is conditional on `CustomHudFont`.** With that setting off -- the default --
   `TextRenderer` draws 3.0 strings a frame and the same text goes through vanilla's renderer
   instead, where this cache cannot reach it.

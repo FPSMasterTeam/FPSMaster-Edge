@@ -80,6 +80,7 @@
     "BlockPortalMixin_HideParticles",
     "BlockEndPortalMixin_HideParticles",
     "MobSpawnerBaseLogicMixin_HideParticles",
+    "MinecraftMixin_ReplayMenu",
     "RendererLivingEntityMixin_HideArmorStand",
     "RenderItemFrameMixin_Hide",
     "RenderArrowMixin_HideGround",
