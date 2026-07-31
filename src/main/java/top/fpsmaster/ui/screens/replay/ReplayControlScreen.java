@@ -40,6 +40,7 @@ public class ReplayControlScreen extends ScaledGuiScreen {
     private static final Color HINT = new Color(140, 140, 140);
 
     private final GuiButton pauseButton;
+    private final GuiButton speedButton;
     private final GuiButton viewButton;
     private final GuiButton filesButton;
     private final GuiButton stopButton;
@@ -50,6 +51,7 @@ public class ReplayControlScreen extends ScaledGuiScreen {
 
     public ReplayControlScreen() {
         this.pauseButton = new GuiButton("Pause", this::togglePause).setText("Pause", false);
+        this.speedButton = new GuiButton("Speed", this::cycleSpeed).setText("1x", false);
         this.viewButton = new GuiButton("View", this::toggleView).setText("View", false);
         this.filesButton = new GuiButton("Recordings", () -> mc.displayGuiScreen(new ReplayScreen(null)))
                 .setText("Recordings", false);
@@ -82,13 +84,15 @@ public class ReplayControlScreen extends ScaledGuiScreen {
         drawScrubber(player, barX, barY, barWidth, mouseX, mouseY);
 
         float buttonY = panelY + PANEL_HEIGHT - 40f;
-        float buttonWidth = (PANEL_WIDTH - 36f - 3f * 8f) / 4f;
+        float buttonWidth = (PANEL_WIDTH - 36f - 4f * 8f) / 5f;
         pauseButton.setText(player.isPaused() ? "Resume" : "Pause", false);
+        speedButton.setText(formatSpeed(player.speed()), false);
         viewButton.setText(player.isPossessing() ? "Free camera" : "Watch " + player.recorderName(), false);
         pauseButton.renderInScreen(this, barX, buttonY, buttonWidth, 24f, mouseX, mouseY);
-        viewButton.renderInScreen(this, barX + (buttonWidth + 8f), buttonY, buttonWidth, 24f, mouseX, mouseY);
-        filesButton.renderInScreen(this, barX + 2f * (buttonWidth + 8f), buttonY, buttonWidth, 24f, mouseX, mouseY);
-        stopButton.renderInScreen(this, barX + 3f * (buttonWidth + 8f), buttonY, buttonWidth, 24f, mouseX, mouseY);
+        speedButton.renderInScreen(this, barX + (buttonWidth + 8f), buttonY, buttonWidth, 24f, mouseX, mouseY);
+        viewButton.renderInScreen(this, barX + 2f * (buttonWidth + 8f), buttonY, buttonWidth, 24f, mouseX, mouseY);
+        filesButton.renderInScreen(this, barX + 3f * (buttonWidth + 8f), buttonY, buttonWidth, 24f, mouseX, mouseY);
+        stopButton.renderInScreen(this, barX + 4f * (buttonWidth + 8f), buttonY, buttonWidth, 24f, mouseX, mouseY);
 
         FPSMaster.fontManager.s16.drawCenteredString("Esc to close  -  P to pause  -  drag the bar to seek",
                 guiWidth / 2f, panelY + PANEL_HEIGHT + 8f, HINT.getRGB());
@@ -137,10 +141,43 @@ public class ReplayControlScreen extends ScaledGuiScreen {
         FPSMaster.fontManager.s16.drawString(total,
                 barX + barWidth - FPSMaster.fontManager.s16.getStringWidth(total), barY + 14f,
                 SUBTLE.getRGB());
+
+        if (player.isSeeking()) {
+            // A seek runs a slice per tick rather than all at once, so it has a middle to show.
+            FPSMaster.fontManager.s16.drawCenteredString(
+                    "seeking  " + Math.round(player.seekProgress() * 100f) + "%",
+                    barX + barWidth / 2f, barY + 14f, FILL.getRGB());
+        }
     }
 
     private void togglePause() {
         ReplayPlayer.instance().togglePause();
+    }
+
+    /**
+     * Steps to the next rate and wraps.
+     *
+     * <p>A cycle rather than a slider: the useful rates are a handful of powers of two and the
+     * points between them are not worth aiming at.
+     */
+    private void cycleSpeed() {
+        ReplayPlayer player = ReplayPlayer.instance();
+        float current = player.speed();
+        for (int i = 0; i < ReplayPlayer.SPEEDS.length; i++) {
+            if (ReplayPlayer.SPEEDS[i] == current) {
+                player.setSpeed(ReplayPlayer.SPEEDS[(i + 1) % ReplayPlayer.SPEEDS.length]);
+                return;
+            }
+        }
+        player.setSpeed(1.0f);
+    }
+
+    /** "0.25x" reads better than "0.25000001x", and "2x" better than "2.0x". */
+    static String formatSpeed(float speed) {
+        if (speed == Math.round(speed)) {
+            return Math.round(speed) + "x";
+        }
+        return String.valueOf(speed) + "x";
     }
 
     /**

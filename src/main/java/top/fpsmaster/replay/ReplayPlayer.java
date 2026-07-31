@@ -15,7 +15,11 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+import net.minecraft.network.play.server.S0BPacketAnimation;
 import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
+import net.minecraft.network.play.server.S28PacketEffect;
+import net.minecraft.network.play.server.S29PacketSoundEffect;
+import net.minecraft.network.play.server.S2APacketParticles;
 import net.minecraft.network.play.server.S2BPacketChangeGameState;
 import net.minecraft.network.play.server.S2DPacketOpenWindow;
 import net.minecraft.network.play.server.S39PacketPlayerAbilities;
@@ -81,8 +85,18 @@ public final class ReplayPlayer {
     /** Enough to see the shape of a failure without filling the log with one repeat. */
     private static final int MAX_LOGGED_FAILURES = 3;
 
-    /** How long a single seek may spend applying packets on the client thread before giving up. */
-    private static final long SEEK_BUDGET_NANOS = 4_000_000_000L;
+    /**
+     * How long a seek may spend applying packets in one client tick.
+     *
+     * <p>A seek is not a thing that can be done quickly — the world at a moment is the sum of every
+     * packet before it, so reaching a point means applying all of them. What it can be is done in
+     * slices. At this size the game keeps drawing and the overlay can say how far along it is,
+     * instead of the window going unresponsive for however long the work takes.
+     */
+    private static final long SEEK_SLICE_NANOS = 20_000_000L;
+
+    /** Playback rates offered, as multiples of real time. */
+    public static final float[] SPEEDS = {0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f};
 
     private static final ReplayPlayer INSTANCE = new ReplayPlayer();
 
@@ -114,6 +128,9 @@ public final class ReplayPlayer {
     private int loggedFailures;
     /** Set while a seek is rebuilding the stream, so the teardown does not surface the browser. */
     private boolean restarting;
+    private boolean seeking;
+    private int seekTarget;
+    private float speed = 1.0f;
 
     private ReplayPlayer() {
     }
@@ -234,6 +251,9 @@ public final class ReplayPlayer {
         this.pending = null;
         this.readerFinished = false;
         this.loggedFailures = 0;
+        this.seeking = false;
+        this.seekTarget = 0;
+        this.speed = 1.0f;
         queue.clear();
 
         openWorld(header);
@@ -312,18 +332,18 @@ public final class ReplayPlayer {
     }
 
     /**
-     * Moves playback to a point in the recording.
+     * Starts moving playback to a point in the recording.
      *
      * <p>A recording is a packet stream, so the world at any moment is the sum of everything before
-     * it and there is nothing to interpolate to. Forwards is therefore "apply the rest faster";
-     * backwards has no such move and can only be done by building the world again from the start.
-     * That is what happens here — the same teardown and rebuild as switching files, without landing
-     * in the browser on the way past.
+     * it and there is nothing to interpolate to. Forwards is therefore "apply the rest without
+     * waiting on the clock"; backwards has no such move and can only be done by building the world
+     * again from the start of the file. That rebuild is the same teardown as switching recordings,
+     * without landing in the browser on the way past.
      *
-     * <p>Bounded by {@link #SEEK_BUDGET_NANOS} rather than run to completion. A long seek through a
-     * busy recording is tens of thousands of packets and the client thread is applying all of them;
-     * leaving it unbounded turns a mis-drag into a hang with no way out. Running out of budget lands
-     * short of the target and playback simply carries on from there.
+     * <p>This only sets the destination. The work happens a slice at a time in {@link #onClientTick}
+     * so the game keeps drawing while it runs — a long seek is tens of thousands of packets and
+     * doing them in one go is a frozen window for as long as it takes, with no sign of progress and
+     * no way to abandon it.
      */
     public synchronized void seek(int targetMillis) {
         if (!active) {
@@ -332,6 +352,8 @@ public final class ReplayPlayer {
         int target = Math.max(0, targetMillis);
         if (target < elapsedMillis) {
             File replay = file;
+            boolean wasPaused = paused;
+            float rate = speed;
             restarting = true;
             try {
                 start(replay);
@@ -341,38 +363,104 @@ public final class ReplayPlayer {
             if (!active) {
                 return;
             }
+            speed = rate;
+            paused = wasPaused;
         }
+        seekTarget = target;
+        seeking = target > elapsedMillis;
+    }
 
-        boolean wasPaused = paused;
-        long deadline = System.nanoTime() + SEEK_BUDGET_NANOS;
-        while (active && System.nanoTime() < deadline) {
+    /** True while a seek is still working through the stream. */
+    public boolean isSeeking() {
+        return seeking;
+    }
+
+    /** How far the seek in progress has come, from 0 to 1. */
+    public float seekProgress() {
+        if (!seeking || seekTarget <= 0) {
+            return 1f;
+        }
+        return Math.max(0f, Math.min(1f, elapsedMillis / (float) seekTarget));
+    }
+
+    public float speed() {
+        return speed;
+    }
+
+    /**
+     * Changes the playback rate, keeping the current position.
+     *
+     * <p>The clock is an anchor rather than an accumulator — elapsed time is derived from when
+     * playback started — so a rate change has to move the anchor, or the position jumps by however
+     * far the two rates disagree over everything played so far.
+     */
+    public void setSpeed(float newSpeed) {
+        if (!active || newSpeed <= 0f) {
+            return;
+        }
+        int position = elapsedMillis;
+        speed = newSpeed;
+        originNanos = System.nanoTime() - (long) (position * 1_000_000L / speed);
+        pausedAtMillis = position;
+    }
+
+    /**
+     * Applies as much of the seek as fits in one tick's slice.
+     *
+     * <p>Transient packets are dropped while this runs. A particle, a sound and a swing arm leave
+     * nothing behind them, so applying thirty seconds of them to arrive at one moment produces a
+     * burst of effects for events that are already over and costs the time it takes. Everything that
+     * leaves state — blocks, entities, inventories, chunks — is applied exactly as it would be.
+     */
+    private void advanceSeek() {
+        long deadline = System.nanoTime() + SEEK_SLICE_NANOS;
+        while (true) {
+            if (System.nanoTime() >= deadline) {
+                return;  // out of slice; the rest happens next tick, with a frame drawn between
+            }
             if (pending == null) {
-                try {
-                    pending = queue.poll(2L, java.util.concurrent.TimeUnit.MILLISECONDS);
-                } catch (InterruptedException interrupted) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+                pending = queue.poll();
             }
             if (pending == null) {
                 if (readerFinished) {
+                    // The target was past the end of the file. Land on the end rather than on a
+                    // time no record has, which drain would immediately treat as finished.
+                    seekTarget = Math.min(seekTarget, durationMillis);
                     break;
                 }
-                continue;  // the reader is behind; it is decoding, not stuck
+                return;  // the reader is decoding, not stuck: try again next tick
             }
-            if (pending.millis > target) {
+            if (pending.millis > seekTarget) {
                 break;
             }
-            apply(pending);
+            if (!isTransient(pending.packet)) {
+                apply(pending);
+            }
+            elapsedMillis = pending.millis;
             pending = null;
         }
+        finishSeek();
+    }
 
-        // Whatever was actually reached, not what was asked for: the clock has to agree with the
-        // world, or the next drain replays or skips the difference.
-        elapsedMillis = pending != null ? Math.min(target, pending.millis) : target;
-        originNanos = System.nanoTime() - elapsedMillis * 1_000_000L;
+    private void finishSeek() {
+        seeking = false;
+        // Where it actually got to, not what was asked for: the clock has to agree with the world,
+        // or the next drain either replays or skips the difference.
+        elapsedMillis = pending != null ? Math.min(seekTarget, pending.millis) : seekTarget;
+        originNanos = System.nanoTime() - (long) (elapsedMillis * 1_000_000L / speed);
         pausedAtMillis = elapsedMillis;
-        paused = wasPaused;
+    }
+
+    /**
+     * True for packets whose whole effect is momentary.
+     *
+     * <p>Only consulted while seeking. In normal playback these are the recording.
+     */
+    private static boolean isTransient(Packet<?> packet) {
+        return packet instanceof S2APacketParticles
+                || packet instanceof S29PacketSoundEffect
+                || packet instanceof S28PacketEffect
+                || packet instanceof S0BPacketAnimation;
     }
 
     public void togglePause() {
@@ -380,8 +468,9 @@ public final class ReplayPlayer {
             return;
         }
         if (paused) {
-            // Restart the clock where it stopped rather than where it would have been.
-            originNanos = System.nanoTime() - pausedAtMillis * 1_000_000L;
+            // Restart the clock where it stopped rather than where it would have been, and at the
+            // rate in force now rather than the one that was running when it stopped.
+            originNanos = System.nanoTime() - (long) (pausedAtMillis * 1_000_000L / speed);
             paused = false;
         } else {
             pausedAtMillis = elapsedMillis;
@@ -434,8 +523,10 @@ public final class ReplayPlayer {
         }
         pauseWasDown = pauseDown;
 
-        if (!paused) {
-            elapsedMillis = (int) ((System.nanoTime() - originNanos) / 1_000_000L);
+        if (seeking) {
+            advanceSeek();
+        } else if (!paused) {
+            elapsedMillis = (int) ((System.nanoTime() - originNanos) / 1_000_000L * speed);
             drain();
         }
         updateCamera(mc);
