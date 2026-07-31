@@ -94,6 +94,24 @@ public class ComponentsManager {
         GlStateManager.color(1f, 1f, 1f, 1f);
     }
 
+    /**
+     * Sizes every visible component for this frame. Must run before anything reads width/height —
+     * anchoring, hover testing, drag clamping and the blur mask all do, and all of them used to see
+     * the previous frame's values. Called once per frame from GlobalListener, ahead of both the blur
+     * mask pass and the draw pass.
+     */
+    public void measureAll() {
+        components.forEach(component -> {
+            if (component.shouldDisplay()) {
+                try {
+                    component.measure();
+                } catch (Throwable throwable) {
+                    onComponentFailure(component, "measure", throwable);
+                }
+            }
+        });
+    }
+
     public void drawBackgroundMasks() {
         GL11.glPushMatrix();
         net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(Utility.mc);

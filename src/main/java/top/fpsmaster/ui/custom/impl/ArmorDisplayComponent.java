@@ -19,29 +19,56 @@ public class ArmorDisplayComponent extends Component {
         allowScale = true;
     }
 
+    private static final int SLOTS = 4;
+    private static final float SLOT_SIZE = 16f;
+
+    @Override
+    public void measure() {
+        float spacing = mod.spacing.getValue().floatValue();
+        if (ArmorDisplay.mode.getValue() == 0) {
+            width = 70f + spacing;
+            height = 18f;
+        } else {
+            width = 70f;
+            height = 4 + spacing + SLOTS * SLOT_SIZE;
+        }
+    }
+
+    /**
+     * Top-left of slot {@code index}, already scaled. Shared by draw() and backgroundShape() so the
+     * blur mask lands on the same boxes — the default single-rectangle mask would cover the gaps
+     * between slots, which this HUD leaves empty.
+     */
+    private float slotOffset(int index) {
+        float spacing = mod.spacing.getValue().floatValue();
+        // The step was previously left unscaled, so enlarging the HUD made the slots overlap.
+        return (index * (spacing + 18) - spacing) * scale;
+    }
+
+    @Override
+    public void backgroundShape(ShapeSink sink, float originX, float originY) {
+        boolean horizontal = ArmorDisplay.mode.getValue() == 0;
+        for (int i = 0; i < SLOTS; i++) {
+            float offset = slotOffset(i);
+            sink.rect(horizontal ? originX + offset : originX,
+                    horizontal ? originY : originY + offset,
+                    SLOT_SIZE, SLOT_SIZE);
+        }
+    }
+
     @Override
     public void draw(float x, float y) {
         super.draw(x, y);
         List<ItemStack> armorInventory = Arrays.asList(mc.thePlayer.inventory.armorInventory);
+        boolean horizontal = ArmorDisplay.mode.getValue() == 0;
 
         for (int i = 0; i < armorInventory.size(); i++) {
-            ItemStack itemStack = armorInventory.get(i);
-            int x1 = (int) (x + i * (mod.spacing.getValue().intValue() + 18)) - mod.spacing.getValue().intValue();
-            int y1 = (int) y;
+            ItemStack itemStack = armorInventory.get(armorInventory.size() - 1 - i);
+            float offset = slotOffset(i);
+            int x1 = (int) (horizontal ? x + offset : x);
+            int y1 = (int) (horizontal ? y : y + offset);
 
-            switch (ArmorDisplay.mode.getValue()) {
-                case 0:
-                    itemStack = armorInventory.get(armorInventory.size() - 1 - i);
-                    break;
-                case 1:
-                case 2:
-                    itemStack = armorInventory.get(armorInventory.size() - 1 - i);
-                    x1 = (int) x;
-                    y1 = (int) (y + i * (mod.spacing.getValue().intValue() + 18)) - mod.spacing.getValue().intValue();
-                    break;
-            }
-
-            drawRect(x1, y1, 16f, 16f, mod.backgroundColor.getColor());
+            drawRect(x1, y1, SLOT_SIZE, SLOT_SIZE, mod.backgroundColor.getColor());
 
             if (itemStack == null) continue;
             GlStateManager.disableCull();
@@ -87,17 +114,6 @@ public class ArmorDisplayComponent extends Component {
             }
         }
 
-        switch (ArmorDisplay.mode.getValue()) {
-            case 0:
-                width = 70f + mod.spacing.getValue().intValue();
-                height = 18f;
-                break;
-            case 1:
-            case 2:
-                width = 70f;
-                height = 4 + mod.spacing.getValue().intValue() + armorInventory.size() * 16;
-                break;
-        }
     }
 }
 
