@@ -64,6 +64,11 @@ public final class ChunkUpdateBudget {
         }
 
         int base = Performance.chunkUpdateLimit.getValue().intValue();
+        if (!Performance.adaptiveChunkBudget.getValue()) {
+            tracking = false;
+            set(base);
+            return;
+        }
         if (!tracking) {
             // First tick after joining or after the setting came on: no previous sample to compare
             // against, and guessing "still" would let the builder run flat out during the load.

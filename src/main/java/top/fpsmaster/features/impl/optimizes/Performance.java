@@ -123,6 +123,26 @@ public class Performance extends Module {
      * entirely.
      */
     public static NumberSetting chunkUpdateLimit = new NumberSetting("ChunkUpdateLimit", 50, 1, 250, 1);
+
+    /**
+     * Raises the chunk builder's allowance while the camera is still.
+     *
+     * <p>Moving, a rebuild competes with the frame drawing what is already built and the backlog
+     * refills as fast as it drains, which is when a limit earns its keep. Standing still, the backlog
+     * is finite and every rebuild still queued is a hole in the world — and a queued rebuild is not
+     * free to leave queued, because a non-empty pending set forces a full terrain visibility walk on
+     * every frame it stays occupied.
+     *
+     * <p>Separate from {@link #limitChunks} so the two can be told apart. Measuring the throttle
+     * against no throttle while this was on measured a doubled throttle, which is a third thing.
+     *
+     * <p>Off by default because it has not beaten the fixed budget. Three interleaved passes put it
+     * anywhere from the worst variant to the best — 285 to 417 fps for the same configuration — and
+     * the roadmap's own acceptance for this item is to keep the fixed budget unless the adaptive one
+     * wins. The switch stays so the question can be asked again on an instrument that can answer it.
+     */
+    public static BooleanSetting adaptiveChunkBudget =
+            new BooleanSetting("AdaptiveChunkBudget", false, () -> limitChunks.getValue());
     /**
      * Frame rate to hold the game at while its window is not focused. Zero disables the cap —
      * {@code Display.sync} returns immediately for anything at or below zero.
@@ -314,7 +334,7 @@ public class Performance extends Module {
                 hideItemFrames, hideMapsInItemFrames, hideStuckArrows, hideGroundArrows,
                 hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
                 playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
-                miscRenderDistance, textureResolution, fastCollision);
+                miscRenderDistance, textureResolution, fastCollision, adaptiveChunkBudget);
 
         textureResolution.addChangeListener(
                 (setting, oldValue, newValue) -> TextureResolution.apply());

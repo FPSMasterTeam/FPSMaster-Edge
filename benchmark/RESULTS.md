@@ -1298,3 +1298,39 @@ predicted, now actually removed rather than estimated.
 so the branch that must *not* skip has never been exercised. Its condition is one integer
 comparison and one virtual call, but a wrong answer there is a player walking through a boat,
 and that deserves a world with one in it before this is on by default.
+
+### Three-way on the chunk budget: one finding survives, and one earlier claim does not
+
+`LimitChunks` off, the fixed budget, and the adaptive one, three interleaved passes each on the
+pit recording.
+
+| | avg fps | range | p50 | range | p99 | range |
+| --- | ---: | :---: | ---: | :---: | ---: | :---: |
+| off | 336.9 | 314.8-380.0 | 2.630 | 2.257-2.822 | 8.977 | 7.535-9.764 |
+| **fixed** | 380.4 | 327.5-411.2 | **2.130** | **2.046-2.235** | 8.016 | 6.570-10.454 |
+| adaptive | 342.0 | 285.4-416.7 | 2.563 | 2.040-3.151 | 8.581 | 6.547-10.048 |
+
+**The adaptive variant spans 285 to 417 fps for the same configuration.** A 46% spread within
+one variant is the headline here, and it is about the machine rather than the setting. Two of
+the three passes had the fixed budget far ahead of both others; the third reversed it
+completely.
+
+What survives: **the fixed throttle beats no throttle on p50, with separated ranges** — 2.130
+against 2.630, and fixed's worst pass (2.235) is still better than off's best (2.257). That
+agrees with the earlier paired series, so two independent series now say the same thing about
+the median.
+
+What does not survive: **the other half of that earlier series.** It reported the throttle
+losing 5.7% of average fps and a third of p95 and p99, on three pairs whose ranges did not
+overlap. This series shows a single variant covering a 46% range, which means that non-overlap
+was not the evidence it looked like. The average and tail question is unresolved, and the
+claim that the throttle trades the median against everything else is withdrawn to the part
+that has been measured twice: it wins on the median.
+
+The adaptive budget is off by default as of this commit. It has not beaten the fixed budget and
+this instrument cannot say whether it could; the roadmap's acceptance for that item is to keep
+the fixed budget unless it does. The switch stays so the question can be asked again.
+
+And the standing instrument problem is still standing. The counters remain trustworthy — the
+terrain probe's finding that the throttle takes visible-list rebuilds from 32-37% of frames to
+90-100% is a count, and does not care how noisy the clock is.
