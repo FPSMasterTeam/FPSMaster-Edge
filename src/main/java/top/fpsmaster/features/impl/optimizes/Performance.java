@@ -283,6 +283,16 @@ public class Performance extends Module {
             "Default", "Half", "Quarter", "Eighth", "Sixteenth");
 
     /**
+     * Skips the entity query inside block collision when nothing loaded can answer it.
+     *
+     * <p>Two thirds of what collision costs on a busy recording is a query whose results only two
+     * entity classes in the game can contribute to — boats and minecarts. See
+     * {@code WorldMixin_FastCollision} for why that is a fact about the entity tree rather than a
+     * guess about the map.
+     */
+    public static BooleanSetting fastCollision = new BooleanSetting("FastCollision", false);
+
+    /**
      * True while any of the six block switches is on.
      *
      * <p>The injection that implements them is on {@code renderBlock}, which runs once per block per
@@ -304,7 +314,7 @@ public class Performance extends Module {
                 hideItemFrames, hideMapsInItemFrames, hideStuckArrows, hideGroundArrows,
                 hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
                 playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
-                miscRenderDistance, textureResolution);
+                miscRenderDistance, textureResolution, fastCollision);
 
         textureResolution.addChangeListener(
                 (setting, oldValue, newValue) -> TextureResolution.apply());

@@ -1261,3 +1261,40 @@ not say so, which is the same mistake as the emit bracket in the HUD text cache:
 sounded like it covered the work, and did not. Badlion's own description of the feature —
 "useful for Singleplayer" — is the other half of the answer, because in singleplayer the
 integrated server simulates entities properly and there is real work there to speed up.
+
+### FastCollision: skipping a query that only boats and minecarts could answer
+
+The entity half of `getCollidingBoundingBoxes` is measured above at two thirds of the whole.
+Its results are used in exactly two ways — the other entity's `getCollisionBoundingBox`, and
+the mover's own `getCollisionBox(other)` — and reading every override of both in the 1.8.9
+entity tree turns up two classes: `EntityBoat` and `EntityMinecart`. Nothing else can put a
+box in that list. A Bed Wars map has neither, so several hundred queries a tick are asked and
+answered with nothing for the length of a match.
+
+So the skip is the two conditions under which the loop can produce output, checked directly: a
+per-world count of loaded entities whose collision box is non-null, and whether the mover is
+itself something that collides with others.
+
+Bed Wars recording, same three windows, `FastCollision` off then on:
+
+| window | moves/tick | whole call off | on | nested entity off | on | **boxes returned off / on** |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 302 | 767.9us | **218.6us** | 494.5us | 0.0us | 0.36 / 0.36 |
+| 2 | 53 | 58.7us | **27.4us** | 28.3us | 0.0us | 0.14 / 0.14 |
+| 3 | 242 | 314.3us | **110.2us** | 195.1us | 0.0us | 0.16 / 0.16 |
+
+**−53% to −71%** on the call, and per move 2.54us to 0.71us on the busiest window. 121,455
+queries skipped across the run.
+
+The last column is the correctness check and it is the important one: **the number of
+collision boxes returned is identical to three decimal places in every window.** The skip
+removed queries, not results. Had the reasoning about the entity tree been wrong, that column
+would have fallen.
+
+About 550us a tick at the worst moment, which is 1.1% of wall clock — the size the pricing
+predicted, now actually removed rather than estimated.
+
+**Off by default, and one path is untested.** Neither recording contains a boat or a minecart,
+so the branch that must *not* skip has never been exercised. Its condition is one integer
+comparison and one virtual call, but a wrong answer there is a player walking through a boat,
+and that deserves a world with one in it before this is on by default.

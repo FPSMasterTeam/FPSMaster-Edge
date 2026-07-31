@@ -68,6 +68,7 @@
     "RenderGlobalMixin_SectionTiming",
     "RenderGlobalMixin_TerrainProbe",
     "WorldMixin_CollisionProbe",
+    "WorldMixin_FastCollision",
     "ChunkMixin_CollisionProbe",
     "MixinRenderTNTPrimed",
     "MixinServerSelectionList",
