@@ -29,6 +29,9 @@ import top.fpsmaster.ui.custom.Position;
 import top.fpsmaster.utils.world.ItemsUtil;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 public class ConfigManager {
@@ -281,8 +284,16 @@ public class ConfigManager {
                     if (moduleJson == null || !moduleJson.has("settings")) {
                         continue;
                     }
-                    module.set(moduleJson.get("enabled").getAsBoolean());
-                    module.key = moduleJson.get("key").getAsInt();
+                    if (moduleJson.has("enabled") && !moduleJson.get("enabled").isJsonNull()) {
+                        module.set(moduleJson.get("enabled").getAsBoolean());
+                    } else {
+                        ClientLogger.warn("Missing enabled field in module config: " + module.name);
+                    }
+                    if (moduleJson.has("key") && !moduleJson.get("key").isJsonNull()) {
+                        module.key = moduleJson.get("key").getAsInt();
+                    } else {
+                        ClientLogger.warn("Missing key field in module config: " + module.name);
+                    }
                     JsonObject settingsJson = moduleJson.getAsJsonObject("settings");
                     for (Setting<?> setting : module.settings) {
                         try {
@@ -317,13 +328,21 @@ public class ConfigManager {
                                     ((BindSetting) setting).setValue(value.getAsInt());
                                 } else if (setting instanceof MultipleItemSetting && "multiItem".equals(type)) {
                                     MultipleItemSetting multipleItemSetting = (MultipleItemSetting) setting;
-                                    multipleItemSetting.getValue().clear();
+                                    ArrayList<ItemStack> items = new ArrayList<>();
                                     for (JsonElement itemElement : value.getAsJsonArray()) {
                                         JsonObject item = itemElement.getAsJsonObject();
                                         int id = item.get("id").getAsInt();
                                         int metadata = item.get("meta").getAsInt();
-                                        multipleItemSetting.addItem(ItemsUtil.getItemStackWithMetadata(Item.getItemById(id), metadata));
+                                        Item resolvedItem = Item.getItemById(id);
+                                        if (resolvedItem == null) {
+                                            ClientLogger.warn("Skipping unknown item id " + id + " in setting " + module.name + "/" + setting.name);
+                                            continue;
+                                        }
+                                        if (items.size() < MultipleItemSetting.MAX_CAPACITY) {
+                                            items.add(ItemsUtil.getItemStackWithMetadata(resolvedItem, metadata));
+                                        }
                                     }
+                                    multipleItemSetting.setValue(items);
                                 }
                             }
                         } catch (Throwable throwable) {
@@ -379,8 +398,14 @@ public class ConfigManager {
 
         List<ConfigMigration> migrationPath = resolveMigrationPath(currentVersion, SCHEMA_VERSION);
         if (migrationPath.isEmpty()) {
-            ClientLogger.warn("No config migration path from schema " + currentVersion + " to " + SCHEMA_VERSION + ", deleting " + name + ".json");
-            deleteConfigFile(name);
+            File backupFile = backupConfigFile(name, currentVersion);
+            if (currentVersion > SCHEMA_VERSION) {
+                ClientLogger.warn("Config schema " + currentVersion + " is newer than supported schema " + SCHEMA_VERSION
+                        + ", resetting " + name + ".json and preserving the original at " + backupFile.getName());
+            } else {
+                ClientLogger.warn("No config migration path from schema " + currentVersion + " to " + SCHEMA_VERSION
+                        + ", resetting " + name + ".json and preserving the original at " + backupFile.getName());
+            }
             return null;
         }
 
@@ -449,10 +474,15 @@ public class ConfigManager {
         loadConfig(name);
     }
 
-    private void deleteConfigFile(String name) throws FileException {
+    private File backupConfigFile(String name, int schemaVersion) throws FileException {
         File configFile = ConfigProfileUtils.getProfileFile(name);
-        ClientLogger.warn("Deleting config file: " + configFile.getAbsolutePath());
-        ConfigProfileUtils.deleteConfigFile(name);
+        File backupFile = new File(configFile.getParentFile(), configFile.getName() + ".bak-schemaV" + schemaVersion);
+        try {
+            Files.copy(configFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException exception) {
+            throw new FileException("Failed to back up config file: " + configFile.getAbsolutePath(), exception);
+        }
+        return backupFile;
     }
 
     private void resetAllModulesToDefaults() {
