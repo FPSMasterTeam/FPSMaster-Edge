@@ -141,6 +141,9 @@ public final class TextRenderer {
         if (text == null || text.isEmpty()) {
             return 0f;
         }
+        if (HudBreakdown.enabled()) {
+            HudBreakdown.string(text, x, y, argb, shadowPass);
+        }
         return layout(text, x, y, argb, true, shadowPass);
     }
 
@@ -400,6 +403,9 @@ public final class TextRenderer {
     /** {@code shear} leans the top edge right and the bottom edge left, which is italic. */
     private static void emit(WorldRenderer worldRenderer, GlyphAtlas.Glyph glyph,
                              float penX, float baseline, int rgb, int alpha, float shear) {
+        if (HudBreakdown.enabled()) {
+            HudBreakdown.quad();
+        }
         float x0 = penX + glyph.offsetX * RENDER_SCALE;
         float y0 = baseline + glyph.offsetY * RENDER_SCALE;
         float x1 = x0 + glyph.width * RENDER_SCALE;

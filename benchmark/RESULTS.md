@@ -951,3 +951,60 @@ same day. GPU clocks, temperature, power plan and free memory were all normal, a
 remote-desktop agent was still stopped, so the cause is unidentified. The per-feature
 figures above, measured earlier on a better-behaved machine, are the evidence this change
 rests on.
+
+## HUD text: almost all of it is redrawn identically every frame
+
+The HUD is rebuilt from scratch every frame while its contents change at most once a tick,
+and these recordings run at 300-500 fps against 20 tps. That is fifteen to twenty-five
+frames per tick in which nothing on the overlay can have changed. The question this probe
+answers is how much of the text work is spent redoing identical geometry, and whether the
+answer is large enough to justify caching it.
+
+Counted with `-Dedge.exp.hudBreakdown=true`, `CustomHudFont` on, steady state, per frame.
+Each row is one 600-frame report window, not a run average -- the first attempt reported
+cumulative figures and the main menu, which draws two hundred static strings a frame at a
+hundred per cent reuse, dragged the whole run towards a number no gameplay frame ever had.
+
+| | pit | bedwars |
+| --- | ---: | ---: |
+| strings drawn | 40.0-47.4 | 51.4-70.6 |
+| **identical to last frame** | **99.1-100%** | **69.8-74.7%** |
+| obfuscated (cannot be cached) | 0.0 | 13.7-20.7 |
+| glyph quads | 592-790 | 355-698 |
+| `text:prewarm` | 11.2-12.1us | 14.1-16.4us |
+| `text:setup` | 4.2-4.5us | 4.7-5.1us |
+| **`text:emit`** | **118.7-131.0us** | **72.8-84.3us** |
+| **`text:submit`** | **59.9-65.0us** | **68.9-75.1us** |
+| all four | ~195-212us | ~161-181us |
+
+Against a 1.83ms and 1.87ms p50 that is **11% and 9% of the frame**, and the reuse column
+says most of it is recomputation. `emit` is the glyph loop that would not have to run;
+`submit` is one draw call per string, 40 to 56 a frame, which is what batching is for.
+
+The per-string costs held across runs that disagreed by 60% on frame rate -- `emit` measured
+2.85us and 2.90us per string on two pit runs six minutes apart, one at 475 fps and one at
+290 fps. The counts and the ratio are what this probe is for and neither depends on the
+machine behaving.
+
+Three things qualify the numbers before anything gets built on them:
+
+- **The replay playback overlay is in the measurement.** It brackets at 59-64us a frame and
+  exists only during benchmark playback. Some unknown share of the 40-56 strings is its. Per
+  caller attribution is needed before these figures size a real session.
+- **All of it is conditional on `CustomHudFont`.** With that setting off -- the default --
+  `TextRenderer` draws 3.0 strings a frame and the same text goes through vanilla's renderer
+  instead, where this cache cannot reach it.
+- **Bed Wars is 70% reusable, not more.** Between a quarter and a third of its strings are
+  obfuscated, and those re-scramble their glyphs every frame by definition. Hypixel's Bed
+  Wars scoreboard is the source. A cache degrades to current behaviour on them rather than
+  breaking, but they are not recoverable.
+
+### Two things the probe found that it was not looking for
+
+- **Chat still goes through vanilla's font renderer with `CustomHudFont` on.**
+  `chat:drawText(vanillaBranch)` costs 63-80us on the pit recording and 40-52us on Bed Wars
+  in 3 to 5 calls a frame -- comparable to forty strings through the client's own renderer,
+  for a fraction of the text. If chat can be routed onto the replacement renderer that is a
+  larger single win than the caching, and it is routing rather than new machinery.
+- **`boss health` costs 31-40us a frame on The Pit**, which has no boss. Unexplained, and
+  cheap to look at.
