@@ -45,6 +45,23 @@ public class WorldMixin_CollisionProbe {
         }
     }
 
+    @Inject(method = "getCollidingBoundingBoxes", at = @At("HEAD"))
+    private void fpsmaster$beginMove(Entity entityIn, AxisAlignedBB bb,
+                                     CallbackInfoReturnable<List<AxisAlignedBB>> cir) {
+        if (CollisionProbe.enabled()) {
+            CollisionProbe.beginMove(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+        }
+    }
+
+    @Inject(method = "getCollidingBoundingBoxes", at = @At("RETURN"))
+    private void fpsmaster$endMove(Entity entityIn, AxisAlignedBB bb,
+                                   CallbackInfoReturnable<List<AxisAlignedBB>> cir) {
+        if (CollisionProbe.enabled()) {
+            List<AxisAlignedBB> boxes = cir.getReturnValue();
+            CollisionProbe.endMove(boxes == null ? 0 : boxes.size());
+        }
+    }
+
     @Inject(method = "getEntitiesWithinAABB(Ljava/lang/Class;Lnet/minecraft/util/AxisAlignedBB;Lcom/google/common/base/Predicate;)Ljava/util/List;",
             at = @At("HEAD"))
     private void fpsmaster$beginTypedQuery(Class<?> clazz, AxisAlignedBB aabb, Predicate<?> filter,

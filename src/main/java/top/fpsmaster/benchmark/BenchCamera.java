@@ -43,9 +43,10 @@ public final class BenchCamera {
     private final List<Keyframe> keyframes = new ArrayList<Keyframe>();
     private final long loopMillis;
 
-    private BenchCamera(List<Keyframe> keyframes, long loopMillis) {
+    private BenchCamera(List<Keyframe> keyframes, long loopMillis, boolean walk) {
         this.keyframes.addAll(keyframes);
         this.loopMillis = loopMillis;
+        this.walk = walk;
     }
 
     public static BenchCamera parse(JsonObject json) {
@@ -70,8 +71,21 @@ public final class BenchCamera {
         long loop = json.has("loopMillis")
                 ? json.get("loopMillis").getAsLong()
                 : frames.get(frames.size() - 1).timeMillis;
-        return new BenchCamera(frames, Math.max(loop, 1L));
+        boolean walk = json.has("walk") && json.get("walk").getAsBoolean();
+        return new BenchCamera(frames, Math.max(loop, 1L), walk);
     }
+
+    /**
+     * Whether the path is walked rather than teleported along.
+     *
+     * <p>Teleporting with {@code noClip} is what makes a camera path exactly reproducible, and it is
+     * the right default — but it also means the player never calls {@code moveEntity}, so nothing in
+     * a scenario built that way exercises block collision at all. That is not a small omission: it is
+     * the half of collision that runs on every moving entity every tick, and no scenario here could
+     * see it. A walked path gives it up in exchange: the player is steered toward the same keyframes
+     * under real physics, which lands close to the path rather than on it.
+     */
+    private final boolean walk;
 
     /** Returns the position the camera should occupy at {@code elapsedMillis} into the path. */
     public void apply(EntityPlayerSP player, long elapsedMillis) {
@@ -96,6 +110,11 @@ public final class BenchCamera {
         float yaw = (float) (from.yaw + wrapDegrees(to.yaw - from.yaw) * alpha);
         float pitch = (float) (from.pitch + (to.pitch - from.pitch) * alpha);
 
+        if (walk) {
+            walkToward(player, x, z, yaw, pitch);
+            return;
+        }
+
         // Creative flight plus noClip keeps physics, collision and fall damage out of the picture;
         // the camera is fully determined by the path.
         player.capabilities.allowFlying = true;
@@ -117,6 +136,43 @@ public final class BenchCamera {
         player.prevRotationPitch = player.rotationPitch;
         player.rotationYawHead = player.rotationYaw;
         player.prevRotationYawHead = player.rotationYaw;
+    }
+
+    /**
+     * Steers the player at the next point on the path and lets its own physics get it there.
+     *
+     * <p>Only the horizontal direction is driven. Height is left to gravity, which is the point —
+     * the ground is what block collision is resolved against, and a player held off it by flight
+     * resolves nothing.
+     */
+    private static void walkToward(EntityPlayerSP player, double targetX, double targetZ,
+                                   float yaw, float pitch) {
+        player.capabilities.allowFlying = false;
+        player.capabilities.isFlying = false;
+        player.noClip = false;
+        player.rotationYaw = yaw;
+        player.rotationPitch = pitch;
+        player.rotationYawHead = yaw;
+
+        double dx = targetX - player.posX;
+        double dz = targetZ - player.posZ;
+        double distance = Math.sqrt(dx * dx + dz * dz);
+        if (distance < 0.05d) {
+            player.movementInput.moveForward = 0f;
+            player.movementInput.moveStrafe = 0f;
+            return;
+        }
+        // Resolved into the player's own facing, because that is the frame movementInput is in and
+        // the facing is following the path's yaw rather than the direction of travel.
+        double radians = Math.toRadians(yaw);
+        double forwardX = -Math.sin(radians);
+        double forwardZ = Math.cos(radians);
+        player.movementInput.moveForward = (float) clamp((dx * forwardX + dz * forwardZ) / distance);
+        player.movementInput.moveStrafe = (float) clamp((dx * forwardZ - dz * forwardX) / distance);
+    }
+
+    private static double clamp(double value) {
+        return Math.max(-1.0d, Math.min(1.0d, value));
     }
 
     private static double wrapDegrees(double degrees) {

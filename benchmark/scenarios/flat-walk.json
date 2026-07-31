@@ -1,0 +1,71 @@
+{
+  "_comment": "Superflat, but walked rather than flown: the player is steered at the keyframes under its own physics with noClip off, so moveEntity and block collision actually run. Every other scenario here teleports the camera, which is what makes them reproducible and is also why none of them can see the block half of collision at all.",
+  "world": {
+    "folder": "bench-flat",
+    "seed": 20260726,
+    "type": "FLAT",
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doMobSpawning false",
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/gamerule randomTickSpeed 0",
+      "/gamerule doFireTick false",
+      "/time set 6000",
+      "/weather clear 1000000",
+      "/difficulty peaceful",
+      "/kill @e[type=!Player]"
+    ]
+  },
+  "settleSeconds": 5,
+  "settleTimeoutMillis": 120000,
+  "warmupMillis": 8000,
+  "discardMillis": 1000,
+  "measureMillis": 40000,
+  "camera": {
+    "loopMillis": 20000,
+    "keyframes": [
+      {
+        "t": 0,
+        "x": 0,
+        "y": 5,
+        "z": 0,
+        "yaw": 0,
+        "pitch": 0
+      },
+      {
+        "t": 5000,
+        "x": 24,
+        "y": 5,
+        "z": 0,
+        "yaw": 90,
+        "pitch": 0
+      },
+      {
+        "t": 10000,
+        "x": 24,
+        "y": 5,
+        "z": 24,
+        "yaw": 180,
+        "pitch": 0
+      },
+      {
+        "t": 15000,
+        "x": 0,
+        "y": 5,
+        "z": 24,
+        "yaw": 270,
+        "pitch": 0
+      },
+      {
+        "t": 20000,
+        "x": 0,
+        "y": 5,
+        "z": 0,
+        "yaw": 360,
+        "pitch": 0
+      }
+    ],
+    "walk": true
+  }
+}

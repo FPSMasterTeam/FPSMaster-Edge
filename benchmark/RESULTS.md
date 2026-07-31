@@ -1216,3 +1216,48 @@ items, projectiles and the push-apart check on living entities, and it costs wha
 
 The scenario that would change this is one neither recording has: a floor covered in dropped
 items. That is untested and is the one honest gap left in this conclusion.
+
+### The gap was bigger than that: half of collision had not been measured at all
+
+Reading what Badlion's "Fast Entity Collision" actually does settles it. Its call site is
+`Entity.moveEntity`, gated on the client world and four entity types, and it replaces the whole
+method with an alternate engine. The adapter it hands that engine exposes
+`addCollisionBoxesToList` — **block** collision boxes. The name means fast collision *for*
+entities, against the world; not entity against entity, which is what the probe above measured.
+
+`World.getCollidingBoundingBoxes` does both, in that order: a triple loop over every block
+position the swept box touches, then the entity query. Only the second was instrumented.
+
+Worse, no scenario here could have caught it. `BenchCamera` sets `noClip = true` and teleports
+along its keyframes, which is what makes a path exactly reproducible and also means the player
+never calls `moveEntity`. So a walked scenario was added — the player is steered at the same
+keyframes under its own physics with collision on — and the block half instrumented.
+
+Superflat, walking, per 200 ticks:
+
+| | |
+| --- | ---: |
+| moves per tick | 36.1 |
+| block positions per move | 4.6 |
+| boxes returned per move | 1.41 |
+| whole call | 75-81us/tick |
+| the entity query nested inside it | ~40us/tick |
+| **block walking** | **35-40us/tick** |
+
+Bed Wars recording, now with both halves, three windows:
+
+| | moves/tick | positions | whole call | nested entity | **block walking** |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 302.0 | 5.7 | 767.9us | 494.5us | **273.3us** |
+| 2 | 52.6 | 4.5 | 58.7us | 28.3us | **30.4us** |
+| 3 | 242.1 | 4.4 | 314.3us | 195.1us | **119.3us** |
+
+So the earlier figures were about 60% of the real cost, and the worst window goes from 545us
+to 768us a tick — **1.5% of wall clock** rather than 1.2%. Forty per cent more, same order of
+magnitude, same side of the 3% threshold.
+
+The correction stands on its own, though. The first pass measured one of two halves and did
+not say so, which is the same mistake as the emit bracket in the HUD text cache: a name that
+sounded like it covered the work, and did not. Badlion's own description of the feature —
+"useful for Singleplayer" — is the other half of the answer, because in singleplayer the
+integrated server simulates entities properly and there is real work there to speed up.

@@ -36,6 +36,16 @@ public final class CollisionProbe {
     private static long returned;
     private static long nanos;
 
+    /** The block half: getCollidingBoundingBoxes, which walks block positions before it walks entities. */
+    private static long moves;
+    private static long movePositions;
+    private static long moveBoxes;
+    private static long moveNanos;
+    private static long moveStarted;
+    private static int moveDepth;
+    private static long moveNestedNanos;
+    private static long moveNestedQueries;
+
     private static final long[] SEEN = new long[DUPLICATE_WINDOW];
     private static int seenCount;
 
@@ -80,8 +90,47 @@ public final class CollisionProbe {
     }
 
     public static void endQuery(int found) {
-        nanos += System.nanoTime() - started;
+        long elapsed = System.nanoTime() - started;
+        nanos += elapsed;
         returned += found;
+        if (moveDepth > 0) {
+            // Separated because the move bracket contains this one, and reporting the whole entity
+            // total as "the part inside" was wrong by however many queries happen elsewhere.
+            moveNestedNanos += elapsed;
+            moveNestedQueries++;
+        }
+    }
+
+    /**
+     * Brackets one {@code getCollidingBoundingBoxes}, which is the other half of collision and the
+     * half the entity counters above cannot see.
+     *
+     * <p>That method walks every block position the swept box touches, asking each for its collision
+     * boxes, and only then runs the entity query. So the entity query's time is inside this one, and
+     * the block share is the difference. Re-entrancy is counted rather than assumed away: a move
+     * resolves each axis separately and can ask more than once.
+     */
+    public static void beginMove(double minX, double minY, double minZ,
+                                 double maxX, double maxY, double maxZ) {
+        if (moveDepth++ > 0) {
+            return;
+        }
+        moves++;
+        moveStarted = System.nanoTime();
+        // The same bounds vanilla derives, so the count is the positions it will actually visit.
+        long x = (long) Math.floor(maxX + 1.0d) - (long) Math.floor(minX);
+        long y = (long) Math.floor(maxY + 1.0d) - ((long) Math.floor(minY) - 1L);
+        long z = (long) Math.floor(maxZ + 1.0d) - (long) Math.floor(minZ);
+        movePositions += Math.max(0L, x) * Math.max(0L, y) * Math.max(0L, z);
+    }
+
+    public static void endMove(int boxes) {
+        if (--moveDepth > 0) {
+            return;
+        }
+        moveDepth = 0;
+        moveNanos += System.nanoTime() - moveStarted;
+        moveBoxes += boxes;
     }
 
     public static void chunkWalked(int sections, int entitiesInThoseSections) {
@@ -94,6 +143,18 @@ public final class CollisionProbe {
         seenCount = 0;
         if (++ticks % 200L != 0L) {
             return;
+        }
+        if (moves > 0L) {
+            ClientLogger.info("collision", String.format(
+                    "block collision over %d ticks: %.1f moves/tick | per move: %.1f block positions"
+                            + " visited, %.2f boxes returned | %.2fus each, %.1fus/tick, of which"
+                            + " %.1fus/tick is the %.1f entity queries nested inside it, leaving"
+                            + " %.1fus/tick of block walking",
+                    ticks, moves / (double) ticks, movePositions / (double) moves,
+                    moveBoxes / (double) moves, moveNanos / 1000.0d / moves,
+                    moveNanos / 1000.0d / ticks, moveNestedNanos / 1000.0d / ticks,
+                    moveNestedQueries / (double) ticks,
+                    (moveNanos - moveNestedNanos) / 1000.0d / ticks));
         }
         if (queries == 0L) {
             ClientLogger.info("collision", "no entity AABB queries in " + ticks + " ticks");
@@ -123,5 +184,11 @@ public final class CollisionProbe {
         examined = 0L;
         returned = 0L;
         nanos = 0L;
+        moves = 0L;
+        movePositions = 0L;
+        moveBoxes = 0L;
+        moveNanos = 0L;
+        moveNestedNanos = 0L;
+        moveNestedQueries = 0L;
     }
 }
