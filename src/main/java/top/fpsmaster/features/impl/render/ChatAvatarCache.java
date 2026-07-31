@@ -55,7 +55,7 @@ public class ChatAvatarCache {
     private static final long MIN_REQUEST_INTERVAL_MS = 750L;
     private static final int MAX_PARALLEL_REQUESTS = 2;
     private static final int MAX_SENDER_SEPARATOR_DISTANCE = 16;
-    private static final int MIN_DISPLAY_NAME_SUFFIX_LENGTH = 3;
+    private static final int MIN_DISPLAY_NAME_MATCH_LENGTH = 3;
 
     private static final LinkedHashMap<String, AvatarEntry> CACHE = new LinkedHashMap<String, AvatarEntry>(32, 0.75F, true) {
         @Override
@@ -241,32 +241,31 @@ public class ChatAvatarCache {
         if (best != null) {
             return best;
         }
-        best = findBestDisplayNameSuffix(head, candidates);
+        best = findBestDisplayNameMatch(head, candidates);
         if (best != null) {
             return best;
         }
         return firstDelimiter(head) < 0 ? findBestOnlinePlayer(head, candidates, false) : null;
     }
 
-    private static PlayerCandidate findBestDisplayNameSuffix(String text, List<PlayerCandidate> candidates) {
-        String senderName = extractSenderDisplayName(text);
-        if (senderName.isEmpty()) {
-            return null;
-        }
-
+    private static PlayerCandidate findBestDisplayNameMatch(String text, List<PlayerCandidate> candidates) {
         PlayerCandidate best = null;
-        int bestLength = 0;
+        int bestScore = 0;
+        boolean ambiguous = false;
         for (PlayerCandidate candidate : candidates) {
             if (candidate == null || candidate.matchName == null || candidate.matchName.isEmpty()) {
                 continue;
             }
-            int suffixLength = commonSuffixLength(senderName, candidate.matchName);
-            if (suffixLength >= MIN_DISPLAY_NAME_SUFFIX_LENGTH && suffixLength > bestLength) {
+            int score = getDisplayNameMatchScore(text, candidate.matchName);
+            if (score > bestScore) {
                 best = candidate;
-                bestLength = suffixLength;
+                bestScore = score;
+                ambiguous = false;
+            } else if (score == bestScore && score > 0 && best != null && !best.realName.equalsIgnoreCase(candidate.realName)) {
+                ambiguous = true;
             }
         }
-        return best;
+        return ambiguous ? null : best;
     }
 
     private static PlayerCandidate findBestOnlinePlayer(String text, List<PlayerCandidate> candidates, boolean requireChatSeparator) {
@@ -378,37 +377,44 @@ public class ChatAvatarCache {
         return false;
     }
 
-    private static String extractSenderDisplayName(String text) {
-        int delimiter = firstDelimiter(text);
+    private static int getDisplayNameMatchScore(String text, String displayName) {
+        String normalizedText = text.toLowerCase(Locale.ROOT);
+        String normalizedDisplayName = displayName.toLowerCase(Locale.ROOT);
+        int delimiter = lastDelimiterBefore(normalizedText, Math.min(normalizedText.length(), 96));
         if (delimiter < 0) {
-            return "";
+            return 0;
         }
-        int start = delimiter;
-        while (start > 0 && Character.isWhitespace(text.charAt(start - 1))) {
-            start--;
+        String senderPrefix = normalizedText.substring(0, delimiter).trim();
+        if (senderPrefix.contains(normalizedDisplayName)) {
+            return normalizedDisplayName.length() + MIN_DISPLAY_NAME_MATCH_LENGTH;
         }
-        int nameStart = start;
-        while (nameStart > 0 && !Character.isWhitespace(text.charAt(nameStart - 1)) && text.charAt(nameStart - 1) != ']') {
-            nameStart--;
-        }
-        return text.substring(nameStart, start).trim();
+        int longestMatch = longestCommonSubstringLength(senderPrefix, normalizedDisplayName);
+        return longestMatch >= MIN_DISPLAY_NAME_MATCH_LENGTH ? longestMatch : 0;
     }
 
-    private static int commonSuffixLength(String first, String second) {
-        int firstIndex = first.length() - 1;
-        int secondIndex = second.length() - 1;
-        int length = 0;
-        while (firstIndex >= 0 && secondIndex >= 0) {
-            char firstChar = Character.toLowerCase(first.charAt(firstIndex));
-            char secondChar = Character.toLowerCase(second.charAt(secondIndex));
-            if (firstChar != secondChar) {
-                break;
+    private static int longestCommonSubstringLength(String first, String second) {
+        int[] lengths = new int[second.length() + 1];
+        int longest = 0;
+        for (int firstIndex = 1; firstIndex <= first.length(); firstIndex++) {
+            for (int secondIndex = second.length(); secondIndex > 0; secondIndex--) {
+                if (first.charAt(firstIndex - 1) == second.charAt(secondIndex - 1)) {
+                    lengths[secondIndex] = lengths[secondIndex - 1] + 1;
+                    longest = Math.max(longest, lengths[secondIndex]);
+                } else {
+                    lengths[secondIndex] = 0;
+                }
             }
-            length++;
-            firstIndex--;
-            secondIndex--;
         }
-        return length;
+        return longest;
+    }
+
+    private static int lastDelimiterBefore(String text, int limit) {
+        for (int i = limit - 1; i >= 0; i--) {
+            if (isChatDelimiter(text.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static String extractLikelySenderName(String text) {
