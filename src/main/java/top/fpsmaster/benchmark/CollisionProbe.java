@@ -28,6 +28,7 @@ public final class CollisionProbe {
 
     private static long ticks;
     private static long queries;
+    private static long typedQueries;
     private static long duplicates;
     private static long chunksWalked;
     private static long sectionsWalked;
@@ -45,6 +46,13 @@ public final class CollisionProbe {
 
     public static boolean enabled() {
         return Experiments.active(Experiments.COLLISION_PROBE);
+    }
+
+    /** The typed walk, which goes through a different chunk method and was missed the first time. */
+    public static void beginTypedQuery(double minX, double minY, double minZ,
+                                       double maxX, double maxY, double maxZ) {
+        typedQueries++;
+        beginQuery(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     public static void beginQuery(double minX, double minY, double minZ,
@@ -93,10 +101,11 @@ public final class CollisionProbe {
             return;
         }
         ClientLogger.info("collision", String.format(
-                "entity AABB queries over %d ticks: %.1f/tick, %.1f%% repeats of a box already asked"
+                "entity AABB queries over %d ticks: %.1f/tick (%.1f%% typed), %.1f%% repeats of a box already asked"
                         + " for this tick | per query: %.2f chunks, %.2f sections, %.1f entities"
                         + " examined, %.1f returned (%.1f%% kept) | %.2fus each, %.1fus/tick",
-                ticks, queries / (double) ticks, 100.0d * duplicates / queries,
+                ticks, queries / (double) ticks, 100.0d * typedQueries / queries,
+                100.0d * duplicates / queries,
                 chunksWalked / (double) queries, sectionsWalked / (double) queries,
                 examined / (double) queries, returned / (double) queries,
                 examined == 0L ? 0.0d : 100.0d * returned / examined,
@@ -107,6 +116,7 @@ public final class CollisionProbe {
     private static void reset() {
         ticks = 0L;
         queries = 0L;
+        typedQueries = 0L;
         duplicates = 0L;
         chunksWalked = 0L;
         sectionsWalked = 0L;

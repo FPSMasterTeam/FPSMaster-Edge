@@ -13,7 +13,14 @@ import top.fpsmaster.benchmark.CollisionProbe;
 import java.util.List;
 
 /**
- * Brackets one entity AABB query. Every other form of the call funnels through this one.
+ * Brackets the two entity AABB queries the world offers.
+ *
+ * <p>There are two, not one, and only counting the first was wrong. {@code getEntitiesInAABBexcluding}
+ * is what collision goes through and funnels every {@code excludingEntity} form; the typed
+ * {@code getEntitiesWithinAABB} is a separate walk over the same chunks into a different chunk
+ * method, and it is what item merging, nearest-entity searches and anything looking for a kind of
+ * entity uses. Counting one and calling it "the entity query" undercounts by however much the other
+ * is doing.
  */
 @Mixin(World.class)
 public class WorldMixin_CollisionProbe {
@@ -34,6 +41,26 @@ public class WorldMixin_CollisionProbe {
                                     CallbackInfoReturnable<List<Entity>> cir) {
         if (CollisionProbe.enabled()) {
             List<Entity> found = cir.getReturnValue();
+            CollisionProbe.endQuery(found == null ? 0 : found.size());
+        }
+    }
+
+    @Inject(method = "getEntitiesWithinAABB(Ljava/lang/Class;Lnet/minecraft/util/AxisAlignedBB;Lcom/google/common/base/Predicate;)Ljava/util/List;",
+            at = @At("HEAD"))
+    private void fpsmaster$beginTypedQuery(Class<?> clazz, AxisAlignedBB aabb, Predicate<?> filter,
+                                           CallbackInfoReturnable<List<?>> cir) {
+        if (CollisionProbe.enabled()) {
+            CollisionProbe.beginTypedQuery(aabb.minX, aabb.minY, aabb.minZ,
+                    aabb.maxX, aabb.maxY, aabb.maxZ);
+        }
+    }
+
+    @Inject(method = "getEntitiesWithinAABB(Ljava/lang/Class;Lnet/minecraft/util/AxisAlignedBB;Lcom/google/common/base/Predicate;)Ljava/util/List;",
+            at = @At("RETURN"))
+    private void fpsmaster$endTypedQuery(Class<?> clazz, AxisAlignedBB aabb, Predicate<?> filter,
+                                         CallbackInfoReturnable<List<?>> cir) {
+        if (CollisionProbe.enabled()) {
+            List<?> found = cir.getReturnValue();
             CollisionProbe.endQuery(found == null ? 0 : found.size());
         }
     }

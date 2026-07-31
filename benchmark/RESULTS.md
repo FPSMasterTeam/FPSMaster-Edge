@@ -1188,3 +1188,31 @@ Under the 3% entry threshold on the best window and an order of magnitude under 
 others, so this does not proceed. Recorded because "entity collision scans linearly" is an
 argument that will be made again, and the answer to it is 82 examined against 0.2 returned
 costing one per cent.
+
+### Both objections to that were checked, and one of them found a real hole
+
+**"The scenario is wrong."** It was a fair challenge — Bed Wars puts 19.5 entities in front of
+the renderer, which is not an entity-dense workload, and the acceptance criteria ask for one.
+Re-run on `entity-dense`, 120 armour stands: **145 queries a tick, 31 examined, 175-183us a
+tick**. Milder than Bed Wars on every column. The stress scenario does not overturn the
+recording; the recording was already the higher number.
+
+**"The probe misses a path."** This one was right. `World` has two entity queries, not one:
+`getEntitiesInAABBexcluding`, which funnels every collision form, and the typed
+`getEntitiesWithinAABB`, which is a separate walk into a different chunk method. Only the
+first was instrumented, so anything using the second was invisible. Both are now counted,
+along with the sections each walks.
+
+It changed nothing, for a structural reason worth writing down: **0.0% of queries on either
+recording are the typed form.** The obvious client-side user of it would be item merging, and
+`EntityItem.searchForOtherItemsNearby` is guarded by `!worldObj.isRemote` — it is server work.
+The hole in the instrument was real and the room behind it was empty.
+
+Which is the same reason the intuition that this should be expensive does not transfer. On a
+server, entity collision is a known cost, because a server simulates entities. A client does
+not: remote players are interpolated to the positions the server sends rather than moved by
+physics, and mobs run no AI. What is left making three hundred queries a tick is dropped
+items, projectiles and the push-apart check on living entities, and it costs what it costs.
+
+The scenario that would change this is one neither recording has: a floor covered in dropped
+items. That is untested and is the one honest gap left in this conclusion.

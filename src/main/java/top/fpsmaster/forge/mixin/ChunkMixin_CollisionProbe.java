@@ -9,6 +9,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -37,6 +38,17 @@ public class ChunkMixin_CollisionProbe {
     @Inject(method = "getEntitiesWithinAABBForEntity", at = @At("HEAD"))
     private void fpsmaster$countWalk(Entity entityIn, AxisAlignedBB aabb, List<Entity> listToFill,
                                      Predicate<? super Entity> predicate, CallbackInfo ci) {
+        fpsmaster$countSections(aabb);
+    }
+
+    @Inject(method = "getEntitiesOfTypeWithinAAAB", at = @At("HEAD"))
+    private void fpsmaster$countTypedWalk(Class<?> entityClass, AxisAlignedBB aabb, List<?> listToFill,
+                                          Predicate<?> predicate, CallbackInfo ci) {
+        fpsmaster$countSections(aabb);
+    }
+
+    @Unique
+    private void fpsmaster$countSections(AxisAlignedBB aabb) {
         if (!CollisionProbe.enabled()) {
             return;
         }
