@@ -999,12 +999,25 @@ Three things qualify the numbers before anything gets built on them:
   Wars scoreboard is the source. A cache degrades to current behaviour on them rather than
   breaking, but they are not recoverable.
 
-### Two things the probe found that it was not looking for
+### Two things the probe seemed to find, and neither survived
 
-- **Chat still goes through vanilla's font renderer with `CustomHudFont` on.**
-  `chat:drawText(vanillaBranch)` costs 63-80us on the pit recording and 40-52us on Bed Wars
-  in 3 to 5 calls a frame -- comparable to forty strings through the client's own renderer,
-  for a fraction of the text. If chat can be routed onto the replacement renderer that is a
-  larger single win than the caching, and it is routing rather than new machinery.
-- **`boss health` costs 31-40us a frame on The Pit**, which has no boss. Unexplained, and
-  cheap to look at.
+Both were read off bracket names and both were wrong. Recorded because the misreadings are
+easy to repeat.
+
+- **Chat is not still on vanilla's font renderer.** `chat:drawText(vanillaBranch)` names the
+  branch of `GuiNewChat` that runs when the `BetterChat` module is off, not the font it draws
+  with. Chat goes through `FontRenderer.renderString` like everything else, which is exactly
+  where `CustomHudFont` intercepts. The numbers say so plainly: the same bracket on the same
+  recording measures 117.8us with `CustomHudFont` off and 63-80us with it on, a 32-46% drop
+  from changing nothing else. It is an outer bracket containing part of the `text:*` costs
+  below it, so it is not a separate target and must not be added to them.
+- **`boss health` is a boss bar that is really there.** Hypixel drives one on The Pit.
+  Vanilla's body returns immediately without one, and Forge's wrapper around it -- an event
+  pre/post, a texture bind and blend toggles -- costs about 3us, which is what
+  `renderCrosshairs` measures doing the same wrapper plus an actual draw. The remaining
+  ~30us is one shadowed string, three textured rects and a `ScaledResolution` allocation.
+  That also explains why it halved from 66-70us to 31-40us when `CustomHudFont` came on: a
+  shadowed string is two `renderString` calls and dominates the element. Its cost is already
+  inside the text path, and a text cache would cover it.
+
+So the text figures above stand on their own, and there is no second target beside them.
