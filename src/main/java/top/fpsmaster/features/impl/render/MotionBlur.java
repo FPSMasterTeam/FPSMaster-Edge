@@ -175,7 +175,6 @@ public class MotionBlur extends Module {
 
     public static void blur(float multiplier) {
         if (OpenGlHelper.isFramebufferEnabled()) {
-            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_CURRENT_BIT | GL11.GL_TEXTURE_BIT);
             GlStateManager.matrixMode(GL11.GL_PROJECTION);
             GlStateManager.pushMatrix();
             GlStateManager.matrixMode(GL11.GL_MODELVIEW);
@@ -235,7 +234,15 @@ public class MotionBlur extends Module {
                 GlStateManager.popMatrix();
                 GlStateManager.matrixMode(GL11.GL_MODELVIEW);
                 GlStateManager.popMatrix();
-                GL11.glPopAttrib();
+
+                // OpenGlHelper.glBlendFunc and bindFramebufferTexture write raw GL, bypassing
+                // GlStateManager's cache. Push the equivalent state back *through* GlStateManager so
+                // cache and driver agree. Using glPopAttrib here instead would revert the driver
+                // behind the cache, silently turning the next enableBlend()/color() into a no-op.
+                GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                GlStateManager.enableBlend();
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                GlStateManager.bindTexture(0);
             }
         }
     }

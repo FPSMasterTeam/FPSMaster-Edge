@@ -2,7 +2,6 @@ package top.fpsmaster.features.impl.render;
 
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
-import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
@@ -10,7 +9,6 @@ import net.minecraft.util.ResourceLocation;
 public class ChatAvatars extends Module {
     public static boolean using = false;
 
-    public static final BooleanSetting mojangFallback = new BooleanSetting("MojangFallback", false);
     public static final NumberSetting size = new NumberSetting("Size", 8, 6, 9, 1);
     public static final NumberSetting gap = new NumberSetting("Gap", 4, 1, 8, 1);
     public static final NumberSetting offsetX = new NumberSetting("OffsetX", 0, -8, 8, 1);
@@ -18,7 +16,7 @@ public class ChatAvatars extends Module {
 
     public ChatAvatars() {
         super("ChatAvatars", Category.RENDER);
-        addSettings(mojangFallback, size, gap, offsetX, offsetY);
+        addSettings(size, gap, offsetX, offsetY);
     }
 
     @Override
@@ -60,6 +58,6 @@ public class ChatAvatars extends Module {
         if (!isUsing()) {
             return null;
         }
-        return ChatAvatarCache.getAvatar(chatComponent, mojangFallback.getValue());
+        return ChatAvatarCache.getAvatar(chatComponent);
     }
 }

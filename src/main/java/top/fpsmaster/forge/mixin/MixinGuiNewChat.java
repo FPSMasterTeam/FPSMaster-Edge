@@ -18,6 +18,8 @@ import top.fpsmaster.features.impl.render.ChatAvatarCache;
 import top.fpsmaster.features.impl.render.ChatAvatars;
 
 import java.awt.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,8 +60,13 @@ public abstract class MixinGuiNewChat {
     @Unique
     private static final int FPSMASTER_MAX_CHAT_MESSAGE_SOURCES = 512;
 
+    // Identity-keyed on purpose: IChatComponent.hashCode walks the whole sibling tree and is not safe
+    // to call on arbitrary server-supplied components.
     @Unique
     private final Map<IChatComponent, IChatComponent> fpsmaster$chatMessageSources = new IdentityHashMap<>();
+
+    @Unique
+    private final Deque<IChatComponent> fpsmaster$chatMessageOrder = new ArrayDeque<>();
 
     /**
      * @author SuperSkidder
@@ -105,7 +112,9 @@ public abstract class MixinGuiNewChat {
                                 ++l;
                                 if (o > 3) {
                                     int q = -m * 9;
-                                    Gui.drawRect(-2 - chatAvatarOffset, q - 9, k + 4, q, o / 2 << 24);
+                                    // Right edge also shifts back by the gutter, otherwise the whole
+                                    // panel grows wider than the configured chat width.
+                                    Gui.drawRect(-2 - chatAvatarOffset, q - 9, k + 4 - chatAvatarOffset, q, o / 2 << 24);
                                     drawChatAvatar(chatLine, -chatAvatarOffset + 1 + ChatAvatars.getOffsetX(), q - 8 + ChatAvatars.getOffsetY(), o);
                                     String string = chatLine.getChatComponent().getFormattedText();
                                     GlStateManager.enableBlend();
@@ -169,7 +178,7 @@ public abstract class MixinGuiNewChat {
                                 if (alpha > 3) {
                                     int q = -m * 9;
                                     int alpha1 = (int) ((alpha / 255f) * module.backgroundColor.getColor().getAlpha());
-                                    Gui.drawRect(-2 - chatAvatarOffset, q - 8, k + 4, q + 1, Colors.alpha(module.backgroundColor.getColor(), alpha1).getRGB());
+                                    Gui.drawRect(-2 - chatAvatarOffset, q - 8, k + 4 - chatAvatarOffset, q + 1, Colors.alpha(module.backgroundColor.getColor(), alpha1).getRGB());
                                     drawChatAvatar(chatLine, -chatAvatarOffset + 1 + ChatAvatars.getOffsetX(), q - 8 + ChatAvatars.getOffsetY() + Math.round(6 - (alpha / 255f) * 6), alpha);
                                     String string = chatLine.getChatComponent().getFormattedText();
                                     GlStateManager.enableBlend();
@@ -213,9 +222,11 @@ public abstract class MixinGuiNewChat {
             ScaledResolution scaledResolution = new ScaledResolution(mc);
             int i = scaledResolution.getScaleFactor();
             float f = this.getChatScale();
-            int j = mouseX / i - 2;
+            // drawChat translates by (2 + avatar gutter) and only then scales, so the gutter lives in
+            // unscaled screen space and has to come off before the divide, not after.
+            int j = mouseX / i - 2 - ChatAvatars.getChatOffset();
             int k = mouseY / i - 40;
-            j = MathHelper.floor_float((float) j / f) - ChatAvatars.getChatOffset();
+            j = MathHelper.floor_float((float) j / f);
             k = MathHelper.floor_float((float) k / f);
             if (j >= 0 && k >= 0) {
                 int lineCount = Math.min(this.getLineCount(), this.drawnChatLines.size());
@@ -273,11 +284,15 @@ public abstract class MixinGuiNewChat {
 
     @Unique
     private void fpsmaster$rememberChatMessageSource(IChatComponent source, List<IChatComponent> lines) {
-        if (fpsmaster$chatMessageSources.size() >= FPSMASTER_MAX_CHAT_MESSAGE_SOURCES) {
-            fpsmaster$chatMessageSources.clear();
-        }
         for (IChatComponent line : lines) {
-            fpsmaster$chatMessageSources.put(line, source);
+            if (fpsmaster$chatMessageSources.put(line, source) == null) {
+                fpsmaster$chatMessageOrder.addLast(line);
+            }
+        }
+        // Evict oldest-first instead of wiping the map: a wholesale clear would drop the mapping for
+        // lines that are still on screen, blanking their avatars while the gutter stays reserved.
+        while (fpsmaster$chatMessageOrder.size() > FPSMASTER_MAX_CHAT_MESSAGE_SOURCES) {
+            fpsmaster$chatMessageSources.remove(fpsmaster$chatMessageOrder.removeFirst());
         }
     }
 

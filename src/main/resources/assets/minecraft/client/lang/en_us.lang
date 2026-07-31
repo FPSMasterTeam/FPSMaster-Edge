@@ -215,7 +215,6 @@ betterchat.copymessage=Copy Message
 
 chatavatars=Chat Avatars
 chatavatars.desc=Shows player heads next to chat messages
-chatavatars.mojangfallback=Mojang Fallback
 chatavatars.size=Avatar Size
 chatavatars.gap=Avatar Gap
 chatavatars.offsetx=Horizontal Offset

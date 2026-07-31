@@ -1,70 +1,43 @@
 package top.fpsmaster.features.impl.render;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.client.resources.DefaultPlayerSkin;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.event.ClickEvent;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
-import top.fpsmaster.FPSMaster;
-import top.fpsmaster.modules.logger.ClientLogger;
 
-import javax.imageio.ImageIO;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URLEncoder;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static top.fpsmaster.utils.core.Utility.mc;
 
 public class ChatAvatarCache {
-    private static final ResourceLocation STEVE_SKIN = new ResourceLocation("textures/entity/steve.png");
-    private static final Gson GSON = new Gson();
     private static final int MAX_CACHE_SIZE = 256;
-    private static final int REQUEST_TIMEOUT_MS = 2500;
     private static final long IN_GAME_TTL_MS = 30_000L;
-    private static final long MOJANG_TTL_MS = 60L * 60L * 1000L;
     private static final long MISS_TTL_MS = 2L * 60L * 1000L;
-    private static final long MIN_REQUEST_INTERVAL_MS = 750L;
-    private static final int MAX_PARALLEL_REQUESTS = 2;
     private static final int MAX_SENDER_SEPARATOR_DISTANCE = 16;
-    private static final int MIN_DISPLAY_NAME_MATCH_LENGTH = 3;
+    private static final String[] WHISPER_COMMAND_PREFIXES = {"/tell ", "/msg ", "/whisper ", "/w ", "/t "};
+    private static final Pattern TIMESTAMP_PREFIX =
+            Pattern.compile("^(?:\\[\\d\\d:\\d\\d(?::\\d\\d)?(?: [AP]M)?]|<\\d\\d:\\d\\d>)\\s*");
 
+    // Every texture here is owned by the vanilla skin manager (tab list / world entities), so the
+    // cache never allocates or frees GL textures of its own — eviction is a plain map removal.
     private static final LinkedHashMap<String, AvatarEntry> CACHE = new LinkedHashMap<String, AvatarEntry>(32, 0.75F, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, AvatarEntry> eldest) {
-            boolean remove = size() > MAX_CACHE_SIZE;
-            if (remove) {
-                deleteTexture(eldest.getValue());
-            }
-            return remove;
+            return size() > MAX_CACHE_SIZE;
         }
     };
 
@@ -75,12 +48,8 @@ public class ChatAvatarCache {
         }
     };
 
-    private static int activeRequests;
-    private static long lastRequestAt;
-
     private enum State {
         READY,
-        LOADING,
         MISS
     }
 
@@ -88,17 +57,11 @@ public class ChatAvatarCache {
         private State state;
         private ResourceLocation texture;
         private long expireAt;
-        private boolean dynamicTexture;
 
         private AvatarEntry(State state, ResourceLocation texture, long expireAt) {
-            this(state, texture, expireAt, false);
-        }
-
-        private AvatarEntry(State state, ResourceLocation texture, long expireAt, boolean dynamicTexture) {
             this.state = state;
             this.texture = texture;
             this.expireAt = expireAt;
-            this.dynamicTexture = dynamicTexture;
         }
     }
 
@@ -126,7 +89,7 @@ public class ChatAvatarCache {
         }
     }
 
-    public static ResourceLocation getAvatar(IChatComponent chatComponent, boolean mojangFallback) {
+    public static ResourceLocation getAvatar(IChatComponent chatComponent) {
         SenderEntry sender = findSender(chatComponent);
         if (sender == null || sender.playerName == null || sender.playerName.trim().isEmpty()) {
             return null;
@@ -141,11 +104,8 @@ public class ChatAvatarCache {
             return sender.texture;
         }
 
-        if (entry != null && entry.expireAt > now && entry.state == State.READY) {
-            return entry.texture;
-        }
-        if (entry != null && entry.expireAt > now && entry.state != State.READY) {
-            return null;
+        if (entry != null && entry.expireAt > now) {
+            return entry.state == State.READY ? entry.texture : null;
         }
 
         ResourceLocation inGameSkin = getInGameSkin(playerName);
@@ -154,11 +114,9 @@ public class ChatAvatarCache {
             return inGameSkin;
         }
 
-        if (mojangFallback && isValidPlayerName(playerName)) {
-            queueMojangLoad(playerName);
-        } else {
-            put(playerName, new AvatarEntry(State.MISS, null, now + MISS_TTL_MS));
-        }
+        // Only players the vanilla skin manager already knows about get a head; an unresolved name
+        // is cached as a miss rather than fetched, so chat rendering never touches the network.
+        put(playerName, new AvatarEntry(State.MISS, null, now + MISS_TTL_MS));
         return null;
     }
 
@@ -195,11 +153,7 @@ public class ChatAvatarCache {
 
     private static void put(String playerName, AvatarEntry entry) {
         synchronized (CACHE) {
-            String key = cacheKey(playerName);
-            AvatarEntry previous = CACHE.put(key, entry);
-            if (previous != null && previous != entry && previous.texture != entry.texture) {
-                deleteTexture(previous);
-            }
+            CACHE.put(cacheKey(playerName), entry);
         }
     }
 
@@ -220,7 +174,12 @@ public class ChatAvatarCache {
             }
         }
 
-        PlayerCandidate player = findOnlinePlayer(text);
+        // Highest-confidence signal first: vanilla and most chat plugins attach a "/msg <name> "
+        // suggest-command to the sender's name specifically, which beats any text heuristic.
+        PlayerCandidate player = findByWhisperCommand(chatComponent);
+        if (player == null) {
+            player = findOnlinePlayer(text);
+        }
         SenderEntry sender = player != null
                 ? new SenderEntry(player.realName, player.texture, now + 1_000L)
                 : new SenderEntry(extractLikelySenderName(text), null, now + 1_000L);
@@ -230,45 +189,83 @@ public class ChatAvatarCache {
         return sender;
     }
 
+    /**
+     * Resolves the sender from a whisper click event rather than from the rendered text. Vanilla's chat
+     * decorator — and most server chat plugins — hang a {@code /msg <name> } suggest-command on the
+     * sender's name component, so when it is present it identifies the sender exactly.
+     */
+    private static PlayerCandidate findByWhisperCommand(IChatComponent chatComponent) {
+        String name = findWhisperTarget(chatComponent);
+        if (name == null) {
+            return null;
+        }
+        return new PlayerCandidate(name, name, getInGameSkin(name));
+    }
+
+    private static String findWhisperTarget(IChatComponent chatComponent) {
+        try {
+            // IChatComponent iterates itself plus all nested siblings.
+            for (IChatComponent part : chatComponent) {
+                if (part == null || part.getChatStyle() == null) {
+                    continue;
+                }
+                String name = whisperTargetOf(part.getChatStyle().getChatClickEvent());
+                if (name != null) {
+                    return name;
+                }
+            }
+        } catch (Exception ignored) {
+            // Malformed component trees from servers must not break chat rendering.
+        }
+        return null;
+    }
+
+    private static String whisperTargetOf(ClickEvent click) {
+        if (click == null || click.getValue() == null) {
+            return null;
+        }
+        if (click.getAction() != ClickEvent.Action.SUGGEST_COMMAND
+                && click.getAction() != ClickEvent.Action.RUN_COMMAND) {
+            return null;
+        }
+        String command = click.getValue().trim();
+        for (String prefix : WHISPER_COMMAND_PREFIXES) {
+            if (!command.regionMatches(true, 0, prefix, 0, prefix.length())) {
+                continue;
+            }
+            String rest = command.substring(prefix.length()).trim();
+            int space = rest.indexOf(' ');
+            if (space >= 0) {
+                rest = rest.substring(0, space);
+            }
+            return isValidPlayerName(rest) ? rest : null;
+        }
+        return null;
+    }
+
     private static PlayerCandidate findOnlinePlayer(String text) {
         List<PlayerCandidate> candidates = getOnlinePlayers();
         if (candidates.isEmpty()) {
             return null;
         }
 
-        String head = text.substring(0, Math.min(text.length(), 96));
-        PlayerCandidate best = findBestOnlinePlayer(head, candidates, true);
+        String head = stripTimestamp(text);
+        head = head.substring(0, Math.min(head.length(), 96));
+
+        // A name immediately followed by a chat delimiter is the sender. Prefer the rightmost such
+        // match so rank/guild prefixes ("[Guild] MVP Player > hi") don't win over the real name.
+        PlayerCandidate best = findBestOnlinePlayer(head, candidates, true, true);
         if (best != null) {
             return best;
         }
-        best = findBestDisplayNameMatch(head, candidates);
-        if (best != null) {
-            return best;
-        }
-        return firstDelimiter(head) < 0 ? findBestOnlinePlayer(head, candidates, false) : null;
+        // No delimiter anywhere means a system line ("Player joined the game"). Here the subject
+        // comes first, so take the leftmost match — rightmost would pick "Alice" out of
+        // "Bob was slain by Alice".
+        return firstDelimiter(head) < 0 ? findBestOnlinePlayer(head, candidates, false, false) : null;
     }
 
-    private static PlayerCandidate findBestDisplayNameMatch(String text, List<PlayerCandidate> candidates) {
-        PlayerCandidate best = null;
-        int bestScore = 0;
-        boolean ambiguous = false;
-        for (PlayerCandidate candidate : candidates) {
-            if (candidate == null || candidate.matchName == null || candidate.matchName.isEmpty()) {
-                continue;
-            }
-            int score = getDisplayNameMatchScore(text, candidate.matchName);
-            if (score > bestScore) {
-                best = candidate;
-                bestScore = score;
-                ambiguous = false;
-            } else if (score == bestScore && score > 0 && best != null && !best.realName.equalsIgnoreCase(candidate.realName)) {
-                ambiguous = true;
-            }
-        }
-        return ambiguous ? null : best;
-    }
-
-    private static PlayerCandidate findBestOnlinePlayer(String text, List<PlayerCandidate> candidates, boolean requireChatSeparator) {
+    private static PlayerCandidate findBestOnlinePlayer(String text, List<PlayerCandidate> candidates,
+                                                       boolean requireChatSeparator, boolean preferRightmost) {
         PlayerCandidate best = null;
         int bestIndex = -1;
         int bestLength = -1;
@@ -276,12 +273,15 @@ public class ChatAvatarCache {
             if (candidate == null || candidate.matchName == null || candidate.matchName.isEmpty()) {
                 continue;
             }
-            int index = indexOfSenderName(text, candidate.matchName, requireChatSeparator);
+            int index = indexOfSenderName(text, candidate.matchName, requireChatSeparator, preferRightmost);
             if (index < 0) {
                 continue;
             }
             int length = candidate.matchName.length();
-            if (index > bestIndex || (index == bestIndex && length > bestLength)) {
+            boolean better = best == null
+                    || (preferRightmost ? index > bestIndex : index < bestIndex)
+                    || (index == bestIndex && length > bestLength);
+            if (better) {
                 bestIndex = index;
                 bestLength = length;
                 best = candidate;
@@ -345,7 +345,7 @@ public class ChatAvatarCache {
         candidates.add(new PlayerCandidate(realName, trimmed, texture));
     }
 
-    private static int indexOfSenderName(String text, String playerName, boolean requireChatSeparator) {
+    private static int indexOfSenderName(String text, String playerName, boolean requireChatSeparator, boolean preferRightmost) {
         String lowerText = text.toLowerCase(Locale.ROOT);
         String lowerName = playerName.toLowerCase(Locale.ROOT);
         int best = -1;
@@ -357,10 +357,14 @@ public class ChatAvatarCache {
             }
             int before = index - 1;
             int after = index + lowerName.length();
-            boolean beforeOk = before < 0 || !isNameChar(lowerText.charAt(before));
-            boolean afterOk = after >= lowerText.length() || !isNameChar(lowerText.charAt(after));
+            // Word-boundary guards on both sides: "tom" must not match inside "custom" or "tomato".
+            boolean beforeOk = before < 0 || !isWordChar(lowerText.charAt(before));
+            boolean afterOk = after >= lowerText.length() || !isWordChar(lowerText.charAt(after));
             if (beforeOk && afterOk && (!requireChatSeparator || hasChatSeparatorAfter(text, after))) {
                 best = index;
+                if (!preferRightmost) {
+                    return best;
+                }
             }
             from = index + 1;
         }
@@ -377,44 +381,14 @@ public class ChatAvatarCache {
         return false;
     }
 
-    private static int getDisplayNameMatchScore(String text, String displayName) {
-        String normalizedText = text.toLowerCase(Locale.ROOT);
-        String normalizedDisplayName = displayName.toLowerCase(Locale.ROOT);
-        int delimiter = lastDelimiterBefore(normalizedText, Math.min(normalizedText.length(), 96));
-        if (delimiter < 0) {
-            return 0;
-        }
-        String senderPrefix = normalizedText.substring(0, delimiter).trim();
-        if (senderPrefix.contains(normalizedDisplayName)) {
-            return normalizedDisplayName.length() + MIN_DISPLAY_NAME_MATCH_LENGTH;
-        }
-        int longestMatch = longestCommonSubstringLength(senderPrefix, normalizedDisplayName);
-        return longestMatch >= MIN_DISPLAY_NAME_MATCH_LENGTH ? longestMatch : 0;
-    }
-
-    private static int longestCommonSubstringLength(String first, String second) {
-        int[] lengths = new int[second.length() + 1];
-        int longest = 0;
-        for (int firstIndex = 1; firstIndex <= first.length(); firstIndex++) {
-            for (int secondIndex = second.length(); secondIndex > 0; secondIndex--) {
-                if (first.charAt(firstIndex - 1) == second.charAt(secondIndex - 1)) {
-                    lengths[secondIndex] = lengths[secondIndex - 1] + 1;
-                    longest = Math.max(longest, lengths[secondIndex]);
-                } else {
-                    lengths[secondIndex] = 0;
-                }
-            }
-        }
-        return longest;
-    }
-
-    private static int lastDelimiterBefore(String text, int limit) {
-        for (int i = limit - 1; i >= 0; i--) {
-            if (isChatDelimiter(text.charAt(i))) {
-                return i;
-            }
-        }
-        return -1;
+    /**
+     * Strips a leading clock stamp that another chat mod may have prepended, e.g. {@code [12:34] } or
+     * {@code <12:34> }. Without this the sender name is no longer at the head of the line and the
+     * delimiter-anchored match degrades.
+     */
+    private static String stripTimestamp(String text) {
+        Matcher matcher = TIMESTAMP_PREFIX.matcher(text);
+        return matcher.lookingAt() ? text.substring(matcher.end()) : text;
     }
 
     private static String extractLikelySenderName(String text) {
@@ -446,8 +420,17 @@ public class ChatAvatarCache {
         return character == ':' || character == '：' || character == '>' || character == '»' || character == '›';
     }
 
+    /** Minecraft account-name alphabet — deliberately ASCII-only, used to validate a real username. */
     private static boolean isNameChar(char c) {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+    }
+
+    /**
+     * Word-boundary alphabet for match guarding. Unlike {@link #isNameChar} this is Unicode-aware, so a
+     * CJK display name sitting flush against other CJK text is not mistaken for a standalone token.
+     */
+    private static boolean isWordChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_';
     }
 
     private static boolean isValidPlayerName(String name) {
@@ -493,172 +476,6 @@ public class ChatAvatarCache {
             // Runtime player objects can be null while changing worlds.
         }
         return null;
-    }
-
-    private static ResourceLocation getDefaultSkin(String playerName) {
-        UUID uuid = null;
-        if (playerName != null && !playerName.trim().isEmpty()) {
-            uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + playerName).getBytes(StandardCharsets.UTF_8));
-        }
-        if (uuid == null) {
-            return STEVE_SKIN;
-        }
-        return DefaultPlayerSkin.getDefaultSkin(uuid);
-    }
-
-    private static void queueMojangLoad(String playerName) {
-        long now = System.currentTimeMillis();
-        synchronized (CACHE) {
-            AvatarEntry entry = CACHE.get(cacheKey(playerName));
-            if (entry != null && entry.state == State.LOADING) {
-                return;
-            }
-            if (activeRequests >= MAX_PARALLEL_REQUESTS || now - lastRequestAt < MIN_REQUEST_INTERVAL_MS) {
-                deleteTexture(CACHE.put(cacheKey(playerName), new AvatarEntry(State.MISS, null, now + 5_000L)));
-                return;
-            }
-            activeRequests++;
-            lastRequestAt = now;
-            deleteTexture(CACHE.put(cacheKey(playerName), new AvatarEntry(State.LOADING, null, now + REQUEST_TIMEOUT_MS * 4L)));
-        }
-
-        FPSMaster.async.runnable(() -> {
-            try {
-                ResourceLocation skin = loadMojangSkin(playerName);
-                if (skin != null) {
-                    put(playerName, new AvatarEntry(State.READY, skin, System.currentTimeMillis() + MOJANG_TTL_MS, true));
-                } else {
-                    put(playerName, new AvatarEntry(State.MISS, null, System.currentTimeMillis() + MISS_TTL_MS));
-                }
-            } catch (Exception exception) {
-                ClientLogger.warn("Failed to load chat avatar from Mojang API");
-                put(playerName, new AvatarEntry(State.MISS, null, System.currentTimeMillis() + MISS_TTL_MS));
-            } finally {
-                synchronized (CACHE) {
-                    activeRequests = Math.max(0, activeRequests - 1);
-                }
-            }
-        });
-    }
-
-    private static ResourceLocation loadMojangSkin(String playerName) throws Exception {
-        String encodedName = URLEncoder.encode(playerName, "UTF-8");
-        JsonObject userProfile = readJson("https://api.mojang.com/users/profiles/minecraft/" + encodedName);
-        if (userProfile == null || !userProfile.has("id") || userProfile.get("id").isJsonNull()) {
-            return null;
-        }
-        String playerId = userProfile.get("id").getAsString();
-        if (playerId == null || playerId.trim().isEmpty()) {
-            return null;
-        }
-        String skinUrl = readSkinUrl(playerId.replace("-", ""));
-        if (skinUrl == null || skinUrl.trim().isEmpty()) {
-            return null;
-        }
-        BufferedImage image = readImage(skinUrl);
-        if (image == null || image.getWidth() < 64 || image.getHeight() < 32) {
-            return null;
-        }
-        BufferedImage skinImage = normalizeSkin(image);
-        final ResourceLocation[] result = new ResourceLocation[1];
-        AtomicBoolean accepted = new AtomicBoolean(true);
-        CountDownLatch latch = new CountDownLatch(1);
-        Minecraft.getMinecraft().addScheduledTask(() -> {
-            try {
-                ResourceLocation texture = Minecraft.getMinecraft()
-                        .getTextureManager()
-                        .getDynamicTextureLocation("fpsmaster_chat_avatar_" + cacheKey(playerName), new DynamicTexture(skinImage));
-                if (accepted.get()) {
-                    result[0] = texture;
-                } else {
-                    deleteTexture(texture);
-                }
-            } finally {
-                latch.countDown();
-            }
-        });
-        if (!latch.await(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-            accepted.set(false);
-            return null;
-        }
-        return result[0];
-    }
-
-    private static String readSkinUrl(String playerId) throws Exception {
-        JsonObject profile = readJson("https://sessionserver.mojang.com/session/minecraft/profile/" + playerId);
-        if (profile == null) {
-            return null;
-        }
-        JsonArray properties = profile.getAsJsonArray("properties");
-        if (properties == null) {
-            return null;
-        }
-        for (JsonElement element : properties) {
-            JsonObject property = element.getAsJsonObject();
-            if (!"textures".equals(property.get("name").getAsString()) || !property.has("value")) {
-                continue;
-            }
-            String decoded = new String(Base64.getDecoder().decode(property.get("value").getAsString()), StandardCharsets.UTF_8);
-            JsonObject decodedJson = GSON.fromJson(decoded, JsonObject.class);
-            if (decodedJson == null || !decodedJson.has("textures") || !decodedJson.get("textures").isJsonObject()) {
-                continue;
-            }
-            JsonObject textures = decodedJson.getAsJsonObject("textures");
-            if (textures.has("SKIN") && textures.get("SKIN").isJsonObject()) {
-                JsonObject skin = textures.getAsJsonObject("SKIN");
-                if (skin.has("url") && !skin.get("url").isJsonNull()) {
-                    return skin.get("url").getAsString();
-                }
-            }
-        }
-        return null;
-    }
-
-    private static JsonObject readJson(String url) throws Exception {
-        URLConnection connection = new URL(url).openConnection();
-        connection.setConnectTimeout(REQUEST_TIMEOUT_MS);
-        connection.setReadTimeout(REQUEST_TIMEOUT_MS);
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-            return GSON.fromJson(reader, JsonObject.class);
-        }
-    }
-
-    private static BufferedImage readImage(String url) throws Exception {
-        URLConnection connection = new URL(url).openConnection();
-        connection.setConnectTimeout(REQUEST_TIMEOUT_MS);
-        connection.setReadTimeout(REQUEST_TIMEOUT_MS);
-        try (InputStream inputStream = connection.getInputStream()) {
-            return ImageIO.read(inputStream);
-        }
-    }
-
-    private static BufferedImage normalizeSkin(BufferedImage source) {
-        BufferedImage converted = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = converted.createGraphics();
-        try {
-            graphics.drawImage(source, 0, 0, Math.min(source.getWidth(), 64), Math.min(source.getHeight(), 64), null);
-        } finally {
-            graphics.dispose();
-        }
-        return converted;
-    }
-
-    private static void deleteTexture(AvatarEntry entry) {
-        if (entry != null && entry.dynamicTexture) {
-            deleteTexture(entry.texture);
-        }
-    }
-
-    private static void deleteTexture(ResourceLocation texture) {
-        if (texture == null) {
-            return;
-        }
-        Minecraft minecraft = Minecraft.getMinecraft();
-        if (minecraft == null || minecraft.getTextureManager() == null) {
-            return;
-        }
-        TextureManager textureManager = minecraft.getTextureManager();
-        minecraft.addScheduledTask(() -> textureManager.deleteTexture(texture));
     }
 
     private static String cacheKey(String playerName) {
