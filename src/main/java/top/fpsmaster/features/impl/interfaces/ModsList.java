@@ -9,7 +9,6 @@ import top.fpsmaster.features.settings.impl.TextSetting;
 import java.awt.*;
 
 public class ModsList extends InterfaceModule {
-
     public BooleanSetting showLogo = new BooleanSetting("ShowText", true);
     public BooleanSetting english = new BooleanSetting("English", true);
     public BooleanSetting rainbow = new BooleanSetting("Rainbow", true);
@@ -18,9 +17,7 @@ public class ModsList extends InterfaceModule {
 
     public ModsList() {
         super("ModsList", Category.Interface);
-        addSettings(showLogo, text, english, color, rainbow, betterFont, spacing, backgroundColor, bg);
+        addSettings(showLogo, text, english, color, rainbow);
     }
 }
-
-
 

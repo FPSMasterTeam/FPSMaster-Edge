@@ -42,6 +42,9 @@ public class Component {
 
     public boolean allowScale = false;
 
+    /** Consecutive render failures; reset on any successful frame. See ComponentsManager. */
+    public int renderFailures = 0;
+
     public Position position = Position.LT;
 
     @SuppressWarnings("unchecked")
@@ -91,25 +94,32 @@ public class Component {
         float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;
         float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
 
+        // Anchors offset by the component's *rendered* size. width/height are logical units; everything
+        // that touches the drawn box (drawRect, hover, drag clamping, blur mask) multiplies by scale,
+        // so these must too — otherwise a scaled-up right-anchored component overflows the screen edge
+        // by width * (scale - 1).
+        float scaledWidth = width * scale;
+        float scaledHeight = height * scale;
+
         switch (position) {
             case LT:
                 rX = x * guiWidth / 2f;
                 rY = y * guiHeight / 2f;
                 break;
             case RT:
-                rX = guiWidth - (x * guiWidth / 2f + width);
+                rX = guiWidth - (x * guiWidth / 2f + scaledWidth);
                 rY = y * guiHeight / 2f;
                 break;
             case LB:
                 rX = x * guiWidth / 2f;
-                rY = guiHeight - (y * guiHeight / 2f + height);
+                rY = guiHeight - (y * guiHeight / 2f + scaledHeight);
                 break;
             case RB:
-                rX = guiWidth - (x * guiWidth / 2f + width);
-                rY = guiHeight - (y * guiHeight / 2f + height);
+                rX = guiWidth - (x * guiWidth / 2f + scaledWidth);
+                rY = guiHeight - (y * guiHeight / 2f + scaledHeight);
                 break;
             case CT:
-                rX = guiWidth / 2f - width * scale / 2f;
+                rX = guiWidth / 2f - scaledWidth / 2f;
                 rY = y * guiHeight / 2f;
                 break;
         }
@@ -117,7 +127,7 @@ public class Component {
     }
 
     public void drawBlurMask(ScaledResolution sr) {
-        if (!mod.bg.getValue() || width <= 0f || height <= 0f) {
+        if (!hasBackground() || width <= 0f || height <= 0f) {
             return;
         }
         float[] pos = getRealPosition(sr);
@@ -246,11 +256,20 @@ public class Component {
         this.y = changeY / guiHeight * 2f;
     }
 
+    /**
+     * A module only has a background if its traits say so. Checking {@code bg} alone is not enough:
+     * the field exists on every InterfaceModule and defaults to {@code true}, so a text-only module
+     * such as Sprint would otherwise have a blur mask stamped for a panel it never draws.
+     */
+    public boolean hasBackground() {
+        return mod.has(InterfaceModule.Trait.BACKGROUND) && mod.bg.getValue();
+    }
+
     public void drawRect(float x, float y, float width, float height, Color color) {
         float scaledWidth = width * scale;
         float scaledHeight = height * scale;
 
-        if (mod.bg.getValue()) {
+        if (hasBackground()) {
             if (mod.rounded.getValue()) {
                 Rects.roundedImage(Math.round(x), Math.round(y), Math.round(scaledWidth), Math.round(scaledHeight), mod.roundRadius.getValue().intValue(), color);
             } else {

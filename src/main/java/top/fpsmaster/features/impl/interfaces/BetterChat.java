@@ -25,10 +25,9 @@ public class BetterChat extends InterfaceModule {
     private static java.lang.reflect.Field chatLinesField;
     private static java.lang.reflect.Field drawnChatLinesField;
 
-
     public BetterChat() {
         super("BetterChat", Category.Interface);
-        addSettings(foldMessage, copyMessage, backgroundColor, fontShadow, betterFont, bg);
+        addSettings(foldMessage, copyMessage);
     }
 
     @Override
@@ -108,6 +107,4 @@ public class BetterChat extends InterfaceModule {
         }
     }
 }
-
-
 

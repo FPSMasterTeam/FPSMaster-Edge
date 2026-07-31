@@ -19,7 +19,7 @@ public class ReachDisplay extends InterfaceModule {
 
     public ReachDisplay() {
         super("ReachDisplay", Category.Interface);
-        addSettings(rounded, backgroundColor, fontShadow, betterFont, textColor, bg, rounded, roundRadius);
+        addSettings(textColor);
     }
 
     @Subscribe
@@ -32,6 +32,4 @@ public class ReachDisplay extends InterfaceModule {
         }
     }
 }
-
-
 

@@ -11,7 +11,6 @@ import top.fpsmaster.features.settings.impl.ColorSetting;
 import java.awt.*;
 
 public class ComboDisplay extends InterfaceModule {
-
     private Entity target = null;
 
     public static int combo = 0;
@@ -19,7 +18,7 @@ public class ComboDisplay extends InterfaceModule {
 
     public ComboDisplay() {
         super("ComboDisplay", Category.Interface);
-        addSettings(textColor, backgroundColor, betterFont, fontShadow, rounded, bg, rounded, roundRadius);
+        addSettings(textColor);
     }
 
     @Subscribe
@@ -27,7 +26,7 @@ public class ComboDisplay extends InterfaceModule {
         if (net.minecraft.client.Minecraft.getMinecraft().thePlayer == null) return;
         net.minecraft.entity.player.EntityPlayer rawPlayer =
             net.minecraft.client.Minecraft.getMinecraft().thePlayer;
-        
+
         if (rawPlayer.hurtTime == 1 || (target != null && rawPlayer.getDistanceToEntity(target) > 7)) {
             combo = 0;
         }
@@ -41,6 +40,4 @@ public class ComboDisplay extends InterfaceModule {
         target = e.target;
     }
 }
-
-
 

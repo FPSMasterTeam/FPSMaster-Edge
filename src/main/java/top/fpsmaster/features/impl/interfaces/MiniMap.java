@@ -8,7 +8,7 @@ import top.fpsmaster.utils.system.OptifineUtil;
 
 public class MiniMap extends InterfaceModule {
     public MiniMap() {
-        super("MiniMap", Category.Interface);
+        super("MiniMap", Category.Interface, InterfaceModule.NONE);
     }
 
     public static boolean using = false;
@@ -33,6 +33,4 @@ public class MiniMap extends InterfaceModule {
         using = false;
     }
 }
-
-
 

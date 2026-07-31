@@ -17,6 +17,6 @@ public class ClockDisplay extends InterfaceModule {
     public ClockDisplay() {
         super("ClockDisplay", Category.Interface);
         backgroundColor.setColor(new Color(18, 20, 26, 160));
-        addSettings(showSeconds, hour24Mode, label, textColor, betterFont, fontShadow, bg, rounded, roundRadius, backgroundColor);
+        addSettings(showSeconds, hour24Mode, label, textColor);
     }
 }

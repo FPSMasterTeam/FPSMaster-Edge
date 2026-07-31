@@ -12,7 +12,6 @@ import java.awt.*;
 import java.util.LinkedList;
 
 public class CPSDisplay extends InterfaceModule {
-
     private static final LinkedList<Key> KEYS = new LinkedList<>();
     private static final CPSCounterListener COUNTER_LISTENER = new CPSCounterListener();
     private static boolean trackingRegistered = false;
@@ -21,7 +20,6 @@ public class CPSDisplay extends InterfaceModule {
         super("CPSDisplay", Category.Interface);
         ensureTracking();
         addSettings(textColor);
-        addSettings(backgroundColor, fontShadow, betterFont, bg, rounded, roundRadius);
     }
 
     public static void ensureTracking() {
@@ -68,6 +66,4 @@ public class CPSDisplay extends InterfaceModule {
         }
     }
 }
-
-
 

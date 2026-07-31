@@ -14,6 +14,6 @@ public class ServerAddressDisplay extends InterfaceModule {
     public ServerAddressDisplay() {
         super("ServerAddressDisplay", Category.Interface);
         backgroundColor.setColor(new Color(18, 20, 26, 160));
-        addSettings(label, textColor, betterFont, fontShadow, bg, rounded, roundRadius, backgroundColor);
+        addSettings(label, textColor);
     }
 }

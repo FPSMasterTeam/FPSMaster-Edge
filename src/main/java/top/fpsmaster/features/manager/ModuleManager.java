@@ -6,6 +6,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventKey;
+import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.impl.interfaces.*;
 import top.fpsmaster.features.impl.optimizes.*;
 import top.fpsmaster.features.impl.render.*;
@@ -140,6 +141,14 @@ public class ModuleManager {
         modules.add(new ParticlesModifier());
 
         modules.add(new HideIndicator());
+
+        // Shared HUD appearance settings are appended centrally, after each module registered its own,
+        // so every InterfaceModule ends up with a consistent panel regardless of what its constructor did.
+        for (Module m : FPSMaster.moduleManager.modules) {
+            if (m instanceof InterfaceModule) {
+                ((InterfaceModule) m).registerCommonSettings();
+            }
+        }
 
         for (Module m : FPSMaster.moduleManager.modules) {
             mainPanel.mods.add(new ModuleRenderer(m));

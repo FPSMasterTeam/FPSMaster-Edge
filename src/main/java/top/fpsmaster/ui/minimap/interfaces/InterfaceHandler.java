@@ -128,6 +128,11 @@ public class InterfaceHandler {
                 GlStateManager.blendFunc(770, 771);
 
                 Component component = FPSMaster.componentsManager.getComponent(MiniMap.class);
+                if (component == null) {
+                    // getComponent matches on the module's exact class; when the MiniMap module is not
+                    // registered the component falls back to a plain InterfaceModule and never matches.
+                    return;
+                }
                 float[] pos = component.getRealPosition();
                 mc.ingameGUI.drawTexturedModalRect(((int) pos[0]), ((int) pos[1]), 0, 0, (int) ((minimapWidth / 2f + 1) / sizeFix), (int) ((minimapWidth / 2f + 1) / sizeFix));
                 super.drawInterface(width, height, partial);

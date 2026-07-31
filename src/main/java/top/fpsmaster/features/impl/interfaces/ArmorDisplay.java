@@ -8,9 +8,8 @@ public class ArmorDisplay extends InterfaceModule {
     public static ModeSetting mode = new ModeSetting("Mode", 0, "SimpleHoriz", "SimpleVertical", "Vertical");
 
     public ArmorDisplay() {
-        super("ArmorDisplay", Category.Interface);
-        addSettings(rounded, backgroundColor, fontShadow, betterFont, spacing, mode, bg, rounded, roundRadius);
+        super("ArmorDisplay", Category.Interface, Trait.BACKGROUND, Trait.TEXT, Trait.SPACING);
+        addSettings(mode);
     }
 }
-
 

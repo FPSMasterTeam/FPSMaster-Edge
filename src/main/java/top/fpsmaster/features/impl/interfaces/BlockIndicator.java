@@ -18,6 +18,6 @@ public class BlockIndicator extends InterfaceModule {
     public BlockIndicator() {
         super("BlockIndicator", Category.Interface);
         backgroundColor.setColor(new Color(18, 20, 26, 190));
-        addSettings(showId, showCoords, yOffset, bg, rounded, roundRadius, backgroundColor, panelColor, accentColor);
+        addSettings(showId, showCoords, yOffset, panelColor, accentColor);
     }
 }
