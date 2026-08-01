@@ -82,6 +82,9 @@ public class MusicScreen extends ScaledGuiScreen {
     private boolean loginOpen = false;
     private QrLoginState lastQrState = null;
 
+    private static final String PROGRESS_CAPTURE = "music.progress";
+    private static final String VOLUME_CAPTURE = "music.volume";
+
     private boolean draggingProgress = false;
     private float previewFrac = 0;
     private boolean draggingVolume = false;
@@ -98,6 +101,14 @@ public class MusicScreen extends ScaledGuiScreen {
         f18 = FPSMaster.fontManager.s18;
         f20 = FPSMaster.fontManager.s20;
         f24 = FPSMaster.fontManager.s24;
+
+        // initGui also runs on every window resize. Rebuilding the fields unconditionally meant
+        // resizing the window silently threw away whatever the user had typed — including a pasted
+        // QQ musickey, which is tedious to obtain.
+        String previousSearch = searchField != null ? searchField.getText() : "";
+        String previousUin = qqUin != null ? qqUin.getText() : "";
+        String previousKey = qqKey != null ? qqKey.getText() : "";
+
         searchField = new TextField(f16, "搜索歌曲 / 歌手…", CARD, TEXT, 60, new Runnable() {
             @Override
             public void run() {
@@ -106,6 +117,10 @@ public class MusicScreen extends ScaledGuiScreen {
         });
         qqUin = new TextField(f14, "musicid (uin)", CARD, TEXT, 32);
         qqKey = new TextField(f14, "musickey (qm_keyst)", CARD, TEXT, 256);
+
+        searchField.setText(previousSearch);
+        qqUin.setText(previousUin);
+        qqKey.setText(previousKey);
     }
 
     private int accent() {
@@ -219,6 +234,12 @@ public class MusicScreen extends ScaledGuiScreen {
         if (in(cx, cy, ix, baseY, iw, ih) && tab != t) {
             tab = t;
             scroll = 0;
+            // The search box only gets a chance to lose focus while the search tab is rendering, so
+            // without this it stays focused after navigating away and keeps swallowing keystrokes into
+            // a field that is no longer on screen.
+            if (searchField != null) {
+                searchField.setFocused(false);
+            }
         }
         return baseY + ih + 3;
     }
@@ -576,31 +597,29 @@ public class MusicScreen extends ScaledGuiScreen {
             Rects.rounded(knobX - 3, ty + trackH / 2f - 3, 6, 6, 3, 0xFFFFFFFF);
         }
 
-        boolean down = isMouseDown(0);
-        boolean startHere = in(cx, cy, x, y - 4, w, 11);
+        // Routed through the shared drag capture rather than a private boolean, so the capture is
+        // released centrally when the button goes up — including when it goes up outside the window,
+        // which a locally-tracked flag never learns about and which used to leave the knob glued to
+        // the cursor after an alt-tab.
+        Object captureId = isProgress ? PROGRESS_CAPTURE : VOLUME_CAPTURE;
+        beginPointerCapture(captureId, 0, x, y - 4, w, 11);
+        boolean capturing = isPointerCapturedBy(captureId, 0);
 
         if (isProgress) {
-            if (startHere) {
+            if (capturing) {
                 draggingProgress = true;
                 previewFrac = clamp01((mx - x) / w);
-            }
-            if (draggingProgress) {
-                if (down) {
-                    previewFrac = clamp01((mx - x) / w);
-                } else {
-                    m.seekFraction(previewFrac);
-                    draggingProgress = false;
-                }
+            } else if (draggingProgress) {
+                // Commit on release, not continuously — seeking every frame would thrash the decoder.
+                m.seekFraction(previewFrac);
+                draggingProgress = false;
             }
         } else {
-            if (startHere) draggingVolume = true;
-            if (draggingVolume) {
-                if (down) {
-                    int v = Math.round(clamp01((mx - x) / w) * 100);
-                    m.setVolume(v);
-                } else {
-                    draggingVolume = false;
-                }
+            if (capturing) {
+                draggingVolume = true;
+                m.setVolume(Math.round(clamp01((mx - x) / w) * 100));
+            } else {
+                draggingVolume = false;
             }
         }
     }
