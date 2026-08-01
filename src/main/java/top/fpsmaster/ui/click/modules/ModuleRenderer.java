@@ -7,7 +7,12 @@ import top.fpsmaster.utils.render.draw.Rects;
 
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
+import java.util.Map;
+import java.util.HashMap;
+import java.io.IOException;
+import net.minecraft.client.Minecraft;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.*;
@@ -24,6 +29,46 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class ModuleRenderer extends ValueRender {
+
+    private static final ResourceLocation INTERFACE_ICON =
+            new ResourceLocation("client/textures/modules/interface.png");
+
+    /**
+     * Icon per module name, or null where the client ships no icon for it.
+     *
+     * <p>The path is derived from the module's name, so a module added without an icon
+     * asked the texture manager for a file that is not there — which logs a
+     * {@code FileNotFoundException} and then draws the missing-texture chequer in the
+     * module list. Twenty-six of the sixty modules are in that state.
+     *
+     * <p>Resolved once per name rather than per frame: the lookup goes to the resource
+     * manager, and this runs for every visible row of an open GUI. Cleared on a resource
+     * reload, because a resource pack is allowed to supply an icon this build does not
+     * have.
+     */
+    private static final Map<String, ResourceLocation> ICONS = new HashMap<>();
+
+    private static ResourceLocation iconFor(String moduleName) {
+        String key = moduleName.toLowerCase(Locale.getDefault());
+        if (ICONS.containsKey(key)) {
+            return ICONS.get(key);
+        }
+        ResourceLocation candidate = new ResourceLocation("client/textures/modules/" + key + ".png");
+        ResourceLocation resolved = null;
+        try {
+            Minecraft.getMinecraft().getResourceManager().getResource(candidate);
+            resolved = candidate;
+        } catch (IOException missing) {
+            ClientLogger.info("no icon for module " + key + ", drawing the row without one");
+        }
+        ICONS.put(key, resolved);
+        return resolved;
+    }
+
+    /** Lets a resource pack's icons appear without a restart. */
+    public static void clearIconCache() {
+        ICONS.clear();
+    }
     ArrayList<SettingRender<?>> settingsRenderers = new ArrayList<>();
     private float settingHeight = 0f;
     private float border = 0f;
@@ -117,24 +162,11 @@ public class ModuleRenderer extends ValueRender {
         );
 
 
-        if (mod.category == Category.Interface) {
-            Images.draw(
-                    new ResourceLocation("client/textures/modules/interface.png"),
-                    x + 14,
-                    y + 10,
-                    14f,
-                    14f,
-                    content.getColor().getRGB()
-            );
-        } else {
-            Images.draw(
-                    new ResourceLocation("client/textures/modules/" + mod.name.toLowerCase(Locale.getDefault()) + ".png"),
-                    x + 14,
-                    y + 10,
-                    14f,
-                    14f,
-                    content.getColor().getRGB()
-            );
+        ResourceLocation icon = mod.category == Category.Interface
+                ? INTERFACE_ICON
+                : iconFor(mod.name);
+        if (icon != null) {
+            Images.draw(icon, x + 14, y + 10, 14f, 14f, content.getColor().getRGB());
         }
 
         FPSMaster.fontManager.s18.drawString(
