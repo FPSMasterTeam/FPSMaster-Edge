@@ -8,16 +8,22 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
+import top.fpsmaster.features.impl.render.ChatAvatarCache;
+import top.fpsmaster.features.impl.render.ChatAvatars;
 
 import java.awt.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
 
 import static top.fpsmaster.utils.core.Utility.mc;
 
@@ -52,6 +58,17 @@ public abstract class MixinGuiNewChat {
 
     @Shadow @Final private List<ChatLine> chatLines;
 
+    @Unique
+    private static final int FPSMASTER_MAX_CHAT_MESSAGE_SOURCES = 512;
+
+    // Identity-keyed on purpose: IChatComponent.hashCode walks the whole sibling tree and is not safe
+    // to call on arbitrary server-supplied components.
+    @Unique
+    private final Map<IChatComponent, IChatComponent> fpsmaster$chatMessageSources = new IdentityHashMap<>();
+
+    @Unique
+    private final Deque<IChatComponent> fpsmaster$chatMessageOrder = new ArrayDeque<>();
+
     /**
      * @author SuperSkidder
      * @reason betterchat
@@ -68,8 +85,9 @@ public abstract class MixinGuiNewChat {
 
                     float g = this.getChatScale();
                     int k = MathHelper.ceiling_float_int((float) this.getChatWidth() / g);
+                    int chatAvatarOffset = ChatAvatars.getChatOffset();
                     GlStateManager.pushMatrix();
-                    GlStateManager.translate(2.0F, 8.0F, 0.0F);
+                    GlStateManager.translate(2.0F + chatAvatarOffset, 8.0F, 0.0F);
                     GlStateManager.scale(g, g, 1.0F);
                     int l = 0;
 
@@ -96,7 +114,10 @@ public abstract class MixinGuiNewChat {
                                 if (o > 3) {
                                     int q = -m * 9;
                                     long edgeMark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
-                                    Gui.drawRect(-2, q - 9, k + 4, q, o / 2 << 24);
+                                    // Right edge also shifts back by the gutter, otherwise the whole
+                                    // panel grows wider than the configured chat width.
+                                    Gui.drawRect(-2 - chatAvatarOffset, q - 9, k + 4 - chatAvatarOffset, q, o / 2 << 24);
+                                    drawChatAvatar(chatLine, -chatAvatarOffset + 1 + ChatAvatars.getOffsetX(), q - 8 + ChatAvatars.getOffsetY(), o);
                                     if (edgeMark != 0L) {
                                         HudBreakdown.record("chat:rect", System.nanoTime() - edgeMark);
                                         edgeMark = System.nanoTime();
@@ -128,8 +149,8 @@ public abstract class MixinGuiNewChat {
                         if (r != n) {
                             o = s > 0 ? 170 : 96;
                             int p = this.isScrolled ? 13382451 : 3355562;
-                            Gui.drawRect(0, -s, 2, -s - t, p + (o << 24));
-                            Gui.drawRect(2, -s, 1, -s - t, 13421772 + (o << 24));
+                            Gui.drawRect(-chatAvatarOffset, -s, 2 - chatAvatarOffset, -s - t, p + (o << 24));
+                            Gui.drawRect(2 - chatAvatarOffset, -s, 1 - chatAvatarOffset, -s - t, 13421772 + (o << 24));
                         }
                     }
 
@@ -137,7 +158,7 @@ public abstract class MixinGuiNewChat {
                 }
             } else {
                 BetterChat module = (BetterChat) FPSMaster.moduleManager.getModule(BetterChat.class);
-                AtomicInteger i = new AtomicInteger(this.getLineCount());
+                int i = this.getLineCount();
                 int j = drawnChatLines.size();
                 float f = mc.gameSettings.chatOpacity * 0.9F + 0.1F;
                 if (j > 0) {
@@ -145,14 +166,15 @@ public abstract class MixinGuiNewChat {
 
                     float g = this.getChatScale();
                     int k = MathHelper.ceiling_float_int((float) this.getChatWidth() / g);
+                    int chatAvatarOffset = ChatAvatars.getChatOffset();
                     GlStateManager.pushMatrix();
-                    GlStateManager.translate(2.0F, 8.0F, 0.0F);
+                    GlStateManager.translate(2.0F + chatAvatarOffset, 8.0F, 0.0F);
                     GlStateManager.scale(g, g, 1.0F);
 
                     int m;
                     int n;
                     int o;
-                    for (m = 0; m + this.scrollPos < drawnChatLines.size() && m < i.get(); ++m) {
+                    for (m = 0; m + this.scrollPos < drawnChatLines.size() && m < i; ++m) {
                         ChatLine chatLine = drawnChatLines.get(m + this.scrollPos);
                         if (chatLine != null) {
                             if (getChatOpen() && v1_8_9$isChatOpenAnimationNeed) {
@@ -170,7 +192,8 @@ public abstract class MixinGuiNewChat {
                                     int q = -m * 9;
                                     long edgeMark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
                                     int alpha1 = (int) ((alpha / 255f) * module.backgroundColor.getColor().getAlpha());
-                                    Gui.drawRect(-2, q - 8, k + 4, q + 1, Colors.alpha(module.backgroundColor.getColor(), alpha1).getRGB());
+                                    Gui.drawRect(-2 - chatAvatarOffset, q - 8, k + 4 - chatAvatarOffset, q + 1, Colors.alpha(module.backgroundColor.getColor(), alpha1).getRGB());
+                                    drawChatAvatar(chatLine, -chatAvatarOffset + 1 + ChatAvatars.getOffsetX(), q - 8 + ChatAvatars.getOffsetY() + Math.round(6 - (alpha / 255f) * 6), alpha);
                                     if (edgeMark != 0L) {
                                         HudBreakdown.record("chat:rect", System.nanoTime() - edgeMark);
                                         edgeMark = System.nanoTime();
@@ -201,8 +224,8 @@ public abstract class MixinGuiNewChat {
                         GlStateManager.translate(-3.0F, 0.0F, 0.0F);
                         int r = j * m + j;
                         if (r != 0) {
-                            Gui.drawRect(0, 0, 2, 0, module.backgroundColor.getColor().getRGB());
-                            Gui.drawRect(2, 0, 1, 0, module.backgroundColor.getColor().getRGB());
+                            Gui.drawRect(-chatAvatarOffset, 0, 2 - chatAvatarOffset, 0, module.backgroundColor.getColor().getRGB());
+                            Gui.drawRect(2 - chatAvatarOffset, 0, 1 - chatAvatarOffset, 0, module.backgroundColor.getColor().getRGB());
                         }
                     }
 
@@ -224,19 +247,21 @@ public abstract class MixinGuiNewChat {
             ScaledResolution scaledResolution = new ScaledResolution(mc);
             int i = scaledResolution.getScaleFactor();
             float f = this.getChatScale();
-            int j = mouseX / i - 2;
+            // drawChat translates by (2 + avatar gutter) and only then scales, so the gutter lives in
+            // unscaled screen space and has to come off before the divide, not after.
+            int j = mouseX / i - 2 - ChatAvatars.getChatOffset();
             int k = mouseY / i - 40;
             j = MathHelper.floor_float((float) j / f);
             k = MathHelper.floor_float((float) k / f);
             if (j >= 0 && k >= 0) {
-                AtomicInteger l = new AtomicInteger(Math.min(this.getLineCount(), this.drawnChatLines.size()));
+                int lineCount = Math.min(this.getLineCount(), this.drawnChatLines.size());
                 int fontHeight = mc.fontRendererObj.FONT_HEIGHT;
                 BetterChat module = (BetterChat) FPSMaster.moduleManager.getModule(BetterChat.class);
 
                 if (BetterChat.using && module.betterFont.getValue()) {
                     fontHeight = FPSMaster.fontManager.s16.getHeight();
                 }
-                if (j <= MathHelper.floor_float((float) this.getChatWidth() / this.getChatScale()) && k < fontHeight * l.get() + l.get()) {
+                if (j <= MathHelper.floor_float((float) this.getChatWidth() / this.getChatScale()) && k < fontHeight * lineCount + lineCount) {
                     int m = k / fontHeight + this.scrollPos;
                     if (m >= 0 && m < this.drawnChatLines.size()) {
                         ChatLine chatLine = this.drawnChatLines.get(m);
@@ -270,10 +295,39 @@ public abstract class MixinGuiNewChat {
     public List<IChatComponent> spilt(IChatComponent chatComponent, int i, FontRenderer chatcomponenttext, boolean l, boolean chatcomponenttext2){
         BetterChat module = (BetterChat) FPSMaster.moduleManager.getModule(BetterChat.class);
 
+        int chatAvatarOffset = ChatAvatars.getChatOffset();
+        int width = Math.max(20, i - chatAvatarOffset);
+        List<IChatComponent> lines;
         if (BetterChat.using && module.betterFont.getValue()) {
-            return GuiUtilRenderComponents.splitText(chatComponent, i, FPSMaster.fontManager.s16, false, false);
+            lines = GuiUtilRenderComponents.splitText(chatComponent, width, FPSMaster.fontManager.s16, false, false);
         } else {
-            return GuiUtilRenderComponents.splitText(chatComponent, i, mc.fontRendererObj, false, false);
+            lines = GuiUtilRenderComponents.splitText(chatComponent, width, mc.fontRendererObj, false, false);
+        }
+        fpsmaster$rememberChatMessageSource(chatComponent, lines);
+        return lines;
+    }
+
+    @Unique
+    private void fpsmaster$rememberChatMessageSource(IChatComponent source, List<IChatComponent> lines) {
+        for (IChatComponent line : lines) {
+            if (fpsmaster$chatMessageSources.put(line, source) == null) {
+                fpsmaster$chatMessageOrder.addLast(line);
+            }
+        }
+        // Evict oldest-first instead of wiping the map: a wholesale clear would drop the mapping for
+        // lines that are still on screen, blanking their avatars while the gutter stays reserved.
+        while (fpsmaster$chatMessageOrder.size() > FPSMASTER_MAX_CHAT_MESSAGE_SOURCES) {
+            fpsmaster$chatMessageSources.remove(fpsmaster$chatMessageOrder.removeFirst());
+        }
+    }
+
+    @Unique
+    private void drawChatAvatar(ChatLine chatLine, int x, int y, int alpha) {
+        IChatComponent line = chatLine.getChatComponent();
+        IChatComponent source = fpsmaster$chatMessageSources.get(line);
+        ResourceLocation avatar = ChatAvatars.getAvatar(source != null ? source : line);
+        if (avatar != null) {
+            ChatAvatarCache.drawHead(avatar, x, y, ChatAvatars.getAvatarSize(), alpha);
         }
     }
 

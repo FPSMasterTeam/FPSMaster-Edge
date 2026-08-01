@@ -31,12 +31,25 @@ public class Module {
         this.category = category;
     }
 
+    /**
+     * Registration is idempotent by identity. Several modules used to pass the same setting twice,
+     * which rendered a duplicate row in the ClickGUI bound to the same underlying value.
+     */
     public void addSettings(Setting<?>... settings) {
         for (Setting<?> setting : settings) {
-            if (setting != null) {
+            if (setting != null && !containsSetting(setting)) {
                 this.settings.add(setting);
             }
         }
+    }
+
+    private boolean containsSetting(Setting<?> setting) {
+        for (Setting<?> existing : this.settings) {
+            if (existing == setting) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void toggle() {

@@ -12,8 +12,8 @@ public class PotionDisplay extends InterfaceModule {
     public static NumberSetting reminderTime = new NumberSetting("ReminderTime", 20, 1, 120, 1, () -> noticeableReminder.getValue());
 
     public PotionDisplay() {
-        super("PotionDisplay", Category.Interface);
-        addSettings(backgroundColor, fontShadow, betterFont, betterAnimation, noticeableReminder, reminderTime, spacing, bg, rounded, roundRadius);
+        super("PotionDisplay", Category.Interface, Trait.BACKGROUND, Trait.TEXT, Trait.SPACING);
+        addSettings(betterAnimation, noticeableReminder, reminderTime);
     }
 
     @Override
@@ -28,6 +28,4 @@ public class PotionDisplay extends InterfaceModule {
         using = false;
     }
 }
-
-
 

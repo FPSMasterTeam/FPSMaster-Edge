@@ -37,6 +37,16 @@ public class ClientLogger {
     public static void error(String from, String s) {
         logger.error("{} -> {}", from, s);
     }
+
+    // Throwable overloads: without these, callers that catch an exception have no way to record it
+    // and the stack trace is silently dropped.
+    public static void error(String s, Throwable throwable) {
+        logger.error(s, throwable);
+    }
+
+    public static void warn(String s, Throwable throwable) {
+        logger.warn(s, throwable);
+    }
 }
 
 

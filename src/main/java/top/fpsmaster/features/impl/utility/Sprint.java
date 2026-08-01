@@ -15,10 +15,9 @@ public class Sprint extends InterfaceModule {
     public static boolean sprint = true;
 
     public Sprint() {
-        super("Sprint", Category.Utility);
-        addSettings(toggleSprint, betterFont);
+        super("Sprint", Category.Utility, Trait.TEXT);
+        addSettings(toggleSprint);
     }
-
 
     @Override
     public void onEnable() {
@@ -55,6 +54,4 @@ public class Sprint extends InterfaceModule {
         using = false;
     }
 }
-
-
 

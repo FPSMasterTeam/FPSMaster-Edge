@@ -213,6 +213,13 @@ betterchat.background=背景
 betterchat.foldmessage=折叠消息
 betterchat.copymessage=复制消息
 
+chatavatars=聊天头像
+chatavatars.desc=在聊天消息旁显示玩家头像
+chatavatars.size=头像大小
+chatavatars.gap=头像间距
+chatavatars.offsetx=水平偏移
+chatavatars.offsety=垂直偏移
+
 combodisplay=连击显示
 combodisplay.desc=显示连击数
 combodisplay.textcolor=文字颜色
@@ -452,6 +459,12 @@ sprint.desc=保持疾跑
 sprint.togglesprint=切换疾跑
 sprint.betterfont=更好的字体
 
+togglesneak=切换潜行
+togglesneak.desc=按下切换键即可保持潜行
+togglesneak.togglesneak=切换潜行
+togglesneak.togglekey=切换按键
+togglesneak.betterfont=更好的字体
+
 autogg=自动GG
 autogg.desc=游戏结束后自动地在发送你自定义的消息
 autogg.servers=服务器列表
@@ -460,6 +473,10 @@ autogg.servers.normal=普通模式
 autogg.message=自定义消息
 autogg.autoplay=自动重开
 autogg.delaytoplay=自动重开延迟
+autogg.detectionmode=检测模式
+autogg.detectionmode.chat=仅聊天
+autogg.detectionmode.title=仅Title
+autogg.detectionmode.both=两者同时
 
 
 oldanimations=旧动画
@@ -593,6 +610,33 @@ playtime.roundradius=圆角半径
 playtime.unit.seconds=秒
 playtime.unit.minutes=分钟
 playtime.unit.hours=小时
+
+clockdisplay=时钟显示
+clockdisplay.desc=在屏幕上显示当前系统时间
+clockdisplay.showseconds=显示秒
+clockdisplay.hour24=24小时制
+clockdisplay.label=显示文本
+clockdisplay.textcolor=文字颜色
+clockdisplay.betterfont=更好的字体
+clockdisplay.fontshadow=字体阴影
+clockdisplay.defaultlabel=时间：
+clockdisplay.background=背景
+clockdisplay.backgroundcolor=背景颜色
+clockdisplay.round=圆角
+clockdisplay.roundradius=圆角半径
+
+serveraddressdisplay=服务器地址
+serveraddressdisplay.desc=在屏幕上显示当前服务器IP或存档名称
+serveraddressdisplay.label=显示文本
+serveraddressdisplay.textcolor=文字颜色
+serveraddressdisplay.betterfont=更好的字体
+serveraddressdisplay.fontshadow=字体阴影
+serveraddressdisplay.defaultlabel=服务器：
+serveraddressdisplay.singleplayer=单人游戏
+serveraddressdisplay.background=背景
+serveraddressdisplay.backgroundcolor=背景颜色
+serveraddressdisplay.round=圆角
+serveraddressdisplay.roundradius=圆角半径
 
 hitboxes=碰撞箱
 hitboxes.desc=显示碰撞箱

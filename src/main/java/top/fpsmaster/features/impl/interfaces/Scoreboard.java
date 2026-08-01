@@ -10,7 +10,7 @@ public class Scoreboard extends InterfaceModule {
 
     public Scoreboard() {
         super("Scoreboard", Category.Interface);
-        addSettings(rounded, backgroundColor, fontShadow, betterFont, score, bg, rounded, roundRadius);
+        addSettings(score);
     }
 
     @Override
@@ -25,6 +25,4 @@ public class Scoreboard extends InterfaceModule {
         using = false;
     }
 }
-
-
 

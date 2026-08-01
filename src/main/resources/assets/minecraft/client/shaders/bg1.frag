@@ -2,8 +2,6 @@
 precision mediump float;
 #endif
 
-#extension GL_OES_standard_derivatives : disable
-
 #define NUM_OCTAVES 10
 
 uniform float time;
@@ -58,7 +56,7 @@ float fbm(vec2 pos) {
 }
 
 void main(void) {
-	vec2 p = (gl_FragCoord.xy * (1.0 + animation * 2) - resolution.xy) / min(resolution.x, resolution.y);
+	vec2 p = (gl_FragCoord.xy * (1.0 + animation * 2.0) - resolution.xy) / min(resolution.x, resolution.y);
     float angle = animation;
     mat2 rotationMatrix = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
     p = rotationMatrix * p;  // 旋转输入坐标

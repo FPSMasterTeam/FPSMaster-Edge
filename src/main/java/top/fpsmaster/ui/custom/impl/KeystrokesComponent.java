@@ -37,38 +37,60 @@ public class KeystrokesComponent extends Component {
     }
 
     @Override
+    public void measure() {
+        // Key offsets are laid out here rather than in draw() so backgroundShape — which the blur mask
+        // consults before drawing — sees this frame's positions.
+        int spacing = mod.spacing.getValue().intValue();
+        for (Key key : keys) {
+            switch (key.keyCode) {
+                case Keyboard.KEY_W:
+                    key.yOffset = key.defaultYOffset - spacing;
+                    break;
+                case Keyboard.KEY_A:
+                    key.xOffset = key.defaultXOffset - spacing;
+                    break;
+                case Keyboard.KEY_D:
+                    key.xOffset = key.defaultXOffset + spacing;
+                    break;
+                case -1:
+                    key.xOffset = key.defaultXOffset - spacing;
+                    key.yOffset = key.defaultYOffset + spacing;
+                    break;
+                case -2:
+                    key.xOffset = key.defaultXOffset + spacing;
+                    key.yOffset = key.defaultYOffset + spacing;
+                    break;
+                case Keyboard.KEY_SPACE:
+                    key.xOffset = key.defaultXOffset - spacing;
+                    key.yOffset = key.defaultYOffset + spacing * 2;
+                    break;
+            }
+        }
+        width = 60f + spacing * 2f;
+        height = (Keystrokes.showSpace.getValue() ? 72f : 60f) + spacing * 2f;
+    }
+
+    /**
+     * Keystrokes paints one panel per key, not a single box, so the default single-rectangle mask
+     * would blur the gaps between keys as well.
+     */
+    @Override
+    public void backgroundShape(ShapeSink sink, float originX, float originY) {
+        for (Key key : keys) {
+            if (key.isHidden()) {
+                continue;
+            }
+            sink.rect(originX + key.xOffset * scale, originY + key.yOffset * scale, key.renderWidth(), key.baseHeight);
+        }
+    }
+
+    @Override
     public void draw(float x, float y) {
         super.draw(x, y);
         double dt = animClock.tick();
         for (Key key : keys) {
-            switch (key.keyCode) {
-                case Keyboard.KEY_W:
-                    key.yOffset = key.defaultYOffset - mod.spacing.getValue().intValue();
-                    break;
-                case Keyboard.KEY_A:
-                    key.xOffset = key.defaultXOffset - mod.spacing.getValue().intValue();
-                    break;
-                case Keyboard.KEY_D:
-                    key.xOffset = key.defaultXOffset + mod.spacing.getValue().intValue();
-                    break;
-                case -1:
-                    key.xOffset = key.defaultXOffset - mod.spacing.getValue().intValue();
-                    key.yOffset = key.defaultYOffset + mod.spacing.getValue().intValue();
-                    break;
-                case -2:
-                    key.xOffset = key.defaultXOffset + mod.spacing.getValue().intValue();
-                    key.yOffset = key.defaultYOffset + mod.spacing.getValue().intValue();
-                    break;
-                case Keyboard.KEY_SPACE:
-                    key.xOffset = key.defaultXOffset - mod.spacing.getValue().intValue();
-                    key.yOffset = key.defaultYOffset + mod.spacing.getValue().intValue() * 2;
-                    break;
-            }
             key.render(x, y, (float) dt, mod.backgroundColor.getColor(), Keystrokes.pressedColor.getColor());
         }
-        float spacing = mod.spacing.getValue().floatValue();
-        width = 60f + spacing * 2f;
-        height = (Keystrokes.showSpace.getValue() ? 72f : 60f) + spacing * 2f;
     }
 
     public class Key {
@@ -96,14 +118,26 @@ public class KeystrokesComponent extends Component {
             this.yOffset = defaultYOffset;
         }
 
+        /** The space bar is the one key that can be switched off, so it must be skipped by the mask too. */
+        private boolean isHidden() {
+            return keyCode == Keyboard.KEY_SPACE && !Keystrokes.showSpace.getValue();
+        }
+
+        /** Single source of truth for key width, shared by render() and backgroundShape(). */
+        private float renderWidth() {
+            return keyCode == Keyboard.KEY_SPACE
+                    ? baseWidth + mod.spacing.getValue().floatValue() * 2f
+                    : baseWidth;
+        }
+
         public void render(float x, float y, float speed, Color color, Color color1) {
-            if (keyCode == Keyboard.KEY_SPACE && !Keystrokes.showSpace.getValue()) {
+            if (isHidden()) {
                 pressAnims.clear();
                 lastPressed = false;
                 return;
             }
             boolean pressed;
-            float keyW = baseWidth;
+            float keyW = renderWidth();
             float keyH = baseHeight;
             float keyX;
             float keyY;
@@ -122,11 +156,6 @@ public class KeystrokesComponent extends Component {
                 keyX = x + xOffset * scale;
                 keyY = y + yOffset * scale;
             }
-            if (keyCode == Keyboard.KEY_SPACE) {
-                keyW = baseWidth + spacing * 2f;
-                keyX = x + xOffset * scale;
-            }
-
             this.color.base(pressed ? color1 : color);
 
             if (pressed && !lastPressed) {
@@ -257,16 +286,22 @@ public class KeystrokesComponent extends Component {
             int radius = resolveKeyRadius();
             Color border = resolveBorderColor(x, y);
 
+            // try/finally: bailing out mid-stencil would leave GL_STENCIL_TEST enabled and colorMask
+            // partially closed, which silently discards everything drawn after this component.
             StencilUtil.initStencilToWrite();
-            Rects.rounded(outerX, outerY, outerW, outerH, radius, new Color(0, 0, 0, 255).getRGB());
-            org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_ALWAYS, 0, 0xFF);
-            org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE);
-            Rects.rounded(x, y, scaledW, scaledH, radius, new Color(0, 0, 0, 255).getRGB());
-            org.lwjgl.opengl.GL11.glColorMask(true, true, true, true);
-            org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_EQUAL, 1, 0xFF);
-            org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP);
-            Rects.rounded(outerX, outerY, outerW, outerH, radius, border.getRGB());
-            StencilUtil.uninitStencilBuffer();
+            try {
+                Rects.rounded(outerX, outerY, outerW, outerH, radius, new Color(0, 0, 0, 255).getRGB());
+                org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_ALWAYS, 0, 0xFF);
+                org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE);
+                Rects.rounded(x, y, scaledW, scaledH, radius, new Color(0, 0, 0, 255).getRGB());
+                org.lwjgl.opengl.GL11.glColorMask(true, true, true, true);
+                org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_EQUAL, 1, 0xFF);
+                org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP);
+                Rects.rounded(outerX, outerY, outerW, outerH, radius, border.getRGB());
+            } finally {
+                org.lwjgl.opengl.GL11.glColorMask(true, true, true, true);
+                StencilUtil.uninitStencilBuffer();
+            }
         }
 
         private void updatePressAnims(float dt, float width, float height, boolean pressed) {

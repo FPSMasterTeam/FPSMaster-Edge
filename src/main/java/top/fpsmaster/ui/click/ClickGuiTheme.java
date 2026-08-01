@@ -153,4 +153,28 @@ public class ClickGuiTheme {
     public static Color modeSelectBg() {
         return isLight() ? new Color(40, 40, 40) : new Color(52, 52, 52);
     }
+
+    public static Color accent() {
+        return new Color(89, 101, 241);
+    }
+
+    public static Color danger() {
+        return isLight() ? new Color(214, 69, 69) : new Color(235, 92, 92);
+    }
+
+    public static Color sideBtnHoverBg() {
+        return isLight() ? new Color(255, 255, 255, 235) : new Color(48, 48, 56, 210);
+    }
+
+    public static Color cardBg() {
+        return isLight() ? new Color(255, 255, 255, 170) : new Color(255, 255, 255, 16);
+    }
+
+    public static Color cardHoverBg() {
+        return isLight() ? new Color(255, 255, 255, 235) : new Color(255, 255, 255, 34);
+    }
+
+    public static Color divider() {
+        return isLight() ? new Color(0, 0, 0, 26) : new Color(255, 255, 255, 24);
+    }
 }

@@ -1,7 +1,5 @@
 package top.fpsmaster.ui.custom.impl;
 
-import top.fpsmaster.utils.render.draw.Rects;
-
 import top.fpsmaster.features.impl.interfaces.Scoreboard;
 import top.fpsmaster.ui.custom.Component;
 import net.minecraft.client.Minecraft;
@@ -14,6 +12,9 @@ import java.util.Collection;
 import java.util.List;
 
 public class ScoreboardComponent extends Component {
+
+    /** Matches the vanilla font metrics this HUD was originally laid out against. */
+    private static final int FONT_SIZE = 16;
 
     public ScoreboardComponent() {
         super(Scoreboard.class);
@@ -48,25 +49,29 @@ public class ScoreboardComponent extends Component {
             filtered = filtered.subList(filtered.size() - 15, filtered.size());
         }
 
-        int maxWidth = mc.fontRendererObj.getStringWidth(objective.getDisplayName());
+        // Measure through the base class so BetterFont is honoured; these are logical widths, and
+        // drawRect/drawString apply scale themselves.
+        String title = objective.getDisplayName();
+        float maxWidth = getStringWidth(FONT_SIZE, title);
         boolean showScore = Scoreboard.score.getValue();
         List<String> lines = new ArrayList<>();
         for (Score score : filtered) {
             String name = ScorePlayerTeam.formatPlayerName(mcScoreboard.getPlayersTeam(score.getPlayerName()), score.getPlayerName());
             String line = showScore ? name + ": " + score.getScorePoints() : name;
             lines.add(line);
-            maxWidth = Math.max(maxWidth, mc.fontRendererObj.getStringWidth(line));
+            maxWidth = Math.max(maxWidth, getStringWidth(FONT_SIZE, line));
         }
 
-        int lineHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
+        float lineHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
         width = maxWidth + 6;
         height = (lines.size() + 1) * lineHeight + 4;
-        Rects.fill(x, y, width, height, mod.backgroundColor.getColor());
-        mc.fontRendererObj.drawStringWithShadow(objective.getDisplayName(), x + 3, y + 2, 0xFFFFFF);
-        float offsetY = y + 2 + lineHeight;
+        drawRect(x, y, width, height, mod.backgroundColor.getColor());
+        drawString(FONT_SIZE, title, x + 3 * scale, y + 2 * scale, 0xFFFFFF);
+        // Row offsets are positions, so they scale here.
+        float offsetY = y + (2 + lineHeight) * scale;
         for (String line : lines) {
-            mc.fontRendererObj.drawStringWithShadow(line, x + 3, offsetY, 0xFFFFFF);
-            offsetY += lineHeight;
+            drawString(FONT_SIZE, line, x + 3 * scale, offsetY, 0xFFFFFF);
+            offsetY += lineHeight * scale;
         }
     }
 }

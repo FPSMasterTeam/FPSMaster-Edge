@@ -43,8 +43,10 @@ public abstract class MixinRender {
             ci.cancel();
             return;
         }
-        LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
-        ci.cancel();
+        if (LevelTag.using) {
+            LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
+            ci.cancel();
+        }
     }
 
     @Inject(method = "renderName", at = @At("HEAD"), cancellable = true)

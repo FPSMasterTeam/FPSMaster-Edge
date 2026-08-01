@@ -104,6 +104,25 @@ dependencies {
     shadowImpl("org.slf4j:slf4j-api:2.0.6") {
         isTransitive = false
     }
+
+    // 音乐能力：Cadence 数据客户端（网易云/QQ 搜索/直链/歌词/歌单/登录）。
+    // 由 JitPack 托管 (FPSMasterTeam/Cadence)，坐标即 com.github.<owner>:<repo>:<tag>；
+    // 源码里的包名仍是 top.fpsmaster.music.*。
+    // gson 由 MC classpath 提供，故不传递依赖；Kotlin 运行时单独引入。
+    shadowImpl("com.github.FPSMasterTeam:Cadence:v0.1.1") {
+        isTransitive = false
+    }
+    shadowImpl("org.jetbrains.kotlin:kotlin-stdlib:2.4.0") {
+        isTransitive = true
+    }
+    // mp3 解码（javax.sound SPI）：jlayer + tritonus-share，纯 Java，兼容 Java 8。
+    shadowImpl("com.googlecode.soundlibs:mp3spi:1.9.5.4") {
+        isTransitive = true
+    }
+    // 登录二维码生成（网易云 codekey URL → QR 图）：zxing，纯 Java。
+    shadowImpl("com.google.zxing:core:3.5.3") {
+        isTransitive = false
+    }
     // If you don't want to log in with your real minecraft account, remove this line
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.1.2")
     compileOnly("org.projectlombok:lombok:1.18.38")
@@ -170,6 +189,8 @@ tasks.shadowJar {
     destinationDirectory.set(layout.buildDirectory.dir("badjars"))
     archiveClassifier.set("all-dev")
     configurations = listOf(shadowImpl)
+    // 合并 META-INF/services，否则 mp3spi 的 javax.sound SPI provider 不会被注册，mp3 无法解码。
+    mergeServiceFiles()
     doLast {
         configurations.forEach {
             println("Copying jars into mod: ${it.files}")

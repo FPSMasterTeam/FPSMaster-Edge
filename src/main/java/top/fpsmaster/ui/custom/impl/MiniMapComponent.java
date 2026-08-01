@@ -32,12 +32,14 @@ public class MiniMapComponent extends Component {
     public void draw(float x, float y) {
         super.draw(x, y);
 
+        // Drawn raw rather than through drawRect (it is a texture, not a panel), so scale is applied
+        // to both the offset and the size here.
         Images.draw(
                 new ResourceLocation("client/gui/minimapbg.png"),
-                x + width / 2 - 179 / 4f,
-                y + width / 2 - 179 / 4f,
-                179f / 2f,
-                178f / 2f,
+                x + (width / 2 - 179 / 4f) * scale,
+                y + (width / 2 - 179 / 4f) * scale,
+                179f / 2f * scale,
+                178f / 2f * scale,
                 -1
         );
 
@@ -53,7 +55,7 @@ public class MiniMapComponent extends Component {
         GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
         Minecraft.getMinecraft().entityRenderer.setupOverlayRendering();
         float partialTicks = ((IMinecraft) Minecraft.getMinecraft()).arch$getTimer().renderPartialTicks;
-        InterfaceHandler.drawInterfaces(width, height, partialTicks);
+        InterfaceHandler.drawInterfaces(width * scale, height * scale, partialTicks);
         MinimapAnimation.tick();
         GL11.glPopMatrix();
         GuiScale.fixScale();

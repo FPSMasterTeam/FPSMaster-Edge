@@ -75,13 +75,18 @@ public class PotionDisplayComponent extends Component {
         if (visible <= 0.01f) {
             return;
         }
+        // try/finally: if drawPotion throws, an un-popped scissor would clip the entire rest of the
+        // frame — including the whole game view — to this potion row's rectangle.
         beginScissor(x, y, scaledWidth * visible, scaledHeight);
         GlStateManager.pushMatrix();
-        GlStateManager.translate((1f - visible) * -6f * scale, 0f, 0f);
-        drawPotion(effect, title, duration, x, y, width);
-        drawAccent(effect, x, y);
-        GlStateManager.popMatrix();
-        endScissor();
+        try {
+            GlStateManager.translate((1f - visible) * -6f * scale, 0f, 0f);
+            drawPotion(effect, title, duration, x, y, width);
+            drawAccent(effect, x, y);
+        } finally {
+            GlStateManager.popMatrix();
+            endScissor();
+        }
     }
 
     private void drawPotion(PotionEffect effect, String title, String duration, float x, float y, float width) {

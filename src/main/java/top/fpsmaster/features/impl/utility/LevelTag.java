@@ -21,6 +21,8 @@ import java.awt.*;
 import static top.fpsmaster.utils.core.Utility.mc;
 
 public class LevelTag extends Module {
+    private static final ResourceLocation MATE_ICON = new ResourceLocation("client/textures/mate.png");
+
     public static final BooleanSetting showSelf = new BooleanSetting("ShowSelf", true);
     public static final BooleanSetting betterFont = new BooleanSetting("BetterFont", false);
     public static final BooleanSetting fontShadow = new BooleanSetting("FontShadow", true);
@@ -97,46 +99,32 @@ public class LevelTag extends Module {
             if (bg.getValue()) {
                 GlStateManager.disableTexture2D();
 
+                Color color = backgroundColor.getColor();
+                float red = color.getRed() / 255f;
+                float green = color.getGreen() / 255f;
+                float blue = color.getBlue() / 255f;
+                float alpha = color.getAlpha() / 255f;
+
                 worldRenderer.begin(7, DefaultVertexFormats.POSITION_COLOR);
 
                 worldRenderer
                         .pos(backgroundLeft, -1 + i, 0.0F)
-                        .color(
-                                backgroundColor.getColor().getRed() / 255f,
-                                backgroundColor.getColor().getGreen() / 255f,
-                                backgroundColor.getColor().getBlue() / 255f,
-                                backgroundColor.getColor().getAlpha() / 255f
-                        )
+                        .color(red, green, blue, alpha)
                         .endVertex();
 
                 worldRenderer
                         .pos(backgroundLeft, 8 + i, 0.0F)
-                        .color(
-                                backgroundColor.getColor().getRed() / 255f,
-                                backgroundColor.getColor().getGreen() / 255f,
-                                backgroundColor.getColor().getBlue() / 255f,
-                                backgroundColor.getColor().getAlpha() / 255f
-                        )
+                        .color(red, green, blue, alpha)
                         .endVertex();
 
                 worldRenderer
                         .pos(backgroundRight, 8 + i, 0.0F)
-                        .color(
-                                backgroundColor.getColor().getRed() / 255f,
-                                backgroundColor.getColor().getGreen() / 255f,
-                                backgroundColor.getColor().getBlue() / 255f,
-                                backgroundColor.getColor().getAlpha() / 255f
-                        )
+                        .color(red, green, blue, alpha)
                         .endVertex();
 
                 worldRenderer
                         .pos(backgroundRight, -1 + i, 0.0F)
-                        .color(
-                                backgroundColor.getColor().getRed() / 255f,
-                                backgroundColor.getColor().getGreen() / 255f,
-                                backgroundColor.getColor().getBlue() / 255f,
-                                backgroundColor.getColor().getAlpha() / 255f
-                        )
+                        .color(red, green, blue, alpha)
                         .endVertex();
 
                 tessellator.draw();
@@ -150,7 +138,7 @@ public class LevelTag extends Module {
              */
             if (isMate) {
                 Images.draw(
-                        new ResourceLocation("client/textures/mate.png"),
+                        MATE_ICON,
                         iconX,
                         i - 1,
                         8,
@@ -158,39 +146,8 @@ public class LevelTag extends Module {
                         -1,
                         true
                 );
-
-                if (fontShadow.getValue()) {
-                    fontRenderer.drawStringWithShadow(
-                            str,
-                            textX,
-                            i,
-                            553648127
-                    );
-                } else {
-                    fontRenderer.drawString(
-                            str,
-                            textX,
-                            i,
-                            553648127
-                    );
-                }
-            } else {
-                if (fontShadow.getValue()) {
-                    fontRenderer.drawStringWithShadow(
-                            str,
-                            textX,
-                            i,
-                            553648127
-                    );
-                } else {
-                    fontRenderer.drawString(
-                            str,
-                            textX,
-                            i,
-                            553648127
-                    );
-                }
             }
+            fontRenderer.drawString(str, textX, i, 553648127);
 
             /*
              * 第二遍绘制：开启深度后绘制正常白色文字。

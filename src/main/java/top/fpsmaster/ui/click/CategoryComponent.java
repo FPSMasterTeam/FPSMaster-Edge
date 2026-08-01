@@ -1,8 +1,7 @@
 package top.fpsmaster.ui.click;
 
-import top.fpsmaster.utils.render.draw.Images;
+import top.fpsmaster.utils.render.draw.Icons;
 
-import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.utils.math.anim.ColorAnimator;
@@ -29,14 +28,7 @@ public class CategoryComponent {
         );
         animationName.update(dt);
 
-        Images.draw(
-            new ResourceLocation("client/gui/settings/icons/" + category.name().toLowerCase() + ".png"),
-            x + 9,
-            y,
-            12f,
-            12f,
-            animationName.get()
-        );
+        Icons.draw(category.name().toLowerCase(), x + 9, y, 12f, animationName.get().getRGB());
 
         FPSMaster.fontManager.s16.drawString(
             FPSMaster.i18n.get("category." + category.name().toLowerCase(Locale.getDefault())),

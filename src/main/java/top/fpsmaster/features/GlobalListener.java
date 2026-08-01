@@ -98,13 +98,20 @@ public class GlobalListener {
         float mouseY = scaledResolution.getScaledHeight() - (float) Mouse.getY() / scaledResolution.getScaleFactor();
 
         long started = HudBreakdown.enabled() ? System.nanoTime() : 0L;
+        // Size everything first: the blur mask and the anchor math below both read width/height, and
+        // components only assign those while drawing.
+        FPSMaster.componentsManager.measureAll();
+
         if (ClientSettings.blur.getValue()) {
             StencilUtil.initStencilToWrite();
-            EventDispatcher.dispatchEvent(new EventShader());
-            FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);
-            StencilUtil.readStencilBuffer(1);
-            KawaseBlur.renderBlur(3, 3);
-            StencilUtil.uninitStencilBuffer();
+            try {
+                EventDispatcher.dispatchEvent(new EventShader());
+                FPSMaster.componentsManager.drawBackgroundMasks();
+                StencilUtil.readStencilBuffer(1);
+                KawaseBlur.renderBlur(3, 3);
+            } finally {
+                StencilUtil.uninitStencilBuffer();
+            }
             if (started != 0L) {
                 HudBreakdown.record("~blur pass", System.nanoTime() - started);
                 started = System.nanoTime();

@@ -1,20 +1,17 @@
 package top.fpsmaster.ui.screens.oobe;
 
-import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.AnimMath;
 import top.fpsmaster.utils.render.draw.Hover;
-import top.fpsmaster.utils.render.draw.Images;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 
 import java.awt.Color;
 
 public class OobeDropdown {
-    private static final ResourceLocation ARROW_ICON = new ResourceLocation("client/gui/settings/icons/arrow.png");
-
     private String label = "";
     private String[] items = new String[0];
     private int selectedIndex;
@@ -124,8 +121,9 @@ public class OobeDropdown {
                 }
             }
 
-            ScaledGuiScreen.PointerEvent outside = screen.peekAnyPress();
-            if (outside != null && openProgress > 0.95f && !Hover.is(x, y, width, height + panelHeight + 4f, outside.x, outside.y)) {
+            // Consume the dismissing click, otherwise it also activates whatever sits behind the popup.
+            if (openProgress > 0.95f
+                    && screen.consumePressOutside(x, y, width, height + panelHeight + 4f) != null) {
                 open = false;
             }
         }
@@ -136,7 +134,7 @@ public class OobeDropdown {
         GL11.glTranslatef(centerX, centerY, 0f);
         GL11.glRotatef(progress * 180f, 0f, 0f, 1f);
         GL11.glTranslatef(-centerX, -centerY, 0f);
-        Images.draw(ARROW_ICON, centerX - 4f, centerY - 4f, 8f, 8f, color);
+        Icons.draw("arrow", centerX - 4f, centerY - 4f, 8f, color.getRGB());
         GL11.glPopMatrix();
     }
 }

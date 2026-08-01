@@ -16,10 +16,12 @@ import top.fpsmaster.ui.screens.replay.ReplayScreen;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.Easings;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.Backgrounds;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.utils.system.OSUtil;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -36,7 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MainMenu extends ScaledGuiScreen {
     private static int firstBoot = 0;
     private static final Gson GSON = new Gson();
-    private static final ResourceLocation DEFAULT_AVATAR = new ResourceLocation("client/gui/screen/avatar.png");
     private static final ResourceLocation DEFAULT_SKIN = new ResourceLocation("textures/entity/steve.png");
     private static final int SKIN_REQUEST_TIMEOUT_MS = 2500;
     private static final AtomicBoolean SKIN_LOADING = new AtomicBoolean(false);
@@ -118,14 +119,14 @@ public class MainMenu extends ScaledGuiScreen {
         } else if (playerSkinLoadFailed) {
             Images.playerHead(DEFAULT_SKIN, 14f, 15f, 10, 10);
         } else {
-            Images.draw(DEFAULT_AVATAR, 14f, 15f, 10f, 10f, -1);
+            Icons.draw("avatar", 14f, 15f, 10f, -1);
         }
         FPSMaster.fontManager.s16.drawString(username, 28, 16, Color.WHITE.getRGB());
 
 
         // background selector button
         Rects.rounded(Math.round(guiWidth - 22), 13, 12, 12, new Color(0, 0, 0, 60));
-        Images.draw(new ResourceLocation("client/gui/screen/theme.png"), guiWidth - 20, 15f, 8f, 8f, -1);
+        Icons.draw("theme", guiWidth - 20, 15f, 8f, -1);
 
 
         // Position buttons and render them
@@ -158,6 +159,10 @@ public class MainMenu extends ScaledGuiScreen {
     }
 
     public static void preloadPlayerSkinTexture() {
+        if (OSUtil.isAndroid()) {
+            playerSkinLoadFailed = true;
+            return;
+        }
         Minecraft minecraft = Minecraft.getMinecraft();
         if (minecraft == null || minecraft.getSession() == null) {
             return;
@@ -176,35 +181,66 @@ public class MainMenu extends ScaledGuiScreen {
         loadedSkinPlayerId = normalizedPlayerId;
         playerSkinTexture = null;
         playerSkinLoadFailed = false;
-        FPSMaster.async.runnable(() -> {
+        try {
+            FPSMaster.async.runnable(() -> loadPlayerSkinTexture(normalizedPlayerId));
+        } catch (RuntimeException exception) {
+            ClientLogger.warn("Failed to schedule main menu player skin loading");
+            fallbackToDefaultSkin(normalizedPlayerId);
+            SKIN_LOADING.set(false);
+        }
+    }
+
+    private static void loadPlayerSkinTexture(String playerId) {
+        boolean registrationQueued = false;
+        try {
+            String skinUrl = readSkinUrl(playerId);
+            if (skinUrl == null || skinUrl.trim().isEmpty()) {
+                fallbackToDefaultSkin(playerId);
+                return;
+            }
+            BufferedImage skinImage = readImage(skinUrl);
+            if (skinImage == null || skinImage.getWidth() < 64 || skinImage.getHeight() < 32) {
+                fallbackToDefaultSkin(playerId);
+                return;
+            }
+            BufferedImage textureImage = ensureArgbImage(skinImage);
+            Minecraft minecraft = Minecraft.getMinecraft();
+            if (minecraft == null || minecraft.getTextureManager() == null) {
+                fallbackToDefaultSkin(playerId);
+                return;
+            }
+            registrationQueued = true;
             try {
-                String skinUrl = readSkinUrl(normalizedPlayerId);
-                if (skinUrl == null || skinUrl.trim().isEmpty()) {
-                    fallbackToDefaultSkin(normalizedPlayerId);
-                    return;
-                }
-                BufferedImage skinImage = readImage(skinUrl);
-                if (skinImage == null || skinImage.getWidth() < 64 || skinImage.getHeight() < 32) {
-                    fallbackToDefaultSkin(normalizedPlayerId);
-                    return;
-                }
-                BufferedImage textureImage = ensureArgbImage(skinImage);
-                Minecraft.getMinecraft().addScheduledTask(() -> {
-                    if (!normalizedPlayerId.equals(loadedSkinPlayerId)) {
-                        return;
-                    }
-                    playerSkinTexture = Minecraft.getMinecraft()
-                            .getTextureManager()
-                            .getDynamicTextureLocation("fpsmaster_player_skin_" + normalizedPlayerId, new DynamicTexture(textureImage));
-                    playerSkinLoadFailed = false;
-                });
-            } catch (Exception exception) {
-                ClientLogger.warn("Failed to load main menu player skin from Mojang API");
-                fallbackToDefaultSkin(normalizedPlayerId);
-            } finally {
+                minecraft.addScheduledTask(() -> registerPlayerSkinTexture(playerId, textureImage));
+            } catch (RuntimeException exception) {
+                registrationQueued = false;
+                throw exception;
+            }
+        } catch (Exception exception) {
+            ClientLogger.warn("Failed to load main menu player skin from Mojang API");
+            fallbackToDefaultSkin(playerId);
+        } finally {
+            if (!registrationQueued) {
                 SKIN_LOADING.set(false);
             }
-        });
+        }
+    }
+
+    private static void registerPlayerSkinTexture(String playerId, BufferedImage textureImage) {
+        try {
+            Minecraft minecraft = Minecraft.getMinecraft();
+            if (minecraft == null || minecraft.getTextureManager() == null || !playerId.equals(loadedSkinPlayerId)) {
+                return;
+            }
+            playerSkinTexture = minecraft.getTextureManager()
+                    .getDynamicTextureLocation("fpsmaster_player_skin_" + playerId, new DynamicTexture(textureImage));
+            playerSkinLoadFailed = false;
+        } catch (RuntimeException exception) {
+            ClientLogger.warn("Failed to register main menu player skin texture");
+            fallbackToDefaultSkin(playerId);
+        } finally {
+            SKIN_LOADING.set(false);
+        }
     }
 
     private static void fallbackToDefaultSkin(String playerId) {
