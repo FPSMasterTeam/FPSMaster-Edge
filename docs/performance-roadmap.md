@@ -413,39 +413,51 @@ Forge 1.8.9 的 `TextureUtil` 已经持有并复用一个静态 4,194,304-int di
 
 ### 9.1 已定价、未实现
 
-| 工作项 | 实测 | 阻碍 |
+| 工作项 | 实测 | 状态 |
 |---|---|---|
-| **实体模型渲染** | `renderModel` 占实体渲染 69.2%；每 box **0.72us ≈ 2200 周期**，而它只做 translate + rotate + `glCallList`。目标 620us（pit）～830us（entity-dense） | 需重构模型渲染路径；见 §4.7 |
-| **HUD 文字第二期** | 剩余 **~165us/帧**：顶点提交 ~102us + 每条字符串一次 draw call（40–56 次/帧） | 需持久顶点缓冲 + 分组合批，见 §13。（注：−1.2% 的 `BatchFontRendering` 是 **OptiFine 自己的设置**在调研里的实测，不是本项目的设计被否过） |
-| ~~**天空**~~ | **数字作废**：134.8us / 5.3% 出自旧机器旧代码，现测 **20us / 2.4%** | 不做。曾被列为最便宜的线索，那是过期数据误导 |
+| ~~**实体模型渲染**~~ | 旧框架（`renderModel` 占 69.2%、每 box 0.72us）**已被更精细的定价取代**：`entityLayers` 里手持物占 59%（4.2us/件）、盔甲 26%（0.46us/件） | `ComposedModelTransform` 与 `CacheItemModels` 都已实现，均默认关，见 §15.1 |
+| **HUD 文字第二期** | 每条字符串 0.88us（几乎全在 `Tessellator.draw()`），pit 38.5us / bedwars 53.7us | **存档不做**，见 §13。用户判定性价比不足 |
+| ~~**天空**~~ | 134.8us 是过期数据，现测 **20us / 2.4%** | 不做 |
+| **mipmap 生成 / 图像解码**（§4.6 剩余） | 未测 | **现在可测了**：有 `phaseMillis` 和 `textureUploadNanos`。上传本身已从 160–183ms 降到 36.5ms |
 
 ### 9.2 已实现、默认关，等实机验证
 
 | | 实测 | 验什么 |
 |---|---|---|
-| `ReuseVisibleChunks` | 地形遍历 **−33~44%**（约 300us/帧） | 快速转身、传送、切视距、破坏放置方块时有无缺块 |
 | `FastCollision` | 实体查询 **−53~71%**，返回的碰撞盒数量前后一致 | 船或矿车附近"不该跳"的分支从未执行过 |
 | `AdaptiveChunkBudget` | 三路配对中与另两档区间重叠，未胜过固定预算 | 仪器能分辨后重测 |
+| `ComposedModelTransform` | `entityModel` −10.5%，fps +2.7% | 骑乘、睡眠、潜行、幼年缩放模型 |
+| `CacheItemModels` | `entityLayers` **−46%**（四次复现），但**帧时间从未变化** | 无法在本机判定，见 §15.1 |
+| `BatchVanillaFont` | `hud` −1.3us | 聊天／GUI／告示牌／书本 |
+| `SlowObfuscation` | 命中率 98%，时间不可用（配对受扰） | 改画面，需长系列定案或删掉 |
 
-**这两项的失败方式都是安静的**：过度复用的可见列表 = 缺地形，而缺地形会让帧率**变好**。用性能监视 HUD 的折线图判断 —— 帧率上去但柱子变参差就是在偷东西。
+### 9.2b 已实机验证并默认开（本轮变化）
+
+- `ReuseVisibleChunks` —— 用户实机确认无缺块，已默认开
+- `EntityCulling` —— +24.3%（可剔场景），已默认开。**新的侦察↔剔除状态机尚未实机验证**
+- `FastGlyphLookup`、`MergeTextShadow` —— 已默认开，**均未在聊天／GUI／告示牌／书本里跑过**
 
 ### 9.3 从未探针
 
 - **活动区块集合重建**（§4.3）—— 每 tick 清空重建 `activeChunkSet`
 - **异步光照**（§4.5）—— 高风险；Badlion 的实现没有版本校验
-- **GUI 静态层预渲染**（§6）—— HUD 文字那轮已回答一半：可复用内容占 99.7%（pit）／70%（bedwars），但成本在提交而非布局
+- **GUI 静态层预渲染**（§6）—— §13 已回答一半：成本在提交而非布局
 
 ### 9.4 明确不做（有实测数字，不要再提）
 
-Fast Render、实体区块预筛、Smart Animations、Fast Math、Render Regions、Tile Entity VBOs、附魔光效、玻璃半透明重排、`ContainerLocalRenderInformation` 池化（仅占遍历 4%）、实体 AABB 查询本身（已做到位）。
+Fast Render、实体区块预筛、Smart Animations、Fast Math、Render Regions、Tile Entity VBOs、附魔光效、玻璃半透明重排、`ContainerLocalRenderInformation` 池化（仅占遍历 4%）、实体 AABB 查询本身、`CullPlayers`（真实 PvP **−4.5%**）、扩展 getRGB 之外的上传路径（覆盖率已 98%）。
 
 ### 9.5 仪器现状
 
-已修：开头瞬态（稳态门）、系列冷启动漂移（丢弃两轮）、`analyse.py` 点名未达稳态的运行。
+**本轮已修**：回放窗口锚定录像位置（负载差 26% → 0.03%）、镜头路径随窗口重启（静止场景负载差 10% → 0%）、`trace.py` 逐帧序列比较、GPU 计时报采样覆盖率、加载阶段墙钟计时、`-WindowWidth/-WindowHeight`。
 
-**未修**：稳态检测器条件偏弱（连续两窗 3%），九次里仍有约一次放行。
+**未修**：
+- **GPU 归因缺口** —— 各 section 合计仅占整帧 GPU 的 35%，`entities` 画 130 个模型却量到 0
+- 稳态检测器偏弱（连续两窗 3%），九次里约一次放行
+- **加载耗时轮间方差 14%**，且加载只发生一次、无法在轮内交错对照
+- 五分钟档对 `terrainSetup`／整帧不可用（噪声地板 32%／21%）
 
-**未做**：本轮所有时间类结论都没用修好后的仪器重跑。计数类结论（`FastCollision` 的 −53~71%、`FastTextureUpload` 的覆盖率）不受影响。
+**未做**：早期的时间类结论没用修好后的仪器重跑。
 
 ## 十、实体模型渲染（§4.7）
 
