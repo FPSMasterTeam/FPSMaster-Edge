@@ -72,6 +72,20 @@ public final class BenchCounters {
     public static long textureUploadNanos;
     public static long textureUploadDirectNanos;
 
+    /**
+     * The rest of the load-time picture: mipmap generation, atlas stitching, PNG decode.
+     *
+     * <p>Roadmap §4.6 named these three and none was ever priced, because loading is not made of
+     * frames and nothing in this harness looked outside a measured window. The upload half of the
+     * same section turned out to be 160ms without its optimisation, so the others are worth a
+     * number before anything is decided about them.
+     */
+    public static long mipmapNanos;
+    public static long mipmapCalls;
+    public static long atlasStitchNanos;
+    public static long imageDecodeNanos;
+    public static long imageDecodeCalls;
+
     /** Item models replayed from a display list, and how many lists were recorded. */
     public static long itemModelListHits;
     public static long itemModelListsRecorded;
@@ -130,7 +144,8 @@ public final class BenchCounters {
             "chunkRebuilds", "terrainDrawCalls", "chunkThrottleSleeps", "entityListLookups", "entityListNonEmpty",
             "chunkBudgetMovingTicks", "chunkBudgetStillTicks", "collisionQueriesSkipped",
             "textureUploads", "textureUploadsDirect", "textureUploadPixels",
-            "textureUploadNanos", "textureUploadDirectNanos", "visibleListReused",
+            "textureUploadNanos", "textureUploadDirectNanos",
+            "mipmapNanos", "mipmapCalls", "atlasStitchNanos", "imageDecodeNanos", "imageDecodeCalls", "visibleListReused",
             "modelCallLists", "modelComposedTransforms", "mergedShadowDraws", "clientFontDraws", "drawStringCalls", "drawStringShadowed", "obfuscatedStrings", "obfuscatedCacheHits", "itemModelListHits", "itemModelListsRecorded",
             "cullCandidates", "cullDormantFrames", "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "displayListsAllocated", "displayListsReleased",
@@ -157,7 +172,8 @@ public final class BenchCounters {
                 entityListLookups, entityListNonEmpty,
                 chunkBudgetMovingTicks, chunkBudgetStillTicks, collisionQueriesSkipped,
                 textureUploads, textureUploadsDirect, textureUploadPixels,
-                textureUploadNanos, textureUploadDirectNanos, visibleListReused,
+                textureUploadNanos, textureUploadDirectNanos,
+                mipmapNanos, mipmapCalls, atlasStitchNanos, imageDecodeNanos, imageDecodeCalls, visibleListReused,
                 modelCallLists, modelComposedTransforms, mergedShadowDraws, clientFontDraws, drawStringCalls, drawStringShadowed, obfuscatedStrings, obfuscatedCacheHits, itemModelListHits, itemModelListsRecorded,
                 cullCandidates, cullDormantFrames, cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 displayListsAllocated, displayListsReleased,

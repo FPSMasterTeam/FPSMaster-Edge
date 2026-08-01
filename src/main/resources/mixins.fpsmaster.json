@@ -35,6 +35,8 @@
     "FontRendererMixin_GlyphIndex",
     "RenderItemMixin_CacheModels",
     "ModelManagerMixin_InvalidateItemLists",
+    "LoadPhaseMixin_Probe",
+    "TextureMapMixin_StitchProbe",
     "ChunkMixin_EntityWalkProbe",
     "OpenGlHelperMixin_FastRender",
     "RenderChunkMixin_BuildProbe",
