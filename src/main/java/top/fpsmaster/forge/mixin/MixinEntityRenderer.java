@@ -36,6 +36,7 @@ import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.optimizes.SmoothZoom;
 import top.fpsmaster.features.impl.render.FreeLook;
 import top.fpsmaster.features.impl.render.MinimizedBobbing;
+import top.fpsmaster.features.impl.render.CustomFog;
 import top.fpsmaster.utils.math.MathUtils;
 
 import java.util.List;
@@ -299,6 +300,35 @@ public abstract class MixinEntityRenderer {
     @Inject(method = "updateCameraAndRender", at = @At(value = "HEAD"))
     public void freelook(float partialTicks, long nanoTime, CallbackInfo ci) {
         FreeLook.overrideMouse();
+    }
+
+    @Inject(method = "setupFog", at = @At("RETURN"))
+    private void overrideFog(int startCoords, float partialTicks, CallbackInfo ci) {
+        if (!CustomFog.using) return;
+        if (mc.thePlayer == null) return;
+
+        // Check if in water or lava — only override if the user opted in
+        if (!CustomFog.affectWater.getValue()) {
+            net.minecraft.block.material.Material eye = mc.thePlayer.getEye().getMaterial();
+            if (eye == net.minecraft.block.material.Material.water) return;
+        }
+        if (!CustomFog.affectLava.getValue()) {
+            net.minecraft.block.material.Material eye = mc.thePlayer.getEye().getMaterial();
+            if (eye == net.minecraft.block.material.Material.lava) return;
+        }
+
+        java.awt.Color fogColor = CustomFog.color.getColor();
+        GlStateManager.color(fogColor.getRed() / 255f, fogColor.getGreen() / 255f, fogColor.getBlue() / 255f);
+
+        if (CustomFog.fogMode.isMode("Linear")) {
+            GlStateManager.setFog(GlStateManager.FogMode.LINEAR);
+            GlStateManager.setFogStart(CustomFog.startDistance.getValue().floatValue());
+            GlStateManager.setFogEnd(CustomFog.endDistance.getValue().floatValue());
+        } else {
+            GlStateManager.setFog(GlStateManager.FogMode.EXP);
+            float density = 1.0f / Math.max(0.1f, CustomFog.endDistance.getValue().floatValue());
+            GlStateManager.setFogDensity(density);
+        }
     }
 
 
