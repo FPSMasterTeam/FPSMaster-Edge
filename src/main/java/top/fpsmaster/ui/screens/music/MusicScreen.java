@@ -39,6 +39,9 @@ public class MusicScreen extends ScaledGuiScreen {
     // 间距系统：统一用 PAD 作为面板内边距基准
     private static final float PAD = 20f;
 
+    /** Sidebar content (≈215px) + player bar (46px) + margin. Below this the sidebar overflows. */
+    private static final float MIN_PANEL_HEIGHT = 300f;
+
     // 配色（跟随 ClickGUI 主题，见 refreshTheme）
     private static final int DIM = 0xCC000000;
     private static final int BADGE = 0xFFD9A441;
@@ -82,6 +85,9 @@ public class MusicScreen extends ScaledGuiScreen {
     private boolean loginOpen = false;
     private QrLoginState lastQrState = null;
 
+    private static final String PROGRESS_CAPTURE = "music.progress";
+    private static final String VOLUME_CAPTURE = "music.volume";
+
     private boolean draggingProgress = false;
     private float previewFrac = 0;
     private boolean draggingVolume = false;
@@ -98,14 +104,27 @@ public class MusicScreen extends ScaledGuiScreen {
         f18 = FPSMaster.fontManager.s18;
         f20 = FPSMaster.fontManager.s20;
         f24 = FPSMaster.fontManager.s24;
-        searchField = new TextField(f16, "搜索歌曲 / 歌手…", CARD, TEXT, 60, new Runnable() {
-            @Override
-            public void run() {
-                doSearch();
-            }
-        });
-        qqUin = new TextField(f14, "musicid (uin)", CARD, TEXT, 32);
-        qqKey = new TextField(f14, "musickey (qm_keyst)", CARD, TEXT, 256);
+
+        // initGui also runs on every window resize, and rebuilding the fields there threw away whatever
+        // the user had typed — including a pasted QQ musickey, which is tedious to obtain. Keep the
+        // existing instances instead of recreating and re-populating them: setText() runs
+        // setCursorPosition(), which derives the scroll offset from getWidth(), and width is only
+        // assigned inside drawTextBox() — so on a field that has never been drawn it reads 0, pushes
+        // lineScrollOffset past the end of the text, and the box renders empty from then on.
+        if (searchField == null) {
+            searchField = new TextField(f16, "搜索歌曲 / 歌手…", CARD, TEXT, 60, new Runnable() {
+                @Override
+                public void run() {
+                    doSearch();
+                }
+            });
+        }
+        if (qqUin == null) {
+            qqUin = new TextField(f14, "musicid (uin)", CARD, TEXT, 32);
+        }
+        if (qqKey == null) {
+            qqKey = new TextField(f14, "musickey (qm_keyst)", CARD, TEXT, 256);
+        }
     }
 
     private int accent() {
@@ -119,15 +138,20 @@ public class MusicScreen extends ScaledGuiScreen {
         refreshTheme();
         int mx = getMouseX();
         int my = getMouseY();
-        ScaledGuiScreen.PointerEvent pe = consumePressInBounds(0, 0, guiWidth, guiHeight, 0);
-        boolean click = pe != null;
+        // Peek, don't consume: whichever widget actually contains the press claims it inside in().
+        ScaledGuiScreen.PointerEvent pe = peekAnyPress();
+        boolean click = pe != null && pe.button == 0;
         int cx = click ? pe.x : -1;
         int cy = click ? pe.y : -1;
 
         Rects.fill(0, 0, guiWidth, guiHeight, DIM);
 
         float pw = Math.min(guiWidth - 30, 500);
-        float ph = Math.min(guiHeight - 30, 316);
+        // The sidebar's content height is fixed (title + 3 nav rows + source header + 2 source rows +
+        // the bottom-aligned login button), so a panel shorter than this let the source rows spill past
+        // contentBottom and land on top of the player bar — where a single click hit both, starting
+        // playback and switching source at once. Keep the panel tall enough that it cannot happen.
+        float ph = Math.max(Math.min(guiHeight - 30, 316), MIN_PANEL_HEIGHT);
         float px = (guiWidth - pw) / 2f;
         float py = (guiHeight - ph) / 2f;
 
@@ -219,6 +243,12 @@ public class MusicScreen extends ScaledGuiScreen {
         if (in(cx, cy, ix, baseY, iw, ih) && tab != t) {
             tab = t;
             scroll = 0;
+            // The search box only gets a chance to lose focus while the search tab is rendering, so
+            // without this it stays focused after navigating away and keeps swallowing keystrokes into
+            // a field that is no longer on screen.
+            if (searchField != null) {
+                searchField.setFocused(false);
+            }
         }
         return baseY + ih + 3;
     }
@@ -576,31 +606,35 @@ public class MusicScreen extends ScaledGuiScreen {
             Rects.rounded(knobX - 3, ty + trackH / 2f - 3, 6, 6, 3, 0xFFFFFFFF);
         }
 
-        boolean down = isMouseDown(0);
-        boolean startHere = in(cx, cy, x, y - 4, w, 11);
+        // Routed through the shared drag capture rather than a private boolean, so the capture is
+        // released centrally when the button goes up — including when it goes up outside the window,
+        // which a locally-tracked flag never learns about and which used to leave the knob glued to
+        // the cursor after an alt-tab.
+        // in() establishes the hit and claims the press; acquireDrag then takes ownership without
+        // asking for a second press that no longer exists. Using beginPointerCapture here instead made
+        // the two consumption paths race for the same event, which is why dragging only worked
+        // sometimes. Release is still handled centrally on button-up, so an alt-tab cannot strand it.
+        Object captureId = isProgress ? PROGRESS_CAPTURE : VOLUME_CAPTURE;
+        if (in(cx, cy, x, y - 4, w, 11)) {
+            acquireDrag(captureId, 0);
+        }
+        boolean capturing = isPointerCapturedBy(captureId, 0);
 
         if (isProgress) {
-            if (startHere) {
+            if (capturing) {
                 draggingProgress = true;
                 previewFrac = clamp01((mx - x) / w);
-            }
-            if (draggingProgress) {
-                if (down) {
-                    previewFrac = clamp01((mx - x) / w);
-                } else {
-                    m.seekFraction(previewFrac);
-                    draggingProgress = false;
-                }
+            } else if (draggingProgress) {
+                // Commit on release, not continuously — seeking every frame would thrash the decoder.
+                m.seekFraction(previewFrac);
+                draggingProgress = false;
             }
         } else {
-            if (startHere) draggingVolume = true;
-            if (draggingVolume) {
-                if (down) {
-                    int v = Math.round(clamp01((mx - x) / w) * 100);
-                    m.setVolume(v);
-                } else {
-                    draggingVolume = false;
-                }
+            if (capturing) {
+                draggingVolume = true;
+                m.setVolume(Math.round(clamp01((mx - x) / w) * 100));
+            } else {
+                draggingVolume = false;
             }
         }
     }
@@ -805,8 +839,23 @@ public class MusicScreen extends ScaledGuiScreen {
         if (scroll < 0) scroll = 0;
     }
 
-    private static boolean in(int cx, int cy, float x, float y, float w, float h) {
-        return cx >= 0 && cx >= x && cx < x + w && cy >= y && cy < y + h;
+    /**
+     * Hit-test that also claims the press.
+     *
+     * <p>{@code render} used to consume the whole screen up front and hand the raw coordinates to
+     * every widget, which then re-tested them independently. Two consequences: overlapping widgets all
+     * fired on one press (clicking play while the sidebar had overflowed onto it both started playback
+     * and switched source), and {@code beginPointerCapture} could never acquire, because the press it
+     * needs had already been eaten — which is why the progress bar could not be dragged.
+     *
+     * <p>Claiming here makes a press belong to exactly one widget, and leaves it available to the
+     * capture-based sliders when no plain widget wants it.
+     */
+    private boolean in(int cx, int cy, float x, float y, float w, float h) {
+        if (cx < 0 || cx < x || cx >= x + w || cy < y || cy >= y + h) {
+            return false;
+        }
+        return consumePressInBounds(x, y, w, h, 0) != null;
     }
 
     private static float clamp01(float v) {

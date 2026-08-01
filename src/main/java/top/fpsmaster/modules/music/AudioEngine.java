@@ -139,12 +139,23 @@ public class AudioEngine {
                 applyGain(line);
 
                 double bytesPerMs = decoded.getFrameRate() * decoded.getFrameSize() / 1000.0;
+                int frameSize = Math.max(1, decoded.getFrameSize());
 
                 if (startMs > 0) {
-                    skipDecoded(din, (long) (startMs * bytesPerMs));
+                    // PCM has to be skipped a whole frame at a time — one frame is channels × 2 bytes
+                    // for 16-bit audio. Landing mid-frame shifts every following sample by a byte or
+                    // two, so the high/low halves of each sample and the left/right channels are read
+                    // out of position and the result is white noise. startMs * bytesPerMs is only a
+                    // multiple of the frame size by luck, which is why it happened on some seeks and
+                    // not others, and why seeking again "fixed" it.
+                    long skipBytes = (long) (startMs * bytesPerMs);
+                    skipBytes -= skipBytes % frameSize;
+                    skipDecoded(din, skipBytes);
                 }
                 long posBytes = 0;
                 byte[] buf = new byte[4096];
+                // Bytes left over from the previous read that do not yet complete a frame.
+                int carry = 0;
 
                 while (!stopped) {
                     long seek = pendingSeekMs;
@@ -152,20 +163,37 @@ public class AudioEngine {
                         pendingSeekMs = -1;
                         startMs = seek;
                         seekBreak = true;
+                        // Discard whatever is still queued in the line before tearing it down. The
+                        // buffer holds PCM decoded at the *old* position; closing without flushing
+                        // lets it play out as a burst of noise just before the new stream starts.
+                        // stop() first so flush() is not racing an active playback pointer.
+                        line.stop();
+                        line.flush();
                         break;
                     }
                     if (paused) {
                         Thread.sleep(30);
                         continue;
                     }
-                    int n = din.read(buf, 0, buf.length);
+                    int n = din.read(buf, carry, buf.length - carry);
                     if (n < 0) {
                         endedNaturally = true;
                         break;
                     }
-                    line.write(buf, 0, n);
-                    posBytes += n;
-                    positionMs = startMs + (long) (posBytes / bytesPerMs);
+                    // SourceDataLine.write is documented as undefined unless the length is a whole
+                    // number of frames, and the decoder does not promise frame-aligned reads. Write
+                    // only the complete frames and carry the remainder into the next read.
+                    int available = carry + n;
+                    int writable = available - (available % frameSize);
+                    if (writable > 0) {
+                        line.write(buf, 0, writable);
+                        posBytes += writable;
+                        positionMs = startMs + (long) (posBytes / bytesPerMs);
+                    }
+                    carry = available - writable;
+                    if (carry > 0) {
+                        System.arraycopy(buf, writable, buf, 0, carry);
+                    }
                 }
             } finally {
                 closeQuietly(line, din, fileIn);
