@@ -406,6 +406,13 @@ public class MainPanel extends ScaledGuiScreen {
         super.keyTyped(typedChar, keyCode);
     }
 
+    @Override
+    protected float[] getOccludingBounds() {
+        // Only the panel itself, not the whole screen: dragging a HUD element that sits beside the
+        // ClickGUI is exactly what the user opened it for.
+        return new float[]{x, y, width, height};
+    }
+
     private void handlePointerPress() {
         ScaledGuiScreen.PointerEvent press = peekAnyPress();
         if (press == null) {

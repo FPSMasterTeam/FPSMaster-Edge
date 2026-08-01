@@ -66,12 +66,37 @@ public class ScaledGuiScreen extends GuiScreen {
             activeScreen = this;
             GL11.glScalef(renderScale, renderScale, 1f);
             render(inputState.getMouseX(), inputState.getMouseY(), partialTicks);
+            // Reported after render() so subclasses that compute their layout there (MainPanel centres
+            // itself every frame) have already done so. The HUD editor reads it on the next frame,
+            // which is fine — it runs ahead of this one within a frame anyway.
+            publishOcclusion();
         } finally {
             inputState.finishFrame();
             activeScreen = null;
             GL11.glPopMatrix();
             UiScale.end();
         }
+    }
+
+    /**
+     * The rectangle this screen paints over, in logical coordinates, or {@code null} for "the whole
+     * screen". Override in screens that only cover part of the display so the HUD stays interactive
+     * around them.
+     *
+     * @return {@code {x, y, width, height}}
+     */
+    protected float[] getOccludingBounds() {
+        return null;
+    }
+
+    private void publishOcclusion() {
+        float[] bounds = getOccludingBounds();
+        if (bounds == null) {
+            GuiOcclusion.set(0f, 0f, mc.displayWidth, mc.displayHeight);
+            return;
+        }
+        GuiOcclusion.set(bounds[0] * scaleFactor, bounds[1] * scaleFactor,
+                bounds[2] * scaleFactor, bounds[3] * scaleFactor);
     }
 
     @Override
@@ -86,6 +111,14 @@ public class ScaledGuiScreen extends GuiScreen {
         inputState.reset();
         dragState.clear();
         super.initGui();
+    }
+
+    @Override
+    public void onGuiClosed() {
+        // Nothing is covering the HUD any more; leaving this set would freeze the editor under a
+        // rectangle that is no longer painted.
+        GuiOcclusion.clear();
+        super.onGuiClosed();
     }
 
     @Override
