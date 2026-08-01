@@ -2,9 +2,9 @@ package top.fpsmaster.ui.custom.impl;
 
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.features.impl.interfaces.FPSDisplay;
-import top.fpsmaster.ui.custom.Component;
+import top.fpsmaster.ui.custom.TextComponent;
 
-public class FPSDisplayComponent extends Component {
+public class FPSDisplayComponent extends TextComponent {
 
     public FPSDisplayComponent() {
         super(FPSDisplay.class);
@@ -14,17 +14,17 @@ public class FPSDisplayComponent extends Component {
     }
 
     @Override
-    public void draw(float x, float y) {
-        super.draw(x, y);
-        String s = Minecraft.getDebugFPS() + "fps";
-        
-        width = getStringWidth(18, s) + 4;
-        height = 14f;
+    protected String text() {
+        return Minecraft.getDebugFPS() + "fps";
+    }
 
-        drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
-        drawString(18, s, x, y + 2, FPSDisplay.textColor.getRGB());
+    @Override
+    protected int fontSize() {
+        return 18;
+    }
+
+    @Override
+    protected int textColor() {
+        return FPSDisplay.textColor.getRGB();
     }
 }
-
-
-

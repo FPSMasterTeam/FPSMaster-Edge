@@ -75,6 +75,10 @@ public class GlobalListener {
         float mouseX = (float) Mouse.getX() / scaledResolution.getScaleFactor();
         float mouseY = scaledResolution.getScaledHeight() - (float) Mouse.getY() / scaledResolution.getScaleFactor();
 
+        // Size everything first: the blur mask and the anchor math below both read width/height, and
+        // components only assign those while drawing.
+        FPSMaster.componentsManager.measureAll();
+
         if (ClientSettings.blur.getValue()) {
             StencilUtil.initStencilToWrite();
             EventDispatcher.dispatchEvent(new EventShader());

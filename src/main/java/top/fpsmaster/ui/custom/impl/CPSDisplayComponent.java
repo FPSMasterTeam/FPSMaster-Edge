@@ -1,10 +1,10 @@
 package top.fpsmaster.ui.custom.impl;
 
-import top.fpsmaster.features.impl.interfaces.CPSDisplay;
-import top.fpsmaster.ui.custom.Component;
 import net.minecraft.util.EnumChatFormatting;
+import top.fpsmaster.features.impl.interfaces.CPSDisplay;
+import top.fpsmaster.ui.custom.TextComponent;
 
-public class CPSDisplayComponent extends Component {
+public class CPSDisplayComponent extends TextComponent {
 
     public CPSDisplayComponent() {
         super(CPSDisplay.class);
@@ -14,21 +14,21 @@ public class CPSDisplayComponent extends Component {
     }
 
     @Override
-    public void draw(float x, float y) {
-        super.draw(x, y);
-        String text = String.format("CPS: %d%s | %s%d",
+    protected String text() {
+        return String.format("CPS: %d%s | %s%d",
                 CPSDisplay.lcps,
                 EnumChatFormatting.GRAY,
                 EnumChatFormatting.RESET,
                 CPSDisplay.rcps);
+    }
 
-        width = getStringWidth(16, text) + 4;
-        height = 14f;
+    @Override
+    protected int fontSize() {
+        return 16;
+    }
 
-        drawRect(x - 2, y, width, height, mod.backgroundColor.getColor());
-        drawString(16, text, x, y + 2, CPSDisplay.textColor.getRGB());
+    @Override
+    protected int textColor() {
+        return CPSDisplay.textColor.getRGB();
     }
 }
-
-
-

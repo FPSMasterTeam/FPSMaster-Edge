@@ -71,6 +71,48 @@ public class Component {
     public void draw(float x, float y) {
     }
 
+    /**
+     * Computes {@link #width}/{@link #height} for this frame, before anything reads them.
+     *
+     * <p>Historically every component assigned its size inside {@code draw()}, but anchoring
+     * ({@link #getRealPosition}), hover testing, drag clamping and the blur mask all run <em>before</em>
+     * {@code draw()} — so they used the previous frame's size. A component whose size changes each
+     * frame (FPS going {@code 99fps} → {@code 100fps}, a potion expiring) visibly jitters, and on its
+     * very first frame {@code width} is still 0.
+     *
+     * <p>Default implementation does nothing, so components that have not been migrated keep their old
+     * behaviour. Override it, move the sizing math here, and {@code draw()} becomes pure rendering.
+     */
+    public void measure() {
+    }
+
+    /** Receives the rectangles that make up a component's background. */
+    public interface ShapeSink {
+        /**
+         * @param x absolute left edge, already scaled by the caller (same convention as
+         *          {@link #drawRect}: positions are the caller's job, sizes are the base class's)
+         * @param y absolute top edge
+         * @param width  logical width; the base class multiplies by {@link #scale}
+         * @param height logical height
+         */
+        void rect(float x, float y, float width, float height);
+    }
+
+    /**
+     * Declares the geometry of this component's background so the blur mask can reproduce it exactly
+     * instead of guessing.
+     *
+     * <p>The mask used to assume every component draws one rectangle at {@code (rX - 2, rY)} sized
+     * {@code width × height}. That holds for about two thirds of them; the rest either use a different
+     * origin (Keystrokes, PotionDisplay) or draw several disjoint boxes (ArmorDisplay), so the blur
+     * leaked into the gaps or sat a couple of pixels off.
+     *
+     * <p>Whatever a component declares here must match what it actually paints in {@code draw()}.
+     */
+    public void backgroundShape(ShapeSink sink, float originX, float originY) {
+        sink.rect(originX - 2f, originY, width, height);
+    }
+
     public float alpha = 0f;
 
     public boolean shouldDisplay() {
@@ -131,13 +173,21 @@ public class Component {
             return;
         }
         float[] pos = getRealPosition(sr);
-        float scaledWidth = width * scale;
-        float scaledHeight = height * scale;
-        if (mod.rounded.getValue()) {
-            Rects.roundedImage(Math.round(pos[0] - 2), Math.round(pos[1]), Math.round(scaledWidth), Math.round(scaledHeight), mod.roundRadius.getValue().intValue(), STENCIL_MASK_COLOR);
-        } else {
-            Rects.fill(pos[0] - 2, pos[1], scaledWidth, scaledHeight, STENCIL_MASK_COLOR);
-        }
+        boolean round = mod.rounded.getValue();
+        int radius = mod.roundRadius.getValue().intValue();
+        // Same geometry the component paints, so the mask can never drift from the background.
+        backgroundShape((rectX, rectY, rectWidth, rectHeight) -> {
+            float scaledWidth = rectWidth * scale;
+            float scaledHeight = rectHeight * scale;
+            if (scaledWidth <= 0f || scaledHeight <= 0f) {
+                return;
+            }
+            if (round) {
+                Rects.roundedImage(Math.round(rectX), Math.round(rectY), Math.round(scaledWidth), Math.round(scaledHeight), radius, STENCIL_MASK_COLOR);
+            } else {
+                Rects.fill(rectX, rectY, scaledWidth, scaledHeight, STENCIL_MASK_COLOR);
+            }
+        }, pos[0], pos[1]);
     }
 
     public void display(ScaledResolution sr, int mouseX, int mouseY) {
