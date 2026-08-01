@@ -139,6 +139,8 @@ public class FPSMaster {
 
 
     public void shutdown() {
+        // Before anything else: an unfinished stream is an unreadable file.
+        top.fpsmaster.replay.ReplayRecorder.instance().stop();
         PlayTimeStatistics.flush();
         telemetryReporter.shutdown();
         async.close();

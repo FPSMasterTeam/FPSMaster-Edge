@@ -7,6 +7,9 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchmarkMode;
+import top.fpsmaster.features.impl.optimizes.Performance;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -20,7 +23,11 @@ public abstract class AbstractResourcePackMixin_DownscaleImages {
     protected abstract InputStream getInputStreamByName(String name) throws IOException;
 
     @Inject(method = "getPackImage", at = @At("HEAD"), cancellable = true)
-    private void patcher$downscalePackImage(CallbackInfoReturnable<BufferedImage> cir) throws IOException {
+    private void edge$downscalePackImage(CallbackInfoReturnable<BufferedImage> cir) throws IOException {
+        if (!Performance.using || !Performance.downscalePackIcons.getValue()) {
+            return;
+        }
+
         BufferedImage image = TextureUtil.readBufferedImage(this.getInputStreamByName("pack.png"));
         if (image == null) {
             cir.setReturnValue(null);
@@ -44,6 +51,9 @@ public abstract class AbstractResourcePackMixin_DownscaleImages {
             graphics.drawImage(image, 0, 0, 64, 64, null);
         } finally {
             graphics.dispose();
+        }
+        if (BenchmarkMode.ACTIVE) {
+            BenchCounters.packIconsDownscaled++;
         }
         cir.setReturnValue(downscaledIcon);
     }

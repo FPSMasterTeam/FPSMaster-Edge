@@ -12,6 +12,7 @@ import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.mc.GuiMultiplayer;
+import top.fpsmaster.ui.screens.replay.ReplayScreen;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.Easings;
@@ -49,6 +50,7 @@ public class MainMenu extends ScaledGuiScreen {
     private final MenuButton multiPlayer;
     private final MenuButton options;
     private final MenuButton exit;
+    private final MenuButton replays;
     private final MenuButton devTools;
     private static final Animator startAnimation = new Animator();
     private static final Animator backgroundAnimation = new Animator();
@@ -60,6 +62,8 @@ public class MainMenu extends ScaledGuiScreen {
         multiPlayer = new MenuButton("mainmenu.multi", () -> mc.displayGuiScreen(new GuiMultiplayer()));
         options = new MenuButton("mainmenu.settings", () -> mc.displayGuiScreen(new GuiOptions(this, mc.gameSettings)));
         exit = new MenuButton("X", () -> mc.shutdown());
+        replays = new MenuButton("Replays", () -> mc.displayGuiScreen(new ReplayScreen(this)));
+        replays.setText("Replays", false);
         devTools = new MenuButton("DevTools", () -> mc.displayGuiScreen(new DevToolsScreen(this)));
         devTools.setText("DevTools", false);
     }
@@ -132,8 +136,9 @@ public class MainMenu extends ScaledGuiScreen {
         multiPlayer.renderInScreen(this, x, y + 24f, 100f, 20f, mouseX, mouseY);
         options.renderInScreen(this, x, y + 48f, 70f, 20f, mouseX, mouseY);
         exit.renderInScreen(this, x + 74f, y + 48f, 26f, 20f, mouseX, mouseY);
+        replays.renderInScreen(this, x, y + 72f, 100f, 20f, mouseX, mouseY);
         if (FPSMaster.isDevelopment()) {
-            devTools.renderInScreen(this, x, y + 72f, 100f, 20f, mouseX, mouseY);
+            devTools.renderInScreen(this, x, y + 96f, 100f, 20f, mouseX, mouseY);
         }
 
         // Render copyright and other text info

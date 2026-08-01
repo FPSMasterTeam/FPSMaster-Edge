@@ -82,6 +82,7 @@ public class ModuleManager {
         modules.add(new ClientSettings());
         modules.add(new BetterScreen());
         modules.add(new Sprint());
+        modules.add(new Replay());
         modules.add(new ToggleSneak());
         modules.add(new Performance());
         modules.add(new MotionBlur());
@@ -131,6 +132,7 @@ public class ModuleManager {
         modules.add(new NoHitDelay());
         modules.add(new PingDisplay());
         modules.add(new CoordsDisplay());
+        modules.add(new PerformanceHud());
         modules.add(new ModsList());
 //        modules.add(new MiniMap());
         modules.add(new DirectionDisplay());

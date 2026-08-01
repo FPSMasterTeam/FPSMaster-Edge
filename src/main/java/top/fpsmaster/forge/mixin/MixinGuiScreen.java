@@ -1,5 +1,6 @@
 package top.fpsmaster.forge.mixin;
 
+import top.fpsmaster.utils.render.FastRender;
 import top.fpsmaster.utils.render.draw.Colors;
 
 import net.minecraft.client.gui.Gui;
@@ -90,7 +91,7 @@ public void drawWorldBackground(int tint) {
                 GlStateManager.enableTexture2D();
             }
 
-            if (BetterScreen.blur.getValue() && !OptifineUtil.isFastRender()) {
+            if (BetterScreen.blur.getValue() && !FastRender.isActive()) {
                 v1_8_9$iteration = Math.min(++v1_8_9$iteration, 3);
                 Blur.area(
                         0,

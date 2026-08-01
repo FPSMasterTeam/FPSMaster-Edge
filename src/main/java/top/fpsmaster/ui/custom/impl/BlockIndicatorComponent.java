@@ -58,11 +58,9 @@ public class BlockIndicatorComponent extends Component {
         if (position != Position.CT) {
             return super.getRealPosition(sr);
         }
-        float scaleFactor = (float) top.fpsmaster.features.impl.interfaces.ClientSettings.getUiScale();
-        if (scaleFactor <= 0) {
-            scaleFactor = 1.0f;
-        }
-        float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;
+        // Same factor the component space is drawn in - see Component.getRealPosition. Using the
+        // client's own UI scale here put the centred indicator a quarter of the way across instead.
+        float guiWidth = sr.getScaledWidth() / 2f * sr.getScaleFactor();
         x = 0.5f;
         y = 0f;
         return new float[]{guiWidth / 2f - width * scale / 2f, getModule().yOffset.getValue().floatValue()};

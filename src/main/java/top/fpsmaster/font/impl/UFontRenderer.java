@@ -3,6 +3,8 @@ package top.fpsmaster.font.impl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.ResourceLocation;
+import top.fpsmaster.benchmark.HudBreakdown;
+import top.fpsmaster.font.TextRenderer;
 import top.fpsmaster.modules.client.GlobalTextFilter;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.FPSMaster;
@@ -21,7 +23,7 @@ import static top.fpsmaster.utils.render.state.Alpha.apply;
 
 public class UFontRenderer extends FontRenderer {
     private final int FONT_HEIGHT = 8;
-    private StringCache stringCache;
+    private TextRenderer textRenderer;
     private final int size;
 
     public UFontRenderer(String name, int size) {
@@ -32,7 +34,6 @@ public class UFontRenderer extends FontRenderer {
                 false
         );
         this.size = size;
-        boolean antiAlias = true;
         Font font;
         try {
             InputStream is = Files.newInputStream(new File(FileUtils.fonts, name + ".ttf").toPath());
@@ -43,36 +44,7 @@ public class UFontRenderer extends FontRenderer {
             font = new Font("Arial", Font.PLAIN, size);
         }
 
-        ResourceLocation res = new ResourceLocation("textures/font/ascii.png");
-        int[] colorCode = new int[32];
-        for (int i = 0; i <= 31; i++) {
-            int j = (i >> 3 & 1) * 85;
-            int k = (i >> 2 & 1) * 170 + j;
-            int l = (i >> 1 & 1) * 170 + j;
-            int i1 = (i & 1) * 170 + j;
-            if (i == 6) {
-                k += 85;
-            }
-            if (Minecraft.getMinecraft().gameSettings.anaglyph) {
-                int j1 = (k * 30 + l * 59 + i1 * 11) / 100;
-                int k1 = (k * 30 + l * 70) / 100;
-                int l1 = (k * 30 + i1 * 70) / 100;
-                k = j1;
-                l = k1;
-                i1 = l1;
-            }
-            if (i >= 16) {
-                k /= 4;
-                l /= 4;
-                i1 /= 4;
-            }
-            colorCode[i] = (k & 255) << 16 | (l & 255) << 8 | (i1 & 255);
-        }
-
-        if (res.getResourcePath().equalsIgnoreCase("textures/font/ascii.png")) {
-            stringCache = new StringCache(colorCode);
-            stringCache.setDefaultFont(font, size, antiAlias);
-        }
+        this.textRenderer = new TextRenderer(font);
     }
 
     /**
@@ -99,7 +71,20 @@ public class UFontRenderer extends FontRenderer {
         if (text == null || text.isEmpty()) {
             return "";
         }
-        return stringCache.trimStringToWidth(text, width, reverse);
+        // The atlas renderer measures its own glyphs; StringCache went with the TrueType
+        // renderer it belonged to.
+        //
+        // NOTE: {@code reverse} is not honoured — this always trims from the front. The
+        // caller that passes true is TextField, keeping the tail of a right-scrolled line
+        // visible, so that path trims from the wrong end.
+        StringBuilder trimmed = new StringBuilder();
+        for (char c : text.toCharArray()) {
+            if (getStringWidth(trimmed.toString()) >= width) {
+                break;
+            }
+            trimmed.append(c);
+        }
+        return trimmed.toString();
     }
 
     /**
@@ -178,39 +163,74 @@ public class UFontRenderer extends FontRenderer {
     }
 
     private int drawStringInternal(String text, float x, float y, int color, boolean dropShadow, float shadowOffset) {
+        long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
+        int drawn = edge$drawStringInternal(text, x, y, color, dropShadow, shadowOffset);
+        if (mark != 0L) {
+            HudBreakdown.record("ourFont:draw", System.nanoTime() - mark);
+        }
+        return drawn;
+    }
+
+    private int edge$drawStringInternal(String text, float x, float y, int color, boolean dropShadow, float shadowOffset) {
         color = apply(color);
         int i;
         if (dropShadow) {
             if (Colors.toColor(color).getAlpha() > 50) {
-                stringCache.renderString(
-                        text,
-                        x + shadowOffset,
-                        y + shadowOffset,
-                        new Color(20, 20, 20, Colors.toColor(color).getAlpha()).getRGB(),
-                        true
-                );
+                textRenderer.draw(text, x + shadowOffset, y + shadowOffset,
+                        new Color(20, 20, 20, Colors.toColor(color).getAlpha()).getRGB(), true);
             }
         }
-        i = stringCache.renderString(text, x, y, color, false);
+        i = Math.round(textRenderer.draw(text, x, y, color));
         return i;
     }
 
     @Override
     public int getStringWidth(String text) {
+        long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
+        int measured = edge$getStringWidth(text);
+        if (mark != 0L) {
+            HudBreakdown.record("ourFont:width", System.nanoTime() - mark);
+        }
+        return measured;
+    }
+
+    private int edge$getStringWidth(String text) {
         text = GlobalTextFilter.filter(text);
         float densityScale = getDensityScale();
         if (densityScale > 1.0f) {
             UFontRenderer renderer = getDensityRenderer(densityScale);
             if (renderer != this) {
                 float actualDensityScale = renderer.size / (float) size;
-                return Math.round(renderer.stringCache.getStringWidth(text) / actualDensityScale);
+                return Math.round(renderer.textRenderer.width(text) / actualDensityScale);
             }
         }
-        return stringCache.getStringWidth(text);
+        return Math.round(textRenderer.width(text));
+    }
+
+    /**
+     * Draws without the client's global fade or its text filter, for standing in as vanilla's
+     * renderer.
+     *
+     * <p>{@link #drawString} multiplies by {@link top.fpsmaster.utils.render.state.Alpha}, which is
+     * how the client's own screens fade in. Vanilla's HUD is not part of that animation and must not
+     * fade with it, so this path leaves the colour alone.
+     */
+    public float drawRaw(String text, float x, float y, int argb, boolean shadowPass) {
+        return textRenderer.draw(text, x, y, argb, shadowPass);
+    }
+
+    /** The shadowed form of {@link #drawRaw}, as one recording and one draw rather than two. */
+    public float drawRawWithShadow(String text, float x, float y, int argb) {
+        return textRenderer.drawWithShadow(text, x, y, argb);
+    }
+
+    /** Advance of one character, for vanilla's per-character layout. */
+    public float advanceOf(char character) {
+        return textRenderer.advance(character);
     }
 
     public void drawCenteredString(String text, float x, float y, int color) {
-        drawString(text, x - stringCache.getStringWidth(text) / 2f, y, color, false);
+        drawString(text, x - textRenderer.width(text) / 2f, y, color, false);
     }
 
     public int getHeight() {
@@ -219,10 +239,10 @@ public class UFontRenderer extends FontRenderer {
             UFontRenderer renderer = getDensityRenderer(densityScale);
             if (renderer != this) {
                 float actualDensityScale = renderer.size / (float) size;
-                return Math.round(renderer.stringCache.height / 2f / actualDensityScale);
+                return Math.round(renderer.textRenderer.height() / actualDensityScale);
             }
         }
-        return stringCache.height / 2;
+        return textRenderer.height();
     }
 
     private float getDensityScale() {

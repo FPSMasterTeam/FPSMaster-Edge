@@ -10,6 +10,8 @@ import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.utility.SoundModifier;
 
@@ -18,8 +20,14 @@ import static top.fpsmaster.utils.core.Utility.mc;
 @Mixin(WorldClient.class)
 public class WorldClientMixin {
     @ModifyConstant(method = "doVoidFogParticles", constant = @Constant(intValue = 1000))
-    private int patcher$lowerTickCount(int original) {
-        return Performance.lowAnimationTick.getValue() ? 100 : original;
+    private int edge$lowerTickCount(int original) {
+        if (Performance.using && Performance.lowAnimationTick.getValue()) {
+            if (BenchmarkMode.ACTIVE) {
+                BenchCounters.lowAnimationTickHits++;
+            }
+            return 100;
+        }
+        return original;
     }
 //
 //    @Inject(method = "playSound", at = @At("HEAD"), cancellable = true)

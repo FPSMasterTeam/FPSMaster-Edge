@@ -1,0 +1,79 @@
+{
+  "_comment": "Leak hunt, not a timing measurement. Cycles features that create and destroy GL resources so the resource counters have something to catch. Frame times from this scenario are meaningless by construction \u2014 the workload changes mid-window.",
+  "world": {
+    "folder": "bench-flat",
+    "seed": 20260726,
+    "type": "FLAT",
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doMobSpawning false",
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/gamerule randomTickSpeed 0",
+      "/gamerule doFireTick false",
+      "/time set 6000",
+      "/weather clear 1000000",
+      "/difficulty peaceful",
+      "/kill @e[type=!Player]"
+    ]
+  },
+  "settleSeconds": 5,
+  "settleTimeoutMillis": 120000,
+  "warmupMillis": 30000,
+  "discardMillis": 1000,
+  "measureMillis": 120000,
+  "camera": {
+    "loopMillis": 20000,
+    "keyframes": [
+      {
+        "t": 0,
+        "x": 0,
+        "y": 70,
+        "z": 0,
+        "yaw": 0,
+        "pitch": 5
+      },
+      {
+        "t": 5000,
+        "x": 40,
+        "y": 70,
+        "z": 0,
+        "yaw": 90,
+        "pitch": 5
+      },
+      {
+        "t": 10000,
+        "x": 40,
+        "y": 70,
+        "z": 40,
+        "yaw": 180,
+        "pitch": 5
+      },
+      {
+        "t": 15000,
+        "x": 0,
+        "y": 70,
+        "z": 40,
+        "yaw": 270,
+        "pitch": 5
+      },
+      {
+        "t": 20000,
+        "x": 0,
+        "y": 70,
+        "z": 0,
+        "yaw": 360,
+        "pitch": 5
+      }
+    ]
+  },
+  "stress": {
+    "intervalMillis": 1000,
+    "toggle": [
+      "MotionBlur",
+      "Performance.FontOptimize",
+      "BlockOverlay",
+      "Performance.EntityCulling"
+    ]
+  }
+}

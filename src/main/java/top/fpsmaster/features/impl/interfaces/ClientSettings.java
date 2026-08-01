@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.interfaces;
 
+import top.fpsmaster.utils.render.FastRender;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Keyboard;
 import top.fpsmaster.FPSMaster;
@@ -121,7 +122,7 @@ public class ClientSettings extends Module {
         }
 
         if (e.setting == blur && ((boolean) e.newValue)) {
-            if (OptifineUtil.isFastRender()) {
+            if (FastRender.isActive()) {
                 Utility.sendClientNotify(FPSMaster.i18n.get("blur.fast_render"));
                 e.cancel();
             } else {

@@ -1,0 +1,11 @@
+{
+  "_comment": "Hypixel The Pit, recorded 27.6s. Steady melee: ~800 packets/s of player movement, damage, particles and scoreboard updates with almost no chunk streaming, so frame time is dominated by entities and HUD rather than by terrain building. settleSeconds skips the recording's opening chunk snapshot; the measured window is replay t=5s..22.5s. replayMeasureFromMillis pins the window to the recording rather than to the clock: discard ends on a steady frame time, not a timer, so without it a slower run starts measuring later in the recording and sees a different crowd. Measured before the pin: three variants of one ceiling probe rendered 21.5, 23.0 and 24.9 entities a frame and 231.7 vs 279.1 terrain draw calls, which is more variation than most candidates produce.",
+  "replay": "pit",
+  "settleSeconds": 5,
+  "settleTimeoutMillis": 60000,
+  "warmupMillis": 2000,
+  "discardMillis": 1000,
+  "measureMillis": 11000,
+  "replayMeasureFromMillis": 10500,
+  "_warmup_note": "warmup and discard are short because the discard phase now ends on a steady frame time rather than a clock -- see SteadyState. discardMillis is its floor. The phases have to fit inside what is left of the recording after settleSeconds, which is what a 10s warmup did not."
+}

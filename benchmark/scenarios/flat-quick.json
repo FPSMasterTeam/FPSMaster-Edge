@@ -1,0 +1,41 @@
+{
+  "_comment": "Functional check, not a measurement. Short phases so a switch-matrix pass over several variants costs a minute rather than half an hour. Use it to prove a setting actually reaches its code path via the counters; never quote its frame times.",
+  "world": {
+    "folder": "bench-flat",
+    "seed": 20260726,
+    "type": "FLAT",
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/time set 6000",
+      "/weather clear 1000000"
+    ]
+  },
+  "settleSeconds": 2,
+  "settleTimeoutMillis": 90000,
+  "warmupMillis": 2000,
+  "discardMillis": 500,
+  "measureMillis": 8000,
+  "camera": {
+    "loopMillis": 8000,
+    "keyframes": [
+      {
+        "t": 0,
+        "x": 0,
+        "y": 70,
+        "z": 0,
+        "yaw": 0,
+        "pitch": 5
+      },
+      {
+        "t": 8000,
+        "x": 0,
+        "y": 70,
+        "z": 0,
+        "yaw": 360,
+        "pitch": 5
+      }
+    ]
+  }
+}
