@@ -90,10 +90,20 @@ public final class EntityCulling {
      */
     private static final double IDLE_FRACTION = 0.05d;
     private static final double BUSY_FRACTION = 0.10d;
-    private static final int MAX_BACKOFF = 4;
 
-    /** How far the count has to fall below the threshold before probing stops again. */
-    private static final double DORMANT_MARGIN = 0.75d;
+    /**
+     * How often the whole sweep runs while scouting.
+     *
+     * <p>Scouting is the state this starts in and returns to whenever the occlusion rate says the
+     * probes are not earning: the sweep still runs, so the rate keeps being measured and the scene
+     * can be noticed changing, but <b>nothing is hidden</b> and it runs twenty times less often.
+     *
+     * <p>Not hiding is what makes the long cadence safe rather than merely cheap. A verdict half a
+     * second old is not something to hide an entity on — the camera has moved — so a state that
+     * probes rarely must also decline to act, and one that acts must probe often. Tying the two
+     * together is the whole design.
+     */
+    private static final long SCOUT_INTERVAL_MILLIS = 500L;
 
     /**
      * Entities with a query in flight, so results can be harvested without walking the world.
@@ -111,10 +121,21 @@ public final class EntityCulling {
     private int queryTarget;
 
     /** Set when there is too little on screen for culling to be worth probing for. */
-    private boolean dormant;
+    /**
+     * True while the probes are advisory: measured, counted, and not acted on.
+     *
+     * <p>Starts true, so a world that has never been looked at hides nothing.
+     */
+    private boolean scouting = true;
+
+    /** Wall clock of the last full sweep, which is what the cadence is applied to. */
+    private long lastSweepMillis;
+
+    /** Set when scouting ends, so the first culling sweep does not act on a scouting verdict. */
+    private boolean discardVerdicts;
+
     private int windowHarvested;
     private int windowOccluded;
-    private int backoff = 1;
 
     public void init() {
         if (initialised) {
@@ -135,7 +156,7 @@ public final class EntityCulling {
 
     /** Whether the entity should be drawn. Anything not positively known to be hidden is drawn. */
     public boolean shouldRender(Entity entity, boolean cullPlayers) {
-        if (dormant || !supported || !isCullable(entity, cullPlayers)) {
+        if (scouting || !supported || !isCullable(entity, cullPlayers)) {
             return true;
         }
         return !((ICullable) entity).fpsmaster$isOccluded();
@@ -186,23 +207,37 @@ public final class EntityCulling {
         RenderManager manager = mc.getRenderManager();
         List<Entity> entities = mc.theWorld.getLoadedEntityList();
 
-        // Cheap count first. The frustum test below asks the render manager for each entity's
-        // renderer and runs six plane checks, and paying that for every loaded entity every frame
-        // — only to find there were never enough of them to be worth culling — cost 6.9% of the
-        // frame rate on a lobby where this feature is dormant the entire time.
-        int cullable = 0;
-        for (int i = 0; i < entities.size(); i++) {
-            Entity entity = entities.get(i);
-            if (entity != viewEntity && isCullable(entity, cullPlayers)) {
-                cullable++;
-            }
-        }
-        if (cullable < minEntities) {
-            dormant = true;
+        // The sweep below asks the render manager for each entity's renderer and runs six plane
+        // checks, for every loaded entity. Paying that every frame in a scene with nothing to hide
+        // cost 6.9% of the frame rate on a recorded lobby, and an entity count used to be the guard
+        // against it. A count is a poor predictor of what is behind something — a hundred entities
+        // in the open hide none and twenty-five in a cave hide most — so the guard is now the
+        // occlusion rate the probes already measure, applied as a cadence: while scouting, this
+        // whole sweep runs once every SCOUT_INTERVAL_MILLIS rather than every frame, which is the
+        // same saving without needing to guess.
+        //
+        // minEntities is kept as a manual floor and defaults to zero. Harvesting stays outside the
+        // gate: it only walks the probes already in flight and their results should not go stale.
+        long sweepInterval = scouting ? SCOUT_INTERVAL_MILLIS : reprobeMillis;
+        if (now - lastSweepMillis < sweepInterval) {
             if (BenchmarkMode.ACTIVE) {
                 BenchCounters.cullDormantFrames++;
             }
             return;
+        }
+        lastSweepMillis = now;
+
+        if (minEntities > 0) {
+            int cullable = 0;
+            for (int i = 0; i < entities.size(); i++) {
+                Entity entity = entities.get(i);
+                if (entity != viewEntity && isCullable(entity, cullPlayers)) {
+                    cullable++;
+                }
+            }
+            if (cullable < minEntities) {
+                return;
+            }
         }
 
         // Only entities the game is about to draw anyway. Probing one that is behind the camera or
@@ -224,25 +259,14 @@ public final class EntityCulling {
             BenchCounters.cullCandidates += candidates.size();
         }
 
-        // With few enough entities on screen there is no entity cost worth removing, and the probes
-        // are all that would be left. Measured on a recorded lobby: fourteen entities, of which one
-        // was hidden, for no change in frame rate either way.
-        // Hysteresis, because the decision is made every frame from an instantaneous count. A
-        // scene sitting near the threshold would otherwise flip each frame, and everything behind a
-        // wall would appear and disappear with it - a visible artefact rather than a cost.
-        if (dormant) {
-            dormant = candidates.size() < minEntities;
-        } else {
-            dormant = candidates.size() < minEntities * DORMANT_MARGIN;
-        }
-        if (dormant) {
-            if (BenchmarkMode.ACTIVE) {
-                BenchCounters.cullDormantFrames++;
-            }
-            return;
-        }
+        // Verdicts collected while scouting were measured up to half a second ago, from a camera
+        // that has since moved. The sweep that starts culling throws them away and probes fresh:
+        // one frame of everything visible is the safe direction, and hiding on a stale verdict is
+        // the artefact this whole design exists to avoid.
+        boolean discard = discardVerdicts;
+        discardVerdicts = false;
 
-        long interval = reprobeMillis * backoff;
+        long interval = reprobeMillis;
         beginProbeState();
         try {
             WorldRenderer worldRenderer = Tessellator.getInstance().getWorldRenderer();
@@ -253,7 +277,7 @@ public final class EntityCulling {
                 // it was measured against whatever was in the way from the previous angle, and the
                 // camera no longer has that angle. Clearing it to visible is the safe direction —
                 // the entity draws for one frame until the fresh probe lands.
-                boolean reentered = !state.fpsmaster$wasInFrustum();
+                boolean reentered = discard || !state.fpsmaster$wasInFrustum();
                 state.fpsmaster$setInFrustum(true);
                 if (reentered) {
                     state.fpsmaster$setOccluded(false);
@@ -311,10 +335,15 @@ public final class EntityCulling {
             }
             if (windowHarvested >= RATE_WINDOW) {
                 double fraction = windowOccluded / (double) windowHarvested;
+                // Hysteresis: below the lower bound the probes are paying for nothing and this
+                // drops back to scouting; above the upper bound they are earning and it culls.
+                // Between the two the current state stands, so a scene sitting on the boundary
+                // does not flip every window and make everything behind a wall blink.
                 if (fraction <= IDLE_FRACTION) {
-                    backoff = MAX_BACKOFF;
-                } else if (fraction >= BUSY_FRACTION) {
-                    backoff = 1;
+                    scouting = true;
+                } else if (fraction >= BUSY_FRACTION && scouting) {
+                    scouting = false;
+                    discardVerdicts = true;
                 }
                 windowHarvested = 0;
                 windowOccluded = 0;
@@ -424,10 +453,11 @@ public final class EntityCulling {
         }
         pendingProbes.clear();
         candidates.clear();
-        dormant = false;
+        scouting = true;
+        discardVerdicts = false;
+        lastSweepMillis = 0L;
         windowHarvested = 0;
         windowOccluded = 0;
-        backoff = 1;
     }
 
     public void countVisibility(boolean rendered) {

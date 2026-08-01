@@ -183,15 +183,20 @@ public class Performance extends Module {
             new NumberSetting("EntityCullingInterval", 50, 10, 500, 5, () -> entityCulling.getValue());
 
     /**
-     * How many entities have to be on screen before probing is worth doing at all.
+     * A manual floor on the entity count, off by default.
      *
-     * <p>Culling can only give back what the entities cost, and a scene with a handful of them has
-     * nothing to give: a recorded Hypixel lobby draws fourteen, one of which is behind something,
-     * and turning culling on there moved the frame rate by -0.2%. Below this count the probes are
-     * skipped and everything renders. Zero means always probe.
+     * <p>It used to be 24 and it used to be the only guard against probing a scene with nothing to
+     * hide. It was the wrong question: a count does not predict occlusion. A hundred entities in the
+     * open hide none of each other and twenty-five in a corridor hide most, and the threshold was
+     * high enough that a real Hypixel fight — 21.8 entities a frame — never crossed it and the
+     * feature sat inert through every measurement of it.
+     *
+     * <p>The guard is now the occlusion rate the probes already measure: see the scouting state in
+     * {@code EntityCulling}, which runs the sweep twenty times less often and hides nothing until
+     * the rate says hiding is worth doing. This setting stays for anyone who wants a hard floor.
      */
     public static NumberSetting entityCullingMinEntities =
-            new NumberSetting("EntityCullingMinEntities", 24, 0, 256, 1, () -> entityCulling.getValue());
+            new NumberSetting("EntityCullingMinEntities", 0, 0, 256, 1, () -> entityCulling.getValue());
 
     /**
      * Point size the replacement font is rasterised at, chosen by height rather than width.
