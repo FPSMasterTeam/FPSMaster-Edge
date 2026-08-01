@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.BenchProfiler;
 import top.fpsmaster.benchmark.Experiments;
 import top.fpsmaster.benchmark.BenchmarkMode;
 
@@ -31,12 +32,23 @@ public class VertexBufferMixin_DrawProbe {
     private void edge$countTerrainDraw(int mode, CallbackInfo ci) {
         if (BenchmarkMode.ACTIVE) {
             BenchCounters.terrainDrawCalls++;
+            BenchProfiler.begin(BenchProfiler.SECTION_TERRAIN_DRAW);
         }
         // Ceiling probe: half the terrain gone. Wrecks the picture, which is the point — it prices
         // what the draws and their triangles are worth together before anything is built to merge
         // them. See Experiments.HALF_TERRAIN_DRAWS.
         if (Experiments.active(Experiments.HALF_TERRAIN_DRAWS) && (edge$drawOrdinal++ & 1) == 0) {
+            if (BenchmarkMode.ACTIVE) {
+                BenchProfiler.end(BenchProfiler.SECTION_TERRAIN_DRAW);
+            }
             ci.cancel();
+        }
+    }
+
+    @Inject(method = "drawArrays", at = @At("RETURN"))
+    private void edge$endTerrainDraw(int mode, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.end(BenchProfiler.SECTION_TERRAIN_DRAW);
         }
     }
 }

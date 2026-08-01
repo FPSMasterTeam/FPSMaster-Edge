@@ -24,6 +24,25 @@ import org.lwjgl.opengl.GLContext;
  * <p>Caveat worth keeping in mind when reading the numbers: desktop GL has no equivalent of
  * {@code GPU_DISJOINT_EXT}, so there is no way to detect that a clock change invalidated a sample.
  * Report medians and percentiles, never means.
+ *
+ * <h2>Fine-grained sections do not attribute, and this is not fixable here</h2>
+ *
+ * <p>A timestamp records when the GPU <b>reaches that command</b>, not when the work submitted
+ * around it finishes. The driver batches draws and executes them at a flush point, so a bracket
+ * tight around a draw call measures the gap between two timestamps that the GPU crosses back to
+ * back, and the rasterisation lands later — inside whichever coarser bracket contains the flush.
+ *
+ * <p>Measured, on the pit recording: a section bracketing {@code VertexBuffer.drawArrays} directly,
+ * over 286 draws a frame and 4688 valid samples, reports <b>zero</b> GPU microseconds. Cancelling
+ * half of those same draws takes frame GPU time from 1049us to 672us. The work is 377us and the
+ * bracket around it reads 0.
+ *
+ * <p>So only brackets that contain a flush mean anything — in practice {@code frameTotal} and
+ * {@code hud}. <b>The way to attribute GPU cost here is a ceiling probe</b>: delete the work and
+ * measure the frame. That is how terrain was priced at 26% of the frame rate after its own section
+ * had reported 20us.
+ *
+ * <p>Adding more sections does not improve this. It was tried.
  */
 public final class GpuTimer {
 

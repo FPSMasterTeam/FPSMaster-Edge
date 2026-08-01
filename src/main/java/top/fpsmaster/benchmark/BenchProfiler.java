@@ -47,13 +47,23 @@ public final class BenchProfiler {
      * needs its own bracket before any of it can be called worth optimising.
      */
     public static final int SECTION_BLOCK_ENTITIES = 16;
-    public static final int SECTION_COUNT = 17;
+    /**
+     * The chunk draws themselves, bracketed at {@code VertexBuffer.drawArrays}.
+     *
+     * <p>Exists to settle a contradiction rather than to find a target. The {@code terrain} section
+     * brackets {@code renderBlockLayer}, which contains these draws, and reports 17us of GPU time —
+     * while cancelling half of them saved 377us. Two measurements of the same work, forty times
+     * apart. Either the outer bracket is not where the work is, or the GPU timestamps are not
+     * attributing it, and putting a bracket directly around the draw call distinguishes those.
+     */
+    public static final int SECTION_TERRAIN_DRAW = 17;
+    public static final int SECTION_COUNT = 18;
 
     private static final String[] NAMES = {
             "terrain", "entities", "particles", "hud", "chunkUpload",
             "sky", "clouds", "hand", "terrainSetup", "frameTotal", "entityRender",
             "entityModel", "entityLayers", "entityBrightness", "entityShadow", "textureAnim",
-            "blockEntities",
+            "blockEntities", "terrainDraw",
     };
 
     private static final BenchProfiler INSTANCE = new BenchProfiler();

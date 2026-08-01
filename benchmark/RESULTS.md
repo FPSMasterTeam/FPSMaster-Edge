@@ -2292,3 +2292,39 @@ Render Regions 保留全部三角形只合并绘制，若成本在三角形吞�
 | 层级探针（负载差 16%） | 无效 | 0.53 | NOT ONE EFFECT |
 | `CacheItemModels` | 帧时间不动 | 0.34 | NOT ONE EFFECT |
 | `EntityCulling` | 真效应 | 10.79 | clear |
+
+## 任务 21：GPU 归因缺口 —— 答案是仪器有天花板
+
+先纠正一个我自己的算术错误：**`frameTotal` bracket 的是 `renderWorldPass`，`hud` bracket 的是
+`renderGameOverlay` —— HUD 不在 frameTotal 里面。** 之前"各 section 合计只占整帧 35%"的算法
+把 hud 加进了一个不包含它的总数。
+
+真正的缺口在世界渲染内部：1121us GPU，命名 section 合计约 100us。
+
+### 决定性测量
+
+在 `VertexBuffer.drawArrays` 上直接加 bracket（每帧 286 次绘制，4688 个有效样本）：
+
+| | CPU | GPU |
+| --- | ---: | ---: |
+| `frameTotal`（renderWorldPass） | 940 | **1121** |
+| `terrain`（renderBlockLayer） | 288 | 20 |
+| **`terrainDraw`（drawArrays 本身）** | 81 | **0** |
+| `entities` | 301 | 0 |
+
+**直接包住绘制的 bracket 报 0，而取消其中一半让 GPU 少了 377us。**
+
+### 原因，以及为什么加更多 bracket 没用
+
+`glQueryCounter` 记录的是 GPU **到达该命令**的时刻，不是围绕它提交的工作何时完成。驱动把绘制
+批量推迟到 flush 点执行，所以紧贴绘制的两个时间戳会被 GPU 背靠背跨过，而光栅化落在**包含
+flush 的更粗区间**里。
+
+**只有包含 flush 的 bracket 有意义** —— 实际上就是 `frameTotal` 和 `hud`。
+
+### 结论：用天花板探针，不用 bracket
+
+**归因 GPU 成本的方法是删掉工作再测整帧。** 地形就是这么定到 26% 的 —— 而它自己的 section
+报的是 20us。
+
+这条已写进 `GpuTimer` 的类注释。**加更多 section 不会改善，试过了。**
