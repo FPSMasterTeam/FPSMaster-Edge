@@ -60,6 +60,24 @@ public final class Experiments {
      * machine. Only if it moves the frame is it worth telling draws and triangles apart.
      */
     public static final boolean HALF_TERRAIN_DRAWS = flag("halfTerrainDraws");
+
+    /**
+     * Issues each chunk section as two draws over the same buffer instead of one.
+     *
+     * <p>The separator {@link #HALF_TERRAIN_DRAWS} could not provide. That one halved the draws and
+     * the triangles together and showed +26% frame rate, which bounds the pair without saying which
+     * half matters — and Render Regions merges draws while keeping every triangle, so it only pays
+     * if the draws do.
+     *
+     * <p>This holds the triangles exactly constant and doubles the draw count. A frame that slows
+     * down is a frame paying per draw, and merging is worth building. A frame that does not is one
+     * paying per triangle, and Render Regions stays rejected on this machine for a reason that
+     * finally applies to it.
+     *
+     * <p>The split lands on a multiple of four because the terrain is drawn as {@code GL_QUADS} and
+     * cutting between a quad's vertices would shear every chunk.
+     */
+    public static final boolean SPLIT_TERRAIN_DRAWS = flag("splitTerrainDraws");
     public static final boolean SKY_BREAKDOWN = flag("skyBreakdown");
     public static final boolean HUD_BREAKDOWN = flag("hudBreakdown");
     public static final boolean FONT_COMPARE = flag("fontCompare");
