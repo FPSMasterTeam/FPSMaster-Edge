@@ -93,6 +93,7 @@ public class ModuleManager {
         modules.add(new MoreParticles());
         modules.add(new ChatAvatars());
         modules.add(new FPSDisplay());
+        modules.add(new SaturationDisplay());
         modules.add(new ArmorDisplay());
         modules.add(new BetterChat());
         modules.add(new BlockIndicator());
@@ -113,6 +114,7 @@ public class ModuleManager {
         modules.add(new FireModifier());
         modules.add(new FreeLook());
         modules.add(new AutoGG());
+        modules.add(new AutoText());
         modules.add(new TimeChanger());
         modules.add(new TNTTimer());
         modules.add(new Hitboxes());
@@ -121,6 +123,7 @@ public class ModuleManager {
         modules.add(new Crosshair());
         modules.add(new CustomTitles());
         modules.add(new CustomFOV());
+        modules.add(new CustomFog());
         modules.add(new InventoryDisplay());
         modules.add(new PlayerDisplay());
         modules.add(new TargetDisplay());
