@@ -62,6 +62,16 @@ public final class BenchCounters {
     public static long drawStringCalls;
     public static long drawStringShadowed;
 
+    /**
+     * Nanoseconds inside texture upload, split by which path read the pixels.
+     *
+     * <p>Counts rather than section timings because uploads happen while loading, outside any
+     * measured window. Without these the whole of {@code FastTextureUpload} — shipped on, three
+     * quarters of uploads taking a direct path — has no number attached to it at all.
+     */
+    public static long textureUploadNanos;
+    public static long textureUploadDirectNanos;
+
     /** Item models replayed from a display list, and how many lists were recorded. */
     public static long itemModelListHits;
     public static long itemModelListsRecorded;
@@ -119,7 +129,8 @@ public final class BenchCounters {
             "packIconsDownscaled",
             "chunkRebuilds", "terrainDrawCalls", "chunkThrottleSleeps", "entityListLookups", "entityListNonEmpty",
             "chunkBudgetMovingTicks", "chunkBudgetStillTicks", "collisionQueriesSkipped",
-            "textureUploads", "textureUploadsDirect", "textureUploadPixels", "visibleListReused",
+            "textureUploads", "textureUploadsDirect", "textureUploadPixels",
+            "textureUploadNanos", "textureUploadDirectNanos", "visibleListReused",
             "modelCallLists", "modelComposedTransforms", "mergedShadowDraws", "clientFontDraws", "drawStringCalls", "drawStringShadowed", "obfuscatedStrings", "obfuscatedCacheHits", "itemModelListHits", "itemModelListsRecorded",
             "cullCandidates", "cullDormantFrames", "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "displayListsAllocated", "displayListsReleased",
@@ -145,7 +156,8 @@ public final class BenchCounters {
                 chunkRebuilds, terrainDrawCalls, chunkThrottleSleeps,
                 entityListLookups, entityListNonEmpty,
                 chunkBudgetMovingTicks, chunkBudgetStillTicks, collisionQueriesSkipped,
-                textureUploads, textureUploadsDirect, textureUploadPixels, visibleListReused,
+                textureUploads, textureUploadsDirect, textureUploadPixels,
+                textureUploadNanos, textureUploadDirectNanos, visibleListReused,
                 modelCallLists, modelComposedTransforms, mergedShadowDraws, clientFontDraws, drawStringCalls, drawStringShadowed, obfuscatedStrings, obfuscatedCacheHits, itemModelListHits, itemModelListsRecorded,
                 cullCandidates, cullDormantFrames, cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 displayListsAllocated, displayListsReleased,

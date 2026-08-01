@@ -34,7 +34,8 @@ public final class BenchReport {
 
     public static void write(File gameDir, FrameSampler sampler, DisplayWatch displayWatch,
                              long[] countersAtMeasureStart, long gcCountBefore, long gcMillisBefore,
-                             int replayFromMillis, int replayToMillis)
+                             int replayFromMillis, int replayToMillis,
+                             java.util.Map<String, Long> phaseMillis)
             throws IOException {
         long[] samples = sampler.samples();
 
@@ -52,6 +53,16 @@ public final class BenchReport {
             window.addProperty("fromMillis", Integer.valueOf(replayFromMillis));
             window.addProperty("toMillis", Integer.valueOf(replayToMillis));
             root.add("replayWindow", window);
+        }
+        // Wall clock per phase. Loading is not made of frames, so it never reached any of the
+        // frame-time reporting above, and the work that only happens there — texture upload, atlas
+        // stitching, mipmaps — has had no figure attached to it at all.
+        if (phaseMillis != null && !phaseMillis.isEmpty()) {
+            JsonObject phases = new JsonObject();
+            for (java.util.Map.Entry<String, Long> entry : phaseMillis.entrySet()) {
+                phases.addProperty(entry.getKey(), entry.getValue());
+            }
+            root.add("phaseMillis", phases);
         }
         root.add("gl", describeGl());
         root.add("java", describeJava());

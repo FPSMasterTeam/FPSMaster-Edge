@@ -65,9 +65,21 @@ public class TextureUtilMixin_FastUpload {
     /** Reused across uploads. Held at the largest size any upload has needed. */
     private static int[] fpsmaster$staging = new int[0];
 
+    /**
+     * When the current upload began, so both paths report into the same counter.
+     *
+     * <p>Static rather than passed through: uploads happen on the render thread and do not nest.
+     * A local would only be visible to the fast path, and then turning the feature off would
+     * measure nothing at all — which is the state this whole change exists to end.
+     */
+    @Unique
+    private static long EDGE_UPLOAD_STARTED;
+
     @Inject(method = "uploadTextureImageSubImpl", at = @At("HEAD"), cancellable = true)
     private static void fpsmaster$fastUpload(BufferedImage image, int x, int y, boolean blur,
                                              boolean clamp, CallbackInfo ci) {
+        // Before the enable check, so the vanilla path is timed too and the two can be compared.
+        EDGE_UPLOAD_STARTED = System.nanoTime();
         if (!Performance.using || !Performance.fastTextureUpload.getValue()) {
             return;
         }
@@ -76,6 +88,9 @@ public class TextureUtilMixin_FastUpload {
         if (width <= 0 || height <= 0) {
             return;
         }
+        // Timed unconditionally rather than under BenchmarkMode: an upload is rare and long, so one
+        // nanoTime pair either side is free, and the alternative is a feature that ships on with no
+        // number behind it because its work never lands inside a measured window.
 
         int rows = Math.max(1, 4194304 / width);
         int needed = rows * width;
@@ -110,10 +125,13 @@ public class TextureUtilMixin_FastUpload {
         }
 
         if (BenchmarkMode.ACTIVE) {
+            long elapsed = System.nanoTime() - EDGE_UPLOAD_STARTED;
             BenchCounters.textureUploads++;
             BenchCounters.textureUploadPixels += (long) width * height;
+            BenchCounters.textureUploadNanos += elapsed;
             if (direct != null || bytes != null) {
                 BenchCounters.textureUploadsDirect++;
+                BenchCounters.textureUploadDirectNanos += elapsed;
             }
         }
         ci.cancel();
@@ -171,6 +189,24 @@ public class TextureUtilMixin_FastUpload {
                 at += 3;
             }
         }
+    }
+
+    /**
+     * Times an upload that ran vanilla's way.
+     *
+     * <p>Only reached when the fast path declined, because cancelling from the head injection
+     * returns before the method's own return and this never fires. So the two are exclusive and
+     * both land in {@code textureUploadNanos}, which is what makes an A/B of the setting possible.
+     */
+    @Inject(method = "uploadTextureImageSubImpl", at = @At("RETURN"))
+    private static void edge$timeVanillaUpload(BufferedImage image, int x, int y, boolean blur,
+                                               boolean clamp, CallbackInfo ci) {
+        if (!BenchmarkMode.ACTIVE || image.getWidth() <= 0 || image.getHeight() <= 0) {
+            return;
+        }
+        BenchCounters.textureUploads++;
+        BenchCounters.textureUploadPixels += (long) image.getWidth() * image.getHeight();
+        BenchCounters.textureUploadNanos += System.nanoTime() - EDGE_UPLOAD_STARTED;
     }
 
     /**

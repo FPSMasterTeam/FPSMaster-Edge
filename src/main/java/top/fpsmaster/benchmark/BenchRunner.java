@@ -53,6 +53,37 @@ public final class BenchRunner {
     private long lastFrameNanos;
     private final DisplayWatch displayWatch = new DisplayWatch();
     private State state = State.INIT;
+
+    /**
+     * Wall clock spent in each phase, so loading has a number of its own.
+     *
+     * <p>Everything this harness reports is steady-state: the measured window opens after the world
+     * is up and warm. That leaves a whole class of work — texture upload, atlas stitching, mipmap
+     * generation, resource pack switching — with no figure attached, and {@code FastTextureUpload}
+     * has shipped on by default without one. These are wall clock rather than frame time because
+     * loading is not made of frames.
+     */
+    private final java.util.LinkedHashMap<String, Long> phaseMillis =
+            new java.util.LinkedHashMap<String, Long>();
+
+    private long phaseEnteredMillis;
+
+    /** Closes the phase that was running and opens the named one. */
+    private void edge$enterPhase(String name, long now) {
+        if (phaseEnteredMillis != 0L && lastPhaseName != null) {
+            Long spent = phaseMillis.get(lastPhaseName);
+            phaseMillis.put(lastPhaseName,
+                    Long.valueOf((spent == null ? 0L : spent.longValue()) + now - phaseEnteredMillis));
+        }
+        lastPhaseName = name;
+        phaseEnteredMillis = now;
+    }
+
+    private String lastPhaseName;
+
+    public java.util.Map<String, Long> phaseMillis() {
+        return phaseMillis;
+    }
     private BenchScenario scenario;
     private BenchWorld.SettleTracker settleTracker;
     private boolean setupIssued;
@@ -112,7 +143,9 @@ public final class BenchRunner {
                     ClientLogger.info("benchmark", "replay settled, warmup "
                             + scenario.warmupMillis() + "ms");
                     phaseStartMillis = now;
-                    state = State.WARMUP;
+                    edge$enterPhase("warmup", now);
+                    edge$enterPhase("warmup", now);
+            state = State.WARMUP;
                 } else if (now - phaseStartMillis >= scenario.settleTimeoutMillis()) {
                     throw new IllegalStateException("replay never produced an avatar within "
                             + scenario.settleTimeoutMillis() + "ms");
@@ -123,6 +156,7 @@ public final class BenchRunner {
                     settleTracker.reset(now);
                     phaseStartMillis = now;
                     pathStartMillis = now;
+                    edge$enterPhase("settle", now);
                     state = State.SETTLING;
                     ClientLogger.info("benchmark", "world ready, settling");
                 } else if (now - phaseStartMillis >= scenario.settleTimeoutMillis()) {
@@ -153,7 +187,9 @@ public final class BenchRunner {
                             + "ms, warmup " + scenario.warmupMillis() + "ms");
                     phaseStartMillis = now;
                     pathStartMillis = now;
-                    state = State.WARMUP;
+                    edge$enterPhase("warmup", now);
+                    edge$enterPhase("warmup", now);
+            state = State.WARMUP;
                 } else if (now - phaseStartMillis >= scenario.settleTimeoutMillis()) {
                     throw new IllegalStateException("terrain never settled within "
                             + scenario.settleTimeoutMillis() + "ms");
@@ -167,6 +203,7 @@ public final class BenchRunner {
                     steadyState.reset();
                     lastFrameNanos = 0L;
                     phaseStartMillis = now;
+                    edge$enterPhase("discard", now);
                     state = State.DISCARD;
                 }
                 break;
@@ -290,16 +327,19 @@ public final class BenchRunner {
             if (!ReplayPlayer.instance().isActive()) {
                 throw new IllegalStateException("could not open replay '" + scenario.replay() + "'");
             }
+            edge$enterPhase("loadReplay", now);
             state = State.LOADING_REPLAY;
             return;
         }
         if (scenario.world() == null) {
             settleTracker = null;
+            edge$enterPhase("warmup", now);
             state = State.WARMUP;
             return;
         }
         settleTracker = new BenchWorld.SettleTracker(scenario.settleSeconds());
         BenchWorld.launch(mc, scenario.world());
+        edge$enterPhase("loadWorld", now);
         state = State.LOADING_WORLD;
     }
 
@@ -333,6 +373,7 @@ public final class BenchRunner {
         gcCountAtStart = BenchReport.gcCollectionCount();
         gcMillisAtStart = BenchReport.gcCollectionMillis();
         phaseStartMillis = now;
+        edge$enterPhase("measure", now);
         state = State.MEASURE;
         ClientLogger.info("benchmark", "measuring for " + scenario.measureMillis() + "ms");
     }
@@ -342,11 +383,13 @@ public final class BenchRunner {
             scenario.stress().logSummary();
         }
         sampler.stop();
+        edge$enterPhase("done", System.currentTimeMillis());
         state = State.FINISHED;
         try {
             BenchReport.write(mc.mcDataDir, sampler, displayWatch, countersAtMeasureStart,
                     gcCountAtStart, gcMillisAtStart, replayAtMeasureStart,
-                    scenario.replay() == null ? -1 : ReplayPlayer.instance().elapsedMillis());
+                    scenario.replay() == null ? -1 : ReplayPlayer.instance().elapsedMillis(),
+                    phaseMillis);
             ClientLogger.info("benchmark", "wrote result with " + sampler.sampleCount() + " frames");
         } catch (Throwable t) {
             ClientLogger.error("benchmark", "failed to write result: " + t);
