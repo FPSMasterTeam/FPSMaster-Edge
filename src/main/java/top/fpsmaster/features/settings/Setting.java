@@ -2,6 +2,7 @@ package top.fpsmaster.features.settings;
 
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventValueChange;
+import top.fpsmaster.features.settings.impl.AutoTextEntry;
 import top.fpsmaster.features.settings.impl.utils.CustomColor;
 
 import java.util.ArrayList;
@@ -95,7 +96,16 @@ public class Setting<T> {
             return (T) ((CustomColor) source).copy();
         }
         if (source instanceof ArrayList) {
-            return (T) new ArrayList<>((ArrayList<?>) source);
+            ArrayList<?> src = (ArrayList<?>) source;
+            // AutoTextEntry lists need deep copies so each entry is immutable.
+            if (!src.isEmpty() && src.get(0) instanceof AutoTextEntry) {
+                ArrayList<AutoTextEntry> copy = new ArrayList<>(src.size());
+                for (Object o : src) {
+                    copy.add(new AutoTextEntry((AutoTextEntry) o));
+                }
+                return (T) copy;
+            }
+            return (T) new ArrayList<>(src);
         }
         return source;
     }

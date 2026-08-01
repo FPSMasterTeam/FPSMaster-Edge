@@ -52,6 +52,8 @@ public class ModuleRenderer extends ValueRender {
                 settingsRenderers.add(new BindSettingRender(module, (BindSetting) setting));
             } else if(setting instanceof MultipleItemSetting) {
                 settingsRenderers.add(new MultipleItemSettingRender(module,(MultipleItemSetting)setting));
+            } else if(setting instanceof AutoTextSetting) {
+                settingsRenderers.add(new AutoTextSettingRender(module,(AutoTextSetting)setting));
             }
         });
     }

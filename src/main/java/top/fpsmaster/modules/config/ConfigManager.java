@@ -11,13 +11,7 @@ import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.render.ItemPhysics;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.Setting;
-import top.fpsmaster.features.settings.impl.BindSetting;
-import top.fpsmaster.features.settings.impl.BooleanSetting;
-import top.fpsmaster.features.settings.impl.ColorSetting;
-import top.fpsmaster.features.settings.impl.ModeSetting;
-import top.fpsmaster.features.settings.impl.MultipleItemSetting;
-import top.fpsmaster.features.settings.impl.NumberSetting;
-import top.fpsmaster.features.settings.impl.TextSetting;
+import top.fpsmaster.features.settings.impl.*;
 import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.modules.config.migration.ConfigMigration;
 import top.fpsmaster.modules.config.migration.ConfigMigrationRegistry;
@@ -116,6 +110,19 @@ public class ConfigManager {
                     JsonObject settingJson = new JsonObject();
                     settingJson.addProperty("type", "multiItem");
                     settingJson.add("value", items);
+                    settingsJson.add(setting.name, settingJson);
+                } else if (setting instanceof AutoTextSetting) {
+                    AutoTextSetting autoText = (AutoTextSetting) setting;
+                    JsonArray arr = new JsonArray();
+                    for (AutoTextEntry entry : autoText.getValue()) {
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("key", entry.keyCode);
+                        obj.addProperty("msg", entry.message);
+                        arr.add(obj);
+                    }
+                    JsonObject settingJson = new JsonObject();
+                    settingJson.addProperty("type", "autoText");
+                    settingJson.add("value", arr);
                     settingsJson.add(setting.name, settingJson);
                 } else {
                     JsonObject settingJson = new JsonObject();
@@ -343,6 +350,27 @@ public class ConfigManager {
                                         }
                                     }
                                     multipleItemSetting.setValue(items);
+                                } else if (setting instanceof AutoTextSetting && "autoText".equals(type)) {
+                                    AutoTextSetting autoText = (AutoTextSetting) setting;
+                                    ArrayList<AutoTextEntry> entries = new ArrayList<>();
+                                    java.util.Set<Integer> usedKeys = new java.util.HashSet<>();
+                                    for (JsonElement entryElement : value.getAsJsonArray()) {
+                                        if (entries.size() >= AutoTextSetting.MAX_CAPACITY) {
+                                            break;
+                                        }
+                                        try {
+                                            JsonObject obj = entryElement.getAsJsonObject();
+                                            int key = obj.has("key") ? obj.get("key").getAsInt() : 0;
+                                            String msg = obj.has("msg") ? obj.get("msg").getAsString() : "";
+                                            if (key != 0 && !usedKeys.add(key)) {
+                                                continue; // duplicate key: drop
+                                            }
+                                            entries.add(new AutoTextEntry(key, msg));
+                                        } catch (Throwable t) {
+                                            ClientLogger.warn("Skipping malformed AutoText entry in " + module.name + "/" + setting.name);
+                                        }
+                                    }
+                                    autoText.setValue(entries);
                                 }
                             }
                         } catch (Throwable throwable) {
