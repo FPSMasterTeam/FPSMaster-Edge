@@ -257,16 +257,22 @@ public class KeystrokesComponent extends Component {
             int radius = resolveKeyRadius();
             Color border = resolveBorderColor(x, y);
 
+            // try/finally: bailing out mid-stencil would leave GL_STENCIL_TEST enabled and colorMask
+            // partially closed, which silently discards everything drawn after this component.
             StencilUtil.initStencilToWrite();
-            Rects.rounded(outerX, outerY, outerW, outerH, radius, new Color(0, 0, 0, 255).getRGB());
-            org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_ALWAYS, 0, 0xFF);
-            org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE);
-            Rects.rounded(x, y, scaledW, scaledH, radius, new Color(0, 0, 0, 255).getRGB());
-            org.lwjgl.opengl.GL11.glColorMask(true, true, true, true);
-            org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_EQUAL, 1, 0xFF);
-            org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP);
-            Rects.rounded(outerX, outerY, outerW, outerH, radius, border.getRGB());
-            StencilUtil.uninitStencilBuffer();
+            try {
+                Rects.rounded(outerX, outerY, outerW, outerH, radius, new Color(0, 0, 0, 255).getRGB());
+                org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_ALWAYS, 0, 0xFF);
+                org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE, org.lwjgl.opengl.GL11.GL_REPLACE);
+                Rects.rounded(x, y, scaledW, scaledH, radius, new Color(0, 0, 0, 255).getRGB());
+                org.lwjgl.opengl.GL11.glColorMask(true, true, true, true);
+                org.lwjgl.opengl.GL11.glStencilFunc(org.lwjgl.opengl.GL11.GL_EQUAL, 1, 0xFF);
+                org.lwjgl.opengl.GL11.glStencilOp(org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP, org.lwjgl.opengl.GL11.GL_KEEP);
+                Rects.rounded(outerX, outerY, outerW, outerH, radius, border.getRGB());
+            } finally {
+                org.lwjgl.opengl.GL11.glColorMask(true, true, true, true);
+                StencilUtil.uninitStencilBuffer();
+            }
         }
 
         private void updatePressAnims(float dt, float width, float height, boolean pressed) {

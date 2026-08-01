@@ -29,32 +29,32 @@ public class PlayerDisplayComponent extends Component {
         for (Entity entity : mc.theWorld.loadedEntityList) {
             if (entity instanceof EntityPlayer && !entity.isInvisible()) {
                 if (i > 10 || entity == mc.thePlayer) continue;
-                UFontRenderer s16 = FPSMaster.fontManager.s16;
-                String healthText = (int) (((EntityPlayer) entity).getHealth() * 10 / 10) + " hp";
-                float hX = s16.getStringWidth(healthText);
-                float nX = s16.getStringWidth(entity.getDisplayName().getFormattedText());
+                EntityPlayer player = (EntityPlayer) entity;
+                String name = entity.getDisplayName().getFormattedText();
+                String healthText = (int) (player.getHealth() * 10 / 10) + " hp";
+                // Logical (unscaled) widths — drawRect/drawString apply scale themselves.
+                float hX = getStringWidth(16, healthText);
+                float nX = getStringWidth(16, name);
+                float rowWidth = 10 + hX + nX;
+                // Row offsets are positions, so they scale here; sizes scale inside drawRect.
+                float rowY = y + i * 16 * scale;
 
-                Rects.rounded(Math.round(x), Math.round(y + i * 16), Math.round(10 + hX + nX), 14, new Color(0, 0, 0, 60));
-                Rects.rounded(
-                        Math.round(x),
-                        Math.round(y + i * 16),
-                        Math.round((10 + hX + nX) * ((EntityPlayer) entity).getHealth() / ((EntityPlayer) entity).getMaxHealth()),
-                        14,
-                        new Color(0, 0, 0, 60)
-                );
+                drawRect(x, rowY, rowWidth, 14, mod.backgroundColor.getColor());
+                drawRect(x, rowY, rowWidth * player.getHealth() / player.getMaxHealth(), 14,
+                        mod.backgroundColor.getColor());
 
-                if (width < 10 + hX + nX) {
-                    width = 10 + hX + nX;
+                if (width < rowWidth) {
+                    width = rowWidth;
                 }
 
-                float health = ((EntityPlayer) entity).getHealth();
-                float maxHealth = ((EntityPlayer) entity).getMaxHealth();
+                float health = player.getHealth();
+                float maxHealth = player.getMaxHealth();
                 Color color = health >= maxHealth * 0.8f ? new Color(50, 255, 55) :
                         health > maxHealth * 0.5f ? new Color(255, 255, 55) :
                                 new Color(255, 55, 55);
 
-                s16.drawString(entity.getDisplayName().getFormattedText(), x + 2, y + i * 16 + 2, -1);
-                s16.drawString(healthText, x + 8 + nX, y + i * 16 + 2, color.getRGB());
+                drawString(16, name, x + 2 * scale, rowY + 2 * scale, -1);
+                drawString(16, healthText, x + (8 + nX) * scale, rowY + 2 * scale, color.getRGB());
 
                 i++;
             }

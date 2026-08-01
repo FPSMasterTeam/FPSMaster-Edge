@@ -17,8 +17,8 @@ public class ToggleSneak extends InterfaceModule {
     public static boolean sneak = false;
 
     public ToggleSneak() {
-        super("ToggleSneak", Category.Utility);
-        addSettings(toggleSneak, toggleKey, betterFont);
+        super("ToggleSneak", Category.Utility, Trait.TEXT);
+        addSettings(toggleSneak, toggleKey);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package top.fpsmaster.ui.custom;
 
+import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.ui.custom.impl.*;
@@ -59,6 +60,40 @@ public class ComponentsManager {
                 .orElse(null);
     }
 
+    /** A component failing this many frames in a row is switched off rather than left to spin. */
+    private static final int DISABLE_AFTER_FAILURES = 60;
+
+    /**
+     * Per-frame failures are swallowed on purpose: {@code mc.thePlayer}/{@code theWorld} go null while
+     * changing worlds and several components dereference them unguarded, so without this one NPE would
+     * take down the whole EventRender2D dispatch. What must not happen is logging the same line 60
+     * times a second, so output is rate-limited and the exception itself is finally recorded.
+     */
+    private void onComponentFailure(Component component, String phase, Throwable throwable) {
+        int failures = ++component.renderFailures;
+        // Full detail for the first few, then only on powers of two.
+        if (failures <= 3 || Integer.bitCount(failures) == 1) {
+            ClientLogger.error("Failed to " + phase + " component " + component.mod.name
+                    + " (failure #" + failures + ")", throwable);
+        }
+        if (failures == DISABLE_AFTER_FAILURES) {
+            ClientLogger.error("Disabling component " + component.mod.name
+                    + " after " + failures + " consecutive failures");
+            component.mod.set(false);
+        }
+        // An exception can leave scissor/stencil/blend enabled and bleed into the rest of the frame.
+        resetRenderState();
+    }
+
+    private void resetRenderState() {
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        GL11.glDisable(GL11.GL_STENCIL_TEST);
+        GlStateManager.enableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+    }
+
     public void drawBackgroundMasks() {
         GL11.glPushMatrix();
         net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(Utility.mc);
@@ -67,8 +102,8 @@ public class ComponentsManager {
             if (component.shouldDisplay()) {
                 try {
                     component.drawBlurMask(sr);
-                } catch (Exception e) {
-                    ClientLogger.error("Failed to render component blur mask: " + component.mod.name);
+                } catch (Throwable throwable) {
+                    onComponentFailure(component, "mask", throwable);
                 }
             }
         });
@@ -97,8 +132,9 @@ public class ComponentsManager {
             if (component.shouldDisplay()) {
                 try {
                     component.display(sr, finalMouseX, finalMouseY);
-                } catch (Exception e) {
-                    ClientLogger.error("Failed to render component: " + component.mod.name);
+                    component.renderFailures = 0;
+                } catch (Throwable throwable) {
+                    onComponentFailure(component, "render", throwable);
                 }
             }
         });

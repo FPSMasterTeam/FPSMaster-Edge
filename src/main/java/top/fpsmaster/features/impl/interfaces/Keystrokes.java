@@ -38,17 +38,10 @@ public class Keystrokes extends InterfaceModule {
     public static ModeSetting spaceStyle = new ModeSetting("SpaceStyle", 0, () -> showSpace.getValue(), "Text", "Bar");
 
     public Keystrokes() {
-        super("Keystrokes", Category.Interface);
+        super("Keystrokes", Category.Interface, Trait.BACKGROUND, Trait.TEXT, Trait.SPACING);
         CPSDisplay.ensureTracking();
         roundRadius.setValue(2);
-        addSettings(
-                fontShadow, betterFont,
-                pressedColor, fontColor, pressedFontColor,
-                borderColor, borderWidth,
-                pressAnimMode, pressAnimColor, pressAnimDuration,
-                showSpace, cpsMode, wasdStyle, spaceStyle, spacing, bg, backgroundColor, rounded, roundRadius
-        );
+        addSettings(pressedColor, fontColor, pressedFontColor, borderColor, borderWidth, pressAnimMode, pressAnimColor, pressAnimDuration, showSpace, cpsMode, wasdStyle, spaceStyle);
     }
 }
-
 

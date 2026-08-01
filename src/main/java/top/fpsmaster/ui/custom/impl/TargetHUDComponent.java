@@ -52,7 +52,7 @@ public class TargetHUDComponent extends Component {
         healthPer = (float) AnimMath.base(healthPer, (health / maxHealth), 0.1);
 
         if (TargetDisplay.targetHUD.getMode() == 0) {
-            width = (30 + FPSMaster.fontManager.s16.getStringWidth(name));
+            width = (30 + getStringWidth(16, name));
             height = 30f;
 
             // Set color based on health percentage
@@ -66,13 +66,16 @@ public class TargetHUDComponent extends Component {
 
             // Draw elements if animation is greater than 1
             if (animation > 0.05) {
-                Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), new Color(0, 0, 0, (int) animation * 80));
-                Rects.rounded(Math.round(x), Math.round(y), Math.round(healthPer * width), Math.round(height), colorAnimation.getColor());
-                FPSMaster.fontManager.s16.drawStringWithShadow(name, x + 27, y + 5, -1);
-                Images.playerHead((AbstractClientPlayer) target1, x + 5, y + 5, 20, 20);
+                // Panel goes through drawRect so it honours the Background toggle and scale; the health
+                // bar and head stay raw because they are content, not decoration, and must not vanish
+                // when the user turns the background off. Their sizes are scaled explicitly.
+                drawRect(x, y, width, height, new Color(0, 0, 0, (int) animation * 80));
+                Rects.rounded(Math.round(x), Math.round(y), Math.round(healthPer * width * scale), Math.round(height * scale), colorAnimation.getColor());
+                drawString(16, name, x + 27 * scale, y + 5 * scale, -1);
+                Images.playerHead((AbstractClientPlayer) target1, x + 5 * scale, y + 5 * scale, Math.round(20 * scale), Math.round(20 * scale));
             }
         } else if (TargetDisplay.targetHUD.getValue() == 1) {
-            width = (50 + FPSMaster.fontManager.s16.getStringWidth(name));
+            width = (50 + getStringWidth(16, name));
             height = 40f;
 
             // Set color based on health percentage
@@ -86,10 +89,10 @@ public class TargetHUDComponent extends Component {
 
             // Draw elements if animation is greater than 1
             if (animation > 0.05) {
-                Rects.roundedImage(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 8, new Color(0, 0, 0, (int) (animation * 120)));
-                Rects.roundedImage(Math.round(x + 10), Math.round(y + 30), Math.round(healthPer * (width - 20)), 4, 2, colorAnimation.getColor());
-                FPSMaster.fontManager.s18.drawStringWithShadow(name, x + 24, y + 8, new Color(255, 255, 255, (int) (animation * 255)).getRGB());
-                Images.playerHead((AbstractClientPlayer) target1, x + 10, y + 8, 12, 12);
+                drawRect(x, y, width, height, new Color(0, 0, 0, (int) (animation * 120)));
+                Rects.roundedImage(Math.round(x + 10 * scale), Math.round(y + 30 * scale), Math.round(healthPer * (width - 20) * scale), Math.round(4 * scale), 2, colorAnimation.getColor());
+                drawString(18, name, x + 24 * scale, y + 8 * scale, new Color(255, 255, 255, (int) (animation * 255)).getRGB());
+                Images.playerHead((AbstractClientPlayer) target1, x + 10 * scale, y + 8 * scale, Math.round(12 * scale), Math.round(12 * scale));
             }
         }
     }

@@ -10,11 +10,8 @@ public class PingDisplay extends InterfaceModule {
     public PingDisplay() {
         super("PingDisplay", Category.Interface);
         addSettings(textColor);
-        addSettings(rounded, backgroundColor, fontShadow, betterFont, bg, rounded, roundRadius);
     }
 
     public static ColorSetting textColor = new ColorSetting("TextColor", new Color(255, 255, 255));
 }
-
-
 
