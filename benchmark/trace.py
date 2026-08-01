@@ -96,10 +96,31 @@ def main():
         print(f"{run['name']:>12}: " + " ".join(f"{v:6.3f}" for v in segments(run["frames"])))
     delta = [x - y for x, y in zip(segments(a["frames"]), segments(b["frames"]))]
     print(f"{'delta':>12}: " + " ".join(f"{v:+6.3f}" for v in delta))
-    signs = {v > 0 for v in delta}
-    print(f"{'':>12}  " + ("consistent direction across the run"
-                           if len(signs) == 1 else
-                           "DIRECTION FLIPS between segments — not one effect"))
+    # Effect size against segment spread, not a count of signs.
+    #
+    # Unanimity was the first rule and it called a +26% frame rate change "not one effect" because
+    # three tenths of a noisy replay went the other way. A 7-of-10 majority was the second, and it
+    # blessed a pair already known to be invalid — the ceiling probe whose variants had rendered
+    # 21.5 and 24.9 entities a frame. Both pairs sit at 7/10, so the sign count cannot separate
+    # them at all.
+    #
+    # What does separate them is how large the typical difference is next to how much the
+    # differences vary: the real effect runs +0.58ms against a spread of 0.33, the artefact runs
+    # -0.13ms against a spread of 0.25. Median over mean absolute deviation, so one wild segment
+    # moves neither term much.
+    ordered = sorted(delta)
+    mid = len(ordered) // 2
+    median = ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+    spread = sum(abs(v - median) for v in delta) / len(delta)
+    ratio = abs(median) / spread if spread else float("inf")
+    if ratio >= 1.5:
+        verdict = f"clear: median {median:+.3f}ms against spread {spread:.3f} (ratio {ratio:.2f})"
+    elif ratio >= 1.0:
+        verdict = f"weak: median {median:+.3f}ms against spread {spread:.3f} (ratio {ratio:.2f})"
+    else:
+        verdict = (f"NOT ONE EFFECT: median {median:+.3f}ms is smaller than the spread "
+                   f"{spread:.3f} (ratio {ratio:.2f})")
+    print(f"{'':>12}  " + verdict)
 
     if args.plot:
         rows = []

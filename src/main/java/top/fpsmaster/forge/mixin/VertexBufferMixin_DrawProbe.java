@@ -2,10 +2,12 @@ package top.fpsmaster.forge.mixin;
 
 import net.minecraft.client.renderer.vertex.VertexBuffer;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.benchmark.BenchCounters;
+import top.fpsmaster.benchmark.Experiments;
 import top.fpsmaster.benchmark.BenchmarkMode;
 
 /**
@@ -22,10 +24,19 @@ import top.fpsmaster.benchmark.BenchmarkMode;
 @Mixin(VertexBuffer.class)
 public class VertexBufferMixin_DrawProbe {
 
-    @Inject(method = "drawArrays", at = @At("HEAD"))
+    @Unique
+    private static int edge$drawOrdinal;
+
+    @Inject(method = "drawArrays", at = @At("HEAD"), cancellable = true)
     private void edge$countTerrainDraw(int mode, CallbackInfo ci) {
         if (BenchmarkMode.ACTIVE) {
             BenchCounters.terrainDrawCalls++;
+        }
+        // Ceiling probe: half the terrain gone. Wrecks the picture, which is the point — it prices
+        // what the draws and their triangles are worth together before anything is built to merge
+        // them. See Experiments.HALF_TERRAIN_DRAWS.
+        if (Experiments.active(Experiments.HALF_TERRAIN_DRAWS) && (edge$drawOrdinal++ & 1) == 0) {
+            ci.cancel();
         }
     }
 }
