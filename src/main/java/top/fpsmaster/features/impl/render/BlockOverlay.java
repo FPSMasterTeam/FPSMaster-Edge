@@ -51,6 +51,7 @@ public class BlockOverlay extends Module {
             // Use raw world for block state access
             if (Minecraft.getMinecraft().theWorld != null && Minecraft.getMinecraft().objectMouseOver != null) {
                 BlockPos mcPos = Minecraft.getMinecraft().objectMouseOver.getBlockPos();
+                if (mcPos == null) return;
                 IBlockState state = Minecraft.getMinecraft().theWorld.getBlockState(mcPos);
                 Block block = state.getBlock();
                 

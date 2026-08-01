@@ -809,6 +809,28 @@ betterfishingrod=更好的鱼竿
 betterfishingrod.desc=修改钓鱼竿
 betterfishingrod.stringwidth=线宽度
 
+saturationdisplay=饱和度显示
+saturationdisplay.desc=用可自由移动的饱和度显示替代原版饥饿条
+saturationdisplay.background=背景
+saturationdisplay.backgroundcolor=背景颜色
+saturationdisplay.round=背景圆角
+saturationdisplay.roundradius=圆角半径
+saturationdisplay.betterfont=更好的字体
+saturationdisplay.fontshadow=字体阴影
+
+customfog=自定义迷雾
+customfog.desc=自定义世界迷雾的颜色和距离
+customfog.color=迷雾颜色
+customfog.fogmode=迷雾模式
+customfog.fogmode.linear=线性
+customfog.fogmode.exponential=指数
+customfog.startdistance=起始距离
+customfog.enddistance=结束距离
+autotext=自动文本
+autotext.desc=按下设定的快捷键时发送保存的聊天消息
+autotext.entries=条目
+autotext.empty=暂无自动文本条目，点击 + 添加。
+
 
 # 类别
 category.optimize=优化

@@ -809,6 +809,28 @@ betterfishingrod=Better Fishing Rod
 betterfishingrod.desc=Modify the fishing rod
 betterfishingrod.stringwidth=String Width
 
+saturationdisplay=Saturation HUD
+saturationdisplay.desc=Replace the vanilla food bar with a movable saturation display
+saturationdisplay.background=Show Background
+saturationdisplay.backgroundcolor=Background Color
+saturationdisplay.round=Rounded Corners
+saturationdisplay.roundradius=Corner Radius
+saturationdisplay.betterfont=Better Font
+saturationdisplay.fontshadow=Font Shadow
+
+customfog=Custom Fog
+customfog.desc=Customize the color and distance of world fog
+customfog.color=Fog Color
+customfog.fogmode=Fog Mode
+customfog.fogmode.linear=Linear
+customfog.fogmode.exponential=Exponential
+customfog.startdistance=Start Distance
+customfog.enddistance=End Distance
+autotext=AutoText
+autotext.desc=Send a saved chat message when a configured key is pressed
+autotext.entries=Entries
+autotext.empty=No AutoText entries. Click + to add one.
+
 
 # Categories
 category.optimize=Performance
