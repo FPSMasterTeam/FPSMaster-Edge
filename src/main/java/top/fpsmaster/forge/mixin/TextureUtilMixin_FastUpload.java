@@ -101,7 +101,8 @@ public class TextureUtilMixin_FastUpload {
         int[] direct = fpsmaster$directPixels(image);
         boolean hasAlpha = image.getType() == BufferedImage.TYPE_4BYTE_ABGR;
         byte[] bytes = direct == null ? fpsmaster$directBytes(image) : null;
-        if (direct == null && bytes == null) {
+        int[] palette = direct == null && bytes == null ? fpsmaster$palette(image) : null;
+        if (direct == null && bytes == null && palette == null) {
             fpsmaster$noteFallback(image);
         }
 
@@ -116,6 +117,8 @@ public class TextureUtilMixin_FastUpload {
                 System.arraycopy(direct, firstRow * width, staging, 0, pixels);
             } else if (bytes != null) {
                 fpsmaster$unpackBytes(bytes, firstRow * width, staging, pixels, hasAlpha);
+            } else if (palette != null) {
+                fpsmaster$unpackIndexed(image, palette, firstRow, rowsHere, width, staging);
             } else {
                 image.getRGB(0, firstRow, width, rowsHere, staging, 0, width);
             }
@@ -129,7 +132,7 @@ public class TextureUtilMixin_FastUpload {
             BenchCounters.textureUploads++;
             BenchCounters.textureUploadPixels += (long) width * height;
             BenchCounters.textureUploadNanos += elapsed;
-            if (direct != null || bytes != null) {
+            if (direct != null || bytes != null || palette != null) {
                 BenchCounters.textureUploadsDirect++;
                 BenchCounters.textureUploadDirectNanos += elapsed;
             }
@@ -207,6 +210,62 @@ public class TextureUtilMixin_FastUpload {
         BenchCounters.textureUploads++;
         BenchCounters.textureUploadPixels += (long) image.getWidth() * image.getHeight();
         BenchCounters.textureUploadNanos += System.nanoTime() - EDGE_UPLOAD_STARTED;
+    }
+
+    /**
+     * The palette of an indexed image, as the ARGB ints {@code getRGB} would have produced.
+     *
+     * <p>Resolving it once per image turns the per-pixel trip through {@code IndexColorModel} into
+     * an array read. Worth doing on measurement rather than on principle: the fallback path is 27%
+     * of uploads and <b>83% of the time left</b> after the int and byte paths — 38.4ms of 46.2ms,
+     * 0.8ms per upload — because the images that land here include a 256x256 one.
+     *
+     * <p>Covers {@code TYPE_BYTE_INDEXED} and {@code TYPE_BYTE_BINARY}, the only two types measured
+     * reaching the fallback. Both keep their pixels as indices into a colour table; the table is
+     * what {@code getRGB} is consulting per pixel.
+     */
+    private static int[] fpsmaster$palette(BufferedImage image) {
+        int type = image.getType();
+        if (type != BufferedImage.TYPE_BYTE_INDEXED && type != BufferedImage.TYPE_BYTE_BINARY) {
+            return null;
+        }
+        if (!(image.getColorModel() instanceof java.awt.image.IndexColorModel)) {
+            return null;
+        }
+        java.awt.image.IndexColorModel model = (java.awt.image.IndexColorModel) image.getColorModel();
+        int size = model.getMapSize();
+        if (size <= 0 || size > 256) {
+            return null;
+        }
+        int[] argb = new int[size];
+        model.getRGBs(argb);
+        // getRGBs leaves alpha as the model stores it, and an opaque palette stores zero there.
+        if (!model.hasAlpha()) {
+            for (int i = 0; i < size; i++) {
+                argb[i] |= 0xFF000000;
+            }
+        }
+        return argb;
+    }
+
+    /**
+     * Unpacks indexed rows through the palette.
+     *
+     * <p>Reads sample by sample through the raster rather than touching the data buffer directly:
+     * {@code TYPE_BYTE_BINARY} packs eight pixels to a byte and its layout depends on the bit
+     * depth, and getting that wrong is every texture in the game subtly corrupted. The saving is
+     * the colour model lookup, which is the expensive part, not the raster access.
+     */
+    private static void fpsmaster$unpackIndexed(BufferedImage image, int[] palette, int firstRow,
+                                                int rows, int width, int[] target) {
+        java.awt.image.Raster raster = image.getRaster();
+        int at = 0;
+        for (int row = 0; row < rows; row++) {
+            for (int column = 0; column < width; column++) {
+                int index = raster.getSample(column, firstRow + row, 0);
+                target[at++] = index >= 0 && index < palette.length ? palette[index] : 0;
+            }
+        }
     }
 
     /**
