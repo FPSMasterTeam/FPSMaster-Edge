@@ -91,6 +91,9 @@ public class MusicManager {
     private final MusicOverlay overlay = new MusicOverlay(this);
     private volatile boolean showLyricsInGame = false;
 
+    // 系统媒体传输控件（Windows SMTC）：平台不可用时自动降级为 no-op。
+    private final top.fpsmaster.modules.music.smtc.SmtcMusicBridge smtcBridge;
+
     // 二维码登录轮询
     private volatile Thread qrThread;
     private volatile QrCode qrCode;
@@ -98,6 +101,51 @@ public class MusicManager {
 
     public MusicManager() {
         routeLogging();
+        // Initialize SMTC bridge (no-op on non-Windows or when native fails)
+        smtcBridge = new top.fpsmaster.modules.music.smtc.SmtcMusicBridge(
+            this,
+            top.fpsmaster.modules.music.smtc.SystemMediaTransportControlsFactory.create(
+                new top.fpsmaster.modules.music.smtc.MediaControlListener() {
+                    @Override
+                    public void onPlayPause() {
+                        post(new Runnable() {
+                            @Override
+                            public void run() {
+                                togglePause();
+                            }
+                        });
+                    }
+                    @Override
+                    public void onNext() {
+                        post(new Runnable() {
+                            @Override
+                            public void run() {
+                                next();
+                            }
+                        });
+                    }
+                    @Override
+                    public void onPrevious() {
+                        post(new Runnable() {
+                            @Override
+                            public void run() {
+                                prev();
+                            }
+                        });
+                    }
+                    @Override
+                    public void onStop() {
+                        post(new Runnable() {
+                            @Override
+                            public void run() {
+                                engine().stop();
+                            }
+                        });
+                    }
+                }
+            )
+        );
+        smtcBridge.start();
         try {
             store.load();
             String cookie = store.getNeteaseCookie();
@@ -584,6 +632,13 @@ public class MusicManager {
             mc.addScheduledTask(r);
         } else {
             r.run();
+        }
+    }
+
+    /** Releases the SMTC bridge and its native session. Safe to call multiple times. */
+    public void shutdownSmtc() {
+        if (smtcBridge != null) {
+            smtcBridge.stop();
         }
     }
 }

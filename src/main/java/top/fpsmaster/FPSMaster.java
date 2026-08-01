@@ -140,6 +140,12 @@ public class FPSMaster {
 
     public void shutdown() {
         PlayTimeStatistics.flush();
+        // Release SMTC native session before tearing down async/audio
+        try {
+            top.fpsmaster.modules.music.MusicManager.get().shutdownSmtc();
+        } catch (Throwable t) {
+            ClientLogger.warn("SMTC shutdown skipped: " + t.getMessage());
+        }
         telemetryReporter.shutdown();
         async.close();
         try {
