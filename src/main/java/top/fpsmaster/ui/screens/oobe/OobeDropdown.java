@@ -121,8 +121,9 @@ public class OobeDropdown {
                 }
             }
 
-            ScaledGuiScreen.PointerEvent outside = screen.peekAnyPress();
-            if (outside != null && openProgress > 0.95f && !Hover.is(x, y, width, height + panelHeight + 4f, outside.x, outside.y)) {
+            // Consume the dismissing click, otherwise it also activates whatever sits behind the popup.
+            if (openProgress > 0.95f
+                    && screen.consumePressOutside(x, y, width, height + panelHeight + 4f) != null) {
                 open = false;
             }
         }

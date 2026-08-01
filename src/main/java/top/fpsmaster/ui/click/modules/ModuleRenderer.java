@@ -166,7 +166,9 @@ public class ModuleRenderer extends ValueRender {
         settingHeight = (float) AnimMath.base(settingHeight, settingsHeight, 0.2);
         this.height = settingHeight;
 
-        ScaledGuiScreen.PointerEvent click = screen.consumePressInBounds(x + 5, y, width - 10, 40f);
+        // Gated on z-order: the module header sits under the settings of the module expanded above it,
+        // and under any panel drawn later. `mod` is a stable per-frame identity.
+        ScaledGuiScreen.PointerEvent click = screen.consumePressAsHovered(mod, x + 5, y, width - 10, 40f);
         if (click != null) {
             if (click.button == 0) {
                 mod.toggle();

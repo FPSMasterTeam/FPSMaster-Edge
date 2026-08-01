@@ -17,6 +17,7 @@ import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.utils.core.Utility;
+import top.fpsmaster.utils.render.gui.GuiOcclusion;
 import top.fpsmaster.utils.math.anim.AnimMath;
 
 import java.awt.*;
@@ -227,8 +228,14 @@ public class Component {
             }
 
             if (hovered || overHandle || drag) {
-                if (Utility.mc.currentScreen instanceof MainPanel && ((MainPanel) Utility.mc.currentScreen).hasPointerCapture())
+                // The HUD editor runs from EventRender2D, which 1.8.9 fires while drawing the in-game
+                // overlay — before currentScreen.drawScreen(). Without this it happily drags components
+                // that are sitting *underneath* an open panel. The previous guard only covered the case
+                // where a ClickGUI slider already held a drag capture, which is a small fraction of the
+                // panel's area.
+                if (GuiOcclusion.covers(Mouse.getX(), Utility.mc.displayHeight - Mouse.getY())) {
                     return;
+                }
                 if (allowScale && ClientSettings.isZoomBindDown()) {
                     int dWheel = Mouse.getDWheel();
                     if (dWheel > 0) scaleUp();

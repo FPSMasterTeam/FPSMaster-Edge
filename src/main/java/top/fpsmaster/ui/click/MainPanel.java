@@ -406,6 +406,13 @@ public class MainPanel extends ScaledGuiScreen {
         super.keyTyped(typedChar, keyCode);
     }
 
+    @Override
+    protected float[] getOccludingBounds() {
+        // Only the panel itself, not the whole screen: dragging a HUD element that sits beside the
+        // ClickGUI is exactly what the user opened it for.
+        return new float[]{x, y, width, height};
+    }
+
     private void handlePointerPress() {
         ScaledGuiScreen.PointerEvent press = peekAnyPress();
         if (press == null) {
@@ -420,10 +427,11 @@ public class MainPanel extends ScaledGuiScreen {
             return;
         }
 
-        if (hasPointerCapture()) {
-            return;
-        }
-
+        // A hasPointerCapture() guard used to sit here. It compensated for peekAnyPress() returning
+        // presses that another widget had already consumed — beginDrag consumes the press that starts
+        // a slider drag, yet the category strip still saw it and switched category underneath. Now that
+        // peekAnyPress() skips consumed presses the guard is redundant: the press is gone on the frame
+        // a drag begins, and later frames of the same drag produce no press at all.
         float my = getCategoryStartY();
         for (Category c : Category.values()) {
             if (Hover.is(x, my - 8, leftWidth, 24f, mouseX, mouseY)) {

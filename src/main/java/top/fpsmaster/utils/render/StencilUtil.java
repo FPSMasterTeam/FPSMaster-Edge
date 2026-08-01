@@ -78,8 +78,21 @@ public class StencilUtil {
         GL11.glStencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
     }
 
+    /**
+     * Ends a stencil pass and restores everything {@link #initStencilToWrite()} changed.
+     *
+     * <p>The colour mask used to be reopened only by {@link #readStencilBuffer(int)}, which is a
+     * "switch to reading" call, not a teardown call. Any caller that threw — or returned early —
+     * between writing and reading left the mask fully closed for the rest of the process. The symptom
+     * is remote from the cause: the next {@code glClear(GL_COLOR_BUFFER_BIT)} anywhere (KawaseBlur's
+     * framebuffer clear, for instance) asks the driver to clear a colour buffer it is forbidden to
+     * write, which on Apple's Metal-backed GL aborts with "missing clear mask bits".
+     *
+     * <p>Reopening it here as well is idempotent and makes teardown total.
+     */
     public static void uninitStencilBuffer() {
         GL11.glDisable(GL11.GL_STENCIL_TEST);
+        GL11.glColorMask(true, true, true, true);
     }
 }
 

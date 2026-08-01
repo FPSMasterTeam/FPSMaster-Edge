@@ -13,9 +13,12 @@ public class Blur {
 
     public static void area(float x, float y, float width, float height, int radius, Color color, int iterations, int offset) {
         StencilUtil.initStencilToWrite();
-        RoundedUtil.drawRound(x, y, width, height, radius, true, color);
-        StencilUtil.readStencilBuffer(1);
-        KawaseBlur.renderBlur(iterations, offset);
-        StencilUtil.uninitStencilBuffer();
+        try {
+            RoundedUtil.drawRound(x, y, width, height, radius, true, color);
+            StencilUtil.readStencilBuffer(1);
+            KawaseBlur.renderBlur(iterations, offset);
+        } finally {
+            StencilUtil.uninitStencilBuffer();
+        }
     }
 }
