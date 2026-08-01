@@ -261,6 +261,48 @@ public class ScaledGuiScreen extends GuiScreen {
         return consumePressInBounds(x, y, width, height, button);
     }
 
+    /**
+     * Claims a click only if this widget was the topmost one under the cursor.
+     *
+     * <p>{@link #consumePressInBounds} alone is first-come-first-served, and widgets call it right
+     * after painting themselves — so the <em>first painted</em>, i.e. bottom-most, widget wins a
+     * contested click. That is the inverse of what z-order requires. This variant adds the missing
+     * ordering: {@code markHovered} records the topmost widget as the frame is walked, and the
+     * previous frame's answer gates the click here.
+     *
+     * <p>Widgets that still call {@code consumePressInBounds} keep the old behaviour, so this can be
+     * adopted one widget at a time.
+     *
+     * @param id stable identity for this widget across frames — the setting/module object itself works
+     *           well; avoid values that are rebuilt every frame
+     */
+    public PointerEvent consumePressAsHovered(Object id, float x, float y, float width, float height, int button) {
+        inputState.markHovered(id, x, y, width, height);
+        if (!inputState.wasHovered(id)) {
+            return null;
+        }
+        return consumePressInBounds(x, y, width, height, button);
+    }
+
+    public PointerEvent consumePressAsHovered(Object id, float x, float y, float width, float height) {
+        return consumePressAsHovered(id, x, y, width, height, -1);
+    }
+
+    /**
+     * Claims a press that landed outside the given rectangle — "click away to dismiss" for popups.
+     * The press is consumed so it does not also reach whatever the popup was covering.
+     */
+    public PointerEvent consumePressOutside(float x, float y, float width, float height) {
+        GuiInputState.MouseButtonEvent event = inputState.consumePressOutside(x, y, width, height);
+        return event == null ? null : new PointerEvent(event.getX(), event.getY(), event.getButton());
+    }
+
+    /** Hover feedback should follow the same z-order rule as clicks, or highlights double up. */
+    public boolean isHovered(Object id, float x, float y, float width, float height) {
+        inputState.markHovered(id, x, y, width, height);
+        return inputState.wasHovered(id);
+    }
+
     private int getLogicalMouseX() {
         return clampLogicalMouseX((int) (Mouse.getX() / scaleFactor));
     }
