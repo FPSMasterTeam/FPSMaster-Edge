@@ -17,12 +17,18 @@
 
 .PARAMETER Experiments
     Probe flags, same names as the benchmark's: terrainProbe, collisionProbe, hudBreakdown.
+
+.PARAMETER PerfArgs
+    Adds the JVM flags read off a running Badlion Client that are worth trying here. Off by
+    default: they are unproven on this client, and a launcher script is the wrong place to
+    change behaviour silently. See the notes on $perfArgs below for what each one is for.
 #>
 [CmdletBinding()]
 param(
     [string[]] $Experiments,
     [string]   $Username = 'Dev',
-    [string]   $Memory = '2G'
+    [string]   $Memory = '2G',
+    [switch]   $PerfArgs
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,6 +64,28 @@ $jvmArgs = @(
     "-Dorg.lwjgl.librarypath=$natives"
 )
 foreach ($e in $Experiments) { $jvmArgs += "-Dedge.exp.$e=true" }
+
+if ($PerfArgs) {
+    $jvmArgs += @(
+        # Stops the JVM writing its perf counters into a memory-mapped file. Badlion sets it
+        # to hide from jps/jcmd, but the reason to want it here is that those mmap writes are
+        # a known safepoint-pause source. Costs nothing and changes nothing on screen.
+        '-XX:+PerfDisableSharedMem',
+        # System.gc() from any library is a full stop-the-world collection nobody asked for.
+        # The benchmark harness already sets this; the dev launcher did not.
+        '-XX:+DisableExplicitGC',
+        # Not a heap dump setting. The path is never used -- it exists so that "minecraft.exe"
+        # appears in the process command line, which is what Intel and AMD drivers match on to
+        # apply their Minecraft-specific profile. Vanilla's own launcher does this, and the
+        # string is copied verbatim because the drivers match on it.
+        '-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump'
+    )
+    # Deliberately not included: -DLog4jContextSelector=...AsyncLoggerContextSelector, which
+    # needs LMAX Disruptor on the classpath and this project does not depend on it. Without
+    # the jar log4j2 logs an error and silently falls back to synchronous logging, so setting
+    # it here would look like the optimisation was on when it was not.
+    Write-Host "perf args: $($jvmArgs[-3..-1] -join ' ')"
+}
 
 $gameArgs = @(
     '-cp', $cp,

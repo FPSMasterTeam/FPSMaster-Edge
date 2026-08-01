@@ -365,6 +365,26 @@ public class Performance extends Module {
     public static BooleanSetting reuseVisibleChunks = new BooleanSetting("ReuseVisibleChunks", true);
 
     /**
+     * How far the camera may drift before the visible-chunk list is rebuilt.
+     *
+     * <p>The switch above decides whether the list is reused at all; this decides how long it is
+     * held. Every step up reuses the list on more frames and so skips the walk more often — the
+     * walk is 41% of the frame, and a frame that skips it is a very cheap frame.
+     *
+     * <p>The levels are named for what they trade rather than for a quality, because the cost of
+     * being wrong is not smoothness: it is a chunk that should have come into view and did not.
+     * The thresholds themselves live in {@code RenderGlobalMixin_ReuseVisibleList}, next to the
+     * reasoning for why a given number cannot reveal a chunk from nothing.
+     *
+     * <p>Defaults to the level this shipped with, so raising it is a choice rather than something
+     * that happened. Measured against a competitor holding the list to one block and one degree,
+     * the conservative level reuses on noticeably fewer frames — which shows up as a lower peak
+     * frame rate and a tighter frame time distribution, in that order.
+     */
+    public static ModeSetting reuseVisibleChunksLevel = new ModeSetting("ReuseLevel", 0,
+            () -> reuseVisibleChunks.getValue(), "Conservative", "Balanced", "Aggressive");
+
+    /**
      * Places each model box with one matrix instead of a chain of fixed-function calls.
      *
      * <p>Vanilla uses as many as six matrix-stack calls per box and there are around a thousand
@@ -484,8 +504,9 @@ public class Performance extends Module {
                 hideLavaParticles, hideSpawnerParticles, hideMobInSpawner, hidePortalParticles,
                 playerRenderDistance, passiveRenderDistance, hostileRenderDistance,
                 miscRenderDistance, textureResolution, fastCollision, adaptiveChunkBudget,
-                fastTextureUpload, reuseVisibleChunks, composedModelTransform, batchVanillaFont,
-                fastGlyphLookup, slowObfuscation, mergeTextShadow, cacheItemModels);
+                fastTextureUpload, reuseVisibleChunks, reuseVisibleChunksLevel,
+                composedModelTransform, batchVanillaFont, fastGlyphLookup, slowObfuscation,
+                mergeTextShadow, cacheItemModels);
 
         textureResolution.addChangeListener(
                 (setting, oldValue, newValue) -> pendingWorldRefresh = true);

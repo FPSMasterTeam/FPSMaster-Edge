@@ -46,22 +46,37 @@ import java.util.Set;
 @Mixin(RenderGlobal.class)
 public abstract class RenderGlobalMixin_ReuseVisibleList {
 
-    /** Blocks of travel from the anchor before the list is rebuilt. */
-    @Unique
-    private static final double POSITION_THRESHOLD = 0.25d;
-
     /**
-     * Degrees of rotation from the anchor before the list is rebuilt.
+     * Blocks of travel from the anchor before the list is rebuilt, per level.
      *
-     * <p>Chosen against what a rotation can reveal rather than by feel: a chunk sixteen blocks
-     * across at render distance twelve subtends about five degrees, so half a degree cannot bring
-     * one into view from nothing — only slide an edge of one, which the frustum test on a bounding
-     * box would already have accepted a frame earlier.
+     * <p>All three are bounded by the same fact: a chunk is sixteen blocks across, and crossing a
+     * chunk boundary already forces a rebuild on its own. Within one chunk, travel can only slide
+     * the edge of a chunk into frustum, and the frustum test runs on a bounding box that would have
+     * accepted it a frame earlier.
      */
     @Unique
-    private static final float ROTATION_THRESHOLD = 0.5f;
+    private static final double[] POSITION_THRESHOLDS = {0.25d, 0.5d, 1.0d};
 
-    /** Ceiling on how long a list may be reused, whatever the camera did. */
+    /**
+     * Degrees of rotation from the anchor before the list is rebuilt, per level.
+     *
+     * <p>Chosen against what a rotation can reveal rather than by feel: a chunk sixteen blocks
+     * across at render distance twelve subtends about five degrees, so none of these can bring one
+     * into view from nothing — only slide an edge of one, which the frustum test on a bounding box
+     * would already have accepted a frame earlier. Five is where the reasoning stops holding, and
+     * the most aggressive level sits at two so the argument still has room in it.
+     */
+    @Unique
+    private static final float[] ROTATION_THRESHOLDS = {0.5f, 1.0f, 2.0f};
+
+    /**
+     * Ceiling on how long a list may be reused, whatever the camera did.
+     *
+     * <p>Deliberately not part of the level. It is the safety net for invalidations nobody named,
+     * not a performance dial — at any frame rate worth having, a forced rebuild five times a second
+     * is a fraction of a percent of frames, so raising it buys nothing and lengthens how long a
+     * missed case stays on screen.
+     */
     @Unique
     private static final long MAX_REUSE_MILLIS = 200L;
 
@@ -114,15 +129,20 @@ public abstract class RenderGlobalMixin_ReuseVisibleList {
                 || fpsmaster$anchorWidth != mc.displayWidth
                 || fpsmaster$anchorHeight != mc.displayHeight;
 
+        int level = Math.min(Performance.reuseVisibleChunksLevel.getMode(),
+                POSITION_THRESHOLDS.length - 1);
+        double positionThreshold = POSITION_THRESHOLDS[level];
+        float rotationThreshold = ROTATION_THRESHOLDS[level];
+
         double dx = viewEntity.posX - fpsmaster$anchorX;
         double dy = viewEntity.posY - fpsmaster$anchorY;
         double dz = viewEntity.posZ - fpsmaster$anchorZ;
-        boolean moved = dx * dx + dy * dy + dz * dz > POSITION_THRESHOLD * POSITION_THRESHOLD
+        boolean moved = dx * dx + dy * dy + dz * dz > positionThreshold * positionThreshold
                 || viewEntity.chunkCoordX != fpsmaster$anchorChunkX
                 || viewEntity.chunkCoordY != fpsmaster$anchorChunkY
                 || viewEntity.chunkCoordZ != fpsmaster$anchorChunkZ;
-        boolean turned = Math.abs(fpsmaster$wrap(viewEntity.rotationYaw - fpsmaster$anchorYaw)) > ROTATION_THRESHOLD
-                || Math.abs(viewEntity.rotationPitch - fpsmaster$anchorPitch) > ROTATION_THRESHOLD;
+        boolean turned = Math.abs(fpsmaster$wrap(viewEntity.rotationYaw - fpsmaster$anchorYaw)) > rotationThreshold
+                || Math.abs(viewEntity.rotationPitch - fpsmaster$anchorPitch) > rotationThreshold;
         boolean stale = System.currentTimeMillis() - fpsmaster$anchorMillis > MAX_REUSE_MILLIS;
 
         fpsmaster$rebuildForced = projectionChanged || moved || turned || stale;
