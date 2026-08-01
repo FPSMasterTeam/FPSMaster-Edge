@@ -238,6 +238,18 @@ public class ScaledGuiScreen extends GuiScreen {
         return dragState.acquire(owner, button);
     }
 
+    /**
+     * Takes drag ownership without re-consuming a press.
+     *
+     * <p>{@link #beginDrag} both claims a press and acquires, which is right for widgets that hit-test
+     * by calling it. A caller that has already established the hit some other way — and consumed the
+     * press doing so — would otherwise find no press left to claim and never acquire. Release still
+     * happens centrally on button-up.
+     */
+    public boolean acquireDrag(Object owner, int button) {
+        return dragState.acquire(owner, button);
+    }
+
     public boolean isDragging(Object owner) {
         return dragState.isDragging(owner) && isMouseDown(dragState.getButton());
     }
