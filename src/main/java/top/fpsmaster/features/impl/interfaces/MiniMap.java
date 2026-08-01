@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.interfaces;
 
+import top.fpsmaster.utils.render.FastRender;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.features.manager.Category;
@@ -17,7 +18,7 @@ public class MiniMap extends InterfaceModule {
     public void onEnable() {
         super.onEnable();
         using = true;
-        if (OptifineUtil.isFastRender()) {
+        if (FastRender.isActive()) {
             OptifineUtil.setFastRender(false);
             NotificationManager.addNotification(
                 FPSMaster.i18n.get("minimap.fastrender.disable.title"),

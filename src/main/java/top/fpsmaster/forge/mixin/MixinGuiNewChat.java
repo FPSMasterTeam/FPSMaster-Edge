@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.render.ChatAvatarCache;
 import top.fpsmaster.features.impl.render.ChatAvatars;
@@ -112,13 +113,25 @@ public abstract class MixinGuiNewChat {
                                 ++l;
                                 if (o > 3) {
                                     int q = -m * 9;
+                                    long edgeMark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
                                     // Right edge also shifts back by the gutter, otherwise the whole
                                     // panel grows wider than the configured chat width.
                                     Gui.drawRect(-2 - chatAvatarOffset, q - 9, k + 4 - chatAvatarOffset, q, o / 2 << 24);
                                     drawChatAvatar(chatLine, -chatAvatarOffset + 1 + ChatAvatars.getOffsetX(), q - 8 + ChatAvatars.getOffsetY(), o);
+                                    if (edgeMark != 0L) {
+                                        HudBreakdown.record("chat:rect", System.nanoTime() - edgeMark);
+                                        edgeMark = System.nanoTime();
+                                    }
                                     String string = chatLine.getChatComponent().getFormattedText();
+                                    if (edgeMark != 0L) {
+                                        HudBreakdown.record("chat:format", System.nanoTime() - edgeMark);
+                                        edgeMark = System.nanoTime();
+                                    }
                                     GlStateManager.enableBlend();
                                     mc.fontRendererObj.drawStringWithShadow(string, 0.0F, (float) (q - 8), 16777215 + (o << 24));
+                                    if (edgeMark != 0L) {
+                                        HudBreakdown.record("chat:drawText(vanillaBranch)", System.nanoTime() - edgeMark);
+                                    }
                                     GlStateManager.disableAlpha();
                                     GlStateManager.disableBlend();
                                 }
@@ -177,15 +190,27 @@ public abstract class MixinGuiNewChat {
 
                                 if (alpha > 3) {
                                     int q = -m * 9;
+                                    long edgeMark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
                                     int alpha1 = (int) ((alpha / 255f) * module.backgroundColor.getColor().getAlpha());
                                     Gui.drawRect(-2 - chatAvatarOffset, q - 8, k + 4 - chatAvatarOffset, q + 1, Colors.alpha(module.backgroundColor.getColor(), alpha1).getRGB());
                                     drawChatAvatar(chatLine, -chatAvatarOffset + 1 + ChatAvatars.getOffsetX(), q - 8 + ChatAvatars.getOffsetY() + Math.round(6 - (alpha / 255f) * 6), alpha);
+                                    if (edgeMark != 0L) {
+                                        HudBreakdown.record("chat:rect", System.nanoTime() - edgeMark);
+                                        edgeMark = System.nanoTime();
+                                    }
                                     String string = chatLine.getChatComponent().getFormattedText();
+                                    if (edgeMark != 0L) {
+                                        HudBreakdown.record("chat:format", System.nanoTime() - edgeMark);
+                                        edgeMark = System.nanoTime();
+                                    }
                                     GlStateManager.enableBlend();
                                     if (module.betterFont.getValue()) {
                                         FPSMaster.fontManager.s16.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Colors.alpha(new Color(16777215), alpha).getRGB());
                                     } else {
                                         mc.fontRendererObj.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Colors.alpha(new Color(16777215), alpha).getRGB());
+                                    }
+                                    if (edgeMark != 0L) {
+                                        HudBreakdown.record("chat:drawText(betterChat)", System.nanoTime() - edgeMark);
                                     }
                                     GlStateManager.disableAlpha();
                                     GlStateManager.disableBlend();

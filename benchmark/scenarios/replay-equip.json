@@ -1,0 +1,52 @@
+{
+  "_comment": "Functional check for the replay feature set - equipment, containers and the scoreboard - not a measurement. The scoreboard is here because teams and objectives are only ever updated after they exist, so a recording that starts after they were created loses every later change to them unless it snapshots them.",
+  "world": {
+    "folder": "bench-flat",
+    "seed": 20260726,
+    "type": "FLAT",
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/time set 6000",
+      "/weather clear 1000000",
+      "/replaceitem entity @p slot.armor.head minecraft:diamond_helmet",
+      "/replaceitem entity @p slot.armor.chest minecraft:diamond_chestplate",
+      "/replaceitem entity @p slot.armor.legs minecraft:golden_leggings",
+      "/replaceitem entity @p slot.armor.feet minecraft:iron_boots",
+      "/replaceitem entity @p slot.hotbar.0 minecraft:diamond_sword 1 0 {display:{Name:\"Recorded Blade\"},ench:[{id:16,lvl:5}]}",
+      "/scoreboard objectives add edgetest dummy Edge Test",
+      "/scoreboard objectives setdisplay sidebar edgetest",
+      "/scoreboard players set Alpha edgetest 7",
+      "/scoreboard teams add edgeteam Edge Team",
+      "/scoreboard teams option edgeteam color red",
+      "/scoreboard teams join edgeteam @p"
+    ]
+  },
+  "settleSeconds": 2,
+  "settleTimeoutMillis": 90000,
+  "warmupMillis": 2000,
+  "discardMillis": 500,
+  "measureMillis": 20000,
+  "camera": {
+    "loopMillis": 20000,
+    "keyframes": [
+      {
+        "t": 0,
+        "x": 0,
+        "y": 8,
+        "z": 0,
+        "yaw": 0,
+        "pitch": 5
+      },
+      {
+        "t": 20000,
+        "x": 0,
+        "y": 8,
+        "z": 0,
+        "yaw": 360,
+        "pitch": 5
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "_comment": "1089 enchanting tables, the same camera as sign-dense so the two are directly comparable. Separate from blockentity-dense on purpose: that scenario puts each block type in its own quadrant, so an orbiting camera blends them and the median frame cannot be attributed to any one of them. Fewer tables than sign-dense has signs because an enchanting table ticks server-side - it searches for the nearest player within three blocks every tick - and a larger field would put the integrated server in the measurement.",
+  "world": {
+    "folder": "bench-enchant",
+    "seed": 20260729,
+    "type": "FLAT",
+    "generatorOptions": "3;minecraft:bedrock,3*minecraft:stone,2*minecraft:dirt,minecraft:grass;1;",
+    "setupCommands": [
+      "/gamerule doDaylightCycle false",
+      "/gamerule doWeatherCycle false",
+      "/gamerule doMobSpawning false",
+      "/gamerule randomTickSpeed 0",
+      "/time set 6000",
+      "/weather clear 1000000",
+      "/fill -16 7 -16 16 7 16 minecraft:enchanting_table 0 replace"
+    ]
+  },
+  "settleSeconds": 3,
+  "settleTimeoutMillis": 120000,
+  "warmupMillis": 2000,
+  "discardMillis": 500,
+  "measureMillis": 12000,
+  "camera": {
+    "loopMillis": 12000,
+    "keyframes": [
+      { "t": 0, "x": 0.5, "y": 10, "z": 0.5, "yaw": 0, "pitch": 25 },
+      { "t": 12000, "x": 0.5, "y": 10, "z": 0.5, "yaw": 360, "pitch": 25 }
+    ]
+  }
+}

@@ -8,6 +8,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import top.fpsmaster.benchmark.BenchProfiler;
+import top.fpsmaster.benchmark.BenchmarkMode;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventMotionBlur;
 import top.fpsmaster.event.events.EventRender2D;
@@ -16,8 +18,18 @@ import top.fpsmaster.features.impl.interfaces.SaturationDisplay;
 
 @Mixin(GuiIngameForge.class)
 public class MixinGuiIngameForge {
+    @Inject(method = "renderGameOverlay", at = @At("HEAD"))
+    private void fpsmasterBeginHud(float partialTicks, CallbackInfo ci) {
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.begin(BenchProfiler.SECTION_HUD);
+        }
+    }
+
     @Inject(method = "renderGameOverlay",at = @At("RETURN"))
     public void motionblur(float partialTicks, CallbackInfo ci){
+        if (BenchmarkMode.ACTIVE) {
+            BenchProfiler.end(BenchProfiler.SECTION_HUD);
+        }
         EventDispatcher.dispatchEvent(new EventMotionBlur());
     }
 

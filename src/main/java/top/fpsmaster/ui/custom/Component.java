@@ -142,10 +142,12 @@ public class Component {
         x = Math.max(0f, Math.min(1f, x));
         y = Math.max(0f, Math.min(1f, y));
 
-        float scaleFactor = (float) ClientSettings.getUiScale();
-        if (scaleFactor <= 0) {
-            scaleFactor = 1.0f;
-        }
+        // The space these coordinates live in is set by ComponentsManager, which converts the mouse
+        // by sr.getScaleFactor() and has GuiScale scale the matrix by 2 / sr.getScaleFactor(). This
+        // has to read the same factor. Reading the client's own UI scale instead - which is 1 unless
+        // the interface is set to follow the game's - made the usable area half as wide and half as
+        // tall, so a component could only be dragged around the top-left quarter of the screen.
+        float scaleFactor = sr.getScaleFactor();
         float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;
         float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
 
@@ -263,7 +265,7 @@ public class Component {
                     if (manager.dragMode == ComponentsManager.DragMode.RESIZE) {
                         resizeTo(mouseX, mouseY);
                     } else {
-                        move(mouseX, mouseY);
+                        move(sr, mouseX, mouseY);
                     }
                 }
             }
@@ -320,12 +322,8 @@ public class Component {
         scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, target));
     }
 
-    private void move(int x, int y) {
-        ScaledResolution sr = new ScaledResolution(Utility.mc);
-        float scaleFactor = (float) ClientSettings.getUiScale();
-        if (scaleFactor <= 0) {
-            scaleFactor = 1.0f;
-        }
+    private void move(ScaledResolution sr, int x, int y) {
+        float scaleFactor = sr.getScaleFactor();
         float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;
         float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
         float changeX = 0f;

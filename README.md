@@ -27,4 +27,12 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 
 ## 引用的开源项目：
 [eventbus](https://github.com/therealbush/eventbus)
-[patcher](https://github.com/Sk1erLLC/Patcher)
+
+## 致谢
+本项目的部分性能优化方向参考了 [Patcher](https://github.com/Sk1erLLC/Patcher) 与 OptiFine
+所公开的思路（实体遮挡裁剪、粒子视锥裁剪、模型批处理、字符串渲染缓存等）。
+
+需要说明的是：Patcher 采用 CC BY-NC-SA 4.0 许可证，与本项目的 GPL-3.0 **不兼容**
+（NC 条款属于 GPL 禁止的附加限制，SA 条款要求衍生作品沿用 BY-NC-SA）。因此本项目
+不包含来自 Patcher 的代码 —— 相关功能均为依据 OpenGL 规范与公开算法描述独立实现，
+思路可以借鉴，代码不可复制。

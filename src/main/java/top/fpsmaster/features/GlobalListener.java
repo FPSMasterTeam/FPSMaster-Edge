@@ -11,15 +11,26 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import org.lwjgl.input.Mouse;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.benchmark.FontCompare;
+import top.fpsmaster.benchmark.FontStyles;
+import top.fpsmaster.benchmark.CollisionProbe;
+import top.fpsmaster.benchmark.HudBreakdown;
+import top.fpsmaster.replay.ReplayPlayer;
+import top.fpsmaster.benchmark.UiShot;
+import top.fpsmaster.replay.ReplayProbe;
+import top.fpsmaster.replay.ReplayRecorder;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
-import top.fpsmaster.font.EnhancedFontRenderer;
+import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
+import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.notification.NotificationManager;
+import top.fpsmaster.ui.screens.replay.ReplayHud;
 import top.fpsmaster.utils.core.Utility;
+import top.fpsmaster.utils.render.ChunkUpdateBudget;
 import top.fpsmaster.utils.render.StencilUtil;
 import top.fpsmaster.utils.render.draw.Circles;
 import top.fpsmaster.utils.render.shader.KawaseBlur;
@@ -57,7 +68,18 @@ public class GlobalListener {
     }
     @Subscribe
     public void onTick(EventTick e) {
-        EnhancedFontRenderer.tickAllInstances();
+        if (Minecraft.getMinecraft().theWorld != null) {
+            ReplayRecorder.instance().startIfRequested();
+        }
+        ReplayRecorder.instance().onClientTick();
+        ReplayPlayer.instance().startIfRequested();
+        ReplayPlayer.instance().onClientTick();
+        ReplayProbe.onClientTick();
+        Performance.onClientTick();
+        ChunkUpdateBudget.onClientTick();
+        CollisionProbe.onClientTick();
+        UiShot.onClientTick();
+        PendingScreen.tick();
         long now = System.currentTimeMillis();
         if (now - lastFlushAt < 1000L) {
             return;
@@ -75,6 +97,7 @@ public class GlobalListener {
         float mouseX = (float) Mouse.getX() / scaledResolution.getScaleFactor();
         float mouseY = scaledResolution.getScaledHeight() - (float) Mouse.getY() / scaledResolution.getScaleFactor();
 
+        long started = HudBreakdown.enabled() ? System.nanoTime() : 0L;
         // Size everything first: the blur mask and the anchor math below both read width/height, and
         // components only assign those while drawing.
         FPSMaster.componentsManager.measureAll();
@@ -89,11 +112,36 @@ public class GlobalListener {
             } finally {
                 StencilUtil.uninitStencilBuffer();
             }
+            if (started != 0L) {
+                HudBreakdown.record("~blur pass", System.nanoTime() - started);
+                started = System.nanoTime();
+            }
         }
 
         FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);
+        if (started != 0L) {
+            HudBreakdown.record("~components total", System.nanoTime() - started);
+            started = System.nanoTime();
+        }
 
+        if (FontStyles.enabled()) {
+            FontStyles.draw();
+        }
+        if (FontCompare.enabled()) {
+            FontCompare.draw();
+        }
+        ReplayHud.draw();
+        if (started != 0L) {
+            // Charged separately because it only exists during playback - counting it as HUD cost
+            // would attribute the measuring apparatus to the thing being measured.
+            HudBreakdown.record("~replay overlay", System.nanoTime() - started);
+            started = System.nanoTime();
+        }
         NotificationManager.drawNotifications();
+        if (started != 0L) {
+            HudBreakdown.record("~notifications", System.nanoTime() - started);
+            HudBreakdown.endFrame();
+        }
 
     }
 

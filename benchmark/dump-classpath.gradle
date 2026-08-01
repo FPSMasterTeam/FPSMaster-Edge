@@ -1,0 +1,19 @@
+// Gradle init script: dump the main sourceSet runtime classpath for the benchmark launcher.
+// Used as: gradlew -I benchmark/dump-classpath.gradle dumpBenchClasspath
+// Kept as an init script so the benchmark harness needs no changes to build.gradle.kts.
+allprojects { p ->
+    p.afterEvaluate {
+        if (p.plugins.hasPlugin('java')) {
+            p.tasks.register('dumpBenchClasspath') {
+                doLast {
+                    def ss = p.extensions.getByType(org.gradle.api.plugins.JavaPluginExtension)
+                            .sourceSets.getByName('main')
+                    def out = new File(p.projectDir, 'build/bench/classpath.txt')
+                    out.parentFile.mkdirs()
+                    out.text = ss.runtimeClasspath.files.collect { it.absolutePath }.join(File.pathSeparator)
+                    println("WROTE " + out.absolutePath + " entries=" + ss.runtimeClasspath.files.size())
+                }
+            }
+        }
+    }
+}

@@ -24,7 +24,7 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 }
 
-val accessTransformerName = "patcher_at.cfg"
+val accessTransformerName = "fpsmaster_at.cfg"
 // Minecraft configuration:
 loom {
     log4jConfigs.from(file("log4j2.xml"))
@@ -151,7 +151,7 @@ tasks.withType(Jar::class) {
         // If you don't want mixins, remove these lines
         this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
         this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
-        this["FMLAT"] = "patcher_at.cfg"
+        this["FMLAT"] = accessTransformerName
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

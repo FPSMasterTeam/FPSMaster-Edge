@@ -1,0 +1,9 @@
+{
+  "_comment": "A recorded Hypixel SkyWars lobby played back as the workload. This is the only scenario here containing what actually costs a PvP client - 37 players with their own skins and nameplates, server-driven particles, scoreboard text - and the camera is the recorder's own movement track, so it is identical on both sides of a comparison with no path of ours to drift.",
+  "replay": "skywars_sample",
+  "settleSeconds": 4,
+  "settleTimeoutMillis": 60000,
+  "warmupMillis": 3000,
+  "discardMillis": 500,
+  "measureMillis": 9000
+}

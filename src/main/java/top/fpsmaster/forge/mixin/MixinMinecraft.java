@@ -25,12 +25,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.benchmark.BenchRunner;
+import top.fpsmaster.benchmark.BenchmarkMode;
+import top.fpsmaster.modules.perf.PerformanceMonitor;
 import top.fpsmaster.forge.api.IMinecraft;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventKey;
 import top.fpsmaster.event.events.EventMouseClick;
 import top.fpsmaster.event.events.EventTick;
 import top.fpsmaster.features.impl.optimizes.Performance;
+import top.fpsmaster.utils.render.FastRender;
 
 import javax.annotation.Nullable;
 import java.awt.*;
@@ -166,6 +170,32 @@ public abstract class MixinMinecraft implements IMinecraft {
         EventDispatcher.dispatchEvent(new EventTick());
     }
 
+    /**
+     * Frame boundary for the benchmark harness.
+     *
+     * <p>Placed right after vanilla's own {@code FrameTimer.addFrame} call, which sits after
+     * {@code Display.update()}, so one tick of the sampler covers a full present-to-present
+     * interval. This is the only per-frame hook that also fires outside a world; the client's
+     * {@code EventRender2D} rides the in-world HUD path and would miss menu frames entirely.
+     */
+    @Inject(method = "runGameLoop", at = @At("HEAD"))
+    private void edge$latchFastRender(CallbackInfo ci) {
+        FastRender.beginFrame();
+    }
+
+    @Inject(
+            method = "runGameLoop",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/util/FrameTimer;addFrame(J)V",
+                    shift = At.Shift.AFTER))
+    private void onBenchmarkFrameBoundary(CallbackInfo ci) {
+        PerformanceMonitor.onFrame();
+        if (BenchmarkMode.ACTIVE) {
+            BenchRunner.instance().onFrameBoundary();
+        }
+    }
+
     @Inject(method = "runTick", at = @At("RETURN"))
     public void chatVis(CallbackInfo ci) {
         if (this.gameSettings.keyBindTogglePerspective.isPressed()) {
@@ -204,6 +234,11 @@ public abstract class MixinMinecraft implements IMinecraft {
      */
     @Overwrite
     public int getLimitFramerate() {
+        // A benchmark run must never be capped: the menu clamp and the unfocused-window limit would
+        // both silently reshape frame times. maxFps is pinned to 260 (Unlimited) for those runs, so
+        // vanilla skips Display.sync entirely.
+        if (BenchmarkMode.ACTIVE)
+            return this.gameSettings.limitFramerate;
         if (this.currentScreen != null && this.theWorld == null)
             return 60;
         return (Display.isActive()) ? this.gameSettings.limitFramerate : Performance.using ? Performance.fpsLimit.getValue().intValue() : this.gameSettings.limitFramerate;

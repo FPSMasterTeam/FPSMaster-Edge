@@ -6,6 +6,7 @@ import top.fpsmaster.features.impl.InterfaceModule;
 import top.fpsmaster.ui.custom.impl.*;
 import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.render.gui.GuiScale;
+import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class ComponentsManager {
         addComponentSafely("PlayerDisplayComponent", PlayerDisplayComponent::new);
         addComponentSafely("PingDisplayComponent", PingDisplayComponent::new);
         addComponentSafely("CoordsDisplayComponent", CoordsDisplayComponent::new);
+        addComponentSafely("PerformanceHudComponent", PerformanceHudComponent::new);
         addComponentSafely("ModsListComponent", ModsListComponent::new);
         addComponentSafely("MiniMapComponent", MiniMapComponent::new);
         addComponentSafely("SprintComponent", SprintComponent::new);
@@ -169,11 +171,15 @@ public class ComponentsManager {
         int finalMouseY = mouseY;
         components.forEach(component -> {
             if (component.shouldDisplay()) {
+                long started = HudBreakdown.enabled() ? System.nanoTime() : 0L;
                 try {
                     component.display(sr, finalMouseX, finalMouseY);
                     component.renderFailures = 0;
                 } catch (Throwable throwable) {
                     onComponentFailure(component, "render", throwable);
+                }
+                if (started != 0L) {
+                    HudBreakdown.record(component.mod.name, System.nanoTime() - started);
                 }
             }
         });

@@ -1,0 +1,7 @@
+{
+  "_comment": "Harness self-test. Measures at the main menu with no world loaded; used to verify the sampling pipeline and the clean-exit path, not to compare optimisations.",
+  "world": null,
+  "warmupMillis": 5000,
+  "discardMillis": 1000,
+  "measureMillis": 10000
+}
