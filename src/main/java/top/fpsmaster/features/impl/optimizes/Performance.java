@@ -356,11 +356,13 @@ public class Performance extends Module {
      * {@code RenderGlobalMixin_ReuseVisibleList} for the thresholds and for what is deliberately
      * not suppressed.
      *
-     * <p>Off by default until it has been watched for holes: an over-reused visibility list is
-     * missing terrain, and missing terrain makes frame times better, so the timing report cannot
-     * tell this working from this broken.
+     * <p>On by default since it was watched for holes in a real client and none appeared. It removes
+     * about 265us of terrain traversal a frame, which is CPU work — and on the machine this was
+     * measured on the frame is bound by the GPU, so it does not show there. It is kept on for the
+     * machines that are not: a weak CPU with an adequate graphics card is the configuration this
+     * client exists for, and it is the one configuration not available to test on.
      */
-    public static BooleanSetting reuseVisibleChunks = new BooleanSetting("ReuseVisibleChunks", false);
+    public static BooleanSetting reuseVisibleChunks = new BooleanSetting("ReuseVisibleChunks", true);
 
     /**
      * Places each model box with one matrix instead of a chain of fixed-function calls.

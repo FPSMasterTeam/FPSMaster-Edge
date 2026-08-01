@@ -133,7 +133,14 @@ public final class BenchProfiler {
         if (recording && count < CAPACITY) {
             for (int i = 0; i < SECTION_COUNT; i++) {
                 cpuPerFrame[i][count] = (int) (frameCpuNanos[i] / 1000L);
-                gpuPerFrame[i][count] = gpuTimer == null ? 0 : (int) (gpuTimer.nanos(i) / 1000L);
+                // -1, not 0, when this frame produced no GPU sample for the section — either it
+                // was never entered or its timestamps were not back yet. Writing 0 put those
+                // frames into the distribution as if the GPU had done nothing, and a median over
+                // an array that is mostly zeros is zero: entities and terrain both reported
+                // gpuMicros p50 = 0 while the frame as a whole reported 1553us. The number was not
+                // small, it was absent, and nothing in the output said so.
+                long gpu = gpuTimer == null ? -1L : gpuTimer.nanos(i);
+                gpuPerFrame[i][count] = gpu <= 0L ? -1 : (int) (gpu / 1000L);
             }
             count++;
         }
@@ -180,11 +187,33 @@ public final class BenchProfiler {
             JsonObject section = new JsonObject();
             section.add("cpuMicros", describe(cpuPerFrame[i], count));
             if (gpuTimer != null && gpuTimer.isSupported()) {
-                section.add("gpuMicros", describe(gpuPerFrame[i], count));
+                section.add("gpuMicros", describeGpu(gpuPerFrame[i], count));
             }
             root.add(NAMES[i], section);
         }
         return root;
+    }
+
+    /**
+     * The same summary over only the frames that produced a GPU sample.
+     *
+     * <p>Carries {@code samples} alongside the percentiles, because a GPU figure means nothing
+     * without knowing how many frames it came from. A section timed in a tenth of the frames is not
+     * a section that is cheap.
+     */
+    private static JsonObject describeGpu(int[] samples, int length) {
+        int[] valid = new int[length];
+        int found = 0;
+        for (int i = 0; i < length; i++) {
+            if (samples[i] >= 0) {
+                valid[found++] = samples[i];
+            }
+        }
+        JsonObject json = describe(valid, found);
+        json.addProperty("samples", Integer.valueOf(found));
+        json.addProperty("coverage", found == 0 ? Double.valueOf(0.0d)
+                : Double.valueOf(Math.round(1000.0d * found / length) / 10.0d));
+        return json;
     }
 
     private static JsonObject describe(int[] samples, int length) {
