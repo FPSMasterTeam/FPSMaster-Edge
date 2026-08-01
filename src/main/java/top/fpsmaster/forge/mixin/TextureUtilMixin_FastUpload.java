@@ -3,6 +3,7 @@ package top.fpsmaster.forge.mixin;
 import net.minecraft.client.renderer.texture.TextureUtil;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,6 +14,7 @@ import top.fpsmaster.features.impl.optimizes.Performance;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import top.fpsmaster.modules.logger.ClientLogger;
 import java.awt.image.SinglePixelPackedSampleModel;
 import java.nio.IntBuffer;
 
@@ -84,6 +86,9 @@ public class TextureUtilMixin_FastUpload {
         int[] direct = fpsmaster$directPixels(image);
         boolean hasAlpha = image.getType() == BufferedImage.TYPE_4BYTE_ABGR;
         byte[] bytes = direct == null ? fpsmaster$directBytes(image) : null;
+        if (direct == null && bytes == null) {
+            fpsmaster$noteFallback(image);
+        }
 
         setTextureBlurred(blur);
         setTextureClamped(clamp);
@@ -166,6 +171,31 @@ public class TextureUtilMixin_FastUpload {
                 at += 3;
             }
         }
+    }
+
+    /**
+     * Names each image type that misses the direct path, once per type.
+     *
+     * <p>Called where the fallback actually happens — after both the int path and the byte path
+     * have declined. Placing it inside the int path instead named four types that the byte path
+     * goes on to handle, which would have made a case for reimplementing code that already exists.
+     *
+     * <p>Diagnostic rather than a counter: what is wanted is the set of types, not how often each
+     * occurs. Which types they are decides whether the remainder is worth chasing at all — an
+     * indexed image can be unpacked through its palette, a {@code TYPE_CUSTOM} one has an arbitrary
+     * colour model and no safe shortcut.
+     */
+    @Unique
+    private static final java.util.Set<Integer> EDGE_SEEN_FALLBACKS =
+            new java.util.HashSet<Integer>();
+
+    @Unique
+    private static void fpsmaster$noteFallback(BufferedImage image) {
+        if (!BenchmarkMode.ACTIVE || !EDGE_SEEN_FALLBACKS.add(Integer.valueOf(image.getType()))) {
+            return;
+        }
+        ClientLogger.info("texupload", "no direct path for BufferedImage type " + image.getType()
+                + " (" + image.getWidth() + "x" + image.getHeight() + "), falling back to getRGB");
     }
 
     /**
