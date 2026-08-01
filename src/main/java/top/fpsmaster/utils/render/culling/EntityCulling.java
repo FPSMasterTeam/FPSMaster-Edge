@@ -92,6 +92,22 @@ public final class EntityCulling {
     private static final double BUSY_FRACTION = 0.10d;
 
     /**
+     * How many entities a sweep has to be hiding before culling is worth its probes.
+     *
+     * <p>The rate alone is not enough and this was measured the hard way. On a recorded Hypixel
+     * fight with players culled, 65.5% of probes came back occluded — well past {@link
+     * #BUSY_FRACTION} — so the state machine started culling, and the frame rate fell 4.5%. Two and
+     * a third entities hidden per frame do not pay for twenty probes a sweep.
+     *
+     * <p>The two signals answer different questions. The rate says whether anything is behind
+     * something; this says whether what is behind something is worth reclaiming. An entity count on
+     * its own — the threshold this replaced — answered neither, because it counted entities that
+     * might be in plain sight. The product of the two is what matters, and the count of entities
+     * actually hidden is that product measured directly.
+     */
+    private static final double CULL_FLOOR = 8.0d;
+
+    /**
      * How often the whole sweep runs while scouting.
      *
      * <p>Scouting is the state this starts in and returns to whenever the occlusion rate says the
@@ -136,6 +152,9 @@ public final class EntityCulling {
 
     private int windowHarvested;
     private int windowOccluded;
+
+    /** Sweeps the current rate window spans, so the occluded total can be read per sweep. */
+    private int windowSweeps;
 
     public void init() {
         if (initialised) {
@@ -226,6 +245,7 @@ public final class EntityCulling {
             return;
         }
         lastSweepMillis = now;
+        windowSweeps++;
 
         if (minEntities > 0) {
             int cullable = 0;
@@ -339,14 +359,18 @@ public final class EntityCulling {
                 // drops back to scouting; above the upper bound they are earning and it culls.
                 // Between the two the current state stands, so a scene sitting on the boundary
                 // does not flip every window and make everything behind a wall blink.
-                if (fraction <= IDLE_FRACTION) {
+                // Hidden entities per sweep, which is what the culling actually saves. The window
+                // spans several sweeps, so the total is scaled back to one.
+                double perSweep = windowOccluded / Math.max(1.0d, windowSweeps);
+                if (fraction <= IDLE_FRACTION || perSweep < CULL_FLOOR) {
                     scouting = true;
-                } else if (fraction >= BUSY_FRACTION && scouting) {
+                } else if (fraction >= BUSY_FRACTION && perSweep >= CULL_FLOOR && scouting) {
                     scouting = false;
                     discardVerdicts = true;
                 }
                 windowHarvested = 0;
                 windowOccluded = 0;
+                windowSweeps = 0;
             }
             if (BenchmarkMode.ACTIVE) {
                 BenchCounters.cullProbesHarvested++;
@@ -458,6 +482,7 @@ public final class EntityCulling {
         lastSweepMillis = 0L;
         windowHarvested = 0;
         windowOccluded = 0;
+        windowSweeps = 0;
     }
 
     public void countVisibility(boolean rendered) {
