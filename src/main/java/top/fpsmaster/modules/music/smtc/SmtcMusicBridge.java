@@ -132,12 +132,16 @@ public final class SmtcMusicBridge {
             return;
         }
         artworkUrl = coverUrl;
+        // 换曲目就立刻丢掉上一首的封面，否则新歌的标题会配着旧歌的图发布出去
+        artwork.set(null);
         MusicTextures.downloadPngAsync(coverUrl, png -> {
             // Only accept the result if the track hasn't changed while we were downloading
-            if (png != null && coverUrl.equals(artworkUrl)) {
-                artwork.set(png);
-                controls.publish(snapshotFromCurrent());
+            if (!coverUrl.equals(artworkUrl)) {
+                return;
             }
+            // png 为 null（404/超时）时也要落库，保持"无封面"而不是留着上一首的图
+            artwork.set(png);
+            controls.publish(snapshotFromCurrent());
         });
     }
 
