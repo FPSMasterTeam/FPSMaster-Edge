@@ -306,38 +306,61 @@ public abstract class MixinEntityRenderer {
         FreeLook.overrideMouse();
     }
 
+    @Shadow
+    private float fogColorRed;
+    @Shadow
+    private float fogColorGreen;
+    @Shadow
+    private float fogColorBlue;
+
+    @Shadow
+    private FloatBuffer setFogColorBuffer(float red, float green, float blue, float alpha) {
+        throw new AssertionError();
+    }
+
+    /**
+     * CustomFog 是否应该接管当前这一帧的雾。
+     *
+     * <p>失明药水那条是硬性的：原版会把雾强制成极短的线性雾，覆盖它等于解除视野限制，
+     * 在服务器上属于优势而不是外观改动。
+     */
     @Unique
-    private static FloatBuffer fpsmaster$fogColorBuffer;
+    private boolean fpsmaster$shouldOverrideFog() {
+        if (!CustomFog.using) return false;
+        if (mc.thePlayer == null) return false;
+        if (mc.thePlayer.isPotionActive(Potion.blindness)) return false;
+        if (!CustomFog.affectWater.getValue() && mc.thePlayer.isInsideOfMaterial(Material.water)) return false;
+        if (!CustomFog.affectLava.getValue() && mc.thePlayer.isInsideOfMaterial(Material.lava)) return false;
+        return true;
+    }
+
+    /**
+     * 天空和清屏色走的是 fogColorRed/Green/Blue 这三个字段（renderWorldPass 拿它 glClearColor，
+     * renderSky 拿它画天空和地平线的雾带），跟 setupFog 里的 GL_FOG_COLOR 是两套状态。只改后者
+     * 会得到"方块被自定义雾吃掉、天空还是原版蓝"的割裂画面，所以这里一并覆盖。
+     */
+    @Inject(method = "updateFogColor", at = @At("RETURN"))
+    private void overrideFogColor(float partialTicks, CallbackInfo ci) {
+        if (!fpsmaster$shouldOverrideFog()) return;
+        java.awt.Color fogColor = CustomFog.color.getColor();
+        fogColorRed = fogColor.getRed() / 255f;
+        fogColorGreen = fogColor.getGreen() / 255f;
+        fogColorBlue = fogColor.getBlue() / 255f;
+    }
 
     @Inject(method = "setupFog", at = @At("RETURN"))
     private void overrideFog(int startCoords, float partialTicks, CallbackInfo ci) {
-        if (!CustomFog.using) return;
-        if (mc.thePlayer == null) return;
+        if (!fpsmaster$shouldOverrideFog()) return;
 
-        // 失明药水：原版强制成极短线性雾，覆盖它会变成服务器判定上的优势，跳过
-        if (mc.thePlayer.isPotionActive(Potion.blindness)) return;
-
-        // Check if in water or lava — only override if the user opted in
-        if (!CustomFog.affectWater.getValue() && mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water)) return;
-        if (!CustomFog.affectLava.getValue() && mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.lava)) return;
-
-        // 雾色只能用 glFog(GL_FOG_COLOR, buffer) 设置，不能走顶点色
+        // 雾色只能用 glFog(GL_FOG_COLOR, buffer) 设置，不能走顶点色。
+        // 复用原版的 setFogColorBuffer：它写的是 EntityRenderer 自己缓存的 direct buffer，
+        // 而 setupFog 每帧要跑好几次，这里再新建 buffer 会持续制造 direct 内存分配。
         java.awt.Color fogColor = CustomFog.color.getColor();
-        FloatBuffer fogColorBuffer = fpsmaster$fogColorBuffer;
-        if (fogColorBuffer == null) {
-            // setupFog 每帧被调用多次，direct buffer 只分配一次后复用（原版同样缓存 fogColorBuffer）
-            fogColorBuffer = BufferUtils.createFloatBuffer(4);
-            fpsmaster$fogColorBuffer = fogColorBuffer;
-        }
-        fogColorBuffer.clear();
-        fogColorBuffer.put(fogColor.getRed() / 255f)
-                .put(fogColor.getGreen() / 255f)
-                .put(fogColor.getBlue() / 255f)
-                .put(1.0f)
-                .flip();
-        GL11.glFog(GL11.GL_FOG_COLOR, fogColorBuffer);
-        // 复位顶点色，避免残留颜色污染后续 renderSky/云/实体渲染
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+        GL11.glFog(GL11.GL_FOG_COLOR, setFogColorBuffer(
+                fogColor.getRed() / 255f,
+                fogColor.getGreen() / 255f,
+                fogColor.getBlue() / 255f,
+                1.0f));
 
         if (CustomFog.fogMode.isMode("Linear")) {
             GlStateManager.setFog(GL11.GL_LINEAR);
