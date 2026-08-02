@@ -65,7 +65,9 @@ public class SaturationDisplayComponent extends Component {
     }
 
     private void drawIcon(float x, float y, int textureX, int textureY) {
-        Images.drawModalRectWithCustomSizedTexture(x, y, textureX, textureY, ICON_SIZE * scale, ICON_SIZE * scale, 256f, 256f);
+        // 四边形按 scale 放大，但采样跨度固定 ICON_SIZE，否则会把 icons.png 里相邻的图标一起采进来
+        Images.drawModalRectWithCustomSizedTexture(x, y, textureX, textureY,
+                ICON_SIZE * scale, ICON_SIZE * scale, ICON_SIZE, ICON_SIZE, 256f, 256f);
     }
 
     private String saturationText() {
