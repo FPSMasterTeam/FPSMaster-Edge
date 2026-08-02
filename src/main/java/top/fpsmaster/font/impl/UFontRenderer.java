@@ -172,6 +172,14 @@ public class UFontRenderer extends FontRenderer {
     }
 
     private int edge$drawStringInternal(String text, float x, float y, int color, boolean dropShadow, float shadowOffset) {
+        // Vanilla treats a colour with no alpha bits as opaque — its drawString does
+        // `if ((color & 0xFC000000) == 0) color |= 0xFF000000` and the custom-font mixin keeps
+        // the rule for the vanilla-replacement path. Without it here, callers that pass opaque
+        // colours the vanilla way (the custom scoreboard passes 0xFFFFFF) draw fully transparent
+        // once routed through this renderer.
+        if ((color & 0xFC000000) == 0) {
+            color |= 0xFF000000;
+        }
         color = apply(color);
         int i;
         if (dropShadow) {
