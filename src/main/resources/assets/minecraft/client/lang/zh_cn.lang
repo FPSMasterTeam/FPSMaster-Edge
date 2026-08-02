@@ -210,6 +210,7 @@ betterchat.fontshadow=字体阴影
 betterchat.betterfont=更好的字体
 betterchat.roundradius=圆角半径
 betterchat.background=背景
+betterchat.round=背景圆角
 betterchat.foldmessage=折叠消息
 betterchat.copymessage=复制消息
 
@@ -252,6 +253,7 @@ fpsdisplay.betterfont=更好的字体
 
 minimap=小地图
 minimap.desc=小地图组件
+minimap.fastrender.disable.title=小地图与快速渲染不兼容，已为您自动关闭快速渲染。
 
 hotbar=物品栏
 hotbar.desc=更好的物品栏
@@ -409,6 +411,10 @@ performance.textureresolution.sixteenth=十六分之一
 performance.fastcollision=快速实体碰撞
 performance.fasttextureupload=快速纹理上传
 performance.reusevisiblechunks=复用可见区块列表
+performance.reuselevel=复用可见区块级别
+performance.reuselevel.conservative=保守
+performance.reuselevel.balanced=均衡
+performance.reuselevel.aggressive=激进
 performance.composedmodeltransform=合成模型变换
 performance.batchvanillafont=原版字体批量绘制
 performance.fastglyphlookup=字形查表加速
@@ -422,6 +428,13 @@ performancehud.showdistribution=显示帧时间分布
 performancehud.showmemory=显示内存占用
 performancehud.showgc=显示垃圾回收
 performancehud.colorbyhealth=按健康度着色
+performancehud.background=背景
+performancehud.backgroundcolor=背景颜色
+performancehud.round=背景圆角
+performancehud.roundradius=圆角半径
+performancehud.betterfont=更好的字体
+performancehud.fontshadow=字体阴影
+performancehud.spacing=间距
 
 fullbright=保持亮度
 fullbright.desc=保持视野明亮
@@ -458,12 +471,14 @@ sprint=强制疾跑
 sprint.desc=保持疾跑
 sprint.togglesprint=切换疾跑
 sprint.betterfont=更好的字体
+sprint.fontshadow=字体阴影
 
 togglesneak=切换潜行
 togglesneak.desc=按下切换键即可保持潜行
 togglesneak.togglesneak=切换潜行
 togglesneak.togglekey=切换按键
 togglesneak.betterfont=更好的字体
+togglesneak.fontshadow=字体阴影
 
 autogg=自动GG
 autogg.desc=游戏结束后自动地在发送你自定义的消息
@@ -523,6 +538,12 @@ hitcolor.color=颜色
 
 hideindicator=隐藏攻击指示器
 hideindicator.desc=隐藏攻击指示器
+hideindicator.background=背景
+hideindicator.backgroundcolor=背景颜色
+hideindicator.round=背景圆角
+hideindicator.roundradius=圆角半径
+hideindicator.betterfont=更好的字体
+hideindicator.fontshadow=字体阴影
 
 lyricsdisplay=歌词显示
 lyricsdisplay.desc=歌词显示
@@ -591,6 +612,8 @@ blockindicator.roundradius=圆角半径
 blockindicator.backgroundcolor=背景颜色
 blockindicator.panelcolor=方块面板颜色
 blockindicator.accentcolor=强调色
+blockindicator.betterfont=更好的字体
+blockindicator.fontshadow=字体阴影
 
 playtime=游玩时间
 playtime.desc=统计并显示你的游玩时间
@@ -660,6 +683,12 @@ nametags.background=背景
 taboverlay=Tab显示
 taboverlay.desc=自定义Tab界面
 taboverlay.showping=显示数字延迟
+taboverlay.background=背景
+taboverlay.backgroundcolor=背景颜色
+taboverlay.round=背景圆角
+taboverlay.roundradius=圆角半径
+taboverlay.betterfont=更好的字体
+taboverlay.fontshadow=字体阴影
 
 inventorydisplay=物品栏显示
 inventorydisplay.desc=显示物品栏内物品
@@ -667,6 +696,8 @@ inventorydisplay.round=背景圆角
 inventorydisplay.backgroundcolor=背景颜色
 inventorydisplay.roundradius=圆角半径
 inventorydisplay.background=背景
+inventorydisplay.betterfont=更好的字体
+inventorydisplay.fontshadow=字体阴影
 
 playerdisplay=玩家显示
 playerdisplay.desc=显示附近玩家的信息
@@ -690,6 +721,10 @@ targetdisplay.espcolor=ESP颜色
 targetdisplay.roundradius=圆角半径
 targetdisplay.background=背景
 targetdisplay.omitname=省略过长的名字
+targetdisplay.backgroundcolor=背景颜色
+targetdisplay.round=背景圆角
+targetdisplay.betterfont=更好的字体
+targetdisplay.fontshadow=字体阴影
 
 itemcountdisplay=物品数量
 itemcountdisplay.desc=便捷的展示你的物品数量
@@ -785,6 +820,8 @@ modslist.betterfont=更好的字体
 modslist.roundradius=圆角半径
 modslist.background=背景
 modslist.spacing=间距
+modslist.round=背景圆角
+modslist.fontshadow=字体阴影
 
 betterscreen=更好的界面
 betterscreen.desc=让原版的部分界面看起来更好
@@ -792,6 +829,11 @@ betterscreen.blur=模糊
 betterscreen.background=开启背景
 betterscreen.backgroundanimation=背景动画
 betterscreen.noflickering=防止闪烁
+betterscreen.backgroundcolor=背景颜色
+betterscreen.round=背景圆角
+betterscreen.roundradius=圆角半径
+betterscreen.betterfont=更好的字体
+betterscreen.fontshadow=字体阴影
 
 clientcommand=客户端命令
 clientcommand.desc=使用命令执行客户端功能
@@ -880,6 +922,8 @@ customfog.fogmode.linear=线性
 customfog.fogmode.exponential=指数
 customfog.startdistance=起始距离
 customfog.enddistance=结束距离
+customfog.affectwater=影响水面迷雾
+customfog.affectlava=影响岩浆迷雾
 autotext=自动文本
 autotext.desc=按下设定的快捷键时发送保存的聊天消息
 autotext.entries=条目
