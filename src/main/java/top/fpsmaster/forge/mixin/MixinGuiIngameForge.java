@@ -3,6 +3,7 @@ package top.fpsmaster.forge.mixin;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraftforge.client.GuiIngameForge;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -42,14 +43,31 @@ public class MixinGuiIngameForge {
         EventDispatcher.dispatchEvent(new EventRender2D(partialTicks));
     }
 
-    @Inject(method = "renderFood", at = @At("HEAD"), cancellable = true, remap = false)
-    private void hideVanillaFood(int width, int height, CallbackInfo callbackInfo) {
-        if (SaturationDisplay.using) {
-            // renderFood 末尾的 right_height += 10 会在 cancel 时被跳过，
-            // 手动补上以免 renderHealthMount/renderAir 整体下移 10px。
-            right_height += 10;
-            callbackInfo.cancel();
+    @Shadow(remap = false)
+    private boolean pre(RenderGameOverlayEvent.ElementType type) {
+        throw new AssertionError();
+    }
+
+    /**
+     * 接管原版饥饿条。
+     *
+     * <p>不在 HEAD 直接 cancel：renderFood 的第一句是 {@code if (pre(FOOD)) return;}，在它之前
+     * cancel 会让 Pre(FOOD) 事件根本不派发，别的 HUD 模组的钩子就静默失效了。改成重定向这次
+     * {@code pre} 调用：事件照常触发，别人已经取消时把占位交给他们，只有我们真正接管时才补上
+     * renderFood 末尾那个被跳过的 {@code right_height += 10}，否则氧气条和坐骑血条会错位。
+     */
+    @Redirect(method = "renderFood", at = @At(value = "INVOKE",
+            target = "Lnet/minecraftforge/client/GuiIngameForge;pre(Lnet/minecraftforge/client/event/RenderGameOverlayEvent$ElementType;)Z"),
+            remap = false)
+    private boolean fpsmaster$takeOverFood(GuiIngameForge self, RenderGameOverlayEvent.ElementType type) {
+        if (pre(type)) {
+            return true;
         }
+        if (!SaturationDisplay.using) {
+            return false;
+        }
+        right_height += 10;
+        return true;
     }
 
     @Redirect(method = "renderTitle", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GlStateManager;translate(FFF)V"))
