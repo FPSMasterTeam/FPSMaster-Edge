@@ -306,6 +306,9 @@ public abstract class MixinEntityRenderer {
         FreeLook.overrideMouse();
     }
 
+    @Unique
+    private static FloatBuffer fpsmaster$fogColorBuffer;
+
     @Inject(method = "setupFog", at = @At("RETURN"))
     private void overrideFog(int startCoords, float partialTicks, CallbackInfo ci) {
         if (!CustomFog.using) return;
@@ -320,7 +323,13 @@ public abstract class MixinEntityRenderer {
 
         // 雾色只能用 glFog(GL_FOG_COLOR, buffer) 设置，不能走顶点色
         java.awt.Color fogColor = CustomFog.color.getColor();
-        FloatBuffer fogColorBuffer = BufferUtils.createFloatBuffer(4);
+        FloatBuffer fogColorBuffer = fpsmaster$fogColorBuffer;
+        if (fogColorBuffer == null) {
+            // setupFog 每帧被调用多次，direct buffer 只分配一次后复用（原版同样缓存 fogColorBuffer）
+            fogColorBuffer = BufferUtils.createFloatBuffer(4);
+            fpsmaster$fogColorBuffer = fogColorBuffer;
+        }
+        fogColorBuffer.clear();
         fogColorBuffer.put(fogColor.getRed() / 255f)
                 .put(fogColor.getGreen() / 255f)
                 .put(fogColor.getBlue() / 255f)
