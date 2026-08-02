@@ -166,30 +166,15 @@ public class Images {
         glPopMatrix();
     }
 
-    /**
-     * 全 float 版本的自定义尺寸纹理四边形，保留亚像素坐标。坐标按 HUD 组件传入的已缩放值使用。
-     *
-     * <p>注意采样区域与四边形尺寸相同：只适用于"渲染尺寸 == 源图尺寸"的场景。缩放绘制精灵图请用
-     * {@link #drawModalRectWithCustomSizedTexture(float, float, float, float, float, float, float, float, float, float)}
-     * 单独传 UV 跨度，否则放大四边形会把相邻精灵一起采样进来。
-     */
-    public static void drawModalRectWithCustomSizedTexture(float x, float y, float u, float v, float width, float height, float textureWidth, float textureHeight) {
-        drawModalRectWithCustomSizedTexture(x, y, u, v, width, height, width, height, textureWidth, textureHeight);
-    }
-
-    /**
-     * 同上，但四边形尺寸（width/height）与纹理采样跨度（uWidth/vHeight）解耦，
-     * 用于把固定大小的精灵按任意比例放大绘制。
-     */
-    public static void drawModalRectWithCustomSizedTexture(float x, float y, float u, float v, float width, float height, float uWidth, float vHeight, float textureWidth, float textureHeight) {
+    private static void drawModalRectWithCustomSizedTexture(float x, float y, float u, float v, float width, float height, float textureWidth, float textureHeight) {
         float f = 1.0F / textureWidth;
         float f1 = 1.0F / textureHeight;
         net.minecraft.client.renderer.Tessellator tessellator = net.minecraft.client.renderer.Tessellator.getInstance();
         net.minecraft.client.renderer.WorldRenderer bufferbuilder = tessellator.getWorldRenderer();
         bufferbuilder.begin(7, net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_TEX);
-        bufferbuilder.pos(x, y + height, 0.0D).tex(u * f, (v + vHeight) * f1).endVertex();
-        bufferbuilder.pos(x + width, y + height, 0.0D).tex((u + uWidth) * f, (v + vHeight) * f1).endVertex();
-        bufferbuilder.pos(x + width, y, 0.0D).tex((u + uWidth) * f, v * f1).endVertex();
+        bufferbuilder.pos(x, y + height, 0.0D).tex(u * f, (v + height) * f1).endVertex();
+        bufferbuilder.pos(x + width, y + height, 0.0D).tex((u + width) * f, (v + height) * f1).endVertex();
+        bufferbuilder.pos(x + width, y, 0.0D).tex((u + width) * f, v * f1).endVertex();
         bufferbuilder.pos(x, y, 0.0D).tex(u * f, v * f1).endVertex();
         tessellator.draw();
     }
