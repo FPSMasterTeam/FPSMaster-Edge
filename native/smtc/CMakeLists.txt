@@ -6,7 +6,10 @@ if(NOT WIN32)
     message(FATAL_ERROR "fpsmaster-smtc is a Windows-only target")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+# C++20, not 17: C++/WinRT's headers pull in coroutine support, and under /std:c++17
+# that resolves to <experimental/coroutine>, which current MSVC rejects outright
+# (STL1011). C++20 gives it the standard <coroutine> instead.
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Architecture is selected by the generator platform, e.g.
