@@ -1,12 +1,12 @@
 package top.fpsmaster.ui.custom.impl;
 
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.features.impl.interfaces.SaturationDisplay;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
+import top.fpsmaster.utils.render.draw.Images;
 
 import java.awt.Color;
 
@@ -65,7 +65,7 @@ public class SaturationDisplayComponent extends Component {
     }
 
     private void drawIcon(float x, float y, int textureX, int textureY) {
-        Gui.drawModalRectWithCustomSizedTexture(x, y, textureX, textureY, ICON_SIZE * scale, ICON_SIZE * scale, 256f, 256f);
+        Images.drawModalRectWithCustomSizedTexture(x, y, textureX, textureY, ICON_SIZE * scale, ICON_SIZE * scale, 256f, 256f);
     }
 
     private String saturationText() {

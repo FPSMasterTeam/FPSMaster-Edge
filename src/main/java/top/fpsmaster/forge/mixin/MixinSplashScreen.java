@@ -22,7 +22,7 @@ public class MixinSplashScreen {
      * @author SuperSkidder
      * @reason Custom Loading Screen
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public static void start() {
         ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft());
         int i = scaledresolution.getScaleFactor();

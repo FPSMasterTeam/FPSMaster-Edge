@@ -13,12 +13,15 @@ import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.potion.Potion;
 import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.util.*;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
 import net.minecraftforge.common.MinecraftForge;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -39,6 +42,7 @@ import top.fpsmaster.features.impl.render.MinimizedBobbing;
 import top.fpsmaster.features.impl.render.CustomFog;
 import top.fpsmaster.utils.math.MathUtils;
 
+import java.nio.FloatBuffer;
 import java.util.List;
 
 import static top.fpsmaster.utils.core.Utility.mc;
@@ -307,25 +311,31 @@ public abstract class MixinEntityRenderer {
         if (!CustomFog.using) return;
         if (mc.thePlayer == null) return;
 
-        // Check if in water or lava — only override if the user opted in
-        if (!CustomFog.affectWater.getValue()) {
-            net.minecraft.block.material.Material eye = mc.thePlayer.getEye().getMaterial();
-            if (eye == net.minecraft.block.material.Material.water) return;
-        }
-        if (!CustomFog.affectLava.getValue()) {
-            net.minecraft.block.material.Material eye = mc.thePlayer.getEye().getMaterial();
-            if (eye == net.minecraft.block.material.Material.lava) return;
-        }
+        // 失明药水：原版强制成极短线性雾，覆盖它会变成服务器判定上的优势，跳过
+        if (mc.thePlayer.isPotionActive(Potion.blindness)) return;
 
+        // Check if in water or lava — only override if the user opted in
+        if (!CustomFog.affectWater.getValue() && mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water)) return;
+        if (!CustomFog.affectLava.getValue() && mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.lava)) return;
+
+        // 雾色只能用 glFog(GL_FOG_COLOR, buffer) 设置，不能走顶点色
         java.awt.Color fogColor = CustomFog.color.getColor();
-        GlStateManager.color(fogColor.getRed() / 255f, fogColor.getGreen() / 255f, fogColor.getBlue() / 255f);
+        FloatBuffer fogColorBuffer = BufferUtils.createFloatBuffer(4);
+        fogColorBuffer.put(fogColor.getRed() / 255f)
+                .put(fogColor.getGreen() / 255f)
+                .put(fogColor.getBlue() / 255f)
+                .put(1.0f)
+                .flip();
+        GL11.glFog(GL11.GL_FOG_COLOR, fogColorBuffer);
+        // 复位顶点色，避免残留颜色污染后续 renderSky/云/实体渲染
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
 
         if (CustomFog.fogMode.isMode("Linear")) {
-            GlStateManager.setFog(GlStateManager.FogMode.LINEAR);
+            GlStateManager.setFog(GL11.GL_LINEAR);
             GlStateManager.setFogStart(CustomFog.startDistance.getValue().floatValue());
             GlStateManager.setFogEnd(CustomFog.endDistance.getValue().floatValue());
         } else {
-            GlStateManager.setFog(GlStateManager.FogMode.EXP);
+            GlStateManager.setFog(GL11.GL_EXP);
             float density = 1.0f / Math.max(0.1f, CustomFog.endDistance.getValue().floatValue());
             GlStateManager.setFogDensity(density);
         }

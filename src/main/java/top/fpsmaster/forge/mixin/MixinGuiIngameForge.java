@@ -15,9 +15,13 @@ import top.fpsmaster.event.events.EventMotionBlur;
 import top.fpsmaster.event.events.EventRender2D;
 import top.fpsmaster.features.impl.interfaces.CustomTitles;
 import top.fpsmaster.features.impl.interfaces.SaturationDisplay;
+import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(GuiIngameForge.class)
 public class MixinGuiIngameForge {
+    @Shadow(remap = false)
+    public static int right_height;
+
     @Inject(method = "renderGameOverlay", at = @At("HEAD"))
     private void fpsmasterBeginHud(float partialTicks, CallbackInfo ci) {
         if (BenchmarkMode.ACTIVE) {
@@ -38,9 +42,12 @@ public class MixinGuiIngameForge {
         EventDispatcher.dispatchEvent(new EventRender2D(partialTicks));
     }
 
-    @Inject(method = "renderFood", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "renderFood", at = @At("HEAD"), cancellable = true, remap = false)
     private void hideVanillaFood(int width, int height, CallbackInfo callbackInfo) {
         if (SaturationDisplay.using) {
+            // renderFood 末尾的 right_height += 10 会在 cancel 时被跳过，
+            // 手动补上以免 renderHealthMount/renderAir 整体下移 10px。
+            right_height += 10;
             callbackInfo.cancel();
         }
     }

@@ -166,7 +166,8 @@ public class Images {
         glPopMatrix();
     }
 
-    private static void drawModalRectWithCustomSizedTexture(float x, float y, float u, float v, float width, float height, float textureWidth, float textureHeight) {
+    /** 全 float 版本的自定义尺寸纹理四边形，保留亚像素坐标。坐标按 HUD 组件传入的已缩放值使用。 */
+    public static void drawModalRectWithCustomSizedTexture(float x, float y, float u, float v, float width, float height, float textureWidth, float textureHeight) {
         float f = 1.0F / textureWidth;
         float f1 = 1.0F / textureHeight;
         net.minecraft.client.renderer.Tessellator tessellator = net.minecraft.client.renderer.Tessellator.getInstance();
