@@ -21,3 +21,7 @@ remeasure.ps1
 /usercache.json
 /usernamecache.json
 /FPSMaster Edge/
+
+# SMTC 原生库由 CI 构建后注入（native/smtc/CMakeLists.txt），不提交二进制
+src/main/resources/native/windows/*/*.dll
+native/smtc/build-*/
