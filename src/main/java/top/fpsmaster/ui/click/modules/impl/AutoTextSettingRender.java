@@ -175,16 +175,9 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
         if (canAdd) {
             ScaledGuiScreen.PointerEvent addClick = screen.consumePressInBounds(addX, addY, 14, 14, 0);
             if (addClick != null) {
-                // Find first unused key code
-                int newKey = 0;
-                for (int k = 2; k < 256; k++) {
-                    int finalK = k;
-                    if (entries.stream().noneMatch(e -> e.keyCode == finalK)) {
-                        newKey = k;
-                        break;
-                    }
-                }
-                setting.addEntry(new AutoTextEntry(newKey, ""));
+                // 新条目不自动绑键：keyCode 保持 0（None），避免误占快捷栏键位，
+                // 由用户点击 Bind 按钮显式绑定。
+                setting.addEntry(new AutoTextEntry(0, ""));
                 rebuildTextFields();
                 return;
             }

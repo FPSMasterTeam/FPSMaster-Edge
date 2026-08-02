@@ -23,7 +23,7 @@ import java.util.Set;
 public class AutoText extends Module {
     private static final ArrayList<AutoTextEntry> DEFAULT = new ArrayList<>();
     static {
-        DEFAULT.add(new AutoTextEntry(0x2C /* G key LWJGL */, "gg"));
+        DEFAULT.add(new AutoTextEntry(0x22 /* G key LWJGL */, "gg"));
     }
 
     public final AutoTextSetting entries = new AutoTextSetting("Entries", new ArrayList<>(DEFAULT));
