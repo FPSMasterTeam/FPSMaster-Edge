@@ -14,6 +14,7 @@ import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
@@ -104,8 +105,7 @@ public final class MusicTextures {
     }
 
     /** 由文本（网易云登录 codekey URL）生成二维码纹理。 */
-    public static synchronized ResourceLocation qr(final String text) {
-        if (text == null || text.isEmpty()) return null;
+    public static synchronized ResourceLocation qr(final String text) {        if (text == null || text.isEmpty()) return null;
         final String key = "qr:" + text;
         ResourceLocation loc = READY.get(key);
         if (loc != null) return loc;
@@ -133,6 +133,35 @@ public final class MusicTextures {
             READY.remove(k);
             LOADING.remove(k);
         }
+    }
+
+    /**
+     * 在 {@link #IMG_EXEC} 单线程上下载图片并重新编码为 PNG 字节，结果通过回调返回。
+     * 供 SMTC 等需要原始字节（而非 GL 纹理）的调用方复用同一套下载/解码路径，
+     * 避免自起线程并发调用 AWT/ImageIO 在 macOS 上触发崩溃。
+     */
+    public static void downloadPngAsync(final String url, final java.util.function.Consumer<byte[]> callback) {
+        if (url == null || url.isEmpty() || callback == null) {
+            return;
+        }
+        IMG_EXEC.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    BufferedImage img = downloadImage(url);
+                    if (img == null) {
+                        callback.accept(null);
+                        return;
+                    }
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    ImageIO.write(img, "png", bos);
+                    callback.accept(bos.toByteArray());
+                } catch (Throwable e) {
+                    ClientLogger.error("Music PNG download failed: " + e.getMessage());
+                    callback.accept(null);
+                }
+            }
+        });
     }
 
     private static synchronized void unmark(String key) {

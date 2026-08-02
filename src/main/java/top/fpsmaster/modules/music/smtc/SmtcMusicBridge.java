@@ -1,16 +1,10 @@
 package top.fpsmaster.modules.music.smtc;
 
-import top.fpsmaster.FPSMaster;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.music.MusicManager;
+import top.fpsmaster.modules.music.MusicTextures;
 import top.fpsmaster.music.Track;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -19,17 +13,15 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>Runs a lightweight polling loop (separate daemon thread) that samples the current track and
  * forwards a snapshot to the transport facade. Control events from the system are marshalled back
  * onto the Minecraft main thread before calling {@link MusicManager} so queue/UI state stays
- * main-thread consistent. Cover art is downloaded off-thread with the established UA/referer path.
+ * main-thread consistent. Cover art is downloaded on the shared single-threaded
+ * {@link MusicTextures} decoder queue to avoid concurrent AWT/ImageIO crashes on macOS.
  */
 public final class SmtcMusicBridge {
-
-    private static final String UA =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                    + "Chrome/123.0.0.0 Safari/537.36";
 
     private final MusicManager music;
     private final SystemMediaTransportControls controls;
     private final AtomicReference<byte[]> artwork = new AtomicReference<>();
+    private volatile String artworkUrl;
 
     private volatile boolean running;
     private Thread pollThread;
@@ -83,8 +75,9 @@ public final class SmtcMusicBridge {
                 if (cur != lastTrack) {
                     lastTrack = cur;
                     lastPos = -1;
-                    // New track: kick off cover download if not already cached
-                    maybeLoadArtwork(cur.getCoverUrl());
+                    // New track: kick off cover download (cache is keyed by URL, so a track change
+                    // always refreshes the art instead of reusing the previous track's thumbnail)
+                    requestArtwork(cur.getCoverUrl());
                 }
 
                 long pos = music.engine().getPositionMs();
@@ -125,47 +118,27 @@ public final class SmtcMusicBridge {
         }
     }
 
-    /** Downloads and caches album art as PNG bytes, off-thread. */
-    private void maybeLoadArtwork(final String coverUrl) {
+    /**
+     * Requests album art for {@code coverUrl}. Empty/duplicate URLs clear or keep the cache; any
+     * other URL triggers a re-download because the previous track's art no longer matches.
+     */
+    private void requestArtwork(final String coverUrl) {
         if (coverUrl == null || coverUrl.isEmpty()) {
             artwork.set(null);
+            artworkUrl = null;
             return;
         }
-        // Only refresh when we don't already have art for the current track
-        if (artwork.get() != null) {
+        if (coverUrl.equals(artworkUrl)) {
             return;
         }
-        final Thread t = new Thread(() -> {
-            try {
-                byte[] png = downloadPng(coverUrl);
+        artworkUrl = coverUrl;
+        MusicTextures.downloadPngAsync(coverUrl, png -> {
+            // Only accept the result if the track hasn't changed while we were downloading
+            if (png != null && coverUrl.equals(artworkUrl)) {
                 artwork.set(png);
-                // Publish again so SMTC picks up the art
                 controls.publish(snapshotFromCurrent());
-            } catch (Throwable e) {
-                ClientLogger.error("SMTC artwork load failed: " + e.getMessage());
             }
-        }, "FPSMaster-Smtc-Art");
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private byte[] downloadPng(String url) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setInstanceFollowRedirects(true);
-        conn.setConnectTimeout(8000);
-        conn.setReadTimeout(12000);
-        conn.setRequestProperty("User-Agent", UA);
-        try (InputStream in = conn.getInputStream()) {
-            BufferedImage img = ImageIO.read(in);
-            if (img == null) {
-                return null;
-            }
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ImageIO.write(img, "png", bos);
-            return bos.toByteArray();
-        } finally {
-            conn.disconnect();
-        }
+        });
     }
 
     private MediaPlaybackSnapshot snapshotFromCurrent() {

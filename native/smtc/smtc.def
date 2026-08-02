@@ -1,0 +1,7 @@
+EXPORTS
+    smtc_start
+    smtc_set_callback
+    smtc_publish
+    smtc_set_buttons
+    smtc_close
+    smtc_get_last_error

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 final class WindowsSystemMediaTransportControls implements SystemMediaTransportControls {
 
     private interface SmtcNative extends Library {
-        void smtc_start(long hwnd);
+        int smtc_start(long hwnd);
         void smtc_set_callback(ControlCallback cb);
         void smtc_publish(WString title, WString artist, WString album, long positionMs, long durationMs,
                           boolean playing, boolean hasCurrentTrack, byte[] artworkData, int artworkLen);
@@ -118,7 +118,11 @@ final class WindowsSystemMediaTransportControls implements SystemMediaTransportC
                 return;
             }
             nativeLib.smtc_set_callback(callback);
-            nativeLib.smtc_start(0L);
+            int status = nativeLib.smtc_start(0L);
+            if (status != 1) {
+                ClientLogger.warn("SMTC native start returned failure status, SMTC unavailable");
+                return;
+            }
             available.set(true);
         } catch (Throwable t) {
             ClientLogger.error("SMTC native start failed: " + t.getMessage());

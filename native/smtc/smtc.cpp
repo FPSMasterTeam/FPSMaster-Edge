@@ -11,15 +11,22 @@
 // The DLL exports a tiny C ABI that the Java side (JNA) calls.
 // Callbacks from SMTC button events are dispatched to a function pointer
 // provided by the Java side.
+//
+// Desktop (Win32 JVM) integration goes through the
+// ISystemMediaTransportControlsInterop::GetForWindow(hwnd) path. The UWP
+// GetForCurrentView() API requires a CoreWindow and therefore always fails
+// in the Minecraft JVM; it is deliberately not used here.
 
 #include <windows.h>
 #include <stdlib.h>
 #include <string.h>
+#include <chrono>
 
 // WinRT headers
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Media.h>
 #include <winrt/Windows.Storage.Streams.h>
+#include <SystemMediaTransportControlsInterop.h>
 
 using namespace winrt;
 using namespace Windows::Media;
@@ -28,14 +35,37 @@ using namespace Windows::Storage::Streams;
 // ---------------------------------------------------------------------------
 // Callback types (Java sets these via JNA)
 // ---------------------------------------------------------------------------
-typedef void(__stdcall* ControlCallback)(int action);
+typedef void(__cdecl* ControlCallback)(int action);
 static ControlCallback g_callback = nullptr;
 
 // ---------------------------------------------------------------------------
 // SMTC session state
 // ---------------------------------------------------------------------------
 static SystemMediaTransportControls g_smtc = nullptr;
+static winrt::event_token g_buttonToken{};
 static bool g_initialized = false;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+// Find a visible top-level window owned by this process. GetForWindow needs a
+// real HWND; the Java side passes 0 when it has no window handle to hand over.
+static HWND find_process_window() {
+    static HWND found = nullptr;
+    found = nullptr;
+    DWORD pid = GetCurrentProcessId();
+    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+        DWORD wpid = 0;
+        GetWindowThreadProcessId(hwnd, &wpid);
+        if (wpid == (DWORD)lParam && IsWindowVisible(hwnd)) {
+            found = hwnd;
+            return FALSE;
+        }
+        return TRUE;
+    }, (LPARAM)pid);
+    return found;
+}
 
 // ---------------------------------------------------------------------------
 // C ABI exports
@@ -43,17 +73,40 @@ static bool g_initialized = false;
 
 extern "C" {
 
-/// Initialize the SMTC session. Call once; idempotent.
-/// hwnd: parent window handle (0 = use desktop window).
-__declspec(dllexport) void __stdcall smtc_start(HWND hwnd) {
-    if (g_initialized) return;
+/// Initialize the SMTC session for a desktop window. Call once; idempotent.
+/// hwnd: parent window handle (0 = auto-detect the process main window).
+/// Returns 1 on success, 0 on failure (so the Java side can surface it).
+__declspec(dllexport) int __cdecl smtc_start(HWND hwnd) {
+    if (g_initialized) return 1;
     try {
-        // Initialize WinRT apartment
-        winrt::init_apartment(winrt::apartment_type::single_threaded);
+        // Initialize WinRT apartment (MTA so callbacks can fire on any thread)
+        winrt::init_apartment(winrt::apartment_type::multi_threaded);
 
-        // Get the system transport controls
-        g_smtc = SystemMediaTransportControls::GetForCurrentView();
-        if (!g_smtc) return;
+        HWND target = hwnd;
+        if (target == nullptr) {
+            target = find_process_window();
+        }
+        if (target == nullptr) {
+            g_initialized = false;
+            return 0;
+        }
+
+        // Desktop interop: get the transport controls bound to a window.
+        auto interop = get_activation_factory<SystemMediaTransportControls,
+                                              ISystemMediaTransportControlsInterop>();
+        SystemMediaTransportControls controls = nullptr;
+        HRESULT hr = interop->GetForWindow(target,
+            winrt::guid_of<SystemMediaTransportControls>(),
+            winrt::put_abi(controls));
+        if (FAILED(hr)) {
+            g_initialized = false;
+            return 0;
+        }
+        g_smtc = controls;
+        if (!g_smtc) {
+            g_initialized = false;
+            return 0;
+        }
 
         // Enable all supported buttons
         g_smtc.IsPlayEnabled(true);
@@ -62,7 +115,7 @@ __declspec(dllexport) void __stdcall smtc_start(HWND hwnd) {
         g_smtc.IsPreviousEnabled(true);
 
         // Subscribe to button events
-        auto token = g_smtc.ButtonPressed(
+        g_buttonToken = g_smtc.ButtonPressed(
             [](const SystemMediaTransportControls& sender,
                const SystemMediaTransportControlsButtonPressedEventArgs& args) {
                 if (!g_callback) return;
@@ -84,19 +137,21 @@ __declspec(dllexport) void __stdcall smtc_start(HWND hwnd) {
             });
 
         g_initialized = true;
+        return 1;
     } catch (...) {
         g_initialized = false;
+        return 0;
     }
 }
 
 /// Register the Java callback function pointer.
-__declspec(dllexport) void __stdcall smtc_set_callback(ControlCallback cb) {
+__declspec(dllexport) void __cdecl smtc_set_callback(ControlCallback cb) {
     g_callback = cb;
 }
 
 /// Publish playback metadata and state.
 /// artwork_data / artwork_len: PNG bytes or NULL/0 for no art.
-__declspec(dllexport) void __stdcall smtc_publish(
+__declspec(dllexport) void __cdecl smtc_publish(
     const wchar_t* title,
     const wchar_t* artist,
     const wchar_t* album,
@@ -121,8 +176,9 @@ __declspec(dllexport) void __stdcall smtc_publish(
         if (artwork_data && artwork_len > 0) {
             try {
                 auto stream = InMemoryRandomAccessStream();
-                stream.WriteAsync(winrt::array_view<const uint8_t>(
-                    artwork_data, artwork_data + artwork_len)).get();
+                auto buffer = Buffer(static_cast<uint32_t>(artwork_len));
+                memcpy(buffer.data(), artwork_data, artwork_len);
+                stream.WriteAsync(buffer).get();
                 stream.Seek(0);
                 auto ref = RandomAccessStreamReference::CreateFromStream(stream);
                 updater.Thumbnail(ref);
@@ -134,13 +190,11 @@ __declspec(dllexport) void __stdcall smtc_publish(
         updater.Update();
 
         // Timeline properties
-        auto timeline = g_smtc.GetTimelineProperties();
-        // Position and duration are set via the SystemMediaTransportControlsTimelineProperties
         auto props = SystemMediaTransportControlsTimelineProperties();
-        props.StartTime(0);
+        props.StartTime(std::chrono::milliseconds(0));
         props.Position(std::chrono::milliseconds(positionMs));
         props.EndTime(std::chrono::milliseconds(durationMs > 0 ? durationMs : 1));
-        props.MinSeekTime(0);
+        props.MinSeekTime(std::chrono::milliseconds(0));
         props.MaxSeekTime(std::chrono::milliseconds(durationMs > 0 ? durationMs : 1));
         g_smtc.UpdateTimelineProperties(props);
 
@@ -158,7 +212,7 @@ __declspec(dllexport) void __stdcall smtc_publish(
 }
 
 /// Enable/disable which buttons are shown.
-__declspec(dllexport) void __stdcall smtc_set_buttons(
+__declspec(dllexport) void __cdecl smtc_set_buttons(
     bool playPause, bool next, bool prev
 ) {
     if (!g_smtc) return;
@@ -172,11 +226,11 @@ __declspec(dllexport) void __stdcall smtc_set_buttons(
 }
 
 /// Release the SMTC session. Safe to call multiple times.
-__declspec(dllexport) void __stdcall smtc_close() {
+__declspec(dllexport) void __cdecl smtc_close() {
     if (!g_initialized) return;
     try {
         if (g_smtc) {
-            g_smtc.ButtonPressed({});
+            g_smtc.ButtonPressed(g_buttonToken);
             g_smtc = nullptr;
         }
         g_initialized = false;
@@ -187,7 +241,7 @@ __declspec(dllexport) void __stdcall smtc_close() {
 }
 
 /// Get the last error message (for debugging).
-__declspec(dllexport) void __stdcall smtc_get_last_error(wchar_t* buf, int bufLen) {
+__declspec(dllexport) void __cdecl smtc_get_last_error(wchar_t* buf, int bufLen) {
     (void)buf;
     (void)bufLen;
     // Simplified: just clear
