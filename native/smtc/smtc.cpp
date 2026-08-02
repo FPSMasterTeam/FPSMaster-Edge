@@ -178,6 +178,9 @@ __declspec(dllexport) void __cdecl smtc_publish(
                 auto stream = InMemoryRandomAccessStream();
                 auto buffer = Buffer(static_cast<uint32_t>(artwork_len));
                 memcpy(buffer.data(), artwork_data, artwork_len);
+                // Buffer(capacity) 只设置 Capacity，Length 仍是 0；WriteAsync 只写 Length 个字节，
+                // 不显式设置 Length 会写出一个 0 字节的流（缩略图永远空白）
+                buffer.Length(static_cast<uint32_t>(artwork_len));
                 stream.WriteAsync(buffer).get();
                 stream.Seek(0);
                 auto ref = RandomAccessStreamReference::CreateFromStream(stream);
