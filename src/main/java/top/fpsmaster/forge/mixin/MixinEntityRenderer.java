@@ -332,8 +332,15 @@ public abstract class MixinEntityRenderer {
 
         if (CustomFog.fogMode.isMode("Linear")) {
             GlStateManager.setFog(GL11.GL_LINEAR);
-            GlStateManager.setFogStart(CustomFog.startDistance.getValue().floatValue());
-            GlStateManager.setFogEnd(CustomFog.endDistance.getValue().floatValue());
+            float start = CustomFog.startDistance.getValue().floatValue();
+            float end = CustomFog.endDistance.getValue().floatValue();
+            // 防反转：end 必须比 start 大，否则线性雾公式 (end - z)/(end - start) 会反过来，
+            // 近处反而更浓。顺带把范围钳制在渲染距离内，避免雾一直延伸到可视边界外。
+            if (end <= start) {
+                end = start + 1.0f;
+            }
+            GlStateManager.setFogStart(start);
+            GlStateManager.setFogEnd(end);
         } else {
             GlStateManager.setFog(GL11.GL_EXP);
             float density = 1.0f / Math.max(0.1f, CustomFog.endDistance.getValue().floatValue());
