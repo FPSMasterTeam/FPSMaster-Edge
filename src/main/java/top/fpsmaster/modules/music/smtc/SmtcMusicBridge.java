@@ -134,7 +134,7 @@ public final class SmtcMusicBridge {
         artworkUrl = coverUrl;
         // 换曲目就立刻丢掉上一首的封面，否则新歌的标题会配着旧歌的图发布出去
         artwork.set(null);
-        MusicTextures.downloadPngAsync(coverUrl, png -> {
+        MusicTextures.downloadBytesAsync(coverUrl, png -> {
             // Only accept the result if the track hasn't changed while we were downloading
             if (!coverUrl.equals(artworkUrl)) {
                 return;

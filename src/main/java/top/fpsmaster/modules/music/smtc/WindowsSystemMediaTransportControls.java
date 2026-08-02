@@ -221,7 +221,7 @@ final class WindowsSystemMediaTransportControls implements SystemMediaTransportC
             try {
                 boolean hasTrack = latest.hasCurrentTrack;
                 nativeLib.smtc_set_buttons(hasTrack, hasTrack, hasTrack);
-                byte[] art = latest.artworkPng;
+                byte[] art = latest.artworkBytes;
                 nativeLib.smtc_publish(
                         new WString(latest.title),
                         new WString(latest.artist),

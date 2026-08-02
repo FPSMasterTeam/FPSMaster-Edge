@@ -213,7 +213,8 @@ __declspec(dllexport) void __cdecl smtc_set_callback(ControlCallback cb) {
 }
 
 /// Publish playback metadata and state.
-/// artwork_data / artwork_len: PNG bytes or NULL/0 for no art.
+/// artwork_data / artwork_len: raw image bytes (PNG/JPEG/...) or NULL/0 for no art.
+/// The stream is handed to RandomAccessStreamReference as-is; Windows decodes it.
 __declspec(dllexport) void __cdecl smtc_publish(
     const wchar_t* title,
     const wchar_t* artist,

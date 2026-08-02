@@ -15,6 +15,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
@@ -49,6 +50,15 @@ public final class MusicTextures {
         return t;
     });
 
+    // 网络下载单独一个池。串行的约束只来自 AWT，HTTP 没有这个问题，混在 IMG_EXEC 上会让一次
+    // 超时(连接 10s + 读 15s)把后面所有解码堵死——扫码登录的二维码明明不需要联网，却要排在
+    // 某个封面下载后面等最多 25 秒。
+    private static final ExecutorService NET_EXEC = Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "FPSMaster-Music-Net");
+        t.setDaemon(true);
+        return t;
+    });
+
     private MusicTextures() {
     }
 
@@ -60,16 +70,33 @@ public final class MusicTextures {
         if (loc != null) return loc;
         if (LOADING.contains(key)) return null;
         LOADING.add(key);
-        IMG_EXEC.execute(new Runnable() {
+        NET_EXEC.execute(new Runnable() {
             @Override
             public void run() {
+                final byte[] bytes;
                 try {
-                    BufferedImage img = downloadImage(url);
-                    upload(key, img);
+                    bytes = downloadBytes(url);
                 } catch (Throwable e) {
-                    ClientLogger.error("Music cover load failed: " + e.getMessage());
+                    ClientLogger.error("Music cover download failed: " + e.getMessage());
                     unmark(key);
+                    return;
                 }
+                if (bytes == null) {
+                    unmark(key);
+                    return;
+                }
+                // 拿到字节之后才回到串行线程解码
+                IMG_EXEC.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            upload(key, ImageIO.read(new ByteArrayInputStream(bytes)));
+                        } catch (Throwable e) {
+                            ClientLogger.error("Music cover decode failed: " + e.getMessage());
+                            unmark(key);
+                        }
+                    }
+                });
             }
         });
         return null;
@@ -136,28 +163,26 @@ public final class MusicTextures {
     }
 
     /**
-     * 在 {@link #IMG_EXEC} 单线程上下载图片并重新编码为 PNG 字节，结果通过回调返回。
-     * 供 SMTC 等需要原始字节（而非 GL 纹理）的调用方复用同一套下载/解码路径，
-     * 避免自起线程并发调用 AWT/ImageIO 在 macOS 上触发崩溃。
+     * 下载图片的原始字节，结果通过回调返回；下载失败传 {@code null}。
+     *
+     * <p>供 SMTC 这类只要字节、不要 GL 纹理的调用方使用。这条路径完全不碰 AWT：原先它是
+     * 「下载 → ImageIO.read 解成 BufferedImage → ImageIO.write 编回 PNG」，而 SMTC 的
+     * {@code RandomAccessStreamReference} 吃的就是图片流，Windows 自己会解码，JPEG 也认——
+     * 那一读一写既是白做的，又把这条路径绑上了 {@link #IMG_EXEC} 的串行队列。
+     *
+     * <p>回调在 {@link #NET_EXEC} 上执行，不要在里面做阻塞的事。
      */
-    public static void downloadPngAsync(final String url, final java.util.function.Consumer<byte[]> callback) {
+    public static void downloadBytesAsync(final String url, final java.util.function.Consumer<byte[]> callback) {
         if (url == null || url.isEmpty() || callback == null) {
             return;
         }
-        IMG_EXEC.execute(new Runnable() {
+        NET_EXEC.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    BufferedImage img = downloadImage(url);
-                    if (img == null) {
-                        callback.accept(null);
-                        return;
-                    }
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    ImageIO.write(img, "png", bos);
-                    callback.accept(bos.toByteArray());
+                    callback.accept(downloadBytes(url));
                 } catch (Throwable e) {
-                    ClientLogger.error("Music PNG download failed: " + e.getMessage());
+                    ClientLogger.error("Music image download failed: " + e.getMessage());
                     callback.accept(null);
                 }
             }
@@ -210,14 +235,21 @@ public final class MusicTextures {
         return out;
     }
 
-    private static BufferedImage downloadImage(String url) throws Exception {
+    /** 纯网络 IO，不碰 AWT——调用方拿到字节后自行决定在哪解码。 */
+    private static byte[] downloadBytes(String url) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setInstanceFollowRedirects(true);
         conn.setConnectTimeout(10_000);
         conn.setReadTimeout(15_000);
         conn.setRequestProperty("User-Agent", UA);
-        try {
-            return ImageIO.read(conn.getInputStream());
+        try (InputStream in = conn.getInputStream()) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                bos.write(buf, 0, n);
+            }
+            return bos.size() == 0 ? null : bos.toByteArray();
         } finally {
             conn.disconnect();
         }
