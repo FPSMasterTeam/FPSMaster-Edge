@@ -406,7 +406,22 @@ public class Component {
         drawString(fontSize, false, text, x, y, color);
     }
 
+    /**
+     * Draws a component's text.
+     *
+     * <p>Colours here come from {@link top.fpsmaster.features.settings.impl.ColorSetting}, whose
+     * alpha slider reaches zero and whose Wave mode scales what it returns, so alpha means what it
+     * says: below four there is nothing to draw. Both renderers underneath read it vanilla's way
+     * instead — no alpha bits set means opaque — and would turn a string the user hid into a solid
+     * one. Components must therefore pass a real alpha, not a bare {@code 0xRRGGBB}.
+     *
+     * <p>Only text is affected. Backgrounds and shapes go through {@code drawRect} and {@code Rects}
+     * and never come through here, so a fully transparent background stays transparent.
+     */
     public void drawString(int fontSize, boolean bold, String text, float x, float y, int color) {
+        if (((color >>> 24) & 0xFF) <= 3) {
+            return;
+        }
         double scaled = (int) (scale * 100) / 100.0;
         fontSize = (int) (fontSize * scale);
         UFontRenderer font = FPSMaster.fontManager.getFont(fontSize);

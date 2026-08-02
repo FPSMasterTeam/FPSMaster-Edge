@@ -66,11 +66,13 @@ public class ScoreboardComponent extends Component {
         width = maxWidth + 6;
         height = (lines.size() + 1) * lineHeight + 4;
         drawRect(x, y, width, height, mod.backgroundColor.getColor());
-        drawString(FONT_SIZE, title, x + 3 * scale, y + 2 * scale, 0xFFFFFF);
+        // Opaque white as -1, the way every other component writes it. A bare 0xFFFFFF is vanilla's
+        // spelling of the same colour, and Component.drawString does not read alpha vanilla's way.
+        drawString(FONT_SIZE, title, x + 3 * scale, y + 2 * scale, -1);
         // Row offsets are positions, so they scale here.
         float offsetY = y + (2 + lineHeight) * scale;
         for (String line : lines) {
-            drawString(FONT_SIZE, line, x + 3 * scale, offsetY, 0xFFFFFF);
+            drawString(FONT_SIZE, line, x + 3 * scale, offsetY, -1);
             offsetY += lineHeight * scale;
         }
     }
