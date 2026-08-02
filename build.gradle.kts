@@ -123,6 +123,10 @@ dependencies {
     shadowImpl("com.google.zxing:core:3.5.3") {
         isTransitive = false
     }
+    // Windows SMTC 桥接：JNA 加载原生 DLL 调用 WinRT。
+    shadowImpl("net.java.dev.jna:jna:5.17.0") {
+        isTransitive = true
+    }
     // If you don't want to log in with your real minecraft account, remove this line
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.1.2")
     compileOnly("org.projectlombok:lombok:1.18.38")

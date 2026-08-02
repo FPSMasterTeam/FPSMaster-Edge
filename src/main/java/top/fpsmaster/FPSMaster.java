@@ -142,6 +142,12 @@ public class FPSMaster {
         // Before anything else: an unfinished stream is an unreadable file.
         top.fpsmaster.replay.ReplayRecorder.instance().stop();
         PlayTimeStatistics.flush();
+        // Release SMTC native session before tearing down async/audio
+        try {
+            top.fpsmaster.modules.music.MusicManager.get().shutdownSmtc();
+        } catch (Throwable t) {
+            ClientLogger.warn("SMTC shutdown skipped: " + t.getMessage());
+        }
         telemetryReporter.shutdown();
         async.close();
         try {

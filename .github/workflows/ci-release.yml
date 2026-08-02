@@ -23,7 +23,39 @@ env:
   ARTIFACT_SOURCE_TYPE: external_url
 
 jobs:
+  # Windows SMTC bridge DLL. The binaries are not committed to the repository —
+  # they are built here and injected into src/main/resources before packaging,
+  # so the shipped jar can never contain a stale binary built from older C++.
+  build-native:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build fpsmaster-smtc (x64 + x86)
+        shell: pwsh
+        run: |
+          cmake -S native/smtc -B native/smtc/build-x64 -A x64
+          cmake --build native/smtc/build-x64 --config Release
+          cmake -S native/smtc -B native/smtc/build-win32 -A Win32
+          cmake --build native/smtc/build-win32 --config Release
+
+      - name: Collect DLLs
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/x64, dist/x86 | Out-Null
+          Copy-Item native/smtc/build-x64/Release/fpsmaster-smtc.dll dist/x64/
+          Copy-Item native/smtc/build-win32/Release/fpsmaster-smtc.dll dist/x86/
+          Get-ChildItem -Recurse dist | Select-Object FullName, Length
+
+      - name: Upload native artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: smtc-native
+          path: dist
+          if-no-files-found: error
+
   build:
+    needs: build-native
     runs-on: ubuntu-latest
     outputs:
       should_publish: ${{ steps.decision.outputs.should_publish }}
@@ -132,6 +164,26 @@ jobs:
       - name: Setup Gradle
         if: steps.decision.outputs.should_build == 'true'
         uses: gradle/actions/setup-gradle@v3
+
+      - name: Inject SMTC native libraries
+        if: steps.decision.outputs.should_build == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: smtc-native
+          path: src/main/resources/native/windows
+
+      - name: Verify native libraries are present
+        if: steps.decision.outputs.should_build == 'true'
+        shell: bash
+        run: |
+          for arch in x64 x86; do
+            dll="src/main/resources/native/windows/$arch/fpsmaster-smtc.dll"
+            if [ ! -s "$dll" ]; then
+              echo "Missing or empty $dll — the jar would silently ship without SMTC" >&2
+              exit 1
+            fi
+            echo "$arch: $(stat -c%s "$dll") bytes, sha256 $(sha256sum "$dll" | awk '{print $1}')"
+          done
 
       - name: Build with Gradle Wrapper
         if: steps.decision.outputs.should_build == 'true'

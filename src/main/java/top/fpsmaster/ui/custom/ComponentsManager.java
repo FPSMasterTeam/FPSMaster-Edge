@@ -36,6 +36,7 @@ public class ComponentsManager {
     // Initialize all components
     public void init() {
         addComponentSafely("FPSDisplayComponent", FPSDisplayComponent::new);
+        addComponentSafely("SaturationDisplayComponent", SaturationDisplayComponent::new);
         addComponentSafely("ArmorDisplayComponent", ArmorDisplayComponent::new);
         addComponentSafely("ScoreboardComponent", ScoreboardComponent::new);
         addComponentSafely("PotionDisplayComponent", PotionDisplayComponent::new);

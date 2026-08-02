@@ -210,6 +210,7 @@ betterchat.fontshadow=Font Shadow
 betterchat.betterfont=Clean Font
 betterchat.roundradius=Corner Radius
 betterchat.background=Show Background
+betterchat.round=Rounded Corners
 betterchat.foldmessage=Fold Message
 betterchat.copymessage=Copy Message
 
@@ -252,6 +253,7 @@ fpsdisplay.betterfont=Clean Font
 
 minimap=Minimap
 minimap.desc=Minimap overlay
+minimap.fastrender.disable.title=Minimap is not compatible with Fast Render. Fast Render has been disabled.
 
 hotbar=Hotbar
 hotbar.desc=Enhanced hotbar visuals
@@ -409,6 +411,10 @@ performance.textureresolution.sixteenth=Sixteenth
 performance.fastcollision=Fast Entity Collision
 performance.fasttextureupload=Fast Texture Upload
 performance.reusevisiblechunks=Reuse Visible Chunk List
+performance.reuselevel=Reuse Visible Chunk Level
+performance.reuselevel.conservative=Conservative
+performance.reuselevel.balanced=Balanced
+performance.reuselevel.aggressive=Aggressive
 performance.composedmodeltransform=Composed Model Transform
 performance.batchvanillafont=Batch Vanilla Font
 performance.fastglyphlookup=Fast Glyph Lookup
@@ -422,6 +428,13 @@ performancehud.showdistribution=Show Frame Time Distribution
 performancehud.showmemory=Show Memory
 performancehud.showgc=Show Garbage Collection
 performancehud.colorbyhealth=Color By Health
+performancehud.background=Show Background
+performancehud.backgroundcolor=Background Color
+performancehud.round=Rounded Corners
+performancehud.roundradius=Corner Radius
+performancehud.betterfont=Clean Font
+performancehud.fontshadow=Font Shadow
+performancehud.spacing=Spacing
 
 fullbright=Fullbright
 fullbright.desc=Keep brightness at max
@@ -458,12 +471,14 @@ sprint=Sprint
 sprint.desc=Stay sprinting at all times
 sprint.togglesprint=Toggle Sprint
 sprint.betterfont=Clean Font
+sprint.fontshadow=Font Shadow
 
 togglesneak=Toggle Sneak
 togglesneak.desc=Press the toggle key once to keep sneaking
 togglesneak.togglesneak=Toggle Sneak
 togglesneak.togglekey=Toggle Key
 togglesneak.betterfont=Clean Font
+togglesneak.fontshadow=Font Shadow
 
 autogg=AutoGG
 autogg.desc=Automatically send a custom message after a game has ended.
@@ -524,6 +539,12 @@ hitcolor.color=Color
 
 hideindicator=Hide Attack Indicator
 hideindicator.desc=Hides the attack cooldown bar
+hideindicator.background=Show Background
+hideindicator.backgroundcolor=Background Color
+hideindicator.round=Rounded Corners
+hideindicator.roundradius=Corner Radius
+hideindicator.betterfont=Clean Font
+hideindicator.fontshadow=Font Shadow
 
 lyricsdisplay=Lyrics Display
 lyricsdisplay.desc=Show synced lyrics
@@ -591,6 +612,8 @@ blockindicator.roundradius=Round Radius
 blockindicator.backgroundcolor=Background Color
 blockindicator.panelcolor=Block Panel Color
 blockindicator.accentcolor=Accent Color
+blockindicator.betterfont=Clean Font
+blockindicator.fontshadow=Font Shadow
 
 playtime=Play Time
 playtime.desc=Track and display your play time
@@ -660,6 +683,12 @@ nametags.background=Show Background
 taboverlay=Tab Overlay
 taboverlay.desc=Customize the tab list
 taboverlay.showping=Show Ping
+taboverlay.background=Show Background
+taboverlay.backgroundcolor=Background Color
+taboverlay.round=Rounded Corners
+taboverlay.roundradius=Corner Radius
+taboverlay.betterfont=Clean Font
+taboverlay.fontshadow=Font Shadow
 
 inventorydisplay=Inventory Display
 inventorydisplay.desc=Show inventory items on screen
@@ -667,6 +696,8 @@ inventorydisplay.round=Rounded Corners
 inventorydisplay.backgroundcolor=Background Color
 inventorydisplay.roundradius=Corner Radius
 inventorydisplay.background=Show Background
+inventorydisplay.betterfont=Clean Font
+inventorydisplay.fontshadow=Font Shadow
 
 playerdisplay=Player Display
 playerdisplay.desc=Show nearby player info
@@ -690,6 +721,10 @@ targetdisplay.espcolor=ESP Color
 targetdisplay.roundradius=Corner Radius
 targetdisplay.background=Show Background
 targetdisplay.omitname=Omit Long Names
+targetdisplay.backgroundcolor=Background Color
+targetdisplay.round=Rounded Corners
+targetdisplay.betterfont=Clean Font
+targetdisplay.fontshadow=Font Shadow
 
 itemcountdisplay=Item Count Display
 itemcountdisplay.desc=Quick show your items count in hud
@@ -784,6 +819,8 @@ modslist.betterfont=Clean Font
 modslist.roundradius=Corner Radius
 modslist.background=Show Background
 modslist.spacing=Spacing
+modslist.round=Rounded Corners
+modslist.fontshadow=Font Shadow
 
 betterscreen=Enhanced UI
 betterscreen.desc=Improves vanilla UI visuals
@@ -791,6 +828,11 @@ betterscreen.blur=Blur
 betterscreen.background=Enable Background
 betterscreen.backgroundanimation=Background Animation
 betterscreen.noflickering=No Flickering
+betterscreen.backgroundcolor=Background Color
+betterscreen.round=Rounded Corners
+betterscreen.roundradius=Corner Radius
+betterscreen.betterfont=Clean Font
+betterscreen.fontshadow=Font Shadow
 
 clientcommand=Client Commands
 clientcommand.desc=Use commands to control modules
@@ -862,6 +904,30 @@ particlesmodifier.block=Block Particles
 betterfishingrod=Better Fishing Rod
 betterfishingrod.desc=Modify the fishing rod
 betterfishingrod.stringwidth=String Width
+
+saturationdisplay=Saturation HUD
+saturationdisplay.desc=Replace the vanilla food bar with a movable saturation display
+saturationdisplay.background=Show Background
+saturationdisplay.backgroundcolor=Background Color
+saturationdisplay.round=Rounded Corners
+saturationdisplay.roundradius=Corner Radius
+saturationdisplay.betterfont=Better Font
+saturationdisplay.fontshadow=Font Shadow
+
+customfog=Custom Fog
+customfog.desc=Customize the color and distance of world fog
+customfog.color=Fog Color
+customfog.fogmode=Fog Mode
+customfog.fogmode.linear=Linear
+customfog.fogmode.exponential=Exponential
+customfog.startdistance=Start Distance
+customfog.enddistance=End Distance
+customfog.affectwater=Affect Water Fog
+customfog.affectlava=Affect Lava Fog
+autotext=AutoText
+autotext.desc=Send a saved chat message when a configured key is pressed
+autotext.entries=Entries
+autotext.empty=No AutoText entries. Click + to add one.
 
 
 # Categories
