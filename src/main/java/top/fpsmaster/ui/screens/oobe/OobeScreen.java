@@ -372,11 +372,17 @@ public class OobeScreen extends ScaledGuiScreen {
         Color titleColor = new Color(24, 32, 54, alpha);
         Color descColor = new Color(92, 101, 118, alpha);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(0f, (1f - tutorialSlideTransition) * 8f, 0f);
-        FPSMaster.fontManager.s18.drawString(slides[tutorialIndex][0], x + 24f, cardY + 54f, titleColor.getRGB());
-        drawMultilineBodyTextWithAlpha(extendTutorialDescription(slides[tutorialIndex][1], tutorialIndex), x + 24f, cardY + 94f, width - 48f, 4, alpha);
-        GL11.glPopMatrix();
+        // Below four the renderer reads the colour as vanilla does - no alpha bits set means opaque -
+        // so a fade this shallow comes out solid rather than invisible. updateTutorialAutoplay resets
+        // the transition after updateAnimations has advanced it, which puts the frame a slide flips on
+        // at exactly zero: without this the new slide pops in at full opacity before its fade starts.
+        if (alpha > 3) {
+            GL11.glPushMatrix();
+            GL11.glTranslatef(0f, (1f - tutorialSlideTransition) * 8f, 0f);
+            FPSMaster.fontManager.s18.drawString(slides[tutorialIndex][0], x + 24f, cardY + 54f, titleColor.getRGB());
+            drawMultilineBodyTextWithAlpha(extendTutorialDescription(slides[tutorialIndex][1], tutorialIndex), x + 24f, cardY + 94f, width - 48f, 4, alpha);
+            GL11.glPopMatrix();
+        }
     }
 
     private void renderFeaturesPage() {
@@ -987,14 +993,23 @@ public class OobeScreen extends ScaledGuiScreen {
         int currentAlpha = Math.min(255, Math.max(0, Math.round(eased * 255f)));
         Color currentColor = new Color(accentText().getRed(), accentText().getGreen(), accentText().getBlue(), currentAlpha);
 
+        // Both passes stop at four rather than zero: the renderer reads a colour with no alpha bits
+        // as opaque, the way vanilla's does, so anything below that comes out solid. The fade-out is
+        // the one that matters - it is cubic, so previousAlpha sits in that band for the last 30-odd
+        // frames of the half-second crossfade, and the outgoing greeting would hold full opacity
+        // there and then vanish. Neither pass has anything left to show by four.
         if (greetingTransition < 1f && greetingPreviousText != null && !greetingPreviousText.isEmpty()) {
             float previousProgress = 1f - eased;
             int previousAlpha = Math.min(255, Math.max(0, Math.round(previousProgress * 255f)));
-            Color previousColor = new Color(accentText().getRed(), accentText().getGreen(), accentText().getBlue(), previousAlpha);
-            FPSMaster.fontManager.s18.drawString(greetingPreviousText, x, y - eased * 8f, previousColor.getRGB());
+            if (previousAlpha > 3) {
+                Color previousColor = new Color(accentText().getRed(), accentText().getGreen(), accentText().getBlue(), previousAlpha);
+                FPSMaster.fontManager.s18.drawString(greetingPreviousText, x, y - eased * 8f, previousColor.getRGB());
+            }
         }
 
-        FPSMaster.fontManager.s18.drawString(greetingCurrentText, x, y + (1f - eased) * 8f, currentColor.getRGB());
+        if (currentAlpha > 3) {
+            FPSMaster.fontManager.s18.drawString(greetingCurrentText, x, y + (1f - eased) * 8f, currentColor.getRGB());
+        }
     }
 
     private void switchLanguage(int newLanguage) {

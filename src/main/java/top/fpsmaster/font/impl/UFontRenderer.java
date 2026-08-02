@@ -172,6 +172,22 @@ public class UFontRenderer extends FontRenderer {
     }
 
     private int edge$drawStringInternal(String text, float x, float y, int color, boolean dropShadow, float shadowOffset) {
+        // Vanilla treats a colour with no alpha bits as opaque — its drawString does
+        // `if ((color & 0xFC000000) == 0) color |= 0xFF000000` and the custom-font mixin keeps
+        // the rule for the vanilla-replacement path. Without it here, callers that pass opaque
+        // colours the vanilla way (the custom scoreboard passes 0xFFFFFF) draw fully transparent
+        // once routed through this renderer. This class extends FontRenderer and is handed around
+        // as one — LevelTag picks between it and fontRendererObj at runtime — so a vanilla-shaped
+        // colour has to mean what it means everywhere else.
+        //
+        // The cost is that alpha 1-3 can no longer be asked for: a caller fading its own text out
+        // must stop above three rather than run to zero, which is what MixinGuiNewChat, the OOBE
+        // screen and every other fade in the client do. The global fade is unaffected — Alpha.apply
+        // runs after this, so Alpha.set(0f) still reaches zero and stays invisible. Do not move
+        // this below that call; a0860d7 removed the rule from TextRenderer for exactly that reason.
+        if ((color & 0xFC000000) == 0) {
+            color |= 0xFF000000;
+        }
         color = apply(color);
         int i;
         if (dropShadow) {
