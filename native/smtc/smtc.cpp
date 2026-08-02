@@ -1,12 +1,10 @@
 // fpsmaster-smtc - Windows System Media Transport Controls bridge DLL
 // C++/WinRT native library for FPSMaster Edge music integration.
 //
-// Build: open in Visual Studio 2022 with "Universal Windows Platform" workload,
-//        or build from command line:
-//        cl /EHsc /std:c++17 /DUNICODE /D_UNICODE smtc.cpp /LD /EHsc /MD
-//        /reference "C:\Program Files (x86)\Windows Kits\10\UnionMetadata\10.0.19041.0\Windows.winmd"
-//        /FU "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5\System.Runtime.WindowsRuntime.dll"
-//        /link /OUT:fpsmaster-smtc.dll
+// Build: see CMakeLists.txt in this directory (cmake -A x64|Win32 && cmake --build).
+//        CI builds both architectures in .github/workflows/ci-release.yml; the
+//        resulting DLLs are injected into src/main/resources/native/windows/ at
+//        package time and are deliberately NOT committed to the repository.
 //
 // The DLL exports a tiny C ABI that the Java side (JNA) calls.
 // Callbacks from SMTC button events are dispatched to a function pointer
@@ -16,10 +14,17 @@
 // ISystemMediaTransportControlsInterop::GetForWindow(hwnd) path. The UWP
 // GetForCurrentView() API requires a CoreWindow and therefore always fails
 // in the Minecraft JVM; it is deliberately not used here.
+//
+// Threading: every export is called from a single dedicated Java thread
+// ("FPSMaster-SMTC"), never from the game thread. That thread owns the WinRT
+// apartment this DLL initializes, so the game thread is never joined to an
+// apartment it did not ask for.
 
 #include <windows.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <wchar.h>
 #include <chrono>
 
 // WinRT headers
@@ -44,27 +49,61 @@ static ControlCallback g_callback = nullptr;
 static SystemMediaTransportControls g_smtc = nullptr;
 static winrt::event_token g_buttonToken{};
 static bool g_initialized = false;
+static bool g_apartmentOwned = false;
+
+// Last failure reason, surfaced to Java through smtc_get_last_error so a bug
+// report can tell "no window found" apart from "GetForWindow returned E_FAIL".
+static wchar_t g_lastError[256] = {0};
+
+static void set_last_error(const wchar_t* msg) {
+    if (!msg) {
+        g_lastError[0] = 0;
+        return;
+    }
+    wcsncpy_s(g_lastError, msg, _TRUNCATE);
+}
+
+static void set_last_error_hr(const wchar_t* msg, HRESULT hr) {
+    swprintf_s(g_lastError, L"%s (hr=0x%08X)", msg, (unsigned int)hr);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-// Find a visible top-level window owned by this process. GetForWindow needs a
-// real HWND; the Java side passes 0 when it has no window handle to hand over.
+namespace {
+
+struct WindowSearch {
+    DWORD pid;
+    HWND result;
+};
+
+// Only accept a real top-level application window: owned by this process,
+// visible, no owner window, and with a caption. Without these filters the very
+// first EnumWindows hit during Forge start-up can be the splash screen or a
+// stray AWT frame, and SMTC would bind its session to a window that is about to
+// be destroyed.
+BOOL CALLBACK enum_window_proc(HWND hwnd, LPARAM lParam) {
+    auto* search = reinterpret_cast<WindowSearch*>(lParam);
+    DWORD wpid = 0;
+    GetWindowThreadProcessId(hwnd, &wpid);
+    if (wpid != search->pid) return TRUE;
+    if (!IsWindowVisible(hwnd)) return TRUE;
+    if (GetWindow(hwnd, GW_OWNER) != nullptr) return TRUE;
+    if (GetWindowTextLengthW(hwnd) == 0) return TRUE;
+
+    search->result = hwnd;
+    return FALSE;
+}
+
+} // namespace
+
+// Find a top-level window owned by this process. GetForWindow needs a real
+// HWND; the Java side passes 0 only when it could not obtain the LWJGL handle.
 static HWND find_process_window() {
-    static HWND found = nullptr;
-    found = nullptr;
-    DWORD pid = GetCurrentProcessId();
-    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
-        DWORD wpid = 0;
-        GetWindowThreadProcessId(hwnd, &wpid);
-        if (wpid == (DWORD)lParam && IsWindowVisible(hwnd)) {
-            found = hwnd;
-            return FALSE;
-        }
-        return TRUE;
-    }, (LPARAM)pid);
-    return found;
+    WindowSearch search{GetCurrentProcessId(), nullptr};
+    EnumWindows(enum_window_proc, reinterpret_cast<LPARAM>(&search));
+    return search.result;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,15 +117,32 @@ extern "C" {
 /// Returns 1 on success, 0 on failure (so the Java side can surface it).
 __declspec(dllexport) int __cdecl smtc_start(HWND hwnd) {
     if (g_initialized) return 1;
+    set_last_error(nullptr);
     try {
-        // Initialize WinRT apartment (MTA so callbacks can fire on any thread)
-        winrt::init_apartment(winrt::apartment_type::multi_threaded);
+        // Initialize the WinRT apartment on the calling thread (the dedicated
+        // Java SMTC thread). MTA so button callbacks can fire on any thread and
+        // we never need a message pump.
+        try {
+            winrt::init_apartment(winrt::apartment_type::multi_threaded);
+            g_apartmentOwned = true;
+        } catch (winrt::hresult_error const& e) {
+            // RPC_E_CHANGED_MODE means the thread was already initialized as an
+            // STA by someone else. SMTC works from an STA too, so carry on —
+            // but do not claim ownership, since we must not uninitialize it.
+            if (static_cast<HRESULT>(e.code()) != RPC_E_CHANGED_MODE) {
+                set_last_error_hr(L"init_apartment failed", static_cast<HRESULT>(e.code()));
+                g_initialized = false;
+                return 0;
+            }
+            g_apartmentOwned = false;
+        }
 
         HWND target = hwnd;
         if (target == nullptr) {
             target = find_process_window();
         }
         if (target == nullptr) {
+            set_last_error(L"no top-level window found for this process");
             g_initialized = false;
             return 0;
         }
@@ -99,11 +155,13 @@ __declspec(dllexport) int __cdecl smtc_start(HWND hwnd) {
             winrt::guid_of<SystemMediaTransportControls>(),
             winrt::put_abi(controls));
         if (FAILED(hr)) {
+            set_last_error_hr(L"GetForWindow failed", hr);
             g_initialized = false;
             return 0;
         }
         g_smtc = controls;
         if (!g_smtc) {
+            set_last_error(L"GetForWindow returned a null interface");
             g_initialized = false;
             return 0;
         }
@@ -138,7 +196,12 @@ __declspec(dllexport) int __cdecl smtc_start(HWND hwnd) {
 
         g_initialized = true;
         return 1;
+    } catch (winrt::hresult_error const& e) {
+        set_last_error_hr(L"smtc_start threw", static_cast<HRESULT>(e.code()));
+        g_initialized = false;
+        return 0;
     } catch (...) {
+        set_last_error(L"smtc_start threw an unknown exception");
         g_initialized = false;
         return 0;
     }
@@ -241,14 +304,21 @@ __declspec(dllexport) void __cdecl smtc_close() {
         g_initialized = false;
     }
     g_callback = nullptr;
+    // Only leave the apartment if smtc_start is the one that entered it.
+    if (g_apartmentOwned) {
+        g_apartmentOwned = false;
+        try {
+            winrt::uninit_apartment();
+        } catch (...) {
+        }
+    }
 }
 
-/// Get the last error message (for debugging).
+/// Copy the last failure reason into buf (wide, NUL-terminated). Empty if the
+/// last operation succeeded.
 __declspec(dllexport) void __cdecl smtc_get_last_error(wchar_t* buf, int bufLen) {
-    (void)buf;
-    (void)bufLen;
-    // Simplified: just clear
-    if (buf && bufLen > 0) buf[0] = 0;
+    if (!buf || bufLen <= 0) return;
+    wcsncpy_s(buf, (size_t)bufLen, g_lastError, _TRUNCATE);
 }
 
 } // extern "C"
