@@ -104,19 +104,19 @@ public class MainPanel extends ScaledGuiScreen {
     // author:Serendisand
     // reason:全局搜索
     private float getSearchBarX() {
-        return x + leftWidth + 10;
+        return x + width + 8 - getSearchBarWidth();
     }
 
     private float getSearchBarY() {
-        return y + 6;
+        return y - 3 - getSearchBarHeight();
     }
 
     private float getSearchBarWidth() {
-        return width - leftWidth - 20;
+        return 130f;
     }
 
     private float getSearchBarHeight() {
-        return 16f;
+        return 18f;
     }
 
     private boolean isSearchActive() {

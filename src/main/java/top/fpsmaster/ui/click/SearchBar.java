@@ -44,7 +44,7 @@ public class SearchBar {
         boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
         bgAnim.animateTo(hovered ? ClickGuiTheme.sideBtnHoverBg() : ClickGuiTheme.inputBg(), 0.15, Easings.QUAD_OUT);
         bgAnim.update();
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 4, bgAnim.get().getRGB());
+        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), Math.round(height / 2f), bgAnim.get().getRGB());
 
         Icons.draw("search", x + 6, y + (height - ICON_SIZE) / 2f, ICON_SIZE, ClickGuiTheme.textSecondary().getRGB());
 
