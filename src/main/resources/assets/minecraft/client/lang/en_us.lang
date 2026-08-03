@@ -960,3 +960,5 @@ chat.irc=Client
 chat.mc=Vanilla
 replay=Replay
 replay.desc=Record a session and play it back
+clickgui.search.placeholder=Search modules...
+clickgui.search.noresults=No matching modules

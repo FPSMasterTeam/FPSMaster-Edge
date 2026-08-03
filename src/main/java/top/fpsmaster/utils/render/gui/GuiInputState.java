@@ -101,6 +101,12 @@ public final class GuiInputState {
         return latestPress != null && latestPress.isConsumed() ? null : latestPress;
     }
 
+    // author:Serendisand
+    // reason:全局搜索
+    public MouseButtonEvent peekRawLatestPress() {
+        return latestPress;
+    }
+
     /**
      * Records that the cursor is inside this widget, overwriting whatever was recorded earlier in the
      * frame.
