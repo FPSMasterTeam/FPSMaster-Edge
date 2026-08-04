@@ -11,6 +11,19 @@
 
 FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 
+<div align="center">
+
+[![Build](https://img.shields.io/github/actions/workflow/status/FPSMasterTeam/FPSMaster-Edge/ci-release.yml?style=for-the-badge&logo=github&label=Build)](https://github.com/FPSMasterTeam/FPSMaster-Edge/actions)
+[![Modrinth 下载](https://img.shields.io/modrinth/dt/fpsmaster?style=for-the-badge&logo=modrinth&logoColor=white&label=Modrinth%20下载&color=00AF5C)](https://modrinth.com/mod/fpsmaster)
+[![CurseForge 下载](https://img.shields.io/curseforge/dt/1081006?style=for-the-badge&logo=curseforge&logoColor=white&label=CurseForge%20下载&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/fpsmaster)
+
+[![支持版本](https://img.shields.io/badge/支持版本-1.8.9%2F1.12.2%2F1.19.2%2B-1bd96a?style=for-the-badge)](https://modrinth.com/mod/fpsmaster/versions)
+[![Stars](https://img.shields.io/github/stars/FPSMasterTeam/FPSMaster-Edge?style=for-the-badge&logo=github&label=Stars&color=FFD400)](https://github.com/FPSMasterTeam/FPSMaster-Edge)
+[![许可证](https://img.shields.io/github/license/FPSMasterTeam/FPSMaster-Edge?style=for-the-badge&label=许可证&color=blue)](LICENSE)
+[![官方网站](https://img.shields.io/website?url=https%3A%2F%2Ffpsmaster.top&style=for-the-badge&label=官方网站&color=5865F2)](https://fpsmaster.top)
+
+</div>
+
 ### 开发
 如果你想参与到开发中，请查看以下注意事项：
  - 查看我们的[代码规范](docs/code_standards.md)了解如何编写符合我们要求的代码。
