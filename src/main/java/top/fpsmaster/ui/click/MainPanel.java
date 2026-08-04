@@ -104,7 +104,7 @@ public class MainPanel extends ScaledGuiScreen {
     // author:Serendisand
     // reason:全局搜索
     private float getSearchBarX() {
-        return x + width + 8 - getSearchBarWidth();
+        return x + width - getSearchBarWidth();
     }
 
     private float getSearchBarY() {
@@ -131,9 +131,16 @@ public class MainPanel extends ScaledGuiScreen {
         String key = module.name.toLowerCase(Locale.getDefault());
         String name = FPSMaster.i18n.get(key);
         String desc = FPSMaster.i18n.get(key + ".desc");
-        return name.toLowerCase(Locale.getDefault()).contains(query)
-                || module.name.toLowerCase(Locale.getDefault()).contains(query)
-                || desc.toLowerCase(Locale.getDefault()).contains(query);
+        if (name.toLowerCase(Locale.getDefault()).contains(query)
+                || desc.toLowerCase(Locale.getDefault()).contains(query)) {
+            return true;
+        }
+        // author:Serendisand
+        // reason:全局搜索 - 中文模式下只检索中文，不匹配英文原始名
+        if (ClientSettings.language.getValue() == 1) {
+            return false;
+        }
+        return module.name.toLowerCase(Locale.getDefault()).contains(query);
     }
 
     @Override
