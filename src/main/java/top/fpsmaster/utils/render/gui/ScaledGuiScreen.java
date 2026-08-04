@@ -286,6 +286,16 @@ public class ScaledGuiScreen extends GuiScreen {
         return new PointerEvent(latestPress.getX(), latestPress.getY(), latestPress.getButton());
     }
 
+    // author:Serendisand
+    // reason:全局搜索
+    public PointerEvent peekRawPress() {
+        GuiInputState.MouseButtonEvent latestPress = inputState.peekRawLatestPress();
+        if (latestPress == null) {
+            return null;
+        }
+        return new PointerEvent(latestPress.getX(), latestPress.getY(), latestPress.getButton());
+    }
+
     public PointerEvent consumePressInBounds(float x, float y, float width, float height) {
         return consumePressInBounds(x, y, width, height, -1);
     }

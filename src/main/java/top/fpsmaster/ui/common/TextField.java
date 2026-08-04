@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ChatAllowedCharacters;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.utils.math.MathUtils;
+import top.fpsmaster.utils.render.draw.Colors;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -475,7 +476,7 @@ public class TextField extends Gui {
             }
 
             if (s.isEmpty()){
-                this.fontRendererInstance.drawString(placeHolder, j1, i1, new Color(200,200,200).getRGB());
+                this.fontRendererInstance.drawString(placeHolder, j1, i1, Colors.alpha(new Color(fontColor), 120).getRGB());
             }
 
             if (!s.isEmpty() && flag && j < s.length()) {

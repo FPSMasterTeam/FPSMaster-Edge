@@ -960,3 +960,5 @@ chat.irc=客户端
 chat.mc=原版
 replay=录像
 replay.desc=录制并回放对局
+clickgui.search.placeholder=搜索功能
+clickgui.search.noresults=未找到匹配的功能

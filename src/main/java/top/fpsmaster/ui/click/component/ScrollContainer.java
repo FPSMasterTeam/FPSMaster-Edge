@@ -124,6 +124,15 @@ public class ScrollContainer {
         return (int) wheel;
     }
 
+    // author:Serendisand
+    // reason:全局搜索 - 搜索激活/退出时回到列表顶部
+    public void resetScroll() {
+        wheelAnim = 0f;
+        lastTarget = Float.NaN;
+        wheelDelay = System.nanoTime();
+        isScrolling = false;
+    }
+
     public float getRealScroll() {
         return wheelAnim;
     }

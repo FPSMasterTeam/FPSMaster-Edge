@@ -33,6 +33,7 @@ import top.fpsmaster.utils.render.gui.Scissor;
 import java.awt.*;
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Locale;
 
 public class MainPanel extends ScaledGuiScreen {
     boolean drag = false;
@@ -51,6 +52,8 @@ public class MainPanel extends ScaledGuiScreen {
     private final ColorAnimator themeBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
     private final ColorAnimator configBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
     private final ColorAnimator musicBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
+    private final SearchBar searchBar = new SearchBar();
+    private boolean searchWasActive = false;
     private final AnimClock animClock = new AnimClock();
     private static final BezierEasing CLICKGUI_EASE = BezierEasing.of(0.25, 0.1, 0.25, 1.0);
     private static final int MASK_MAX_ALPHA = 110;
@@ -97,6 +100,48 @@ public class MainPanel extends ScaledGuiScreen {
 
     private float getCategoryStartY() {
         return getCategoryBgY() + 10f;
+    }
+
+    // author:Serendisand
+    // reason:全局搜索
+    private float getSearchBarX() {
+        return x + width - getSearchBarWidth();
+    }
+
+    private float getSearchBarY() {
+        return y - 3 - getSearchBarHeight();
+    }
+
+    private float getSearchBarWidth() {
+        return 130f;
+    }
+
+    private float getSearchBarHeight() {
+        return 18f;
+    }
+
+    private boolean isSearchActive() {
+        return !searchBar.getQuery().trim().isEmpty();
+    }
+
+    private boolean matchesSearch(Module module, String rawQuery) {
+        String query = rawQuery.trim().toLowerCase(Locale.getDefault());
+        if (query.isEmpty()) {
+            return false;
+        }
+        String key = module.name.toLowerCase(Locale.getDefault());
+        String name = FPSMaster.i18n.get(key);
+        String desc = FPSMaster.i18n.get(key + ".desc");
+        if (name.toLowerCase(Locale.getDefault()).contains(query)
+                || desc.toLowerCase(Locale.getDefault()).contains(query)) {
+            return true;
+        }
+        // author:Serendisand
+        // reason:全局搜索 - 中文模式下只检索中文，不匹配英文原始名
+        if (ClientSettings.language.getValue() == 1) {
+            return false;
+        }
+        return module.name.toLowerCase(Locale.getDefault()).contains(query);
     }
 
     @Override
@@ -153,6 +198,8 @@ public class MainPanel extends ScaledGuiScreen {
                     8, ClickGuiTheme.panelBg());
         }
 
+        searchBar.draw(this, getSearchBarX(), getSearchBarY(), getSearchBarWidth(), getSearchBarHeight(), mouseX, mouseY);
+
         moduleListAlpha = (float) AnimMath.base(moduleListAlpha, 255.0, 0.1f);
 
         float scale = (float) scaleAnimation.get();
@@ -171,10 +218,23 @@ public class MainPanel extends ScaledGuiScreen {
         modHeight = 20f;
         float containerWidth = width - leftWidth - 10;
         int finalMouseY = mouseY;
+        boolean searching = isSearchActive();
+        String query = searchBar.getQuery();
+        // author:Serendisand
+        // reason:全局搜索 - 搜索激活/退出时回到列表顶部,避免结果在视口外
+        if (searching != searchWasActive) {
+            modsContainer.resetScroll();
+        }
+        searchWasActive = searching;
         modsContainer.draw(this, x + leftWidth, y + 25f, containerWidth, height - 20f, mouseX, mouseY, () -> {
             float modsY = y + 22f;
+            boolean anyMatch = false;
             for (ModuleRenderer m : mods) {
-                if (m.mod.category == curType) {
+                m.highlight = searching ? query.trim() : null;
+                m.searchMode = searching;
+                boolean show = searching ? matchesSearch(m.mod, query) : m.mod.category == curType;
+                if (show) {
+                    anyMatch = true;
                     float moduleY = modsY + modsContainer.getScroll();
                     if (moduleY + 40 + m.height > y && moduleY < y + height) {
                         m.render(
@@ -191,6 +251,14 @@ public class MainPanel extends ScaledGuiScreen {
                     modsY += 45 + m.height;
                     modHeight += 45 + m.height;
                 }
+            }
+            if (searching && !anyMatch) {
+                FPSMaster.fontManager.s16.drawCenteredString(
+                        FPSMaster.i18n.get("clickgui.search.noresults"),
+                        x + leftWidth + containerWidth / 2f,
+                        y + 25f + (height - 20f) / 2f,
+                        ClickGuiTheme.textDisabled().getRGB()
+                );
             }
             modsContainer.setHeight(modHeight);
         });
@@ -360,6 +428,8 @@ public class MainPanel extends ScaledGuiScreen {
         maskAlpha.start(0.0, MASK_MAX_ALPHA, 0.2f, CLICKGUI_EASE);
         close = false;
         configSavedOnClose = false;
+        searchBar.clear();
+        searchBar.setFocused(false);
 
 //        if (width == 0f || height == 0f) {
 //            width = scaledWidth / 2f;
@@ -390,6 +460,11 @@ public class MainPanel extends ScaledGuiScreen {
     public void keyTyped(char typedChar, int keyCode) throws IOException {
 //        aiChatPanel.keyTyped(typedChar, keyCode);
 
+        if (searchBar.isFocused()) {
+            searchBar.keyTyped(typedChar, keyCode);
+            return;
+        }
+
         if (keyCode == 1) {
             if (scaleAnimation.isRunning() || scaleAnimation.get() != 0.7) {
                 requestClose();
@@ -414,6 +489,15 @@ public class MainPanel extends ScaledGuiScreen {
     }
 
     private void handlePointerPress() {
+        // author:Serendisand
+        // reason:全局搜索
+        if (searchBar.isFocused()) {
+            ScaledGuiScreen.PointerEvent rawPress = peekRawPress();
+            if (rawPress != null && !Hover.is(getSearchBarX(), getSearchBarY(), getSearchBarWidth(), getSearchBarHeight(), rawPress.x, rawPress.y)) {
+                searchBar.setFocused(false);
+            }
+        }
+
         ScaledGuiScreen.PointerEvent press = peekAnyPress();
         if (press == null) {
             return;
@@ -435,6 +519,9 @@ public class MainPanel extends ScaledGuiScreen {
         float my = getCategoryStartY();
         for (Category c : Category.values()) {
             if (Hover.is(x, my - 8, leftWidth, 24f, mouseX, mouseY)) {
+                if (isSearchActive()) {
+                    searchBar.clear();
+                }
                 wheelTemp = 0f;
                 modsWheel = 0f;
                 if (curType != c) {

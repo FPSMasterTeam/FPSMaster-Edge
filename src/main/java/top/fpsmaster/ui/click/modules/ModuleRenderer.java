@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.io.IOException;
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
@@ -78,6 +79,11 @@ public class ModuleRenderer extends ValueRender {
     ColorAnimator background = new ColorAnimator();
     ColorAnimator option = new ColorAnimator();
     float optionX = 0;
+
+    // author:Serendisand
+    // reason:全局搜索
+    public String highlight = null;
+    public boolean searchMode = false;
 
     public ModuleRenderer(Module module) {
         this.mod = module;
@@ -165,18 +171,20 @@ public class ModuleRenderer extends ValueRender {
             Images.draw(icon, x + 14, y + 10, 14f, 14f, content.getColor().getRGB());
         }
 
-        FPSMaster.fontManager.s18.drawString(
-                FPSMaster.i18n.get(mod.name.toLowerCase(Locale.getDefault())),
-                x + 40,
-                y + 9,
-                content.getColor().getRGB()
-        );
-        FPSMaster.fontManager.s16.drawString(
-                FPSMaster.i18n.get(mod.name.toLowerCase(Locale.getDefault()) + ".desc"),
-                x + 40,
-                y + 20,
-                ClickGuiTheme.textDescription().getRGB()
-        );
+        String name = FPSMaster.i18n.get(mod.name.toLowerCase(Locale.getDefault()));
+        String desc = FPSMaster.i18n.get(mod.name.toLowerCase(Locale.getDefault()) + ".desc");
+        drawHighlighted(name, FPSMaster.fontManager.s18, x + 40, y + 9, content.getColor().getRGB());
+        drawHighlighted(desc, FPSMaster.fontManager.s16, x + 40, y + 20, ClickGuiTheme.textDescription().getRGB());
+
+        if (searchMode) {
+            String categoryName = FPSMaster.i18n.get("category." + mod.category.name().toLowerCase(Locale.getDefault()));
+            float tagWidth = FPSMaster.fontManager.s14.getStringWidth(categoryName);
+            float nameWidth = FPSMaster.fontManager.s18.getStringWidth(name);
+            float tagX = x + width - 52 - tagWidth;
+            if (tagX >= x + 40 + nameWidth + 10) {
+                FPSMaster.fontManager.s14.drawString(categoryName, tagX, y + 9, ClickGuiTheme.accent().getRGB());
+            }
+        }
 
         float settingsHeight = 0f;
         if (expand) {
@@ -210,6 +218,35 @@ public class ModuleRenderer extends ValueRender {
                 expand = !expand;
                 MainPanel.curModule = null;
             }
+        }
+    }
+
+    // author:Serendisand
+    // reason:全局搜索
+    private void drawHighlighted(String text, UFontRenderer font, float x, float y, int color) {
+        if (highlight == null || highlight.isEmpty()) {
+            font.drawString(text, x, y, color);
+            return;
+        }
+        String lowerText = text.toLowerCase(Locale.getDefault());
+        int index = lowerText.indexOf(highlight.toLowerCase(Locale.getDefault()));
+        if (index < 0) {
+            font.drawString(text, x, y, color);
+            return;
+        }
+        // 大小写折叠可能改变长度(如 ß→ss),匹配段按原文截断并钳制,避免越界
+        int matchEnd = Math.min(index + highlight.length(), text.length());
+        String before = text.substring(0, index);
+        String match = text.substring(index, matchEnd);
+        String after = text.substring(matchEnd);
+        float cursor = x;
+        if (!before.isEmpty()) {
+            cursor += font.drawString(before, cursor, y, color);
+        }
+        font.drawString(match, cursor, y, ClickGuiTheme.accent().getRGB());
+        cursor += font.getStringWidth(match);
+        if (!after.isEmpty()) {
+            font.drawString(after, cursor, y, color);
         }
     }
 
