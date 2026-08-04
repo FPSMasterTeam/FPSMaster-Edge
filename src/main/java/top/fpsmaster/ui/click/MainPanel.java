@@ -53,6 +53,7 @@ public class MainPanel extends ScaledGuiScreen {
     private final ColorAnimator configBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
     private final ColorAnimator musicBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
     private final SearchBar searchBar = new SearchBar();
+    private boolean searchWasActive = false;
     private final AnimClock animClock = new AnimClock();
     private static final BezierEasing CLICKGUI_EASE = BezierEasing.of(0.25, 0.1, 0.25, 1.0);
     private static final int MASK_MAX_ALPHA = 110;
@@ -219,6 +220,12 @@ public class MainPanel extends ScaledGuiScreen {
         int finalMouseY = mouseY;
         boolean searching = isSearchActive();
         String query = searchBar.getQuery();
+        // author:Serendisand
+        // reason:全局搜索 - 搜索激活/退出时回到列表顶部,避免结果在视口外
+        if (searching != searchWasActive) {
+            modsContainer.resetScroll();
+        }
+        searchWasActive = searching;
         modsContainer.draw(this, x + leftWidth, y + 25f, containerWidth, height - 20f, mouseX, mouseY, () -> {
             float modsY = y + 22f;
             boolean anyMatch = false;

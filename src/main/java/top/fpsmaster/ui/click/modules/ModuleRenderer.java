@@ -228,14 +228,17 @@ public class ModuleRenderer extends ValueRender {
             font.drawString(text, x, y, color);
             return;
         }
-        int index = text.toLowerCase(Locale.getDefault()).indexOf(highlight.toLowerCase(Locale.getDefault()));
+        String lowerText = text.toLowerCase(Locale.getDefault());
+        int index = lowerText.indexOf(highlight.toLowerCase(Locale.getDefault()));
         if (index < 0) {
             font.drawString(text, x, y, color);
             return;
         }
+        // 大小写折叠可能改变长度(如 ß→ss),匹配段按原文截断并钳制,避免越界
+        int matchEnd = Math.min(index + highlight.length(), text.length());
         String before = text.substring(0, index);
-        String match = text.substring(index, index + highlight.length());
-        String after = text.substring(index + highlight.length());
+        String match = text.substring(index, matchEnd);
+        String after = text.substring(matchEnd);
         float cursor = x;
         if (!before.isEmpty()) {
             cursor += font.drawString(before, cursor, y, color);
