@@ -26,6 +26,11 @@ public class TargetHUDComponent extends Component {
     }
 
     @Override
+    public boolean isVisibleForAlignment() {
+        return super.isVisibleForAlignment() && TargetDisplay.target != null && animation > 0.05f;
+    }
+
+    @Override
     public void draw(float x, float y) {
         super.draw(x, y);
         if (TargetDisplay.target == null)
@@ -97,7 +102,5 @@ public class TargetHUDComponent extends Component {
         }
     }
 }
-
-
 
 

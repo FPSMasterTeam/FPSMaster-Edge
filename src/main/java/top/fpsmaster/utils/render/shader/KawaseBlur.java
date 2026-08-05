@@ -15,6 +15,9 @@ public class KawaseBlur {
     private static final List<Framebuffer> framebufferList = new ArrayList<>();
     private static int currentIterations = 0;
 
+    /** Upper bound on the half-size FBO chain, so a pathological setting cannot exhaust GPU memory. */
+    private static final int MAX_ITERATIONS = 8;
+
     public static void setupUniforms(float offset) {
         kawaseDown.setUniformf("offset", offset, offset);
         kawaseUp.setUniformf("offset", offset, offset);
@@ -35,7 +38,15 @@ public class KawaseBlur {
     }
 
     public static void renderBlur(int iterations, int offset) {
-        if (currentIterations != iterations) {
+        if (iterations <= 0) {
+            return;
+        }
+        iterations = Math.min(iterations, MAX_ITERATIONS);
+        // Rebuild on a size change too, so a resized window cannot leave the half-size chain stale.
+        if (currentIterations != iterations
+                || (framebufferList.size() > 1
+                    && (framebufferList.get(1).framebufferWidth != mc.displayWidth
+                        || framebufferList.get(1).framebufferHeight != mc.displayHeight))) {
             initFramebuffers(iterations);
             currentIterations = iterations;
         }

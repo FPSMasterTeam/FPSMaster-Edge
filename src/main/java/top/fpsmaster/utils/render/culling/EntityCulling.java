@@ -1,6 +1,7 @@
 package top.fpsmaster.utils.render.culling;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -136,6 +137,9 @@ public final class EntityCulling {
     private boolean initialised;
     private int queryTarget;
 
+    /** The last world probes were issued against, so a world change can drop stale in-flight queries. */
+    private WorldClient lastWorld;
+
     /** Set when there is too little on screen for culling to be worth probing for. */
     /**
      * True while the probes are advisory: measured, counted, and not acted on.
@@ -171,6 +175,19 @@ public final class EntityCulling {
 
     public boolean isSupported() {
         return supported;
+    }
+
+    /**
+     * Tracks the client world independently of the render pass, which is not invoked after a
+     * disconnect. Calling this from the client tick releases pending probes and the old WorldClient
+     * immediately when the world becomes {@code null}.
+     */
+    public void updateWorld(WorldClient world) {
+        if (world == lastWorld) {
+            return;
+        }
+        reset();
+        lastWorld = world;
     }
 
     /** Whether the entity should be drawn. Anything not positively known to be hidden is drawn. */
@@ -216,6 +233,7 @@ public final class EntityCulling {
      */
     public void update(Minecraft mc, ICamera camera, double renderPosX, double renderPosY,
                        double renderPosZ, long reprobeMillis, int minEntities, boolean cullPlayers) {
+        updateWorld((WorldClient) mc.theWorld);
         if (!supported || mc.theWorld == null || mc.getRenderViewEntity() == null) {
             return;
         }

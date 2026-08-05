@@ -184,6 +184,15 @@ public class ComponentsManager {
             }
         });
 
+        if (dragTarget != null) {
+            if (!dragTarget.shouldDisplay()) {
+                dragTarget = null;
+            } else {
+                // Alignment guides go on top of everything so the dragged component cannot occlude them.
+                dragTarget.drawGuides();
+            }
+        }
+
         GL11.glPopMatrix();
     }
 }

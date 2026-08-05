@@ -68,7 +68,11 @@ public class GlobalListener {
     }
     @Subscribe
     public void onTick(EventTick e) {
-        if (Minecraft.getMinecraft().theWorld != null) {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        // Entity rendering stops entirely after a disconnect, so culling cannot rely on its render
+        // hook to notice a null world and release the old WorldClient/pending entity references.
+        Performance.ENTITY_CULLING.updateWorld(minecraft.theWorld);
+        if (minecraft.theWorld != null) {
             ReplayRecorder.instance().startIfRequested();
         }
         ReplayRecorder.instance().onClientTick();
@@ -146,6 +150,5 @@ public class GlobalListener {
     }
 
 }
-
 
 
