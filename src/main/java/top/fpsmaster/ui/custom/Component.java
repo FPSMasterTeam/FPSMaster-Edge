@@ -1,5 +1,6 @@
 package top.fpsmaster.ui.custom;
 
+import top.fpsmaster.utils.render.draw.Colors;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Rects;
 
@@ -20,6 +21,7 @@ import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.render.gui.GuiOcclusion;
 import top.fpsmaster.utils.render.gui.GuiScale;
+import top.fpsmaster.utils.render.state.Alpha;
 import top.fpsmaster.utils.math.anim.AnimMath;
 
 import java.awt.*;
@@ -45,17 +47,14 @@ public class Component {
     private static final Color GUIDE_ACTIVE_COLOR = new Color(89, 101, 241, 230);
     private static final Color GUIDE_PASSIVE_COLOR = new Color(89, 101, 241, 70);
 
-    /** Two coords closer than this are treated as the same edge when marking a guide active. */
-    private static final float EDGE_MATCH_EPSILON = 0.01f;
-
     /**
      * Inverse-verify tolerance in component space units: a snap whose target the position formula
      * cannot reproduce within this, or which sits more than this outside the drag envelope, is skipped.
      */
     private static final float SNAP_EXPRESSIBLE_TOLERANCE = 1f;
 
-    /** Max guide lines per frame: two axes, at most two box edges plus the matched centre each. */
-    private static final int MAX_GUIDE_LINES = 6;
+    /** Max guide lines per frame: the two screen-centre cross lines plus one matched edge per axis. */
+    private static final int MAX_GUIDE_LINES = 4;
 
     private float dragX = 0f;
 
@@ -494,25 +493,49 @@ public class Component {
             guides = null;
             return;
         }
-        for (GuideLine line : guides) {
-            if (line == null) {
-                continue;
-            }
-            Rects.fill(line.x, line.y, line.width, line.height,
-                    line.active ? GUIDE_ACTIVE_COLOR : GUIDE_PASSIVE_COLOR);
-        }
-        // Rects.fill leaves blend off and the guide colour set; restore the neutral state the HUD
-        // pass is assumed to leave behind.
+        GlStateManager.enableBlend();
+        GlStateManager.disableTexture2D();
+        GlStateManager.enableAlpha();
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        // Every guide is a thin full-span rectangle; grouping them by colour into two quad batches
+        // costs a single texture switch instead of toggling GL state once per line.
+        drawGuideBatch(GUIDE_PASSIVE_COLOR, false);
+        drawGuideBatch(GUIDE_ACTIVE_COLOR, true);
+        GlStateManager.enableTexture2D();
+        // Restore the neutral state the HUD pass is assumed to leave behind.
         GlStateManager.enableBlend();
         GlStateManager.color(1f, 1f, 1f, 1f);
+    }
+
+    /** Renders all guide lines of one activation state as a single quad batch. */
+    private void drawGuideBatch(Color color, boolean active) {
+        boolean begun = false;
+        for (GuideLine line : guides) {
+            if (line == null || line.active != active) {
+                continue;
+            }
+            if (!begun) {
+                Color c = Colors.toColor(Alpha.apply(color.getRGB()));
+                GlStateManager.color(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f, c.getAlpha() / 255f);
+                GL11.glBegin(GL11.GL_QUADS);
+                begun = true;
+            }
+            GL11.glVertex2d(line.x, line.y);
+            GL11.glVertex2d(line.x, line.y + line.height);
+            GL11.glVertex2d(line.x + line.width, line.y + line.height);
+            GL11.glVertex2d(line.x + line.width, line.y);
+        }
+        if (begun) {
+            GL11.glEnd();
+        }
     }
 
     /**
      * Lunar/Badlion-style alignment assistance for the HUD editor. While a component is dragged it
      * snaps to nearby edges — its own left/centre/right to a candidate's left/centre/right, and the
-     * same for top/centre/bottom — and draws guide lines at the matched candidate's edges. The screen
-     * centre and the four screen edges act as implicit candidates, so centring a component draws the
-     * classic crosshair.
+     * same for top/centre/bottom — and draws a single guide line at the matched candidate edge. The
+     * screen centre is the only implicit candidate, so centring a component draws the classic
+     * crosshair and nothing is ever drawn at the screen borders.
      *
      * <p>Everything lives in the shared component space ({@link GuiScale#getFixedBounds}) where
      * {@link #getRealPosition} expresses each box, so both axes are independent and can be active at
@@ -543,14 +566,10 @@ public class Component {
         // CT is horizontally centred; its x coordinate cannot move, so x snapping is never applied.
         boolean movableX = interactive && position != Position.CT;
 
-        Snap xSnap = bestSnap(boxEdges(rX, w), boxEdges(0f, guiW));
-        Snap ySnap = bestSnap(boxEdges(rY, h), boxEdges(0f, guiH));
-        boolean xFromScreen = true;
-        boolean yFromScreen = true;
-        float xEdgeA = 0f;
-        float xEdgeB = 0f;
-        float yEdgeA = 0f;
-        float yEdgeB = 0f;
+        // The screen centre is the only implicit candidate: centring a component draws the classic
+        // crosshair. The screen edges are deliberately not candidates, so no border lines appear.
+        Snap xSnap = bestSnap(boxEdges(rX, w), new float[]{guiW / 2f});
+        Snap ySnap = bestSnap(boxEdges(rY, h), new float[]{guiH / 2f});
 
         for (Component candidate : FPSMaster.componentsManager.components) {
             if (candidate == this || !candidate.shouldDisplay()) {
@@ -565,57 +584,39 @@ public class Component {
             Snap snap = bestSnap(boxEdges(rX, w), boxEdges(candidatePos[0], cw));
             if (snap != null && (xSnap == null || snap.diff < xSnap.diff)) {
                 xSnap = snap;
-                xFromScreen = false;
-                xEdgeA = candidatePos[0];
-                xEdgeB = candidatePos[0] + cw;
             }
             snap = bestSnap(boxEdges(rY, h), boxEdges(candidatePos[1], ch));
             if (snap != null && (ySnap == null || snap.diff < ySnap.diff)) {
                 ySnap = snap;
-                yFromScreen = false;
-                yEdgeA = candidatePos[1];
-                yEdgeB = candidatePos[1] + ch;
             }
         }
 
-        dragX -= applySnap(xSnap, rX, w, false, movableX, guiW, guiH, xFromScreen, xEdgeA, xEdgeB);
-        dragY -= applySnap(ySnap, rY, h, true, interactive, guiH, guiW, yFromScreen, yEdgeA, yEdgeB);
+        applySnap(xSnap, rX, w, false, movableX, guiW, guiH);
+        applySnap(ySnap, rY, h, true, interactive, guiH, guiW);
     }
 
     /**
-     * Applies one axis's snap, draws its guide lines and returns the applied mouse-offset
-     * compensation, which the caller subtracts from {@link #dragX}/{@link #dragY} so the next frame's
-     * {@link #move} does not overwrite the aligned position.
+     * Applies one axis's snap and draws a single guide line at the matched candidate edge.
      *
      * <p>{@code horizontal} selects the axis: horizontal lines mean a y snap (which spans
      * {@code axisLength} via {@link #snapYTo}) and vertical lines an x snap, which is why
-     * {@code axisLength}/{@code guideSpan} swap between the two call sites. Component candidates draw
-     * one line at each box edge, plus an active line at the matched centre when the centre is what
-     * aligned.
+     * {@code axisLength}/{@code guideSpan} swap between the two call sites.
+     *
+     * <p>No mouse-offset compensation is kept: the snap holds only while the dragged box stays within
+     * the snap radius of the candidate edge, and the box follows the cursor again the moment the mouse
+     * carries it beyond the radius. Compensating the mouse offset instead absorbs every slow mouse
+     * movement while the box sits within the radius, pinning it to the candidate so it can never be
+     * dragged away.
      */
-    private float applySnap(Snap snap, float edge, float scaledLen, boolean horizontal,
-                            boolean allowed, float axisLength, float guideSpan,
-                            boolean fromScreen, float edgeA, float edgeB) {
+    private void applySnap(Snap snap, float edge, float scaledLen, boolean horizontal,
+                           boolean allowed, float axisLength, float guideSpan) {
         if (snap == null) {
-            return 0f;
+            return;
         }
         boolean applied = allowed && (horizontal
                 ? snapYTo(axisLength, edge + snap.delta, scaledLen)
                 : snapXTo(axisLength, edge + snap.delta, scaledLen));
-        if (fromScreen) {
-            addGuideLine(snap.matchedValue, guideSpan, horizontal, applied);
-        } else {
-            float centre = (edgeA + edgeB) / 2f;
-            boolean centreMatched = Math.abs(snap.matchedValue - centre) <= EDGE_MATCH_EPSILON;
-            addGuideLine(edgeA, guideSpan, horizontal,
-                    applied && !centreMatched && Math.abs(edgeA - snap.matchedValue) <= EDGE_MATCH_EPSILON);
-            addGuideLine(edgeB, guideSpan, horizontal,
-                    applied && !centreMatched && Math.abs(edgeB - snap.matchedValue) <= EDGE_MATCH_EPSILON);
-            if (centreMatched) {
-                addGuideLine(snap.matchedValue, guideSpan, horizontal, applied);
-            }
-        }
-        return applied ? snap.delta : 0f;
+        addGuideLine(snap.matchedValue, guideSpan, horizontal, applied);
     }
 
     /** Left/centre/right (or top/centre/bottom) edges of a box spanning {@code min} to {@code min + span}. */
