@@ -88,6 +88,9 @@ public final class TextRenderer {
 
     private static final int GEOMETRY_CACHE_LIMIT = 512;
 
+    /** Upper bound for the {@link #widths} memo, kept in lockstep with the geometry cache. */
+    private static final int WIDTH_CACHE_LIMIT = 1024;
+
     static {
         for (int i = 0; i < 16; i++) {
             int base = (i >> 3 & 1) * 85;
@@ -102,7 +105,20 @@ public final class TextRenderer {
     }
 
     private final GlyphAtlas atlas;
-    private final Map<String, Float> widths = new HashMap<String, Float>();
+    /**
+     * Measured widths, access-ordered and bounded like {@link #geometryCache}.
+     *
+     * <p>Widths must stay bounded: every distinct string the client measures would otherwise be
+     * keyed here forever — coordinate readouts, timers, and {@link top.fpsmaster.font.impl.UFontRenderer#trimString}
+     * measure every prefix of a line it trims — turning a long session into a slow, unbounded heap leak.
+     */
+    private final Map<String, Float> widths =
+            new LinkedHashMap<String, Float>(64, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Float> eldest) {
+                    return size() > WIDTH_CACHE_LIMIT;
+                }
+            };
     private final Random random = new Random();
     /** Pool characters grouped by width, so a stand-in can be picked without a search. */
     private Map<Integer, char[]> scrambleBuckets;

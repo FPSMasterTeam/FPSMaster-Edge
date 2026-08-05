@@ -1,6 +1,7 @@
 package top.fpsmaster.utils.render.culling;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -136,6 +137,9 @@ public final class EntityCulling {
     private boolean initialised;
     private int queryTarget;
 
+    /** The last world probes were issued against, so a world change can drop stale in-flight queries. */
+    private WorldClient lastWorld;
+
     /** Set when there is too little on screen for culling to be worth probing for. */
     /**
      * True while the probes are advisory: measured, counted, and not acted on.
@@ -218,6 +222,13 @@ public final class EntityCulling {
                        double renderPosZ, long reprobeMillis, int minEntities, boolean cullPlayers) {
         if (!supported || mc.theWorld == null || mc.getRenderViewEntity() == null) {
             return;
+        }
+        if (mc.theWorld != lastWorld) {
+            // A world change leaves in-flight probes pointing at entities the new world never heard
+            // of. Drop them (and return their query ids) before the new world issues any; without
+            // this the dead entities stay strongly referenced here and their ids cannot be reissued.
+            reset();
+            lastWorld = (WorldClient) mc.theWorld;
         }
         harvest();
 
