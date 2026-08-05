@@ -177,6 +177,19 @@ public final class EntityCulling {
         return supported;
     }
 
+    /**
+     * Tracks the client world independently of the render pass, which is not invoked after a
+     * disconnect. Calling this from the client tick releases pending probes and the old WorldClient
+     * immediately when the world becomes {@code null}.
+     */
+    public void updateWorld(WorldClient world) {
+        if (world == lastWorld) {
+            return;
+        }
+        reset();
+        lastWorld = world;
+    }
+
     /** Whether the entity should be drawn. Anything not positively known to be hidden is drawn. */
     public boolean shouldRender(Entity entity, boolean cullPlayers) {
         if (scouting || !supported || !isCullable(entity, cullPlayers)) {
@@ -220,15 +233,9 @@ public final class EntityCulling {
      */
     public void update(Minecraft mc, ICamera camera, double renderPosX, double renderPosY,
                        double renderPosZ, long reprobeMillis, int minEntities, boolean cullPlayers) {
+        updateWorld((WorldClient) mc.theWorld);
         if (!supported || mc.theWorld == null || mc.getRenderViewEntity() == null) {
             return;
-        }
-        if (mc.theWorld != lastWorld) {
-            // A world change leaves in-flight probes pointing at entities the new world never heard
-            // of. Drop them (and return their query ids) before the new world issues any; without
-            // this the dead entities stay strongly referenced here and their ids cannot be reissued.
-            reset();
-            lastWorld = (WorldClient) mc.theWorld;
         }
         harvest();
 

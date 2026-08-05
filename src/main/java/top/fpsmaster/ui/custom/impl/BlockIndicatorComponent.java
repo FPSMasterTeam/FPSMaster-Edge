@@ -37,6 +37,11 @@ public class BlockIndicatorComponent extends Component {
     }
 
     @Override
+    public boolean isVisibleForAlignment() {
+        return super.isVisibleForAlignment() && lastBlock != null && alpha > 0.02F;
+    }
+
+    @Override
     public void draw(float x, float y) {
         Minecraft mc = Minecraft.getMinecraft();
         TargetBlock target = getTargetBlock(mc);

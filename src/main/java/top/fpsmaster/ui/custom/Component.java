@@ -160,6 +160,17 @@ public class Component {
         return mod.isEnabled();
     }
 
+    /**
+     * Whether this component currently has geometry another component may align to.
+     *
+     * <p>Some enabled HUD modules are conditional: a target HUD has no box without a target, for
+     * example. Those components override this rather than letting their last non-zero width/height
+     * become an invisible snap target.
+     */
+    public boolean isVisibleForAlignment() {
+        return shouldDisplay() && width > 0f && height > 0f;
+    }
+
     public float[] getRealPosition() {
         return getRealPosition(new ScaledResolution(Minecraft.getMinecraft()));
     }
@@ -245,9 +256,64 @@ public class Component {
             boolean drag = manager.dragTarget == this;
             boolean hovered = Hover.is(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY);
             boolean overHandle = allowScale && isOverResizeHandle(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY);
+            boolean interactive = hovered || overHandle || drag;
+            boolean occluded = false;
 
             alpha = (float) ((hovered || overHandle || drag) ?
                     AnimMath.base(alpha, 1f, 0.2f) : AnimMath.base(alpha, 0.0f, 0.2f));
+
+            if (interactive) {
+                // The HUD editor runs from EventRender2D, which 1.8.9 fires while drawing the in-game
+                // overlay — before currentScreen.drawScreen(). Without this it happily drags components
+                // that are sitting *underneath* an open panel. The previous guard only covered the case
+                // where a ClickGUI slider already held a drag capture, which is a small fraction of the
+                // panel's area.
+                occluded = GuiOcclusion.covers(Mouse.getX(), Utility.mc.displayHeight - Mouse.getY());
+                if (occluded) {
+                    guides = null;
+                } else {
+                    if (allowScale && ClientSettings.isZoomBindDown()) {
+                        int dWheel = Mouse.getDWheel();
+                        if (dWheel > 0) scaleUp();
+                        else if (dWheel < 0) scaleDown();
+                    }
+
+                    if (Mouse.isButtonDown(0)) {
+                        if (manager.dragTarget == null) {
+                            manager.dragTarget = this;
+                            if (overHandle) {
+                                manager.dragMode = ComponentsManager.DragMode.RESIZE;
+                                resizeStartScale = scale;
+                                resizeStartMouseX = mouseX;
+                                resizeStartMouseY = mouseY;
+                            } else {
+                                manager.dragMode = ComponentsManager.DragMode.MOVE;
+                                dragX = mouseX - rX;
+                                dragY = mouseY - rY;
+                            }
+                        }
+
+                        if (manager.dragTarget == this) {
+                            if (manager.dragMode == ComponentsManager.DragMode.RESIZE) {
+                                resizeTo(mouseX, mouseY);
+                            } else {
+                                move(sr, mouseX, mouseY);
+                            }
+                            alignDrag(sr);
+                        }
+                    }
+                }
+            }
+
+            // Input above may have changed the anchor, normalised position or scale. Resolve all
+            // render coordinates afterwards so the component and its guides describe the same frame.
+            pos = getRealPosition(sr);
+            rX = pos[0];
+            rY = pos[1];
+            scaledWidth = width * scale;
+            scaledHeight = height * scale;
+            drag = manager.dragTarget == this;
+            overHandle = allowScale && isOverResizeHandle(rX, rY, scaledWidth, scaledHeight, mouseX, mouseY);
 
             Rects.fill(rX - 2, rY - 2, scaledWidth + 4, scaledHeight + 4, new Color(0, 0, 0, (int) (alpha * 80)));
             draw(rX, rY);
@@ -258,47 +324,10 @@ public class Component {
                         overHandle || (drag && manager.dragMode == ComponentsManager.DragMode.RESIZE));
             }
 
-            if (hovered || overHandle || drag) {
-                // The HUD editor runs from EventRender2D, which 1.8.9 fires while drawing the in-game
-                // overlay — before currentScreen.drawScreen(). Without this it happily drags components
-                // that are sitting *underneath* an open panel. The previous guard only covered the case
-                // where a ClickGUI slider already held a drag capture, which is a small fraction of the
-                // panel's area.
-                if (GuiOcclusion.covers(Mouse.getX(), Utility.mc.displayHeight - Mouse.getY())) {
-                    guides = null;
-                    return;
-                }
-                if (allowScale && ClientSettings.isZoomBindDown()) {
-                    int dWheel = Mouse.getDWheel();
-                    if (dWheel > 0) scaleUp();
-                    else if (dWheel < 0) scaleDown();
-                }
-                FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get(mod.name.toLowerCase()) + " " + Math.round(scale * 10) / 10f + "x", rX, rY - 10, new Color(255, 255, 255, (int) (alpha * 255)).getRGB());
-
-                if (!Mouse.isButtonDown(0)) return;
-
-                if (manager.dragTarget == null) {
-                    manager.dragTarget = this;
-                    if (overHandle) {
-                        manager.dragMode = ComponentsManager.DragMode.RESIZE;
-                        resizeStartScale = scale;
-                        resizeStartMouseX = mouseX;
-                        resizeStartMouseY = mouseY;
-                    } else {
-                        manager.dragMode = ComponentsManager.DragMode.MOVE;
-                        dragX = mouseX - rX;
-                        dragY = mouseY - rY;
-                    }
-                }
-
-                if (manager.dragTarget == this) {
-                    if (manager.dragMode == ComponentsManager.DragMode.RESIZE) {
-                        resizeTo(mouseX, mouseY);
-                    } else {
-                        move(sr, mouseX, mouseY);
-                    }
-                    alignDrag(sr);
-                }
+            if (interactive && !occluded) {
+                FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get(mod.name.toLowerCase()) + " "
+                                + Math.round(scale * 10) / 10f + "x", rX, rY - 10,
+                        new Color(255, 255, 255, (int) (alpha * 255)).getRGB());
             }
         } else {
             guides = null;
@@ -572,7 +601,7 @@ public class Component {
         Snap ySnap = bestSnap(boxEdges(rY, h), new float[]{guiH / 2f});
 
         for (Component candidate : FPSMaster.componentsManager.components) {
-            if (candidate == this || !candidate.shouldDisplay()) {
+            if (candidate == this || !candidate.isVisibleForAlignment()) {
                 continue;
             }
             float[] candidatePos = candidate.getRealPosition(sr);
@@ -775,7 +804,5 @@ public class Component {
         }
     }
 }
-
-
 
 
