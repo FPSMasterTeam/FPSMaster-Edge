@@ -26,5 +26,3 @@ remeasure.ps1
 src/main/resources/native/windows/*/*.dll
 native/smtc/build-*/
 
-# AGENTS.md 为本机指令文件，不随仓库提交
-/AGENTS.md
