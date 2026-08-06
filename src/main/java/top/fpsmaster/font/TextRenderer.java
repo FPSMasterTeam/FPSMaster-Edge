@@ -452,7 +452,7 @@ public final class TextRenderer {
      * rather than serving them a frozen scramble.
      */
     private Map<String, Recorded> edge$obfuscatedCacheForNow() {
-        if (!Performance.slowObfuscation.getValue()) {
+        if (!Performance.using || !Performance.slowObfuscation.getValue()) {
             return null;
         }
         long now = System.currentTimeMillis();

@@ -253,14 +253,14 @@ public abstract class MixinMinecraft implements IMinecraft {
      */
     @Redirect(method = "launchIntegratedServer", at = @At(value = "INVOKE", target = "Ljava/lang/System;gc()V"))
     public void gc1() {
-        if (!Performance.fastLoad.getValue()) {
+        if (!Performance.using || !Performance.fastLoad.getValue()) {
             System.gc();
         }
     }
 
     @Redirect(method = "loadWorld(Lnet/minecraft/client/multiplayer/WorldClient;Ljava/lang/String;)V", at = @At(value = "INVOKE", target = "Ljava/lang/System;gc()V"))
     public void gc2() {
-        if (!Performance.fastLoad.getValue()) {
+        if (!Performance.using || !Performance.fastLoad.getValue()) {
             System.gc();
         }
     }
