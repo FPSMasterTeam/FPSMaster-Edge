@@ -130,6 +130,7 @@ public class OobeScreen extends ScaledGuiScreen {
 
     private TextField accountField;
     private TextField passwordField;
+    private boolean loginFieldsHaveFont;
     private OobeButton backButton;
     private OobeButton nextButton;
     private OobeButton tutorialPrevButton;
@@ -192,6 +193,21 @@ public class OobeScreen extends ScaledGuiScreen {
                 new Color(255, 255, 255, 0).getRGB(), new Color(36, 44, 60).getRGB(), 32);
         accountField.setText(savedAccountText);
         passwordField.setText(savedPasswordText);
+        loginFieldsHaveFont = FPSMaster.fontManager.s18 != null;
+    }
+
+    /** Rebuild login fields once fonts are available (ctor may run before font load in edge cases). */
+    private void ensureLoginFields() {
+        if (loginFieldsHaveFont || FPSMaster.fontManager == null || FPSMaster.fontManager.s18 == null) {
+            return;
+        }
+        accountField = new TextField(FPSMaster.fontManager.s18, key("oobe.login.account.placeholder"),
+                new Color(255, 255, 255, 0).getRGB(), new Color(36, 44, 60).getRGB(), 32);
+        passwordField = new TextField(FPSMaster.fontManager.s18, true, key("oobe.login.password.placeholder"),
+                new Color(255, 255, 255, 0).getRGB(), new Color(36, 44, 60).getRGB(), 32);
+        accountField.setText(savedAccountText);
+        passwordField.setText(savedPasswordText);
+        loginFieldsHaveFont = true;
     }
 
     @Override
@@ -519,6 +535,11 @@ public class OobeScreen extends ScaledGuiScreen {
         drawBodyText(key("oobe.login.desc"), x, y + 60f, width);
 
         float fieldY = y + (tightHeight ? 86f : 96f);
+
+        ensureLoginFields();
+        if (accountField == null || passwordField == null) {
+            return;
+        }
 
         // Disable input while logging in
         boolean inputEnabled = !isLoggingIn;

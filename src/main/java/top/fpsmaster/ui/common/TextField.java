@@ -107,6 +107,9 @@ public class TextField extends Gui {
      * Sets the text of the textbox
      */
     public void setText(String text) {
+        if (text == null) {
+            text = "";
+        }
         if (this.validator.test(text)) {
             if (text.length() > this.maxStringLength) {
                 this.text = text.substring(0, this.maxStringLength);
@@ -435,6 +438,12 @@ public class TextField extends Gui {
      */
     public void drawTextBox(float x, float y, float width, float height) {
         if (this.getVisible()) {
+            if (this.fontRendererInstance == null) {
+                return;
+            }
+            if (this.text == null) {
+                this.text = "";
+            }
             this.width = width;
             this.height = height;
             this.xPosition = x;

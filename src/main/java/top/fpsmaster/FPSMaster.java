@@ -117,11 +117,23 @@ public class FPSMaster {
         try {
             Class.forName("optifine.Patcher");
             hasOptifine = true;
+            ClientLogger.info("OptiFine detected (optifine.Patcher)");
         } catch (ClassNotFoundException ignored) {
+            hasOptifine = false;
+            ClientLogger.info("OptiFine not present");
         }
     }
 
+    private static volatile boolean initialized = false;
+
     public void initialize() {
+        // Idempotent: the Forge path enters here via FMLInitializationEvent, while the
+        // Forge-free path (MixinMinecraft startGame RETURN) may also call it. Whoever wins
+        // the race initializes; the loser is a no-op. Never initialize the client twice.
+        if (initialized) {
+            return;
+        }
+        initialized = true;
         try {
             FileUtils.init(mc.mcDataDir);
             initializeAuth();  // Initialize auth service early to check for launcher tokens

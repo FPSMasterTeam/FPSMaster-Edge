@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.7.11",
+  "package": "top.fpsmaster.runtime.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+    "MixinMainRuntime",
+    "MixinGuiMainMenuRuntime"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

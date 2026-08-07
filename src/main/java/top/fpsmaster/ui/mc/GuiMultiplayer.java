@@ -4,13 +4,13 @@ import com.google.common.collect.Lists;
 import net.minecraft.client.gui.GuiScreenAddServer;
 import net.minecraft.client.gui.GuiScreenServerList;
 import net.minecraft.client.gui.GuiYesNo;
+import net.minecraft.client.multiplayer.GuiConnecting;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.network.OldServerPinger;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraftforge.fml.client.FMLClientHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
@@ -42,7 +42,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     GuiButton join = new GuiButton("multiplayer.join", () -> {
         if (selectedServer == null)
             return;
-        FMLClientHandler.instance().connectToServer(this, selectedServer);
+        this.mc.displayGuiScreen(new GuiConnecting(this, this.mc, selectedServer));
     }, new Color(0, 0, 0, 140), new Color(113, 127, 254))
             .setBackgroundColors(new Color(0, 0, 0, 140), new Color(113, 127, 254), new Color(128, 140, 255))
             .setClickEffect(GuiButton.ClickEffect.STACK, new Color(255, 255, 255, 120), 0.22f);
@@ -123,7 +123,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                     saveServerList();
                     break;
                 case "connect":
-                    FMLClientHandler.instance().connectToServer(this, selectedServer);
+                    this.mc.displayGuiScreen(new GuiConnecting(this, this.mc, selectedServer));
                     break;
             }
             action = "";
@@ -212,7 +212,8 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     @Override
     public void updateScreen() {
         super.updateScreen();
-        FMLClientHandler.instance().setupServerList();
+        // Forge's FMLClientHandler.setupServerList() only wires LAN/Realms discovery, which this
+        // custom multiplayer screen does not use; the vanilla ping loop below is all we need.
         this.oldServerPinger.pingPendingNetworks();
     }
 

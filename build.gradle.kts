@@ -1,4 +1,8 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.apache.commons.lang3.SystemUtils
+import java.io.File
+import java.net.URI
+import java.security.MessageDigest
 
 plugins {
     idea
@@ -212,4 +216,834 @@ tasks.register<Copy>("copyDependencies") {
 
 
 tasks.assemble.get().dependsOn(tasks.remapJar)
+
+
+
+// ============================================================================
+// Stage-0 POC: prove the 1.8.9 client boots with NO Forge runtime —
+// raw LaunchWrapper + our own ITweaker + Sponge Mixin, hitting an MCP-named mixin.
+// Fully isolated from the Forge main project (own sourceSet, own run task).
+// ============================================================================
+val runtimeSourceSet: SourceSet = sourceSets.create("runtime") {
+    java.setSrcDirs(listOf("runtime/src/main/java"))
+    resources.setSrcDirs(listOf("runtime/src/main/resources"))
+    // Compile against the same MCP-named Minecraft + Mixin + LaunchWrapper the main
+    // project sees. (Runtime classpath below is rebuilt from scratch, Forge excluded.)
+    compileClasspath += sourceSets["main"].compileClasspath
+}
+
+val runtimeMixin: Configuration by configurations.creating
+val runtimeRemapper: Configuration by configurations.creating
+dependencies {
+    runtimeMixin("org.spongepowered:mixin:0.7.11-SNAPSHOT") { isTransitive = false }
+    runtimeRemapper("net.fabricmc:tiny-remapper:0.14.0")
+    runtimeRemapper("net.fabricmc:mapping-io:0.2.1")
+    runtimeRemapper("org.ow2.asm:asm:9.4")
+    runtimeRemapper("org.ow2.asm:asm-commons:9.4")
+    runtimeRemapper("org.ow2.asm:asm-tree:9.4")
+}
+
+val runtimeNamedJar = layout.buildDirectory.file("runtime/minecraft-1.8.9-named-noforge.jar")
+
+/**
+ * Remap the pure Mojang client jar (official/notch) → MCP named, WITHOUT applying Forge patches.
+ * Loom's minecraft-*-mapped.jar still embeds Forge hooks in bytecode; this jar does not.
+ */
+tasks.register<JavaExec>("remapPocMinecraft") {
+    group = "fpsmaster-runtime"
+    description = "Remap vanilla 1.8.9 client.jar official→named (Forge-free) for the POC."
+    dependsOn(runtimeRemapper)
+
+    val loomBase = File(gradle.gradleUserHomeDir, "caches/essential-loom")
+    val inputJar = File(loomBase, "1.8.9/minecraft-client.jar")
+    val mappings = File(
+        loomBase,
+        "1.8.9/de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9/mappings.tiny"
+    )
+    val outputJar = runtimeNamedJar.get().asFile
+
+    inputs.files(inputJar, mappings)
+    outputs.file(outputJar)
+
+    classpath = runtimeRemapper
+    mainClass.set("net.fabricmc.tinyremapper.Main")
+    args(inputJar.absolutePath, outputJar.absolutePath, mappings.absolutePath, "official", "named")
+
+    doFirst {
+        outputJar.parentFile.mkdirs()
+        require(inputJar.isFile) {
+            "Missing vanilla client jar at $inputJar — run a Loom sync / genIntelliJRuns once first."
+        }
+        require(mappings.isFile) { "Missing mappings.tiny at $mappings" }
+        logger.lifecycle("[runtime] remapping ${inputJar.name} → ${outputJar.name} (official→named, no Forge)")
+    }
+}
+
+tasks.register<JavaExec>("runPocClient") {
+    group = "fpsmaster-runtime"
+    description = "Launch the 1.8.9 client with NO Forge: LaunchWrapper + FpsMasterTweaker + Mixin."
+    dependsOn("runtimeClasses", runtimeMixin, "remapPocMinecraft")
+
+    mainClass.set("net.minecraft.launchwrapper.Launch")
+
+    // The 1.8.9 client MUST run on JDK 8 — LaunchWrapper casts the system classloader to
+    // URLClassLoader, which throws on JDK 9+. (Gradle itself still runs on JDK 17/21.)
+    // Apple Silicon: LWJGL2 natives are x86_64 → prefer an x86_64 JDK 8 under Rosetta.
+    val java8Home = (findProperty("poc.java8") as String?) ?: System.getenv("JAVA8_HOME")
+    if (java8Home != null) {
+        executable = File(java8Home, "bin/java").absolutePath
+    } else {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(8))
+        })
+    }
+
+    val loomBase = File(gradle.gradleUserHomeDir, "caches/essential-loom")
+    val nativesDir = File(loomBase, "1.8.9/natives")
+    val assetsDir = File(loomBase, "assets")
+    val runDir = layout.buildDirectory.dir("poc-run").get().asFile
+    val namedMc = runtimeNamedJar.get().asFile
+
+    // Runtime classpath from loom's resolved list, MINUS Forge / intermediary / patched MC.
+    // Keeps LaunchWrapper, ASM, LWJGL, guava, gson, log4j, netty, authlib, commons, …
+    val remapCp = file(".gradle/loom-cache/remapClasspath.txt")
+    val libJars = remapCp.readLines()
+        .filter { it.isNotBlank() }
+        .flatMap { it.split(File.pathSeparatorChar) }
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .filter { p ->
+            !p.contains("intermediary") &&
+                !p.contains("net.minecraftforge") &&
+                !p.contains("minecraft-project-@-mapped") &&
+                !p.contains("minecraft-mapped.jar") &&
+                !p.contains("minecraft-srg.jar") &&
+                !p.contains("forge-")
+        }
+        .map { file(it) }
+
+    classpath = files(runtimeSourceSet.output, namedMc, libJars, runtimeMixin)
+
+    systemProperty("java.library.path", nativesDir.absolutePath)
+    systemProperty("org.lwjgl.librarypath", nativesDir.absolutePath)
+    systemProperty("mixin.debug", "true")
+
+    args(
+        "--tweakClass", "top.fpsmaster.runtime.FpsMasterTweaker",
+        "--version", "1.8.9",
+        "--accessToken", "0",
+        "--username", "FPSMasterPOC",
+        "--assetIndex", "1.8.9-1.8",
+        "--assetsDir", assetsDir.absolutePath,
+        "--gameDir", runDir.absolutePath
+    )
+
+    doFirst {
+        runDir.mkdirs()
+        require(namedMc.isFile) { "Forge-free named jar missing: $namedMc (run remapPocMinecraft)" }
+        val forgeOnCp = classpath.files.filter {
+            it.path.contains("minecraftforge") || it.name.contains("forge-")
+        }
+        require(forgeOnCp.isEmpty()) { "Forge leaked onto POC classpath: $forgeOnCp" }
+        logger.lifecycle("[runtime] classpath jars: ${classpath.files.size} (Forge excluded)")
+        logger.lifecycle("[runtime] named MC:      ${namedMc.absolutePath}")
+        logger.lifecycle("[runtime] natives:       ${nativesDir.absolutePath}")
+    }
+}
+
+/**
+ * Full vanilla test: classpath uses the real Mojang notch {@code minecraft-client.jar}.
+ * Runtime deobf (RuntimeDeobfTransformer) remaps official→named so MCP Mixins still apply.
+ */
+tasks.register<JavaExec>("runPocClientVanilla") {
+    group = "fpsmaster-runtime"
+    description = "Launch with REAL notch minecraft-client.jar + runtime deobf (no Forge, no pre-named jar)."
+    dependsOn("runtimeClasses", runtimeMixin)
+
+    mainClass.set("net.minecraft.launchwrapper.Launch")
+
+    val java8Home = (findProperty("poc.java8") as String?) ?: System.getenv("JAVA8_HOME")
+    if (java8Home != null) {
+        executable = File(java8Home, "bin/java").absolutePath
+    } else {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(8))
+        })
+    }
+
+    val loomBase = File(gradle.gradleUserHomeDir, "caches/essential-loom")
+    val nativesDir = File(loomBase, "1.8.9/natives")
+    val assetsDir = File(loomBase, "assets")
+    val runDir = layout.buildDirectory.dir("poc-run-vanilla").get().asFile
+    val vanillaJar = File(loomBase, "1.8.9/minecraft-client.jar")
+    val mappings = File(
+        loomBase,
+        "1.8.9/de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9/mappings.tiny"
+    )
+
+    val remapCp = file(".gradle/loom-cache/remapClasspath.txt")
+    val libJars = remapCp.readLines()
+        .filter { it.isNotBlank() }
+        .flatMap { it.split(File.pathSeparatorChar) }
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .filter { p ->
+            !p.contains("intermediary") &&
+                !p.contains("net.minecraftforge") &&
+                !p.contains("minecraft-project-@-mapped") &&
+                !p.contains("minecraft-mapped.jar") &&
+                !p.contains("minecraft-srg.jar") &&
+                !p.contains("minecraft-client.jar") &&
+                !p.contains("forge-")
+        }
+        .map { file(it) }
+
+    classpath = files(runtimeSourceSet.output, vanillaJar, libJars, runtimeMixin)
+
+    systemProperty("java.library.path", nativesDir.absolutePath)
+    systemProperty("org.lwjgl.librarypath", nativesDir.absolutePath)
+    systemProperty("mixin.debug", "true")
+    systemProperty("fpsmaster.runtime.vanilla", "true")
+    systemProperty("fpsmaster.runtime.mappings", mappings.absolutePath)
+    systemProperty("fpsmaster.runtime.vanillaJar", vanillaJar.absolutePath)
+
+    args(
+        "--tweakClass", "top.fpsmaster.runtime.FpsMasterTweaker",
+        "--version", "1.8.9",
+        "--accessToken", "0",
+        "--username", "FPSMasterPOC",
+        "--assetIndex", "1.8.9-1.8",
+        "--assetsDir", assetsDir.absolutePath,
+        "--gameDir", runDir.absolutePath
+    )
+
+    doFirst {
+        runDir.mkdirs()
+        require(vanillaJar.isFile) { "Missing real vanilla jar: $vanillaJar" }
+        require(mappings.isFile) { "Missing mappings: $mappings" }
+        // Prove we are not accidentally using a named/Forge-patched jar.
+        val forgeOnCp = classpath.files.filter {
+            it.path.contains("minecraftforge") || it.name.contains("forge-") ||
+                it.name.contains("named-noforge") || it.name.contains("minecraft-mapped")
+        }
+        require(forgeOnCp.isEmpty()) { "Forbidden jar on vanilla POC classpath: $forgeOnCp" }
+        val hasVanilla = classpath.files.any { it == vanillaJar || it.name == "minecraft-client.jar" }
+        require(hasVanilla) { "Real minecraft-client.jar missing from classpath" }
+        logger.lifecycle("[runtime-vanilla] classpath jars: ${classpath.files.size}")
+        logger.lifecycle("[runtime-vanilla] REAL client jar: ${vanillaJar.absolutePath}")
+        logger.lifecycle("[runtime-vanilla] mappings:        ${mappings.absolutePath}")
+        logger.lifecycle("[runtime-vanilla] natives:         ${nativesDir.absolutePath}")
+    }
+}
+
+
+// ============================================================================
+// Full-functionality Forge-free run: the ENTIRE FPSMaster Edge client (main
+// sourceSet + all mixins in mixins.fpsmaster.json) on a plain 1.8.9 client,
+// no Forge/FML. Reuses the Stage-0 POC plumbing (LaunchWrapper + Mixin +
+// Forge-free named jar). Kept fully separate from the Forge build; the normal
+// `./gradlew build` and the IDE Minecraft Client run are untouched.
+// ============================================================================
+tasks.register<JavaExec>("runFullClient") {
+    group = "fpsmaster-runtime"
+    description = "Launch the FULL client (all main mixins) with NO Forge: LaunchWrapper + FpsMasterFullTweaker."
+    dependsOn("classes", "runtimeClasses", runtimeMixin, "remapPocMinecraft")
+
+    mainClass.set("net.minecraft.launchwrapper.Launch")
+
+    // 1.8.9 client MUST run on JDK 8 (LaunchWrapper casts the system classloader to URLClassLoader).
+    // Apple Silicon: LWJGL2 natives are x86_64 → prefer an x86_64 JDK 8 under Rosetta.
+    val java8Home = (findProperty("poc.java8") as String?) ?: System.getenv("JAVA8_HOME")
+    if (java8Home != null) {
+        executable = File(java8Home, "bin/java").absolutePath
+    } else {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(8))
+        })
+    }
+
+    val loomBase = File(gradle.gradleUserHomeDir, "caches/essential-loom")
+    val nativesDir = File(loomBase, "1.8.9/natives")
+    val assetsDir = File(loomBase, "assets")
+    val runDir = layout.buildDirectory.dir("poc-run-full").get().asFile
+    val namedMc = runtimeNamedJar.get().asFile
+
+    // Runtime classpath from loom's resolved list, MINUS Forge / intermediary / patched MC.
+    val remapCp = file(".gradle/loom-cache/remapClasspath.txt")
+    val libJars = remapCp.readLines()
+        .filter { it.isNotBlank() }
+        .flatMap { it.split(File.pathSeparatorChar) }
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .filter { p ->
+            !p.contains("intermediary") &&
+                !p.contains("net.minecraftforge") &&
+                !p.contains("minecraft-project-@-mapped") &&
+                !p.contains("minecraft-mapped.jar") &&
+                !p.contains("minecraft-srg.jar") &&
+                !p.contains("minecraft-client.jar") &&
+                !p.contains("forge-")
+        }
+        .map { file(it) }
+
+    // main output (classes + resources incl. mixins.fpsmaster.json) + POC tweaker + named MC +
+    // the shaded business deps (mixin, websocket, slf4j, kotlin, jlayer, zxing, jna, Cadence) + MC libs.
+    classpath = files(
+        sourceSets["main"].output,
+        runtimeSourceSet.output,
+        namedMc,
+        configurations["shadowImpl"],
+        libJars,
+        runtimeMixin
+    )
+
+    systemProperty("java.library.path", nativesDir.absolutePath)
+    systemProperty("org.lwjgl.librarypath", nativesDir.absolutePath)
+    systemProperty("mixin.debug", "true")
+    systemProperty("mixin.env.disableRefMap", "true")
+    systemProperty("fpsmaster.noforge", "true")
+    systemProperty("fpsmaster.full", "true")
+
+    args(
+        "--tweakClass", "top.fpsmaster.runtime.FpsMasterFullTweaker",
+        "--version", "1.8.9",
+        "--accessToken", "0",
+        "--username", "FPSMasterFull",
+        "--assetIndex", "1.8.9-1.8",
+        "--assetsDir", assetsDir.absolutePath,
+        "--gameDir", runDir.absolutePath
+    )
+
+    doFirst {
+        runDir.mkdirs()
+        require(namedMc.isFile) { "Forge-free named jar missing: $namedMc (run remapPocMinecraft)" }
+        val forgeOnCp = classpath.files.filter {
+            it.path.contains("minecraftforge") || it.name.contains("forge-") ||
+                it.name.contains("minecraft-mapped")
+        }
+        require(forgeOnCp.isEmpty()) { "Forge leaked onto FULL classpath: $forgeOnCp" }
+        logger.lifecycle("[runtime-full] classpath jars: ${classpath.files.size} (Forge excluded)")
+        logger.lifecycle("[runtime-full] named MC:      ${namedMc.absolutePath}")
+        logger.lifecycle("[runtime-full] natives:       ${nativesDir.absolutePath}")
+    }
+}
+
+// ============================================================================
+// vanilla + OptiFine (non-Forge): REAL notch minecraft-client.jar + OptiFineTweaker then
+// FpsMasterFullTweaker. OF patches notch names; runtime deobf remaps OF-patched bytes to MCP
+// names so mixins still apply. Named-jar runFullClient cannot host OF patches.
+// ============================================================================
+val optifinePreferredName = "OptiFine_1.8.9_HD_U_M5.jar"
+val optifineDir = layout.buildDirectory.dir("poc/optifine")
+val optifineJarProvider = optifineDir.map { it.file(optifinePreferredName) }
+
+tasks.register("resolveOptifine") {
+    group = "fpsmaster-runtime"
+    description = "Resolve non-Forge OptiFine 1.8.9 jar (override with -Poptifine.jar=/path)."
+    outputs.file(optifineJarProvider)
+    doLast {
+        val dest = optifineJarProvider.get().asFile
+        dest.parentFile.mkdirs()
+
+        val override = findProperty("optifine.jar") as String?
+        if (override != null) {
+            val src = file(override)
+            require(src.isFile) { "optifine.jar override missing: $src" }
+            src.copyTo(dest, overwrite = true)
+            logger.lifecycle("[optifine] copied override → ${dest.absolutePath}")
+            return@doLast
+        }
+        if (dest.isFile && dest.length() > 1_000_000L) {
+            logger.lifecycle("[optifine] already present: ${dest.absolutePath}")
+            return@doLast
+        }
+        val localCandidates = listOf(
+            file("runtime/libs/$optifinePreferredName"),
+            file("runtime/libs/OptiFine_1.8.9_HD_U_I7.jar"),
+        )
+        val local = localCandidates.firstOrNull { it.isFile }
+        if (local != null) {
+            local.copyTo(dest, overwrite = true)
+            logger.lifecycle("[optifine] copied local ${local.name} → ${dest.absolutePath}")
+            return@doLast
+        }
+
+        // BMCLAPI mirror (same CDN the launcher ecosystem uses for OptiFine downloads).
+        val url = "https://bmclapi2.bangbang93.com/optifine/1.8.9/HD_U_M5"
+        logger.lifecycle("[optifine] downloading $url …")
+        URI(url).toURL().openStream().use { input ->
+            dest.outputStream().use { output -> input.copyTo(output) }
+        }
+        require(dest.isFile && dest.length() > 1_000_000L) {
+            "OptiFine download failed or too small: $dest. Pass -Poptifine.jar=/path/to/OptiFine_1.8.9_*.jar"
+        }
+        logger.lifecycle("[optifine] downloaded → ${dest.absolutePath} (${dest.length()} bytes)")
+    }
+}
+
+tasks.register<JavaExec>("runFullClientOf") {
+    group = "fpsmaster-runtime"
+    description =
+        "Launch FULL client + non-Forge OptiFine: notch jar + OptiFineTweaker + FpsMasterFullTweaker."
+    dependsOn("classes", "runtimeClasses", runtimeMixin, "resolveOptifine")
+
+    mainClass.set("net.minecraft.launchwrapper.Launch")
+
+    val java8Home = (findProperty("poc.java8") as String?) ?: System.getenv("JAVA8_HOME")
+    if (java8Home != null) {
+        executable = File(java8Home, "bin/java").absolutePath
+    } else {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(8))
+        })
+    }
+
+    val loomBase = File(gradle.gradleUserHomeDir, "caches/essential-loom")
+    val nativesDir = File(loomBase, "1.8.9/natives")
+    val assetsDir = File(loomBase, "assets")
+    val runDir = layout.buildDirectory.dir("poc-run-full-of").get().asFile
+    val vanillaJar = File(loomBase, "1.8.9/minecraft-client.jar")
+    val mappings = File(
+        loomBase,
+        "1.8.9/de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9/mappings.tiny"
+    )
+    val ofJar = optifineJarProvider.get().asFile
+
+    val remapCp = file(".gradle/loom-cache/remapClasspath.txt")
+    val libJars = remapCp.readLines()
+        .filter { it.isNotBlank() }
+        .flatMap { it.split(File.pathSeparatorChar) }
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .filter { p ->
+            !p.contains("intermediary") &&
+                !p.contains("net.minecraftforge") &&
+                !p.contains("minecraft-project-@-mapped") &&
+                !p.contains("minecraft-mapped.jar") &&
+                !p.contains("minecraft-srg.jar") &&
+                !p.contains("minecraft-client.jar") &&
+                !p.contains("named-noforge") &&
+                !p.contains("forge-")
+        }
+        .map { file(it) }
+
+    classpath = files(
+        sourceSets["main"].output,
+        runtimeSourceSet.output,
+        vanillaJar,
+        ofJar,
+        configurations["shadowImpl"],
+        libJars,
+        runtimeMixin
+    )
+
+    systemProperty("java.library.path", nativesDir.absolutePath)
+    systemProperty("org.lwjgl.librarypath", nativesDir.absolutePath)
+    systemProperty("mixin.debug", "true")
+    systemProperty("mixin.env.disableRefMap", "true")
+    systemProperty("fpsmaster.noforge", "true")
+    systemProperty("fpsmaster.full", "true")
+    systemProperty("fpsmaster.withOptifine", "true")
+    systemProperty("fpsmaster.runtime.vanilla", "true")
+    systemProperty("fpsmaster.runtime.mappings", mappings.absolutePath)
+    systemProperty("fpsmaster.runtime.vanillaJar", vanillaJar.absolutePath)
+
+    // OF first (patches notch), then FullTweaker (deobf + Mixin). Explicit OptiFineTweaker —
+    // jar Manifest defaults to OptiFineForgeTweaker which is wrong for no-Forge.
+    args(
+        "--tweakClass", "optifine.OptiFineTweaker",
+        "--tweakClass", "top.fpsmaster.runtime.FpsMasterFullTweaker",
+        "--version", "1.8.9",
+        "--accessToken", "0",
+        "--username", "FPSMasterFullOF",
+        "--assetIndex", "1.8.9-1.8",
+        "--assetsDir", assetsDir.absolutePath,
+        "--gameDir", runDir.absolutePath
+    )
+
+    doFirst {
+        runDir.mkdirs()
+        require(vanillaJar.isFile) { "Missing real vanilla jar: $vanillaJar" }
+        require(mappings.isFile) { "Missing mappings: $mappings" }
+        require(ofJar.isFile) { "Missing OptiFine jar: $ofJar (run resolveOptifine)" }
+        val forgeOnCp = classpath.files.filter {
+            it.path.contains("minecraftforge") || it.name.contains("forge-") ||
+                it.name.contains("named-noforge") || it.name.contains("minecraft-mapped")
+        }
+        require(forgeOnCp.isEmpty()) { "Forbidden jar on FULL+OF classpath: $forgeOnCp" }
+        val hasVanilla = classpath.files.any { it == vanillaJar || it.name == "minecraft-client.jar" }
+        require(hasVanilla) { "Real minecraft-client.jar missing from classpath" }
+        val hasOf = classpath.files.any { it == ofJar || it.name.startsWith("OptiFine_") }
+        require(hasOf) { "OptiFine jar missing from classpath" }
+        logger.lifecycle("[runtime-full-of] classpath jars: ${classpath.files.size} (Forge excluded)")
+        logger.lifecycle("[runtime-full-of] REAL client jar: ${vanillaJar.absolutePath}")
+        logger.lifecycle("[runtime-full-of] OptiFine:        ${ofJar.absolutePath}")
+        logger.lifecycle("[runtime-full-of] mappings:        ${mappings.absolutePath}")
+        logger.lifecycle("[runtime-full-of] natives:         ${nativesDir.absolutePath}")
+    }
+}
+
+// ============================================================================
+// Production AOT distribution (vanilla / no-Forge):
+// pre-remap notch→named at build time so runtime RuntimeDeobfTransformer is not needed.
+// Parallel to the Forge Modrinth jar (remapJar) — does not replace it.
+// ============================================================================
+val aotDistName = "fpsmaster-edge-aot-$version"
+val aotDistDir = layout.buildDirectory.dir("aot/$aotDistName")
+val aotClientNamedJar = aotDistDir.map { it.file("client-named.jar") }
+val aotRuntimeJar = aotDistDir.map { it.file("fpsmaster-runtime.jar") }
+val aotMappingsFile = aotDistDir.map { it.file("mappings.tiny") }
+val aotLoomMappings = File(
+    gradle.gradleUserHomeDir,
+    "caches/essential-loom/1.8.9/de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9/mappings.tiny"
+)
+val aotMappingsId =
+    "mcp_stable.22-1.8.9/official→named (essential-loom 1.8.9 mappings.tiny)"
+
+fun aotLibJars(): List<File> {
+    val remapCp = file(".gradle/loom-cache/remapClasspath.txt")
+    return remapCp.readLines()
+        .filter { it.isNotBlank() }
+        .flatMap { it.split(File.pathSeparatorChar) }
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .filter { p ->
+            !p.contains("intermediary") &&
+                !p.contains("net.minecraftforge") &&
+                !p.contains("minecraft-project-@-mapped") &&
+                !p.contains("minecraft-mapped.jar") &&
+                !p.contains("minecraft-srg.jar") &&
+                !p.contains("minecraft-client.jar") &&
+                !p.contains("named-noforge") &&
+                !p.contains("forge-")
+        }
+        .map { file(it) }
+}
+
+tasks.register<Copy>("remapAotMinecraft") {
+    group = "fpsmaster-aot"
+    description = "Copy Forge-free named client jar into the AOT distribution directory."
+    dependsOn("remapPocMinecraft")
+    from(runtimeNamedJar)
+    into(aotDistDir)
+    rename { "client-named.jar" }
+    doLast {
+        val out = aotClientNamedJar.get().asFile
+        require(out.isFile) { "AOT client-named.jar missing after copy: $out" }
+        logger.lifecycle("[aot] client-named.jar → ${out.absolutePath}")
+    }
+}
+
+tasks.register<ShadowJar>("shadowAotRuntime") {
+    group = "fpsmaster-aot"
+    description =
+        "Shadow main + poc tweaker + deps into named fpsmaster-runtime.jar (no Forge remap)."
+    dependsOn("classes", "runtimeClasses")
+
+    archiveFileName.set("fpsmaster-runtime.jar")
+    destinationDirectory.set(aotDistDir)
+    configurations = listOf(shadowImpl)
+    from(sourceSets["main"].output)
+    from(runtimeSourceSet.output)
+    mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // Shaded deps (e.g. Cadence/JNA) may carry META-INF signatures that break JarVerifier.
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.EC")
+
+    // Clear Forge-mod attributes inherited from tasks.withType(Jar) — this jar is LaunchWrapper-only.
+    manifest {
+        attributes.clear()
+        attributes(
+            mapOf(
+                "TweakClass" to "top.fpsmaster.runtime.FpsMasterFullTweaker",
+                "MixinConfigs" to "mixins.fpsmaster.json",
+                "Implementation-Title" to "FPSMaster Edge AOT Runtime",
+                "Implementation-Version" to version,
+            )
+        )
+    }
+
+    // Keep MCP named — do not feed this jar through remapJar (SRG).
+    doLast {
+        val out = archiveFile.get().asFile
+        require(out.isFile && out.length() > 100_000L) { "AOT runtime jar looks empty: $out" }
+        logger.lifecycle("[aot] fpsmaster-runtime.jar → ${out.absolutePath} (${out.length()} bytes)")
+    }
+}
+
+fun sha256Hex(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    file.inputStream().use { input ->
+        val buf = ByteArray(8192)
+        while (true) {
+            val n = input.read(buf)
+            if (n < 0) break
+            digest.update(buf, 0, n)
+        }
+    }
+    return digest.digest().joinToString("") { b -> "%02x".format(b) }
+}
+
+tasks.register("packageAotDistribution") {
+    group = "fpsmaster-aot"
+    description =
+        "Assemble AOT distribution (named client + mappings for notch launch + runtime) and zip."
+    dependsOn("remapAotMinecraft", "shadowAotRuntime")
+
+    val zipOut = layout.buildDirectory.file("libs/$aotDistName.zip")
+    outputs.dir(aotDistDir)
+    outputs.file(zipOut)
+
+    doLast {
+        val dir = aotDistDir.get().asFile
+        dir.mkdirs()
+        val client = aotClientNamedJar.get().asFile
+        val runtime = aotRuntimeJar.get().asFile
+        val mappingsOut = aotMappingsFile.get().asFile
+        require(client.isFile) { "Missing $client — run remapAotMinecraft" }
+        require(runtime.isFile) { "Missing $runtime — run shadowAotRuntime" }
+        require(aotLoomMappings.isFile) { "Missing mappings: $aotLoomMappings" }
+        aotLoomMappings.copyTo(mappingsOut, overwrite = true)
+
+        val clientSha = sha256Hex(client)
+        val runtimeSha = sha256Hex(runtime)
+        val mappingsSha = sha256Hex(mappingsOut)
+
+        val fullTweaker = "top.fpsmaster.runtime.FpsMasterFullTweaker"
+        val ofTweaker = "optifine.OptiFineTweaker"
+
+        val manifest = """
+            {
+              "version": "$version",
+              "mc": "$mcVersion",
+              "tweakClass": "$fullTweaker",
+              "mixinConfigs": "mixins.fpsmaster.json",
+              "disableRefMap": true,
+              "mappingsId": "$aotMappingsId",
+              "optifine": {
+                "mc": "1.8.9",
+                "recommended": "HD_U_M5",
+                "tweaker": "$ofTweaker",
+                "bundled": false
+              },
+              "profiles": {
+                "vanilla": {
+                  "useForge": false,
+                  "useOptiFine": false,
+                  "client": "client-named.jar",
+                  "runtimeDeobf": false,
+                  "tweakClasses": ["$fullTweaker"]
+                },
+                "vanilla+of": {
+                  "useForge": false,
+                  "useOptiFine": true,
+                  "client": "notch",
+                  "runtimeDeobf": true,
+                  "tweakClasses": ["$ofTweaker", "$fullTweaker"]
+                },
+                "forge": {
+                  "useForge": true,
+                  "useOptiFine": false,
+                  "launch": "forge-mod",
+                  "note": "Use FPSMaster-edge.jar in mods/; not this AOT LaunchWrapper path"
+                },
+                "forge+of": {
+                  "useForge": true,
+                  "useOptiFine": true,
+                  "launch": "forge-mod",
+                  "note": "Forge + OptiFine jar in mods/ + Edge Forge mod"
+                }
+              },
+              "namedClient": {
+                "file": "client-named.jar",
+                "sha256": "$clientSha"
+              },
+              "mappings": {
+                "file": "mappings.tiny",
+                "sha256": "$mappingsSha"
+              },
+              "runtime": {
+                "file": "fpsmaster-runtime.jar",
+                "sha256": "$runtimeSha"
+              }
+            }
+        """.trimIndent() + "\n"
+        File(dir, "manifest.json").writeText(manifest)
+
+        val launchProfiles = """
+            {
+              "fullTweaker": "$fullTweaker",
+              "optifineTweaker": "$ofTweaker",
+              "runtimeJar": "fpsmaster-runtime.jar",
+              "namedClientJar": "client-named.jar",
+              "mappingsFile": "mappings.tiny",
+              "jvm": {
+                "disableRefMap": true,
+                "noforge": true
+              },
+              "profiles": {
+                "vanilla": {
+                  "client": "client-named.jar",
+                  "runtimeDeobf": false,
+                  "tweakClasses": ["$fullTweaker"]
+                },
+                "vanilla+of": {
+                  "client": "notch",
+                  "runtimeDeobf": true,
+                  "requiresOptiFineJar": true,
+                  "tweakClasses": ["$ofTweaker", "$fullTweaker"]
+                }
+              }
+            }
+        """.trimIndent() + "\n"
+        File(dir, "launch-profiles.json").writeText(launchProfiles)
+
+        File(dir, "SHA256SUMS").writeText(
+            "$clientSha  client-named.jar\n$runtimeSha  fpsmaster-runtime.jar\n$mappingsSha  mappings.tiny\n"
+        )
+
+        val zipFile = zipOut.get().asFile
+        zipFile.parentFile.mkdirs()
+        if (zipFile.exists()) zipFile.delete()
+        ant.withGroovyBuilder {
+            "zip"("destfile" to zipFile.absolutePath, "basedir" to dir.absolutePath)
+        }
+        logger.lifecycle("[aot] packaged ${dir.absolutePath}")
+        logger.lifecycle("[aot] zip       ${zipFile.absolutePath} (${zipFile.length()} bytes)")
+    }
+}
+
+tasks.register<JavaExec>("runAotClient") {
+    group = "fpsmaster-aot"
+    description =
+        "Launch FULL client from AOT artifacts (named client jar, no runtime deobf, no Forge)."
+    dependsOn("packageAotDistribution")
+
+    mainClass.set("net.minecraft.launchwrapper.Launch")
+
+    val java8Home = (findProperty("poc.java8") as String?) ?: System.getenv("JAVA8_HOME")
+    if (java8Home != null) {
+        executable = File(java8Home, "bin/java").absolutePath
+    } else {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(8))
+        })
+    }
+
+    val loomBase = File(gradle.gradleUserHomeDir, "caches/essential-loom")
+    val nativesDir = File(loomBase, "1.8.9/natives")
+    val assetsDir = File(loomBase, "assets")
+    val runDir = layout.buildDirectory.dir("poc-run-aot").get().asFile
+    val namedMc = aotClientNamedJar.get().asFile
+    val runtimeJar = aotRuntimeJar.get().asFile
+
+    classpath = files(runtimeJar, namedMc, aotLibJars())
+
+    systemProperty("java.library.path", nativesDir.absolutePath)
+    systemProperty("org.lwjgl.librarypath", nativesDir.absolutePath)
+    systemProperty("mixin.debug", "true")
+    systemProperty("mixin.env.disableRefMap", "true")
+    systemProperty("fpsmaster.noforge", "true")
+    systemProperty("fpsmaster.full", "true")
+    systemProperty("fpsmaster.aot", "true")
+    // Intentionally NOT fpsmaster.runtime.vanilla — AOT ships pre-named client-named.jar.
+
+    args(
+        "--tweakClass", "top.fpsmaster.runtime.FpsMasterFullTweaker",
+        "--version", "1.8.9",
+        "--accessToken", "0",
+        "--username", "FPSMasterAOT",
+        "--assetIndex", "1.8.9-1.8",
+        "--assetsDir", assetsDir.absolutePath,
+        "--gameDir", runDir.absolutePath
+    )
+
+    doFirst {
+        runDir.mkdirs()
+        require(namedMc.isFile) { "AOT client-named.jar missing: $namedMc" }
+        require(runtimeJar.isFile) { "AOT fpsmaster-runtime.jar missing: $runtimeJar" }
+        val forgeOnCp = classpath.files.filter {
+            it.path.contains("minecraftforge") || it.name.contains("forge-") ||
+                it.name.contains("minecraft-mapped")
+        }
+        require(forgeOnCp.isEmpty()) { "Forge leaked onto AOT classpath: $forgeOnCp" }
+        logger.lifecycle("[aot-run] classpath jars: ${classpath.files.size}")
+        logger.lifecycle("[aot-run] client-named:   ${namedMc.absolutePath}")
+        logger.lifecycle("[aot-run] runtime:        ${runtimeJar.absolutePath}")
+        logger.lifecycle("[aot-run] natives:        ${nativesDir.absolutePath}")
+    }
+}
+
+tasks.register<JavaExec>("runAotClientNotch") {
+    group = "fpsmaster-aot"
+    description =
+        "Launch FULL client with REAL notch minecraft-client.jar + AOT runtime + runtime deobf."
+    dependsOn("packageAotDistribution")
+
+    mainClass.set("net.minecraft.launchwrapper.Launch")
+
+    val java8Home = (findProperty("poc.java8") as String?) ?: System.getenv("JAVA8_HOME")
+    if (java8Home != null) {
+        executable = File(java8Home, "bin/java").absolutePath
+    } else {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(8))
+        })
+    }
+
+    val loomBase = File(gradle.gradleUserHomeDir, "caches/essential-loom")
+    val nativesDir = File(loomBase, "1.8.9/natives")
+    val assetsDir = File(loomBase, "assets")
+    val runDir = layout.buildDirectory.dir("poc-run-aot-notch").get().asFile
+    val defaultVanilla = File(loomBase, "1.8.9/minecraft-client.jar")
+    val vanillaOverride = findProperty("minecraft.client") as String?
+    val vanillaJar = if (vanillaOverride != null) file(vanillaOverride) else defaultVanilla
+    val runtimeJar = aotRuntimeJar.get().asFile
+    val mappings = aotMappingsFile.get().asFile
+
+    classpath = files(runtimeJar, vanillaJar, aotLibJars())
+
+    systemProperty("java.library.path", nativesDir.absolutePath)
+    systemProperty("org.lwjgl.librarypath", nativesDir.absolutePath)
+    systemProperty("mixin.debug", "true")
+    systemProperty("mixin.env.disableRefMap", "true")
+    systemProperty("fpsmaster.noforge", "true")
+    systemProperty("fpsmaster.full", "true")
+    systemProperty("fpsmaster.aot", "true")
+    systemProperty("fpsmaster.runtime.vanilla", "true")
+    systemProperty("fpsmaster.runtime.mappings", mappings.absolutePath)
+    systemProperty("fpsmaster.runtime.vanillaJar", vanillaJar.absolutePath)
+
+    args(
+        "--tweakClass", "top.fpsmaster.runtime.FpsMasterFullTweaker",
+        "--version", "1.8.9",
+        "--accessToken", "0",
+        "--username", "FPSMasterAOTNotch",
+        "--assetIndex", "1.8.9-1.8",
+        "--assetsDir", assetsDir.absolutePath,
+        "--gameDir", runDir.absolutePath
+    )
+
+    doFirst {
+        runDir.mkdirs()
+        require(vanillaJar.isFile) {
+            "Missing notch client jar: $vanillaJar (override with -Pminecraft.client=/path/to/minecraft-client.jar)"
+        }
+        require(runtimeJar.isFile) { "AOT fpsmaster-runtime.jar missing: $runtimeJar" }
+        require(mappings.isFile) { "AOT mappings.tiny missing: $mappings (run packageAotDistribution)" }
+        val forgeOnCp = classpath.files.filter {
+            it.path.contains("minecraftforge") || it.name.contains("forge-") ||
+                it.name.contains("named-noforge") || it.name.contains("minecraft-mapped") ||
+                it.name == "client-named.jar"
+        }
+        require(forgeOnCp.isEmpty()) { "Forbidden jar on AOT-notch classpath: $forgeOnCp" }
+        val hasVanilla = classpath.files.any { it == vanillaJar || it.name == "minecraft-client.jar" }
+        require(hasVanilla) { "Notch minecraft-client.jar missing from classpath" }
+        logger.lifecycle("[aot-notch] classpath jars: ${classpath.files.size}")
+        logger.lifecycle("[aot-notch] REAL client jar: ${vanillaJar.absolutePath}")
+        logger.lifecycle("[aot-notch] runtime:         ${runtimeJar.absolutePath}")
+        logger.lifecycle("[aot-notch] mappings:        ${mappings.absolutePath}")
+        logger.lifecycle("[aot-notch] natives:         ${nativesDir.absolutePath}")
+    }
+}
 

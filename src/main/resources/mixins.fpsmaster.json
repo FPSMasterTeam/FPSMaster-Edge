@@ -1,5 +1,6 @@
 {
   "package": "top.fpsmaster.forge.mixin",
+  "plugin": "top.fpsmaster.forge.mixin.NoForgeMixinPlugin",
   "refmap": "mixins.${modid}.refmap.json",
   "minVersion": "0.7",
   "compatibilityLevel": "JAVA_8",
@@ -11,7 +12,6 @@
     "MixinNetworkManager",
     "MixinParticleManager",
     "MixinS38PacketPlayerListItem",
-    "MixinSplashScreen",
     "ModelRendererMixin_BatchDrawing",
     "ModelRendererMixin_CostProbe",
     "ModelRendererMixin_ComposedTransform",
@@ -45,8 +45,6 @@
     "MixinGuiChat",
     "MixinGuiContainer",
     "MixinGuiIngame",
-    "GuiIngameForgeMixin_HudBreakdown",
-    "MixinGuiIngameForge",
     "MixinGuiMultiplayer",
     "MixinGuiNewChat",
     "MixinGuiPlayerOverlay",

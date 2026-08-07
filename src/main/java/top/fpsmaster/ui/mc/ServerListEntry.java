@@ -8,15 +8,13 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.base64.Base64;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.multiplayer.GuiConnecting;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.client.FMLClientHandler;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 
-@SideOnly(Side.CLIENT)
 public class ServerListEntry {
     private static final Logger logger = LogManager.getLogger();
     private static final ThreadPoolExecutor field_148302_b = new ScheduledThreadPoolExecutor(5, (new ThreadFactoryBuilder()).setNameFormat("Server Pinger #%d").setDaemon(true).build());
@@ -80,7 +77,7 @@ public class ServerListEntry {
         boolean flag1 = this.server.version < 47;
         boolean flag2 = flag || flag1;
         title.drawString(this.server.serverName, x + 32 + 3 + 10, y + 1 + 10, -1);
-        List<String> list = text.listFormattedStringToWidth(FMLClientHandler.instance().fixDescription(this.server.serverMOTD), listWidth - 48 - 2);
+        List<String> list = text.listFormattedStringToWidth(this.server.serverMOTD, listWidth - 48 - 2);
 
         for (int i = 0; i < Math.min(list.size(), 2); ++i) {
             text.drawString(list.get(i), x + 32 + 3 + 10, y + 12 + 10 + this.mc.fontRendererObj.FONT_HEIGHT * i, -1);
@@ -207,7 +204,7 @@ public class ServerListEntry {
 
     public void triggerClick() {
         if (Minecraft.getSystemTime() - lastClick < 250L) {
-            FMLClientHandler.instance().connectToServer(owner, getServerData());
+            this.mc.displayGuiScreen(new GuiConnecting(owner, this.mc, getServerData()));
         }
         lastClick = Minecraft.getSystemTime();
     }

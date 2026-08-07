@@ -17,9 +17,8 @@ import net.minecraft.potion.Potion;
 import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.util.*;
-import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.client.event.EntityViewRenderEvent;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraft.init.Blocks;
+import net.minecraft.block.BlockBed;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
@@ -144,7 +143,10 @@ public abstract class MixinEntityRenderer {
                     screenScale = screenScale * 60.0F / 70.0F;
                 }
 
-                cir.setReturnValue(ForgeHooksClient.getFOVModifier((EntityRenderer) (Object) this, entity, block, partialTicks, screenScale));
+                // Vanilla-equivalent of ForgeHooksClient.getFOVModifier: with no other FOV mods
+                // subscribing (this client is the only mod), the Forge hook just returns the value
+                // computed above, so return it directly and keep the class off Forge's constant pool.
+                cir.setReturnValue(screenScale);
             }
         }
     }
@@ -218,7 +220,12 @@ public abstract class MixinEntityRenderer {
             if (!mc.gameSettings.debugCamEnable) {
                 BlockPos blockpos = new BlockPos(entity);
                 IBlockState iblockstate = mc.theWorld.getBlockState(blockpos);
-                ForgeHooksClient.orientBedCamera(mc.theWorld, blockpos, iblockstate, entity);
+                // Inline vanilla-equivalent of ForgeHooksClient.orientBedCamera: for a vanilla bed,
+                // rotate the camera to the bed's facing. Keeps behaviour identical without Forge.
+                if (iblockstate.getBlock() == Blocks.bed) {
+                    int bedDir = ((EnumFacing) iblockstate.getValue(BlockBed.FACING)).getHorizontalIndex();
+                    GlStateManager.rotate(bedDir * 90.0F, 0.0F, 1.0F, 0.0F);
+                }
                 if (FreeLook.using) {
                     GlStateManager.rotate(FreeLook.getCameraPrevYaw() + (FreeLook.getCameraYaw() - FreeLook.getCameraPrevYaw()) * partialTicks + 180.0F, 0.0F, -1.0F, 0.0F);
                     GlStateManager.rotate(FreeLook.getCameraPrevPitch() + (FreeLook.getCameraPitch() - FreeLook.getCameraPrevPitch()) * partialTicks, -1.0F, 0.0F, 0.0F);
@@ -286,12 +293,11 @@ public abstract class MixinEntityRenderer {
                 yaw = entityanimal.prevRotationYawHead + (entityanimal.rotationYawHead - entityanimal.prevRotationYawHead) * partialTicks + 180.0F;
             }
 
-            Block block = ActiveRenderInfo.getBlockAtEntityViewpoint(mc.theWorld, entity, partialTicks);
-            EntityViewRenderEvent.CameraSetup event = new EntityViewRenderEvent.CameraSetup((EntityRenderer) ((Object) this), entity, block, partialTicks, yaw, pitch, f1);
-            MinecraftForge.EVENT_BUS.post(event);
-            GlStateManager.rotate(event.roll, 0.0F, 0.0F, 1.0F);
-            GlStateManager.rotate(event.pitch, 1.0F, 0.0F, 0.0F);
-            GlStateManager.rotate(event.yaw, 0.0F, 1.0F, 0.0F);
+            // Vanilla-equivalent of the EntityViewRenderEvent.CameraSetup post: with no camera
+            // mods subscribing, roll stays f1 (0) and yaw/pitch are the values computed above.
+            GlStateManager.rotate(f1, 0.0F, 0.0F, 1.0F);
+            GlStateManager.rotate(pitch, 1.0F, 0.0F, 0.0F);
+            GlStateManager.rotate(yaw, 0.0F, 1.0F, 0.0F);
         }
 
         GlStateManager.translate(0.0F, -f, 0.0F);

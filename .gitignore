@@ -26,3 +26,7 @@ remeasure.ps1
 # SMTC 原生库由 CI 构建后注入（native/smtc/CMakeLists.txt），不提交二进制
 src/main/resources/native/windows/*/*.dll
 native/smtc/build-*/
+
+# Local OptiFine jars used for Forge-free / AOT smoke runs (do not redistribute).
+runtime/libs/
+poc/libs/

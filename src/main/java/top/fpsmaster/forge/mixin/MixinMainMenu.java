@@ -17,6 +17,11 @@ public class MixinMainMenu {
      */
     @Overwrite
     public void initGui(){
+        // Under Forge-free launch, startGame displays GuiMainMenu before our startGame-RETURN
+        // init runs — so initialize here first (idempotent) before OobeScreen captures fonts.
+        if (Boolean.getBoolean("fpsmaster.noforge")) {
+            FPSMaster.INSTANCE.initialize();
+        }
         Minecraft.getMinecraft().displayGuiScreen(FPSMaster.configManager.configure.oobeCompleted ? new MainMenu() : new OobeScreen());
     }
 }

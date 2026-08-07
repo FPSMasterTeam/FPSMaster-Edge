@@ -159,6 +159,22 @@ public abstract class MixinMinecraft implements IMinecraft {
         FPSMaster.INSTANCE.shutdown();
     }
 
+    /**
+     * Forge-free bootstrap. Under Forge, {@code FMLInitializationEvent} → {@link top.fpsmaster.forge.Mod}
+     * already runs {@code initialize()} during startup; that call wins and this one is a no-op (initialize
+     * is idempotent). Under raw LaunchWrapper there is no FML, so this is the sole entry point — fired once
+     * the client is fully constructed (mcDataDir, ingameGUI, resource manager all live). Guarded by the
+     * {@code fpsmaster.noforge} flag so the Forge path is byte-for-byte unaffected at runtime.
+     */
+    // NOTE: must NOT start with the "fpsmaster$" prefix — this class @Implements IMinecraft with that
+    // prefix, so any such name is treated as a soft-implemented interface method and would be rejected.
+    @Inject(method = "startGame", at = @At("RETURN"))
+    private void edge$noForgeInit(CallbackInfo ci) {
+        if (Boolean.getBoolean("fpsmaster.noforge")) {
+            FPSMaster.INSTANCE.initialize();
+        }
+    }
+
 
     @Override
     public Timer arch$getTimer() {

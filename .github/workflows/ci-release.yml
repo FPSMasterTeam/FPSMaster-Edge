@@ -66,6 +66,9 @@ jobs:
       asset_name: ${{ steps.meta.outputs.asset_name }}
       checksum: ${{ steps.meta.outputs.checksum }}
       file_size: ${{ steps.meta.outputs.file_size }}
+      aot_asset_name: ${{ steps.meta.outputs.aot_asset_name }}
+      aot_checksum: ${{ steps.meta.outputs.aot_checksum }}
+      aot_file_size: ${{ steps.meta.outputs.aot_file_size }}
       changelog: ${{ steps.meta.outputs.changelog }}
       commit_hash: ${{ steps.meta.outputs.commit_hash }}
     steps:
@@ -190,26 +193,40 @@ jobs:
         shell: bash
         run: |
           chmod +x ./gradlew
-          ./gradlew build
+          # Forge Modrinth jar + Forge-free AOT zip (launcher no-Forge path).
+          ./gradlew build packageAotDistribution
 
       - name: Capture artifact metadata
         id: meta
         if: steps.decision.outputs.should_build == 'true'
         shell: bash
         run: |
-          artifact_path="$(find build/libs -maxdepth 1 -type f -name '*.jar' | head -n 1)"
+          # Prefer the remapped Forge mod jar; never pick sources/dev jars.
+          artifact_path="$(find build/libs -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' ! -name '*-dev.jar' | sort | head -n 1)"
+          if [ -z "$artifact_path" ]; then
+            artifact_path="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' ! -name 'fpsmaster-runtime.jar' | sort | head -n 1)"
+          fi
           if [ -z "$artifact_path" ]; then
             echo "No jar artifact found in build/libs" >&2
             exit 1
           fi
 
+          aot_path="$(find build/libs -maxdepth 1 -type f -name 'fpsmaster-edge-aot-*.zip' | sort | head -n 1)"
+          if [ -z "$aot_path" ]; then
+            echo "No AOT zip found in build/libs (expected fpsmaster-edge-aot-*.zip)" >&2
+            exit 1
+          fi
+
           asset_name="$(basename "$artifact_path")"
+          aot_asset_name="$(basename "$aot_path")"
           commit_hash="${GITHUB_SHA}"
           short_sha="$(printf '%s' "$commit_hash" | cut -c1-8)"
           version_name="${{ steps.channel.outputs.channel }}-${GITHUB_RUN_NUMBER}-${short_sha}"
           release_tag="${{ steps.channel.outputs.channel }}-${GITHUB_RUN_NUMBER}-${short_sha}"
           checksum="$(sha256sum "$artifact_path" | awk '{print $1}')"
           file_size="$(stat -c%s "$artifact_path")"
+          aot_checksum="$(sha256sum "$aot_path" | awk '{print $1}')"
+          aot_file_size="$(stat -c%s "$aot_path")"
 
           {
             echo "artifact_path=$artifact_path"
@@ -219,6 +236,9 @@ jobs:
             echo "release_tag=$release_tag"
             echo "checksum=$checksum"
             echo "file_size=$file_size"
+            echo "aot_asset_name=$aot_asset_name"
+            echo "aot_checksum=$aot_checksum"
+            echo "aot_file_size=$aot_file_size"
           } >> "$GITHUB_OUTPUT"
 
           {
@@ -233,7 +253,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: edge-build
-          path: build/libs/*.jar
+          path: |
+            build/libs/FPSMaster-edge.jar
+            build/libs/FPSMaster-edge-*.jar
+            build/libs/fpsmaster-edge-aot-*.zip
           if-no-files-found: error
 
   publish:
@@ -253,8 +276,11 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Edge ${{ needs.build.outputs.version_name }}
           body: ${{ needs.build.outputs.changelog }}
-          files: dist/*.jar
-          fail_on_unmatched_files: true
+          files: |
+            dist/FPSMaster-edge.jar
+            dist/FPSMaster-edge-*.jar
+            dist/fpsmaster-edge-aot-*.zip
+          fail_on_unmatched_files: false
 
       - name: Notify release API
         shell: bash
@@ -268,9 +294,18 @@ jobs:
             exit 1
           fi
 
-          artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' | head -n 1)"
+          artifact_path="$(find dist -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' | sort | head -n 1)"
+          if [ -z "$artifact_path" ]; then
+            artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | sort | head -n 1)"
+          fi
           if [ -z "$artifact_path" ]; then
             echo "No jar artifact found in dist" >&2
+            exit 1
+          fi
+
+          aot_path="$(find dist -maxdepth 1 -type f -name 'fpsmaster-edge-aot-*.zip' | sort | head -n 1)"
+          if [ -z "$aot_path" ]; then
+            echo "No AOT zip found in dist" >&2
             exit 1
           fi
 
@@ -284,6 +319,15 @@ jobs:
           download_url="$(printf '%s' "$upload_json" | python -c 'import json,sys; print(json.load(sys.stdin)["url"])')"
           file_bucket="$(printf '%s' "$upload_json" | python -c 'import json,sys; print((json.load(sys.stdin).get("bucket") or ""))')"
           file_key="$(printf '%s' "$upload_json" | python -c 'import json,sys; print((json.load(sys.stdin).get("key") or ""))')"
+
+          aot_upload_response="$(curl --fail --show-error --silent \
+            -X POST \
+            -H "X-CI-Token: ${FPSMASTER_CI_UPLOAD_TOKEN}" \
+            -F "file=@${aot_path}" \
+            "${FPSMASTER_CI_API_BASE_URL%/}/api/v1/launcher/releases/upload")"
+
+          aot_upload_json="$(printf '%s' "$aot_upload_response" | python -c 'import json,sys; data=json.load(sys.stdin); print(json.dumps(data["data"]))')"
+          aot_download_url="$(printf '%s' "$aot_upload_json" | python -c 'import json,sys; print(json.load(sys.stdin)["url"])')"
 
           changelog_json="$(printf '%s' "$CHANGELOG" | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
 
@@ -299,6 +343,9 @@ jobs:
             "fileKey": "${file_key}",
             "fileSize": ${{ needs.build.outputs.file_size }},
             "checksum": "${{ needs.build.outputs.checksum }}",
+            "aotDownloadUrl": "${aot_download_url}",
+            "aotChecksum": "${{ needs.build.outputs.aot_checksum }}",
+            "aotFileSize": ${{ needs.build.outputs.aot_file_size }},
             "recommended": true,
             "mandatory": false,
             "changelog": ${changelog_json}
@@ -328,7 +375,10 @@ jobs:
           fi
 
           project_id="${MODRINTH_PROJECT_ID:-EYsVyax4}"
-          artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' | head -n 1)"
+          artifact_path="$(find dist -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' | sort | head -n 1)"
+          if [ -z "$artifact_path" ]; then
+            artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | sort | head -n 1)"
+          fi
           if [ -z "$artifact_path" ]; then
             echo "No jar artifact found in dist" >&2
             exit 1
@@ -390,7 +440,10 @@ PY
           fi
 
           project_id="${CURSEFORGE_PROJECT_ID:-1081006}"
-          artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' | head -n 1)"
+          artifact_path="$(find dist -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' | sort | head -n 1)"
+          if [ -z "$artifact_path" ]; then
+            artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | sort | head -n 1)"
+          fi
           if [ -z "$artifact_path" ]; then
             echo "No jar artifact found in dist" >&2
             exit 1
