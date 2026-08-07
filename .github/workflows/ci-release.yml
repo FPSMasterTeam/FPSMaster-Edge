@@ -5,14 +5,10 @@ on:
   push:
     branches:
       - main
-      - canary
-      - canary/**
       - beta
       - beta/**
       - release
       - release/**
-  schedule:
-    - cron: "0 19 * * *"
   workflow_dispatch:
 
 permissions:
@@ -80,67 +76,23 @@ jobs:
         id: channel
         shell: bash
         run: |
-          event_name="${GITHUB_EVENT_NAME}"
+          # Only two publish channels remain: beta and release.
           ref="${GITHUB_REF_NAME}"
           channel=""
           should_publish="false"
 
-          if [ "$event_name" = "schedule" ]; then
-            channel="nightly"
+          case "$ref" in
+          main|release|release/*)
+            channel="release"
             should_publish="true"
-          else
-            case "$ref" in
-            main)
-              channel=""
-              should_publish="false"
-              ;;
-            nightly|nightly/*)
-              channel="nightly"
-              should_publish="false"
-              ;;
-            # Git branch is `canary`; backend release channel code is still the legacy `cannary`.
-            canary|canary/*)
-              channel="cannary"
-              should_publish="true"
-              ;;
-            beta|beta/*)
-              channel="beta"
-              should_publish="true"
-              ;;
-            release|release/*)
-              channel="release"
-              should_publish="true"
-              ;;
-            esac
-          fi
+            ;;
+          beta|beta/*)
+            channel="beta"
+            should_publish="true"
+            ;;
+          esac
 
           echo "channel=$channel" >> "$GITHUB_OUTPUT"
-          echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
-
-      - name: Detect nightly changes
-        id: nightly
-        if: github.event_name == 'schedule'
-        shell: bash
-        run: |
-          git fetch --force --tags origin main
-
-          current_short_sha="$(git rev-parse --short=8 origin/main)"
-          latest_nightly_tag="$(git tag -l 'nightly-*' --sort=-v:refname | head -n 1)"
-          latest_nightly_sha=""
-
-          if [ -n "$latest_nightly_tag" ]; then
-            latest_nightly_sha="${latest_nightly_tag##*-}"
-          fi
-
-          should_build="true"
-          should_publish="${{ steps.channel.outputs.should_publish }}"
-
-          if [ "$current_short_sha" = "$latest_nightly_sha" ]; then
-            should_build="false"
-            should_publish="false"
-          fi
-
-          echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
           echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
 
       - name: Finalize build decision
@@ -149,12 +101,9 @@ jobs:
         run: |
           should_build="true"
           should_publish="${{ steps.channel.outputs.should_publish }}"
-
-          if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
-            should_build="${{ steps.nightly.outputs.should_build }}"
-            should_publish="${{ steps.nightly.outputs.should_publish }}"
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            should_publish="false"
           fi
-
           echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
           echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
 
@@ -391,7 +340,10 @@ jobs:
           case "$CHANNEL" in
             release) version_type="release"; version_number="$base_vn" ;;
             beta)    version_type="beta";    version_number="${base_vn}-${short_sha}" ;;
-            *)       version_type="alpha";   version_number="${base_vn}-${short_sha}" ;;
+            *)
+              echo "Unsupported channel for Modrinth: $CHANNEL" >&2
+              exit 1
+              ;;
           esac
           version_number="$(printf '%s' "$version_number" | cut -c1-32)"
           if [ -z "$version_number" ]; then
@@ -463,7 +415,10 @@ jobs:
           case "$CHANNEL" in
             release) release_type="release" ;;
             beta)    release_type="beta" ;;
-            *)       release_type="alpha" ;;
+            *)
+              echo "Unsupported channel for CurseForge: $CHANNEL" >&2
+              exit 0
+              ;;
           esac
 
           # Resolve numeric gameVersion IDs for Minecraft 1.8.9 + Forge (upload API requires IDs).
