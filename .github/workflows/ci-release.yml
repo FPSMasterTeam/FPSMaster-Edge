@@ -438,8 +438,15 @@ jobs:
           VERSION_NAME: ${{ needs.build.outputs.version_name }}
           CHANNEL: ${{ needs.build.outputs.channel }}
         run: |
+          # Upload API token from https://console.curseforge.com/ (or account API Tokens).
+          # Must NOT be a Core API key, bcrypt hash, or Overwolf session cookie.
+          CURSEFORGE_TOKEN="$(printf '%s' "$CURSEFORGE_TOKEN" | tr -d '[:space:]')"
           if [ -z "$CURSEFORGE_TOKEN" ]; then
             echo "CURSEFORGE_TOKEN not configured; skipping CurseForge publish"
+            exit 0
+          fi
+          if [[ "$CURSEFORGE_TOKEN" == \$2* ]] || [[ "$CURSEFORGE_TOKEN" == '$2'* ]]; then
+            echo "::warning::CURSEFORGE_TOKEN looks like a bcrypt hash, not a CurseForge Upload API token; skipping"
             exit 0
           fi
 
@@ -460,16 +467,26 @@ jobs:
           esac
 
           # Resolve numeric gameVersion IDs for Minecraft 1.8.9 + Forge (upload API requires IDs).
-          versions_json="$(curl --fail --show-error --silent \
+          versions_body="$(mktemp)"
+          versions_code="$(curl --silent --show-error \
             -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
-            "https://minecraft.curseforge.com/api/game/versions")"
+            -o "$versions_body" -w '%{http_code}' \
+            "https://minecraft.curseforge.com/api/game/versions" || true)"
+          if [ "$versions_code" != "200" ]; then
+            echo "::warning::CurseForge game/versions returned HTTP ${versions_code} (token invalid or not an Upload API token). Body:"
+            head -c 500 "$versions_body" || true
+            echo
+            echo "Get a token at https://console.curseforge.com/ → API Tokens, then: gh secret set CURSEFORGE_TOKEN -R FPSMasterTeam/FPSMaster-Edge"
+            exit 0
+          fi
+          versions_json="$(cat "$versions_body")"
 
           game_version_ids="$(printf '%s' "$versions_json" | jq -r '
             [.[] | select((.name // "") == "1.8.9" or (.name // "") == "Forge" or (.name // "") == "Minecraft 1.8.9" or ((.name // "") | endswith("1.8.9"))) | .id]
             | unique | sort | @csv' | tr -d '"')"
           if [ -z "$game_version_ids" ]; then
-            echo "Could not resolve CurseForge game version IDs for 1.8.9 / Forge" >&2
-            exit 1
+            echo "::warning::Could not resolve CurseForge game version IDs for 1.8.9 / Forge; skipping"
+            exit 0
           fi
           echo "Resolved CurseForge gameVersions: ${game_version_ids}"
           gv_json="[${game_version_ids}]"
@@ -488,10 +505,18 @@ jobs:
             }' > curseforge-metadata.json
 
           echo "Publishing $artifact_path to CurseForge project $project_id ($release_type)"
-          curl --fail --show-error --silent \
+          upload_body="$(mktemp)"
+          upload_code="$(curl --silent --show-error \
             -X POST \
             -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
             -F "metadata=<curseforge-metadata.json;type=application/json" \
             -F "file=@${artifact_path}" \
-            "https://minecraft.curseforge.com/api/projects/${project_id}/upload-file" \
-            | python -c 'import json,sys; r=json.load(sys.stdin); print("CurseForge file id:", r.get("id"))'
+            -o "$upload_body" -w '%{http_code}' \
+            "https://minecraft.curseforge.com/api/projects/${project_id}/upload-file" || true)"
+          if [ "$upload_code" != "200" ]; then
+            echo "::warning::CurseForge upload-file returned HTTP ${upload_code}. Body:"
+            head -c 800 "$upload_body" || true
+            echo
+            exit 0
+          fi
+          python -c 'import json,sys; r=json.load(open(sys.argv[1])); print("CurseForge file id:", r.get("id"))' "$upload_body"
