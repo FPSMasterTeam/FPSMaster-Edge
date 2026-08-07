@@ -245,7 +245,11 @@ public abstract class MixinMinecraft implements IMinecraft {
     }
 
     /**
-     * FastLoad
+     * FastLoad.
+     *
+     * <p>The redirect drops the vanilla System.gc() calls in both world-load paths when FastLoad is
+     * on (the default): they are a stop-the-world pause placed exactly where the user already waits
+     * for a world to appear, and the JVM performs the same collection on its own when it needs to.
      */
     @Redirect(method = "launchIntegratedServer", at = @At(value = "INVOKE", target = "Ljava/lang/System;gc()V"))
     public void gc1() {

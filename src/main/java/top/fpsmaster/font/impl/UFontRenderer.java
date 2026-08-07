@@ -27,6 +27,15 @@ public class UFontRenderer extends FontRenderer {
     private final int size;
 
     public UFontRenderer(String name, int size) {
+        this(loadBaseFont(name), size);
+    }
+
+    /**
+     * Creates a renderer from an already-parsed base font. The base is parsed once and the
+     * requested size is derived, so every size shares the same glyph data instead of re-parsing
+     * the whole TrueType file.
+     */
+    public UFontRenderer(Font baseFont, int size) {
         super(
                 Minecraft.getMinecraft().gameSettings,
                 new ResourceLocation("textures/font/ascii.png"),
@@ -36,15 +45,29 @@ public class UFontRenderer extends FontRenderer {
         this.size = size;
         Font font;
         try {
-            InputStream is = Files.newInputStream(new File(FileUtils.fonts, name + ".ttf").toPath());
-            font = Font.createFont(0, is);
-            font = font.deriveFont(Font.PLAIN, size);
+            font = baseFont.deriveFont(Font.PLAIN, size);
         } catch (Exception ex) {
-            ClientLogger.error("Error loading font " + name);
+            ClientLogger.error("Error deriving font at size " + size);
             font = new Font("Arial", Font.PLAIN, size);
         }
-
         this.textRenderer = new TextRenderer(font);
+    }
+
+    /** Releases the glyph atlas and layout caches. Safe if a stale holder draws again later. */
+    public void dispose() {
+        if (textRenderer != null) {
+            textRenderer.dispose();
+        }
+    }
+
+    /** Parses a TrueType file once, returning a size-1 base font that sizes derive from. */
+    private static Font loadBaseFont(String name) {
+        try (InputStream is = Files.newInputStream(new File(FileUtils.fonts, name + ".ttf").toPath())) {
+            return Font.createFont(Font.TRUETYPE_FONT, is);
+        } catch (Exception ex) {
+            ClientLogger.error("Error loading font " + name);
+            return new Font("Arial", Font.PLAIN, 1);
+        }
     }
 
     /**
