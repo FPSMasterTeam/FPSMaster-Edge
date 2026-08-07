@@ -33,7 +33,7 @@ public class FPSMaster {
     public static FPSMaster INSTANCE = new FPSMaster();
 
     public static String CLIENT_NAME = "FPSMaster";
-    public static String CLIENT_VERSION = "1.0.0";
+    public static String CLIENT_VERSION = "1.0.0-beta";
 
     public static ModuleManager moduleManager = new ModuleManager();
     public static FontManager fontManager = new FontManager();

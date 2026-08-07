@@ -107,6 +107,36 @@ jobs:
           echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
           echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve semver version name
+        id: version
+        if: steps.decision.outputs.should_build == 'true'
+        shell: bash
+        run: |
+          # Product line from gradle.properties (e.g. 1.0.0-beta). CI maps:
+          #   release -> 1.0.0
+          #   beta    -> 1.0.0-beta.<run>
+          base="$(grep -E '^[[:space:]]*version[[:space:]]*=' gradle.properties | head -n1 | sed -E 's/^[^=]+=//; s/^[[:space:]]+//; s/[[:space:]]+$//; s/^["'\'']//; s/["'\'']$//')"
+          core="$(printf '%s' "$base" | sed -E 's/^v//; s/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
+          if [ -z "$core" ]; then
+            echo "Could not parse semver core from gradle version='$base'" >&2
+            exit 1
+          fi
+          channel="${{ steps.channel.outputs.channel }}"
+          short_sha="$(printf '%s' "$GITHUB_SHA" | cut -c1-8 | tr '[:upper:]' '[:lower:]')"
+          case "$channel" in
+            release) version_name="$core" ;;
+            beta)    version_name="${core}-beta.${GITHUB_RUN_NUMBER}" ;;
+            *)
+              # PR / non-publish refs: still build a distinct local version.
+              version_name="${core}-ci.${GITHUB_RUN_NUMBER}+${short_sha}"
+              ;;
+          esac
+          release_tag="edge-${version_name}"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+          echo "Resolved Edge version: $version_name (from $base, channel=${channel:-none})"
+
       - name: Set up JDK 17
         if: steps.decision.outputs.should_build == 'true'
         uses: actions/setup-java@v4
@@ -141,10 +171,30 @@ jobs:
       - name: Build with Gradle Wrapper
         if: steps.decision.outputs.should_build == 'true'
         shell: bash
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
         run: |
           chmod +x ./gradlew
+          # Keep in-game CLIENT_VERSION in sync with the published semver.
+          python3 - <<'PY'
+          import pathlib, re, os
+          path = pathlib.Path("src/main/java/top/fpsmaster/FPSMaster.java")
+          text = path.read_text(encoding="utf-8")
+          version = os.environ["VERSION_NAME"]
+          updated, n = re.subn(
+              r'CLIENT_VERSION\s*=\s*"[^"]*"',
+              f'CLIENT_VERSION = "{version}"',
+              text,
+              count=1,
+          )
+          if n != 1:
+              raise SystemExit("Failed to stamp CLIENT_VERSION")
+          path.write_text(updated, encoding="utf-8")
+          print(f"Stamped CLIENT_VERSION={version}")
+          PY
           # Forge Modrinth jar + Forge-free AOT zip (launcher no-Forge path).
-          ./gradlew build packageAotDistribution
+          # Stamp the computed semver into the build so jar/AOT match the published versionName.
+          ./gradlew build packageAotDistribution -Pversion="$VERSION_NAME"
 
       - name: Capture artifact metadata
         id: meta
@@ -152,7 +202,7 @@ jobs:
         shell: bash
         run: |
           # Prefer the remapped Forge mod jar; never pick sources/dev jars.
-          artifact_path="$(find build/libs -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' ! -name '*-dev.jar' | sort | head -n 1)"
+          artifact_path="$(find build/libs -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' -o -name 'FPSMaster-*.jar' \) ! -name '*-sources.jar' ! -name '*-dev.jar' | sort | head -n 1)"
           if [ -z "$artifact_path" ]; then
             artifact_path="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' ! -name 'fpsmaster-runtime.jar' | sort | head -n 1)"
           fi
@@ -170,9 +220,8 @@ jobs:
           asset_name="$(basename "$artifact_path")"
           aot_asset_name="$(basename "$aot_path")"
           commit_hash="${GITHUB_SHA}"
-          short_sha="$(printf '%s' "$commit_hash" | cut -c1-8)"
-          version_name="${{ steps.channel.outputs.channel }}-${GITHUB_RUN_NUMBER}-${short_sha}"
-          release_tag="${{ steps.channel.outputs.channel }}-${GITHUB_RUN_NUMBER}-${short_sha}"
+          version_name="${{ steps.version.outputs.version_name }}"
+          release_tag="${{ steps.version.outputs.release_tag }}"
           checksum="$(sha256sum "$artifact_path" | awk '{print $1}')"
           file_size="$(stat -c%s "$artifact_path")"
           aot_checksum="$(sha256sum "$aot_path" | awk '{print $1}')"
@@ -363,12 +412,12 @@ PY
             exit 1
           fi
 
-          # Modrinth version_number: URL-safe, unique, max 32 chars.
+          # Modrinth version_number: URL-safe, unique, max 32 chars. Matches published semver.
           short_sha="$(printf '%s' "$COMMIT_HASH" | cut -c1-7)"
-          base_vn="$(printf '%s' "$VERSION_NAME" | tr -cd 'A-Za-z0-9._-')"
+          version_number="$(printf '%s' "$VERSION_NAME" | tr -cd 'A-Za-z0-9._+-')"
           case "$CHANNEL" in
-            release) version_type="release"; version_number="$base_vn" ;;
-            beta)    version_type="beta";    version_number="${base_vn}-${short_sha}" ;;
+            release) version_type="release" ;;
+            beta)    version_type="beta" ;;
             *)
               echo "Unsupported channel for Modrinth: $CHANNEL" >&2
               exit 1
