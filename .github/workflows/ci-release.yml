@@ -386,9 +386,11 @@ jobs:
             exit 1
           fi
 
-          # Modrinth version_number: URL-safe, unique, max 32 chars. Matches published semver.
+          # Modrinth version_number: URL-safe, unique per project, max 32 chars.
+          # Use +1.8.9 suffix (same scheme as Nova) so Edge never collides with
+          # Fabric version_numbers and stays visible under forge/1.8.9 filters.
           short_sha="$(printf '%s' "$COMMIT_HASH" | cut -c1-7)"
-          version_number="$(printf '%s' "$VERSION_NAME" | tr -cd 'A-Za-z0-9._+-')"
+          version_number="$(printf '%s' "${VERSION_NAME}+1.8.9" | tr -cd 'A-Za-z0-9._+-')"
           case "$CHANNEL" in
             release) version_type="release" ;;
             beta)    version_type="beta" ;;
@@ -470,7 +472,11 @@ jobs:
               ;;
           esac
 
-          # Resolve numeric gameVersion IDs for Minecraft 1.8.9 + Forge (upload API requires IDs).
+          # Resolve numeric gameVersion IDs (upload API requires IDs):
+          # - type 4 = Minecraft 1.8 → 1.8.9
+          # - type 68441 = Modloader → Forge
+          # - type 75208 = Environment → Client (required by upload API)
+          # Do NOT use endswith("1.8.9") — that also matches NeoForge "21.8.9" (id 13648).
           versions_body="$(mktemp)"
           versions_code="$(curl --silent --show-error \
             -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
@@ -486,10 +492,18 @@ jobs:
           versions_json="$(cat "$versions_body")"
 
           game_version_ids="$(printf '%s' "$versions_json" | jq -r '
-            [.[] | select((.name // "") == "1.8.9" or (.name // "") == "Forge" or (.name // "") == "Minecraft 1.8.9" or ((.name // "") | endswith("1.8.9"))) | .id]
+            [
+              .[]
+              | select(
+                  ((.name // "") == "1.8.9" and (.gameVersionTypeID == 4))
+                  or ((.name // "") == "Forge" and (.gameVersionTypeID == 68441))
+                  or ((.name // "") == "Client" and (.gameVersionTypeID == 75208))
+                )
+              | .id
+            ]
             | unique | sort | @csv' | tr -d '"')"
-          if [ -z "$game_version_ids" ]; then
-            echo "::warning::Could not resolve CurseForge game version IDs for 1.8.9 / Forge; skipping"
+          if [ -z "$game_version_ids" ] || [ "$(printf '%s' "$game_version_ids" | awk -F, '{print NF}')" -lt 3 ]; then
+            echo "::warning::Could not resolve CurseForge game version IDs for 1.8.9 / Forge / Client; got: ${game_version_ids:-<empty>}; skipping"
             exit 0
           fi
           echo "Resolved CurseForge gameVersions: ${game_version_ids}"
