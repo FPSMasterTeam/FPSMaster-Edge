@@ -311,3 +311,149 @@ jobs:
             -H "X-CI-Token: ${FPSMASTER_CI_UPLOAD_TOKEN}" \
             --data @payload.json \
             "${FPSMASTER_CI_API_BASE_URL%/}/api/v1/launcher/releases/ci"
+
+      - name: Publish to Modrinth
+        shell: bash
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ secrets.MODRINTH_PROJECT_ID }}
+          CHANGELOG: ${{ needs.build.outputs.changelog }}
+          VERSION_NAME: ${{ needs.build.outputs.version_name }}
+          CHANNEL: ${{ needs.build.outputs.channel }}
+          COMMIT_HASH: ${{ needs.build.outputs.commit_hash }}
+        run: |
+          if [ -z "$MODRINTH_TOKEN" ]; then
+            echo "MODRINTH_TOKEN not configured; skipping Modrinth publish"
+            exit 0
+          fi
+
+          project_id="${MODRINTH_PROJECT_ID:-EYsVyax4}"
+          artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' | head -n 1)"
+          if [ -z "$artifact_path" ]; then
+            echo "No jar artifact found in dist" >&2
+            exit 1
+          fi
+
+          # Modrinth version_number: URL-safe, unique, max 32 chars.
+          short_sha="$(printf '%s' "$COMMIT_HASH" | cut -c1-7)"
+          base_vn="$(printf '%s' "$VERSION_NAME" | tr -cd 'A-Za-z0-9._-')"
+          case "$CHANNEL" in
+            release) version_type="release"; version_number="$base_vn" ;;
+            beta)    version_type="beta";    version_number="${base_vn}-${short_sha}" ;;
+            *)       version_type="alpha";   version_number="${base_vn}-${short_sha}" ;;
+          esac
+          version_number="$(printf '%s' "$version_number" | cut -c1-32)"
+          if [ -z "$version_number" ]; then
+            version_number="edge-${short_sha}"
+          fi
+
+          CHANGELOG="$CHANGELOG" VERSION_NAME="$VERSION_NAME" VERSION_NUMBER="$version_number" \
+            VERSION_TYPE="$version_type" PROJECT_ID="$project_id" python - <<'PY'
+import json, os
+with open("modrinth-data.json", "w", encoding="utf-8") as f:
+    json.dump({
+        "name": f"Edge {os.environ['VERSION_NAME']}",
+        "version_number": os.environ["VERSION_NUMBER"],
+        "changelog": os.environ.get("CHANGELOG") or "",
+        "dependencies": [],
+        "game_versions": ["1.8.9"],
+        "version_type": os.environ["VERSION_TYPE"],
+        "loaders": ["forge"],
+        "featured": os.environ["VERSION_TYPE"] == "release",
+        "project_id": os.environ["PROJECT_ID"],
+        "file_parts": ["file"],
+        "primary_file": "file",
+    }, f)
+PY
+
+          echo "Publishing $artifact_path to Modrinth project $project_id as $version_number ($version_type)"
+          curl --fail --show-error --silent \
+            -X POST \
+            -H "Authorization: ${MODRINTH_TOKEN}" \
+            -F "data=@modrinth-data.json;type=application/json" \
+            -F "file=@${artifact_path}" \
+            "https://api.modrinth.com/v2/version" \
+            | python -c 'import json,sys; v=json.load(sys.stdin); print("Modrinth version id:", v.get("id"), "url: https://modrinth.com/mod/fpsmaster/version/" + (v.get("id") or ""))'
+
+      - name: Publish to CurseForge
+        shell: bash
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CURSEFORGE_PROJECT_ID: ${{ secrets.CURSEFORGE_PROJECT_ID }}
+          CHANGELOG: ${{ needs.build.outputs.changelog }}
+          VERSION_NAME: ${{ needs.build.outputs.version_name }}
+          CHANNEL: ${{ needs.build.outputs.channel }}
+        run: |
+          if [ -z "$CURSEFORGE_TOKEN" ]; then
+            echo "CURSEFORGE_TOKEN not configured; skipping CurseForge publish"
+            exit 0
+          fi
+
+          project_id="${CURSEFORGE_PROJECT_ID:-1081006}"
+          artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' | head -n 1)"
+          if [ -z "$artifact_path" ]; then
+            echo "No jar artifact found in dist" >&2
+            exit 1
+          fi
+
+          case "$CHANNEL" in
+            release) release_type="release" ;;
+            beta)    release_type="beta" ;;
+            *)       release_type="alpha" ;;
+          esac
+
+          # Resolve numeric gameVersion IDs for Minecraft 1.8.9 + Forge (upload API requires IDs).
+          versions_json="$(curl --fail --show-error --silent \
+            -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
+            "https://minecraft.curseforge.com/api/game/versions")"
+
+          game_version_ids="$(VERSIONS_JSON="$versions_json" python - <<'PY'
+import json, os, sys
+versions = json.loads(os.environ["VERSIONS_JSON"])
+wanted = {"1.8.9", "Forge"}
+ids = []
+for v in versions:
+    name = (v.get("name") or "").strip()
+    if name in wanted:
+        ids.append(int(v["id"]))
+# Prefer exact name matches; also accept slug-style "Minecraft 1.8.9"
+if len(ids) < 2:
+    for v in versions:
+        name = (v.get("name") or "").strip()
+        if name in ("Minecraft 1.8.9", "1.8.9-Forge", "Forge") or name.endswith("1.8.9"):
+            vid = int(v["id"])
+            if vid not in ids:
+                ids.append(vid)
+ids = sorted(set(ids))
+if not ids:
+    print("Could not resolve CurseForge game version IDs for 1.8.9 / Forge", file=sys.stderr)
+    sys.exit(1)
+print(",".join(str(i) for i in ids))
+print("Resolved CurseForge gameVersions:", ids, file=sys.stderr)
+PY
+)"
+
+          IFS=',' read -r -a gv_arr <<< "$game_version_ids"
+          gv_json="$(printf '%s\n' "${gv_arr[@]}" | python -c 'import json,sys; print(json.dumps([int(x) for x in sys.stdin if x.strip()]))')"
+
+          CHANGELOG="$CHANGELOG" VERSION_NAME="$VERSION_NAME" RELEASE_TYPE="$release_type" \
+            GAME_VERSIONS_JSON="$gv_json" python - <<'PY'
+import json, os
+with open("curseforge-metadata.json", "w", encoding="utf-8") as f:
+    json.dump({
+        "changelog": os.environ.get("CHANGELOG") or f"Edge {os.environ['VERSION_NAME']}",
+        "changelogType": "markdown",
+        "displayName": f"Edge {os.environ['VERSION_NAME']}",
+        "gameVersions": json.loads(os.environ["GAME_VERSIONS_JSON"]),
+        "releaseType": os.environ["RELEASE_TYPE"],
+    }, f)
+PY
+
+          echo "Publishing $artifact_path to CurseForge project $project_id ($release_type)"
+          curl --fail --show-error --silent \
+            -X POST \
+            -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
+            -F "metadata=<curseforge-metadata.json;type=application/json" \
+            -F "file=@${artifact_path}" \
+            "https://minecraft.curseforge.com/api/projects/${project_id}/upload-file" \
+            | python -c 'import json,sys; r=json.load(sys.stdin); print("CurseForge file id:", r.get("id"))'
