@@ -3,6 +3,8 @@ name: Edge CI Release
 on:
   pull_request:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -80,7 +82,8 @@ jobs:
           version_name=""
           release_tag=""
 
-          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [[ "${GITHUB_REF_NAME}" == v* ]]; then
+          # Publish exclusively from version tags (branch pushes only build).
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             release_tag="${GITHUB_REF_NAME}"
             version_name="${GITHUB_REF_NAME#v}"
             if [[ ! "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
