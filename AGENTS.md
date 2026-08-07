@@ -1,33 +1,36 @@
-# AGENTS Guide for FPSMaster
+# AGENTS Guide for FPSMaster Edge
+
 This file is for coding agents working in this repository.
 It consolidates local build/test commands and code conventions.
 
 ## Scope and Source of Truth
+- This repo is **FPSMaster Edge**: Minecraft **Forge 1.8.9** only. Multi-version / modern MC work belongs in Nova, not here.
 - Primary references:
   - `build.gradle.kts`
   - `docs/code_standards.md`
   - `docs/development_environment.md`
+  - `docs/development_tutorial.md`
   - `README.md`
 - If this file conflicts with code or Gradle config, follow code and Gradle.
+- Performance campaign docs under `docs/performance-*.md` / `benchmark/RESULTS.md` are historical measurement notes, not an open backlog unless the user says otherwise.
 
-## Cursor and Copilot Rules
-- No `.cursor/rules/` directory found.
-- No `.cursorrules` file found.
-- No `.github/copilot-instructions.md` file found.
-- No additional Cursor/Copilot-specific policy is currently enforced.
+## Cursor / local agent config
+- Treat only **committed** repo files as policy. Local untracked `.cursor/` skills or rules may exist on a machine; do not assume they are part of the project unless present in git.
 
 ## Repository Layout
 - Single Gradle project for Minecraft Forge 1.8.9.
 - Java sources: `src/main/java/` (packages under `top.fpsmaster.*`).
 - Resources: `src/main/resources/` (mcmod, mixins, assets, access transformer config).
-- Docs: `docs/`.
+- Docs: `docs/` (dev guides + optional performance archives).
 - Branding/assets: `pictures/`.
+- Benchmark harness: `benchmark/` (scripts/scenarios; large result dirs are gitignored).
 
 ## Toolchain and Runtime
 - Gradle toolchain targets Java 8 bytecode.
-- Use JDK 17 for Gradle and IDE import.
-- Use JDK 8 for running the Minecraft client.
+- Use **JDK 17 or 21** for Gradle and IDE import (JDK 25 is not supported by the current wrapper/Loom stack).
+- Use **JDK 8** for running the Minecraft client. On Apple Silicon, use an **x86_64** JDK 8 via Rosetta.
 - IntelliJ run configs are generated with Gradle and may require manual copy/refresh (`docs/development_environment.md`).
+- Version strings: `FPSMaster.CLIENT_VERSION` (`1.0.0`) and `EDITION` (`Edge`); keep `mcmod.info` in sync.
 
 ## Build, Test, and Dev Commands
 Run from repository root.
@@ -37,109 +40,65 @@ Run from repository root.
 - Unix-like: `./gradlew <task>`
 
 ### Core Build Commands
-- `gradlew.bat build`
-  - Full build; produces remapped outputs through assemble dependencies.
-- `gradlew.bat assemble`
-  - Assemble pipeline; this project wires `assemble` to include remap output.
-- `gradlew.bat remapJar`
-  - Produces final remapped jar without classifier.
-- `gradlew.bat shadowJar`
-  - Produces shaded dev jar (`all-dev` classifier).
-- `gradlew.bat genIntelliJRuns`
-  - Generates IntelliJ run configurations.
+- `gradlew.bat build` — full build; produces remapped outputs through assemble dependencies.
+- `gradlew.bat assemble` — assemble pipeline; includes remap output.
+- `gradlew.bat remapJar` — final remapped jar without classifier.
+- `gradlew.bat shadowJar` — shaded dev jar (`all-dev` classifier).
+- `gradlew.bat genIntelliJRuns` — generates IntelliJ run configurations.
 
 ### Test Commands (JUnit 5)
-- `gradlew.bat test`
-  - Runs all tests (JUnit Platform enabled in Gradle config).
-- Single test class:
-  - `gradlew.bat test --tests "com.example.MyFeatureTest"`
-- Single test method:
-  - `gradlew.bat test --tests "com.example.MyFeatureTest.shouldHandleEdgeCase"`
-- Multiple selections:
-  - `gradlew.bat test --tests "com.example.A" --tests "com.example.B"`
-
-### Test Filter Quoting Notes
-- Quote patterns containing spaces or wildcard `*`.
-- Windows CMD: prefer double quotes.
-- PowerShell/bash: single or double quotes both work; single quotes avoid shell wildcard expansion.
+- `gradlew.bat test` — all tests (tree may be sparse).
+- Single class: `gradlew.bat test --tests "com.example.MyFeatureTest"`
+- Single method: `gradlew.bat test --tests "com.example.MyFeatureTest.shouldHandleEdgeCase"`
 
 ### Lint/Format/Static Analysis
-- No dedicated lint/format task is configured (`build.gradle.kts` has no Spotless/Checkstyle/PMD wiring).
-- Do not invent non-existent quality commands.
-- Apply style rules from docs and current code patterns.
+- No Spotless/Checkstyle/PMD task is configured — do not invent one.
+- Apply style from `docs/code_standards.md` and surrounding code.
 
 ## Coding Standards (Java)
-Follow `docs/code_standards.md` and disciplined patterns in `src/main/java`.
+Follow `docs/code_standards.md` and patterns in `src/main/java`.
 
 ### Naming
 - Packages, methods, variables: `camelCase`.
 - Classes/interfaces/enums: `PascalCase`.
 - Constants: `UPPER_SNAKE_CASE`.
-- Use descriptive, domain-specific class names.
 
 ### Formatting
-- 4 spaces indentation; do not use tabs.
-- K&R braces (`if (...) {`).
-- Space after control keywords (`if (...)`, `for (...)`, `while (...)`).
-- Space around binary operators.
-- Keep methods focused and readable (docs suggest around <= 50 lines when practical).
+- 4 spaces; K&R braces; space after control keywords; space around binary operators.
 
 ### File and Member Organization
-- Member order inside classes: fields, constructors, methods.
-- Group related methods together.
-- Use the narrowest viable access modifier.
-- Prefer single-responsibility methods over monolithic blocks.
+- Fields, constructors, methods; group related methods; narrowest viable access.
 
 ### Imports
-- Keep imports sorted consistently (alphabetical in practice).
-- Remove unused imports.
-- Avoid wildcard imports unless an existing file pattern requires it.
+- Keep imports tidy; remove unused; avoid wildcards unless the file already uses that pattern.
 
 ### Types and Nullability
-- Prefer explicit and concrete types at API boundaries.
-- Avoid raw types in new code.
-- Add null checks for external input and file/system interactions.
-- Be defensive around:
-  - Minecraft runtime objects (`Minecraft`, player/world/state)
-  - File/resource I/O
-  - Reflection results
+- Prefer concrete types at API boundaries; no raw types in new code.
+- Null-check Minecraft runtime objects, file I/O, and reflection results.
 
 ### Documentation and Comments
-- Add JavaDoc for public classes/methods where appropriate.
-- Add inline comments only for non-obvious logic.
-- Keep comments synchronized with behavior changes.
+- JavaDoc for non-obvious public API; inline comments only for non-obvious logic.
 
-## Error Handling Conventions
+### HUD / modules
+- Register modules in `ModuleManager.init()`, HUD components in `ComponentsManager.init()`.
+- `InterfaceModule` appearance settings come from `Trait` + `registerCommonSettings()` — do not re-register `bg`/`rounded`/… in subclasses.
+- HUD text colors must include alpha (see `Component.drawString`).
 
-### Baseline Rules
-- Do not add empty `catch` blocks in new code.
-- Include useful failure context (what failed + target/file/module).
-- Prefer specific exception types over broad `Exception` where practical.
-
-### Logging and Recovery
-- Use project logging (`ClientLogger`) where that pattern exists.
-- Recoverable errors: log context and continue with safe fallback.
-- Unrecoverable errors: throw domain-specific exception or wrap with clear message.
-
-### Legacy Caveat
-- Some legacy modules contain ignored exceptions and broad catches.
-- Do not expand that pattern in new code.
-- When editing legacy code, improve error reporting if low risk.
+## Error Handling
+- No empty `catch` in new code; use `ClientLogger` with context.
+- Prefer specific exceptions; recoverable → log + fallback; unrecoverable → clear throw/wrap.
+- Do not expand legacy broad/empty catches; tighten when editing if low risk.
 
 ## Testing Expectations
-- JUnit 5 deps are present; test tree may be sparse.
-- Place tests in `src/test/java/` with `*Test.java` naming.
-- For gameplay-impacting logic, include manual in-game verification notes.
-- Validate edge cases and exception paths for changed logic.
+- JUnit 5 present; gameplay changes need manual 1.8.9 verification notes.
+- Validate edge cases for changed logic.
 
 ## Commit and PR Guidance
-- Keep commit subjects short, imperative.
-- Conventional prefixes (`feat:`, `fix:`, `refactor:`) are acceptable.
-- Keep PR scope tight; include rationale and affected areas.
-- Link related issues and note verification performed.
+- Short imperative subjects; conventional prefixes (`feat:`, `fix:`, `docs:`) are fine.
+- Keep PR scope tight; note verification performed.
 
 ## Quick Verification Checklist
-- Build succeeds with `gradlew.bat build`.
-- Targeted tests run (or document why none exist).
+- `./gradlew build` (or `gradlew.bat build`) succeeds.
+- Targeted tests run, or document why none exist.
 - No style regressions against `docs/code_standards.md`.
-- Error handling/logging remains informative and non-silent.
+- Logging remains informative and non-silent.

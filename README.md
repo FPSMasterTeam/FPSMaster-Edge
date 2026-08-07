@@ -9,7 +9,9 @@
 
 # FPSMaster Edge
 
-FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
+FPSMaster Edge 是免费的 Minecraft **PvP 客户端**，本仓库实现为 **Forge 1.8.9** 模组。
+
+较新的 Minecraft 版本请看 [FPSMaster-Nova](https://github.com/FPSMasterTeam/FPSMaster-Nova)；启动器与账号体系见生态内其它仓库。
 
 <div align="center">
 
@@ -17,7 +19,7 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 [![Modrinth 下载](https://img.shields.io/modrinth/dt/fpsmaster?style=for-the-badge&logo=modrinth&logoColor=white&label=Modrinth%20下载&color=00AF5C)](https://modrinth.com/mod/fpsmaster)
 [![CurseForge 下载](https://img.shields.io/curseforge/dt/1081006?style=for-the-badge&logo=curseforge&logoColor=white&label=CurseForge%20下载&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/fpsmaster)
 
-[![支持版本](https://img.shields.io/badge/支持版本-1.8.9%2F1.12.2%2F1.19.2%2B-1bd96a?style=for-the-badge)](https://modrinth.com/mod/fpsmaster/versions)
+[![支持版本](https://img.shields.io/badge/支持版本-1.8.9-1bd96a?style=for-the-badge)](https://modrinth.com/mod/fpsmaster/versions)
 [![Stars](https://img.shields.io/github/stars/FPSMasterTeam/FPSMaster-Edge?style=for-the-badge&logo=github&label=Stars&color=FFD400)](https://github.com/FPSMasterTeam/FPSMaster-Edge)
 [![许可证](https://img.shields.io/github/license/FPSMasterTeam/FPSMaster-Edge?style=for-the-badge&label=许可证&color=blue)](LICENSE)
 [![官方网站](https://img.shields.io/website?url=https%3A%2F%2Ffpsmaster.top&style=for-the-badge&label=官方网站&color=5865F2)](https://fpsmaster.top)
@@ -29,7 +31,6 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
  - 查看我们的[代码规范](docs/code_standards.md)了解如何编写符合我们要求的代码。
  - 查看我们的[环境配置](docs/development_environment.md)了解如何配置开发环境。
  - 查看我们的[开发指南](docs/development_tutorial.md)了解如何使用我们的模块系统、配置系统等，并完成你的需求。
- - 查看我们的[任务列表](docs/tasks.md)了解当前的开发计划和进度。
 
  如果您希望参与到开发中，欢迎您加入开发者群聊：1097885201（只要您有参与的意愿，无论是否有代码贡献，都可以加入）
 
@@ -38,8 +39,9 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 
 ![Alt](https://repobeats.axiom.co/api/embed/7d755c063aa9a34d74edb7045541e8bfe6e09b89.svg "Repobeats analytics image")
 
-## 引用的开源项目：
-[eventbus](https://github.com/therealbush/eventbus)
+## 引用与致谢
+
+事件系统现为仓库内自研 `EventDispatcher`。早期设计曾参考 [eventbus](https://github.com/therealbush/eventbus) 的思路。
 
 ## 致谢
 本项目的部分性能优化方向参考了 [Patcher](https://github.com/Sk1erLLC/Patcher) 与 OptiFine
