@@ -397,24 +397,25 @@ jobs:
             version_number="edge-${short_sha}"
           fi
 
-          CHANGELOG="$CHANGELOG" VERSION_NAME="$VERSION_NAME" VERSION_NUMBER="$version_number" \
-            VERSION_TYPE="$version_type" PROJECT_ID="$project_id" python - <<'PY'
-import json, os
-with open("modrinth-data.json", "w", encoding="utf-8") as f:
-    json.dump({
-        "name": f"Edge {os.environ['VERSION_NAME']}",
-        "version_number": os.environ["VERSION_NUMBER"],
-        "changelog": os.environ.get("CHANGELOG") or "",
-        "dependencies": [],
-        "game_versions": ["1.8.9"],
-        "version_type": os.environ["VERSION_TYPE"],
-        "loaders": ["forge"],
-        "featured": os.environ["VERSION_TYPE"] == "release",
-        "project_id": os.environ["PROJECT_ID"],
-        "file_parts": ["file"],
-        "primary_file": "file",
-    }, f)
-PY
+          jq -n \
+            --arg name "Edge ${VERSION_NAME}" \
+            --arg version_number "$version_number" \
+            --arg changelog "$CHANGELOG" \
+            --arg version_type "$version_type" \
+            --arg project_id "$project_id" \
+            '{
+              name: $name,
+              version_number: $version_number,
+              changelog: $changelog,
+              dependencies: [],
+              game_versions: ["1.8.9"],
+              version_type: $version_type,
+              loaders: ["forge"],
+              featured: ($version_type == "release"),
+              project_id: $project_id,
+              file_parts: ["file"],
+              primary_file: "file"
+            }' > modrinth-data.json
 
           echo "Publishing $artifact_path to Modrinth project $project_id as $version_number ($version_type)"
           curl --fail --show-error --silent \
@@ -460,47 +461,28 @@ PY
             -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
             "https://minecraft.curseforge.com/api/game/versions")"
 
-          game_version_ids="$(VERSIONS_JSON="$versions_json" python - <<'PY'
-import json, os, sys
-versions = json.loads(os.environ["VERSIONS_JSON"])
-wanted = {"1.8.9", "Forge"}
-ids = []
-for v in versions:
-    name = (v.get("name") or "").strip()
-    if name in wanted:
-        ids.append(int(v["id"]))
-# Prefer exact name matches; also accept slug-style "Minecraft 1.8.9"
-if len(ids) < 2:
-    for v in versions:
-        name = (v.get("name") or "").strip()
-        if name in ("Minecraft 1.8.9", "1.8.9-Forge", "Forge") or name.endswith("1.8.9"):
-            vid = int(v["id"])
-            if vid not in ids:
-                ids.append(vid)
-ids = sorted(set(ids))
-if not ids:
-    print("Could not resolve CurseForge game version IDs for 1.8.9 / Forge", file=sys.stderr)
-    sys.exit(1)
-print(",".join(str(i) for i in ids))
-print("Resolved CurseForge gameVersions:", ids, file=sys.stderr)
-PY
-)"
+          game_version_ids="$(printf '%s' "$versions_json" | jq -r '
+            [.[] | select((.name // "") == "1.8.9" or (.name // "") == "Forge" or (.name // "") == "Minecraft 1.8.9" or ((.name // "") | endswith("1.8.9"))) | .id]
+            | unique | sort | @csv' | tr -d '"')"
+          if [ -z "$game_version_ids" ]; then
+            echo "Could not resolve CurseForge game version IDs for 1.8.9 / Forge" >&2
+            exit 1
+          fi
+          echo "Resolved CurseForge gameVersions: ${game_version_ids}"
+          gv_json="[${game_version_ids}]"
 
-          IFS=',' read -r -a gv_arr <<< "$game_version_ids"
-          gv_json="$(printf '%s\n' "${gv_arr[@]}" | python -c 'import json,sys; print(json.dumps([int(x) for x in sys.stdin if x.strip()]))')"
-
-          CHANGELOG="$CHANGELOG" VERSION_NAME="$VERSION_NAME" RELEASE_TYPE="$release_type" \
-            GAME_VERSIONS_JSON="$gv_json" python - <<'PY'
-import json, os
-with open("curseforge-metadata.json", "w", encoding="utf-8") as f:
-    json.dump({
-        "changelog": os.environ.get("CHANGELOG") or f"Edge {os.environ['VERSION_NAME']}",
-        "changelogType": "markdown",
-        "displayName": f"Edge {os.environ['VERSION_NAME']}",
-        "gameVersions": json.loads(os.environ["GAME_VERSIONS_JSON"]),
-        "releaseType": os.environ["RELEASE_TYPE"],
-    }, f)
-PY
+          jq -n \
+            --arg changelog "${CHANGELOG:-Edge ${VERSION_NAME}}" \
+            --arg displayName "Edge ${VERSION_NAME}" \
+            --arg releaseType "$release_type" \
+            --argjson gameVersions "$gv_json" \
+            '{
+              changelog: $changelog,
+              changelogType: "markdown",
+              displayName: $displayName,
+              gameVersions: $gameVersions,
+              releaseType: $releaseType
+            }' > curseforge-metadata.json
 
           echo "Publishing $artifact_path to CurseForge project $project_id ($release_type)"
           curl --fail --show-error --silent \
