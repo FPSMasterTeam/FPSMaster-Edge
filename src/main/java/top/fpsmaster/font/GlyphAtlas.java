@@ -272,6 +272,23 @@ public final class GlyphAtlas {
     }
 
     /**
+     * Releases the GPU page and drops every cached glyph.
+     *
+     * <p>Safe to call when the owning renderer is evicted or reloaded: the next {@link #glyph}
+     * reallocates a fresh page. {@link #generation()} advances so any geometry recorded against the
+     * old page is rejected rather than drawn with a deleted texture id.
+     */
+    public void dispose() {
+        generation++;
+        glyphs.clear();
+        shelfX = 0;
+        shelfY = 0;
+        shelfHeight = 0;
+        pageSize = INITIAL_PAGE_SIZE;
+        releaseTexture();
+    }
+
+    /**
      * Doubles the page and drops every cached glyph so they re-rasterise into it.
      *
      * <p>Growing rather than adding a second page keeps any string to a single texture bind, which
@@ -291,16 +308,21 @@ public final class GlyphAtlas {
         shelfX = 0;
         shelfY = 0;
         shelfHeight = 0;
-        if (textureId != -1) {
-            GlStateManager.deleteTexture(textureId);
-            if (BenchmarkMode.ACTIVE) {
-                BenchCounters.texturesReleased++;
-            }
-            textureId = -1;
-        }
+        releaseTexture();
         ensureTexture();
         ClientLogger.info("font", font.getSize() + "pt atlas grew to " + pageSize + "px");
         return true;
+    }
+
+    private void releaseTexture() {
+        if (textureId == -1) {
+            return;
+        }
+        GlStateManager.deleteTexture(textureId);
+        if (BenchmarkMode.ACTIVE) {
+            BenchCounters.texturesReleased++;
+        }
+        textureId = -1;
     }
 
     private void ensureTexture() {

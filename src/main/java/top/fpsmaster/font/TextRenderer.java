@@ -156,6 +156,19 @@ public final class TextRenderer {
         this.atlas = new GlyphAtlas(font);
     }
 
+    /**
+     * Drops GPU and CPU caches held by this renderer.
+     *
+     * <p>The atlas reallocates on the next draw, and any recorded geometry is discarded with it so a
+     * stale recording cannot bind a deleted texture.
+     */
+    public void dispose() {
+        widths.clear();
+        geometryCache.clear();
+        obfuscatedCache.clear();
+        atlas.dispose();
+    }
+
     public int height() {
         // Truncating, not rounding: the renderer this replaced reported lineHeight / 2 in integer
         // arithmetic, and rounding instead moves every odd-height font by a pixel.

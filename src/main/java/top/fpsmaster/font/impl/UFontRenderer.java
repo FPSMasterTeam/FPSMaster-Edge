@@ -53,10 +53,17 @@ public class UFontRenderer extends FontRenderer {
         this.textRenderer = new TextRenderer(font);
     }
 
+    /** Releases the glyph atlas and layout caches. Safe if a stale holder draws again later. */
+    public void dispose() {
+        if (textRenderer != null) {
+            textRenderer.dispose();
+        }
+    }
+
     /** Parses a TrueType file once, returning a size-1 base font that sizes derive from. */
     private static Font loadBaseFont(String name) {
         try (InputStream is = Files.newInputStream(new File(FileUtils.fonts, name + ".ttf").toPath())) {
-            return Font.createFont(0, is);
+            return Font.createFont(Font.TRUETYPE_FONT, is);
         } catch (Exception ex) {
             ClientLogger.error("Error loading font " + name);
             return new Font("Arial", Font.PLAIN, 1);
