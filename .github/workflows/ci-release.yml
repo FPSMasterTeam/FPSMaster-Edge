@@ -98,8 +98,9 @@ jobs:
               channel="nightly"
               should_publish="false"
               ;;
+            # Git branch is `canary`; backend release channel code is still the legacy `cannary`.
             canary|canary/*)
-              channel="canary"
+              channel="cannary"
               should_publish="true"
               ;;
             beta|beta/*)
