@@ -428,6 +428,8 @@ jobs:
             | python -c 'import json,sys; v=json.load(sys.stdin); print("Modrinth version id:", v.get("id"), "url: https://modrinth.com/mod/fpsmaster/version/" + (v.get("id") or ""))'
 
       - name: Publish to CurseForge
+        # Optional platform publish — do not fail the Edge release if CF token/API rejects.
+        continue-on-error: true
         shell: bash
         env:
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
