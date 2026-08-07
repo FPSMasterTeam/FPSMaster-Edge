@@ -251,9 +251,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: edge-build
+          # Semver builds produce FPSMaster-<version>.jar (not FPSMaster-edge.jar).
           path: |
-            build/libs/FPSMaster-edge.jar
-            build/libs/FPSMaster-edge-*.jar
+            build/libs/FPSMaster-*.jar
             build/libs/fpsmaster-edge-aot-*.zip
           if-no-files-found: error
 
@@ -275,8 +275,7 @@ jobs:
           name: Edge ${{ needs.build.outputs.version_name }}
           body: ${{ needs.build.outputs.changelog }}
           files: |
-            dist/FPSMaster-edge.jar
-            dist/FPSMaster-edge-*.jar
+            dist/FPSMaster-*.jar
             dist/fpsmaster-edge-aot-*.zip
           fail_on_unmatched_files: false
 
@@ -311,12 +310,10 @@ jobs:
 
           python3 -m pip install --quiet --user boto3
 
-          artifact_path="$(find dist -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' | sort | head -n 1)"
-          if [ -z "$artifact_path" ]; then
-            artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | sort | head -n 1)"
-          fi
+          artifact_path="$(find dist -maxdepth 1 -type f -name 'FPSMaster-*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' | sort | head -n 1)"
           if [ -z "$artifact_path" ]; then
             echo "No jar artifact found in dist" >&2
+            ls -la dist >&2 || true
             exit 1
           fi
 
@@ -383,10 +380,7 @@ jobs:
           fi
 
           project_id="${MODRINTH_PROJECT_ID:-EYsVyax4}"
-          artifact_path="$(find dist -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' | sort | head -n 1)"
-          if [ -z "$artifact_path" ]; then
-            artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | sort | head -n 1)"
-          fi
+          artifact_path="$(find dist -maxdepth 1 -type f -name 'FPSMaster-*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' | sort | head -n 1)"
           if [ -z "$artifact_path" ]; then
             echo "No jar artifact found in dist" >&2
             exit 1
@@ -461,10 +455,7 @@ jobs:
           fi
 
           project_id="${CURSEFORGE_PROJECT_ID:-1081006}"
-          artifact_path="$(find dist -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' | sort | head -n 1)"
-          if [ -z "$artifact_path" ]; then
-            artifact_path="$(find dist -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | sort | head -n 1)"
-          fi
+          artifact_path="$(find dist -maxdepth 1 -type f -name 'FPSMaster-*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' | sort | head -n 1)"
           if [ -z "$artifact_path" ]; then
             echo "No jar artifact found in dist" >&2
             exit 1
