@@ -329,26 +329,7 @@ jobs:
           upload_oss() {
             local path="$1"
             local key="$2"
-            ARTIFACT_PATH="$path" OBJECT_KEY="$key" python3 - <<'PY'
-import os
-import boto3
-
-endpoint = os.environ["QINIU_S3_ENDPOINT"].rstrip("/")
-cdn = os.environ["QINIU_CDN_BASE_URL"].rstrip("/")
-bucket = os.environ["QINIU_BUCKET"]
-key = os.environ["OBJECT_KEY"]
-path = os.environ["ARTIFACT_PATH"]
-
-client = boto3.client(
-    "s3",
-    endpoint_url=endpoint,
-    aws_access_key_id=os.environ["QINIU_ACCESS_KEY"],
-    aws_secret_access_key=os.environ["QINIU_SECRET_KEY"],
-    region_name=os.environ.get("QINIU_S3_REGION") or "ap-southeast-1",
-)
-client.upload_file(path, bucket, key)
-print(f"{cdn}/{key}")
-PY
+            ARTIFACT_PATH="$path" OBJECT_KEY="$key" python3 -c "import os,boto3; e=os.environ['QINIU_S3_ENDPOINT'].rstrip('/'); c=os.environ['QINIU_CDN_BASE_URL'].rstrip('/'); b=os.environ['QINIU_BUCKET']; k=os.environ['OBJECT_KEY']; p=os.environ['ARTIFACT_PATH']; client=boto3.client('s3', endpoint_url=e, aws_access_key_id=os.environ['QINIU_ACCESS_KEY'], aws_secret_access_key=os.environ['QINIU_SECRET_KEY'], region_name=os.environ.get('QINIU_S3_REGION') or 'ap-southeast-1'); client.upload_file(p,b,k); print(f'{c}/{k}')"
           }
 
           jar_name="$(basename "$artifact_path")"
