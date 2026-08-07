@@ -12,7 +12,7 @@ It consolidates local build/test commands and code conventions.
   - `docs/development_tutorial.md`
   - `README.md`
 - If this file conflicts with code or Gradle config, follow code and Gradle.
-- Performance campaign docs under `docs/performance-*.md` / `benchmark/RESULTS.md` are historical measurement notes, not an open backlog unless the user says otherwise.
+- Performance campaign docs under `docs/performance/` and `benchmark/RESULTS.md` are historical measurement notes, not an open backlog unless the user says otherwise. Start at `docs/performance/index.md` if needed.
 
 ## Cursor / local agent config
 - Treat only **committed** repo files as policy. Local untracked `.cursor/` skills or rules may exist on a machine; do not assume they are part of the project unless present in git.
@@ -21,7 +21,7 @@ It consolidates local build/test commands and code conventions.
 - Single Gradle project for Minecraft Forge 1.8.9.
 - Java sources: `src/main/java/` (packages under `top.fpsmaster.*`).
 - Resources: `src/main/resources/` (mcmod, mixins, assets, access transformer config).
-- Docs: `docs/` (dev guides + optional performance archives).
+- Docs: `docs/` (dev guides at root; performance archive in `docs/performance/`; icon bake under `docs/icons/`).
 - Branding/assets: `pictures/`.
 - Benchmark harness: `benchmark/` (scripts/scenarios; large result dirs are gitignored).
 

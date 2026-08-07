@@ -560,11 +560,11 @@ public class Component {
     }
 
     /**
-     * Lunar/Badlion-style alignment assistance for the HUD editor. While a component is dragged it
-     * snaps to nearby edges — its own left/centre/right to a candidate's left/centre/right, and the
-     * same for top/centre/bottom — and draws a single guide line at the matched candidate edge. The
-     * screen centre is the only implicit candidate, so centring a component draws the classic
-     * crosshair and nothing is ever drawn at the screen borders.
+     * Alignment assistance for the HUD editor. While a component is dragged it snaps to nearby
+     * edges — its own left/centre/right to a candidate's left/centre/right, and the same for
+     * top/centre/bottom — and draws a single guide line at the matched candidate edge. The screen
+     * centre is the only implicit candidate, so centring a component draws the classic crosshair
+     * and nothing is ever drawn at the screen borders.
      *
      * <p>Everything lives in the shared component space ({@link GuiScale#getFixedBounds}) where
      * {@link #getRealPosition} expresses each box, so both axes are independent and can be active at

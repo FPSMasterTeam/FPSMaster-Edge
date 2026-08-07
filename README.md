@@ -28,6 +28,7 @@ FPSMaster Edge 是免费的 Minecraft **PvP 客户端**，本仓库实现为 **F
 
 ### 开发
 如果你想参与到开发中，请查看以下注意事项：
+ - 文档总览见 [docs/README.md](docs/README.md)。
  - 查看我们的[代码规范](docs/code_standards.md)了解如何编写符合我们要求的代码。
  - 查看我们的[环境配置](docs/development_environment.md)了解如何配置开发环境。
  - 查看我们的[开发指南](docs/development_tutorial.md)了解如何使用我们的模块系统、配置系统等，并完成你的需求。

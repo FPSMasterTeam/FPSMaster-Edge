@@ -19,9 +19,9 @@
     Probe flags, same names as the benchmark's: terrainProbe, collisionProbe, hudBreakdown.
 
 .PARAMETER PerfArgs
-    Adds the JVM flags read off a running Badlion Client that are worth trying here. Off by
-    default: they are unproven on this client, and a launcher script is the wrong place to
-    change behaviour silently. See the notes on $perfArgs below for what each one is for.
+    Adds optional JVM flags that are worth trying here (perf-oriented defaults seen in some
+    third-party launchers). Off by default: they are unproven on this client, and a launcher
+    script is the wrong place to change behaviour silently. See the notes on $perfArgs below.
 #>
 [CmdletBinding()]
 param(
@@ -67,9 +67,8 @@ foreach ($e in $Experiments) { $jvmArgs += "-Dedge.exp.$e=true" }
 
 if ($PerfArgs) {
     $jvmArgs += @(
-        # Stops the JVM writing its perf counters into a memory-mapped file. Badlion sets it
-        # to hide from jps/jcmd, but the reason to want it here is that those mmap writes are
-        # a known safepoint-pause source. Costs nothing and changes nothing on screen.
+        # Stops the JVM writing its perf counters into a memory-mapped file. Those mmap writes
+        # are a known safepoint-pause source. Costs nothing and changes nothing on screen.
         '-XX:+PerfDisableSharedMem',
         # System.gc() from any library is a full stop-the-world collection nobody asked for.
         # The benchmark harness already sets this; the dev launcher did not.

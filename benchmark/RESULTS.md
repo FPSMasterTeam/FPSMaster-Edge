@@ -1219,9 +1219,9 @@ items. That is untested and is the one honest gap left in this conclusion.
 
 ### The gap was bigger than that: half of collision had not been measured at all
 
-Reading what Badlion's "Fast Entity Collision" actually does settles it. Its call site is
-`Entity.moveEntity`, gated on the client world and four entity types, and it replaces the whole
-method with an alternate engine. The adapter it hands that engine exposes
+Reading what a common third-party "Fast Entity Collision" option actually does settles it. Its
+call site is `Entity.moveEntity`, gated on the client world and four entity types, and it
+replaces the whole method with an alternate engine. The adapter it hands that engine exposes
 `addCollisionBoxesToList` — **block** collision boxes. The name means fast collision *for*
 entities, against the world; not entity against entity, which is what the probe above measured.
 
@@ -1258,9 +1258,9 @@ magnitude, same side of the 3% threshold.
 
 The correction stands on its own, though. The first pass measured one of two halves and did
 not say so, which is the same mistake as the emit bracket in the HUD text cache: a name that
-sounded like it covered the work, and did not. Badlion's own description of the feature —
-"useful for Singleplayer" — is the other half of the answer, because in singleplayer the
-integrated server simulates entities properly and there is real work there to speed up.
+sounded like it covered the work, and did not. Marketing copy that calls the option "useful for
+Singleplayer" is the other half of the answer, because in singleplayer the integrated server
+simulates entities properly and there is real work there to speed up.
 
 ### FastCollision: skipping a query that only boats and minecarts could answer
 
@@ -1632,8 +1632,9 @@ mode and reverts cleanly is that it is not negative, not that it is visible here
 问题因此是：能不能在**不动画面**的前提下拿到同一份收益。原版的价格来自
 `FontRenderer.renderDefaultChar` 每字符一次 `glBegin`/`glEnd`。
 
-Badlion 这条路没走（见 `docs/performance-roadmap.md` §11.2）：他们的 `renderDefaultChar`
-仍是每字符 `glBegin(5)`，自己那套是 FreeType 栅格化真实 TTF，与原版贴图无关。没有先例可抄。
+外部客户端调研也没走出这条路（见 `docs/performance/roadmap.md` §11.2）：原版
+`renderDefaultChar` 仍是每字符 `glBegin(5)`，自定义字体是 FreeType 栅格化 TTF，与原版贴图无关。
+没有先例可抄。
 
 ### 尝试一：收集进 `WorldRenderer` —— 反向，作废
 

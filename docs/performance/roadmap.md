@@ -440,7 +440,7 @@ Forge 1.8.9 的 `TextureUtil` 已经持有并复用一个静态 4,194,304-int di
 ### 9.3 从未探针
 
 - **活动区块集合重建**（§4.3）—— 每 tick 清空重建 `activeChunkSet`
-- **异步光照**（§4.5）—— 高风险；Badlion 的实现没有版本校验
+- **异步光照**（§4.5）—— 高风险；已知公开实现缺少版本校验
 - **GUI 静态层预渲染**（§6）—— §13 已回答一半：成本在提交而非布局
 
 ### 9.4 明确不做（有实测数字，不要再提）
@@ -563,22 +563,15 @@ GL11.glEnd();
 
 **每个字符**一次 bind + 一次 `glBegin`/`glEnd`。一屏繁忙 HUD 是几千次立即模式提交。
 
-### 11.2 Badlion 做了什么（结论：这条路他们没走）
+### 11.2 外部客户端调研（结论：没有可抄的原版批量化先例）
 
-从 `tools/dumper-agent/out` 反编译确认三件事：
+对市面第三方 1.8.9 客户端的反编译核对过三件事：
 
-1. **他们没有优化原版逐字符路径。** `avn`（= `FontRenderer`）的 `renderDefaultChar` 依旧是每字符 `glBegin(5)`，和原版逐行一致。
-2. **他们在字符串层拦截并回退**，与本项目 `CustomHudFont` 同构：
+1. **原版逐字符路径往往原样保留。** `FontRenderer.renderDefaultChar` 仍是每字符 `glBegin(5)`。
+2. **常见做法是字符串层拦截并回退**，与本项目 `CustomHudFont` 同构：自定义字体能画则直接返回，否则走原版逐字符路径。
+3. **那套自定义字体通常不是原版风格，也不兼容原版贴图与材质包**（FreeType 栅格化 TTF／系统字体 + 自建图集），与 `textures/font/ascii.png` 无关。
 
-   ```java
-   int var6 = db.customFontManager.drawMCString(var2, var3, var1, var4);
-   if (var6 != -1) return var6;   // 自定义字体接管
-   else { ...原版逐字符路径... }
-   ```
-
-3. **他们的字体不是原版风格，也不兼容原版贴图与材质包。** `KN`（CustomFontManager）import `com.mlomb.freetypejni`，运行时用 FreeType 栅格化真实 TTF／系统字体（日志 `[CustomFontManager] Found N system font files`），自建图集走 GL15/GL20/GL30 的 VBO 路径，与 `textures/font/ascii.png` 无关。
-
-附带发现一个方向相反的功能：`aox.aca()` 绕过材质包，直接从 `getMcDefaultResourcePack()` 读原始 `ascii.png` 上传成独立纹理，配合 `net.badlion.clientcommon.util.h.k(char)` 的硬编码宽表；`abZ()` 才是走材质包的 `locationFontTexture`，由 `usesVanillaFont()` 二选一。这是"强制默认字体、无视材质包"，与性能无关。
+另有一类「强制默认字体、无视材质包」的开关（硬编码宽表 + 直接读默认 `ascii.png`），与性能无关。
 
 **所以批量化原版字体没有现成先例可抄。**
 
