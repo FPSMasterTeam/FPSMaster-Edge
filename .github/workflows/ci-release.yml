@@ -232,17 +232,36 @@ jobs:
             dist/fpsmaster-edge-aot-*.zip
           fail_on_unmatched_files: false
 
-      - name: Notify release API
+      - name: Upload to Qiniu OSS and notify release API
         shell: bash
         env:
           FPSMASTER_CI_API_BASE_URL: ${{ secrets.FPSMASTER_CI_API_BASE_URL }}
           FPSMASTER_CI_UPLOAD_TOKEN: ${{ secrets.FPSMASTER_CI_UPLOAD_TOKEN }}
+          QINIU_ACCESS_KEY: ${{ secrets.QINIU_ACCESS_KEY }}
+          QINIU_SECRET_KEY: ${{ secrets.QINIU_SECRET_KEY }}
+          QINIU_BUCKET: ${{ secrets.QINIU_BUCKET }}
+          QINIU_S3_ENDPOINT: ${{ secrets.QINIU_S3_ENDPOINT }}
+          QINIU_S3_REGION: ${{ secrets.QINIU_S3_REGION }}
+          QINIU_CDN_BASE_URL: ${{ secrets.QINIU_CDN_BASE_URL }}
+          CHANNEL: ${{ needs.build.outputs.channel }}
+          VERSION_NAME: ${{ needs.build.outputs.version_name }}
+          COMMIT_HASH: ${{ needs.build.outputs.commit_hash }}
+          FILE_SIZE: ${{ needs.build.outputs.file_size }}
+          CHECKSUM: ${{ needs.build.outputs.checksum }}
+          AOT_CHECKSUM: ${{ needs.build.outputs.aot_checksum }}
+          AOT_FILE_SIZE: ${{ needs.build.outputs.aot_file_size }}
           CHANGELOG: ${{ needs.build.outputs.changelog }}
         run: |
           if [ -z "$FPSMASTER_CI_API_BASE_URL" ] || [ -z "$FPSMASTER_CI_UPLOAD_TOKEN" ]; then
             echo "Release API secrets are not configured" >&2
             exit 1
           fi
+          if [ -z "$QINIU_ACCESS_KEY" ] || [ -z "$QINIU_SECRET_KEY" ] || [ -z "$QINIU_BUCKET" ] || [ -z "$QINIU_S3_ENDPOINT" ] || [ -z "$QINIU_CDN_BASE_URL" ]; then
+            echo "Qiniu OSS secrets are not configured" >&2
+            exit 1
+          fi
+
+          python3 -m pip install --quiet --user boto3
 
           artifact_path="$(find dist -maxdepth 1 -type f \( -name 'FPSMaster-edge.jar' -o -name 'FPSMaster-edge-*.jar' \) ! -name '*-sources.jar' | sort | head -n 1)"
           if [ -z "$artifact_path" ]; then
@@ -259,43 +278,53 @@ jobs:
             exit 1
           fi
 
-          upload_response="$(curl --fail --show-error --silent \
-            -X POST \
-            -H "X-CI-Token: ${FPSMASTER_CI_UPLOAD_TOKEN}" \
-            -F "file=@${artifact_path}" \
-            "${FPSMASTER_CI_API_BASE_URL%/}/api/v1/launcher/releases/upload")"
+          upload_oss() {
+            local path="$1"
+            local key="$2"
+            ARTIFACT_PATH="$path" OBJECT_KEY="$key" python3 - <<'PY'
+import os
+import boto3
 
-          upload_json="$(printf '%s' "$upload_response" | python -c 'import json,sys; data=json.load(sys.stdin); print(json.dumps(data["data"]))')"
-          download_url="$(printf '%s' "$upload_json" | python -c 'import json,sys; print(json.load(sys.stdin)["url"])')"
-          file_bucket="$(printf '%s' "$upload_json" | python -c 'import json,sys; print((json.load(sys.stdin).get("bucket") or ""))')"
-          file_key="$(printf '%s' "$upload_json" | python -c 'import json,sys; print((json.load(sys.stdin).get("key") or ""))')"
+endpoint = os.environ["QINIU_S3_ENDPOINT"].rstrip("/")
+cdn = os.environ["QINIU_CDN_BASE_URL"].rstrip("/")
+bucket = os.environ["QINIU_BUCKET"]
+key = os.environ["OBJECT_KEY"]
+path = os.environ["ARTIFACT_PATH"]
 
-          aot_upload_response="$(curl --fail --show-error --silent \
-            -X POST \
-            -H "X-CI-Token: ${FPSMASTER_CI_UPLOAD_TOKEN}" \
-            -F "file=@${aot_path}" \
-            "${FPSMASTER_CI_API_BASE_URL%/}/api/v1/launcher/releases/upload")"
+client = boto3.client(
+    "s3",
+    endpoint_url=endpoint,
+    aws_access_key_id=os.environ["QINIU_ACCESS_KEY"],
+    aws_secret_access_key=os.environ["QINIU_SECRET_KEY"],
+    region_name=os.environ.get("QINIU_S3_REGION") or "ap-southeast-1",
+)
+client.upload_file(path, bucket, key)
+print(f"{cdn}/{key}")
+PY
+          }
 
-          aot_upload_json="$(printf '%s' "$aot_upload_response" | python -c 'import json,sys; data=json.load(sys.stdin); print(json.dumps(data["data"]))')"
-          aot_download_url="$(printf '%s' "$aot_upload_json" | python -c 'import json,sys; print(json.load(sys.stdin)["url"])')"
+          jar_name="$(basename "$artifact_path")"
+          aot_name="$(basename "$aot_path")"
+          download_url="$(upload_oss "$artifact_path" "edge/${CHANNEL}/${VERSION_NAME}/${COMMIT_HASH}/${jar_name}")"
+          aot_download_url="$(upload_oss "$aot_path" "edge/${CHANNEL}/${VERSION_NAME}/${COMMIT_HASH}/aot/${aot_name}")"
+          echo "Uploaded jar -> ${download_url}"
+          echo "Uploaded aot -> ${aot_download_url}"
 
-          changelog_json="$(printf '%s' "$CHANGELOG" | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
+          changelog_json="$(printf '%s' "$CHANGELOG" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
 
           cat <<EOF > payload.json
           {
             "productCode": "${PRODUCT_CODE}",
-            "channelCode": "${{ needs.build.outputs.channel }}",
-            "versionName": "${{ needs.build.outputs.version_name }}",
-            "commitHash": "${{ needs.build.outputs.commit_hash }}",
-            "artifactSourceType": "UPLOADED_FILE",
+            "channelCode": "${CHANNEL}",
+            "versionName": "${VERSION_NAME}",
+            "commitHash": "${COMMIT_HASH}",
+            "artifactSourceType": "external_url",
             "downloadUrl": "${download_url}",
-            "fileBucket": "${file_bucket}",
-            "fileKey": "${file_key}",
-            "fileSize": ${{ needs.build.outputs.file_size }},
-            "checksum": "${{ needs.build.outputs.checksum }}",
+            "fileSize": ${FILE_SIZE},
+            "checksum": "${CHECKSUM}",
             "aotDownloadUrl": "${aot_download_url}",
-            "aotChecksum": "${{ needs.build.outputs.aot_checksum }}",
-            "aotFileSize": ${{ needs.build.outputs.aot_file_size }},
+            "aotChecksum": "${AOT_CHECKSUM}",
+            "aotFileSize": ${AOT_FILE_SIZE},
             "recommended": true,
             "mandatory": false,
             "changelog": ${changelog_json}
