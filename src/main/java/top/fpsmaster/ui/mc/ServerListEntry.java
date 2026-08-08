@@ -59,13 +59,18 @@ public class ServerListEntry {
 
             field_148302_b.submit(() -> {
                 try {
+                    logger.info("PINGDBG ping start " + ServerListEntry.this.server.serverIP + " entry=" + System.identityHashCode(ServerListEntry.this));
                     owner.oldServerPinger.ping(ServerListEntry.this.server);
+                    logger.info("PINGDBG ping returned " + ServerListEntry.this.server.serverIP + " ping=" + ServerListEntry.this.server.pingToServer
+                            + " motd=[" + ServerListEntry.this.server.serverMOTD + "] pop=[" + ServerListEntry.this.server.populationInfo + "]");
                 } catch (UnknownHostException var2) {
                     ServerListEntry.this.server.pingToServer = -1L;
                     ServerListEntry.this.server.serverMOTD = EnumChatFormatting.DARK_RED + "Can't resolve hostname";
+                    logger.info("PINGDBG ping UnknownHost " + ServerListEntry.this.server.serverIP);
                 } catch (Exception var3) {
                     ServerListEntry.this.server.pingToServer = -1L;
                     ServerListEntry.this.server.serverMOTD = EnumChatFormatting.DARK_RED + "Can't connect to server.";
+                    logger.info("PINGDBG ping exception " + ServerListEntry.this.server.serverIP + " " + var3);
                 }
 
             });

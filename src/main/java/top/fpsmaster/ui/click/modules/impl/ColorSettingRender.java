@@ -38,6 +38,7 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
     private final String alphaCaptureId;
     private final String saturationCaptureId;
     private final String brightnessCaptureId;
+    private final String speedCaptureId;
 
     public ColorSettingRender(Module mod, ColorSetting setting) {
         super(setting);
@@ -49,6 +50,7 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
         this.alphaCaptureId = capturePrefix + "alpha";
         this.saturationCaptureId = capturePrefix + "saturation";
         this.brightnessCaptureId = capturePrefix + "brightness";
+        this.speedCaptureId = capturePrefix + "speed";
     }
 
     @Override
@@ -76,8 +78,11 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                 ClickGuiTheme.hexText().getRGB()
         );
 
-        boolean showPalette = setting.getColorType() == ColorSetting.ColorType.STATIC || setting.getColorType() == ColorSetting.ColorType.WAVE;
-        float targetHeight = expand ? (showPalette ? 80f : 34f) : 0f;
+        boolean showPalette = setting.getColorType() == ColorSetting.ColorType.STATIC
+                || setting.getColorType() == ColorSetting.ColorType.WAVE
+                || setting.getColorType() == ColorSetting.ColorType.WAVE_BRIGHTNESS;
+        boolean showSpeed = setting.getColorType() != ColorSetting.ColorType.STATIC;
+        float targetHeight = expand ? (showPalette ? (showSpeed ? 100f : 80f) : 48f) : 0f;
         expandedHeight = (float) AnimMath.base(expandedHeight, targetHeight, 0.2);
 
         if (expandedHeight > 1f) {
@@ -89,7 +94,8 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                     ClickGuiTheme.modeText().getRGB()
             );
             if (showPalette) {
-                renderStaticOrWaveEditor(screen, x, y, mouseX, mouseY, labelW, customColor, expandedHeight);
+                float paletteH = showSpeed ? expandedHeight - 16f : expandedHeight;
+                renderStaticOrWaveEditor(screen, x, y, mouseX, mouseY, labelW, customColor, paletteH);
             } else {
                 renderDynamicEditor(screen, x, y, mouseX, mouseY, labelW, customColor);
             }
@@ -172,6 +178,27 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
         if (hue != customColor.hue || saturation != customColor.saturation || brightness != customColor.brightness || alpha != customColor.alpha) {
             binding.setHsba(hue, saturation, brightness, alpha);
         }
+
+        if (setting.getColorType() != ColorSetting.ColorType.STATIC) {
+            renderSpeedSlider(screen, x + labelW + 26, y + 16 + pickerHeight + 2, PICKER_W, mouseX, mouseY);
+        }
+    }
+
+    private void renderSpeedSlider(ScaledGuiScreen screen, float sliderX, float sliderY, float sliderW, float mouseX, float mouseY) {
+        float speed = setting.getSpeed();
+        Rects.rounded(Math.round(sliderX), Math.round(sliderY), Math.round(sliderW), 6, 3, ClickGuiTheme.inputBg().getRGB());
+        Rects.rounded(Math.round(sliderX), Math.round(sliderY), Math.round(sliderW * (speed - 0.1f) / 9.9f), 6, 3, new Color(114, 173, 255));
+        FPSMaster.fontManager.s14.drawString("T", sliderX - 8f, sliderY - 1f, ClickGuiTheme.textSecondary().getRGB());
+        FPSMaster.fontManager.s14.drawString(String.format(Locale.getDefault(), "%.1f", speed), sliderX + sliderW + 4f, sliderY - 1f, ClickGuiTheme.textSecondary().getRGB());
+
+        float newSpeed = speed;
+        screen.beginPointerCapture(speedCaptureId, 0, sliderX, sliderY, sliderW, 6f);
+        if (screen.isPointerCapturedBy(speedCaptureId, 0)) {
+            newSpeed = 0.1f + max(min((mouseX - sliderX) / sliderW, 1f), 0f) * 9.9f;
+        }
+        if (Math.abs(newSpeed - speed) > 0.01f) {
+            setting.setSpeed(newSpeed);
+        }
     }
 
     private void renderDynamicEditor(ScaledGuiScreen screen, float x, float y, float mouseX, float mouseY, float labelW, CustomColor customColor) {
@@ -202,5 +229,7 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
         if (saturation != customColor.saturation || brightness != customColor.brightness) {
             binding.setHsba(customColor.hue, saturation, brightness, customColor.alpha);
         }
+
+        renderSpeedSlider(screen, sliderX, y + 48, sliderW, mouseX, mouseY);
     }
 }

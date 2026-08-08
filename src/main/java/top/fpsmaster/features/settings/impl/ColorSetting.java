@@ -11,6 +11,7 @@ public class ColorSetting extends Setting<CustomColor> {
     public enum ColorType {
         STATIC("colorsetting.type.static"),
         WAVE("colorsetting.type.breath"),
+        WAVE_BRIGHTNESS("colorsetting.type.brightwave"),
         CHROMA("colorsetting.type.chroma"),
         RAINBOW("colorsetting.type.rainbow");
 
@@ -22,6 +23,8 @@ public class ColorSetting extends Setting<CustomColor> {
     }
 
     private ColorType colorType = ColorType.STATIC;
+    /** Multiplier for wave/rainbow/chroma animation speed. */
+    private float speed = 1.0f;
     private final ColorType[] availableTypes;
     private Color latestResolvedColor;
 
@@ -86,7 +89,7 @@ public class ColorSetting extends Setting<CustomColor> {
     }
 
     public Color updateAndGetColor(float chromaOffset) {
-        latestResolvedColor = resolveColor(getValue(), colorType, chromaOffset);
+        latestResolvedColor = resolveColor(getValue(), colorType, chromaOffset, speed);
         return latestResolvedColor;
     }
 
@@ -103,14 +106,25 @@ public class ColorSetting extends Setting<CustomColor> {
     }
 
     public static Color resolveColor(CustomColor value, ColorType type, float chromaOffset) {
+        return resolveColor(value, type, chromaOffset, 1.0f);
+    }
+
+    public static Color resolveColor(CustomColor value, ColorType type, float chromaOffset, float speed) {
         long now = System.nanoTime();
-        float dynamicHue = (float) ((now / 1_000_000_000.0 / 6.0) % 1.0);
+        float dynamicHue = (float) ((now / 1_000_000_000.0 / 6.0 * speed) % 1.0);
         float normalizedOffset = chromaOffset - (float) Math.floor(chromaOffset);
 
         switch (type) {
-            case WAVE:
-                float alphaWave = value.alpha * (0.35f + 0.65f * (float) ((Math.sin(now / 450_000_000.0) + 1.0) * 0.5));
+            case WAVE: {
+                float wave = (float) ((Math.sin(now / 450_000_000.0 * speed + normalizedOffset * Math.PI * 2.0) + 1.0) * 0.5);
+                float alphaWave = value.alpha * (0.35f + 0.65f * wave);
                 return new CustomColor(value.hue, value.saturation, value.brightness, alphaWave).getColor();
+            }
+            case WAVE_BRIGHTNESS: {
+                float wave = (float) ((Math.sin(now / 450_000_000.0 * speed + normalizedOffset * Math.PI * 2.0) + 1.0) * 0.5);
+                float brightnessWave = value.brightness * (0.35f + 0.65f * wave);
+                return new CustomColor(value.hue, value.saturation, brightnessWave, value.alpha).getColor();
+            }
             case CHROMA:
                 return new CustomColor((value.hue + dynamicHue + normalizedOffset) % 1.0f, value.saturation, value.brightness, value.alpha).getColor();
             case RAINBOW:
@@ -119,6 +133,14 @@ public class ColorSetting extends Setting<CustomColor> {
             default:
                 return value.getColor();
         }
+    }
+
+    public float getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(float speed) {
+        this.speed = Math.max(0.1f, Math.min(10f, speed));
     }
 
     public ColorType[] getAvailableTypes() {

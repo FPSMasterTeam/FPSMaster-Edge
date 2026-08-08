@@ -504,6 +504,8 @@ tasks.register<JavaExec>("runFullClient") {
     systemProperty("mixin.env.disableRefMap", "true")
     systemProperty("fpsmaster.noforge", "true")
     systemProperty("fpsmaster.full", "true")
+    systemProperty("edge.uishot", System.getProperty("edge.uishot", ""))
+    systemProperty("edge.uishot.screen", System.getProperty("edge.uishot.screen", ""))
 
     args(
         "--tweakClass", "top.fpsmaster.runtime.FpsMasterFullTweaker",

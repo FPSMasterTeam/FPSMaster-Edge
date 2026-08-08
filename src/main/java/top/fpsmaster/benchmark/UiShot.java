@@ -28,6 +28,7 @@ public final class UiShot {
     private static final int DELAY_SECONDS = Integer.getInteger("edge.uishot", -1).intValue();
 
     private static long firstTickMillis;
+    private static long lastDumpMillis;
     private static boolean captured;
 
     private UiShot() {
@@ -56,14 +57,21 @@ public final class UiShot {
                         null, mc.gameSettings, mc.getLanguageManager()));
             } else if ("replay".equals(screen)) {
                 mc.displayGuiScreen(new top.fpsmaster.ui.screens.replay.ReplayScreen(null));
+            } else if ("multiplayer".equals(screen)) {
+                mc.displayGuiScreen(new top.fpsmaster.ui.mc.GuiMultiplayer());
             }
             stressGlyphs();
             return;
         }
         if (now - firstTickMillis < DELAY_SECONDS * 1000L) {
+            if (now - lastDumpMillis >= 5000L) {
+                lastDumpMillis = now;
+                dumpServers();
+            }
             return;
         }
         captured = true;
+        dumpServers();
 
         File directory = new File(mc.mcDataDir, "bench-results");
         if (!directory.isDirectory() && !directory.mkdirs()) {
@@ -94,6 +102,16 @@ public final class UiShot {
                 + " (previously " + oldBoundsX + " wide, uiScale " + ClientSettings.getUiScale()
                 + ", vanilla scale " + sr.getScaleFactor() + ")");
         mc.shutdown();
+    }
+
+    private static void dumpServers() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.currentScreen instanceof top.fpsmaster.ui.mc.GuiMultiplayer) {
+            top.fpsmaster.ui.mc.GuiMultiplayer gm = (top.fpsmaster.ui.mc.GuiMultiplayer) mc.currentScreen;
+            ClientLogger.info("uishot", "screen is custom GuiMultiplayer");
+        } else {
+            ClientLogger.info("uishot", "screen=" + (mc.currentScreen == null ? "null" : mc.currentScreen.getClass().getName()));
+        }
     }
 
     /**

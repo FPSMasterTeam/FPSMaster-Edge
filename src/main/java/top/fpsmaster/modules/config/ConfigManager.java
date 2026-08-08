@@ -93,6 +93,7 @@ public class ConfigManager {
                     color.addProperty("b", value.brightness);
                     color.addProperty("a", value.alpha);
                     color.addProperty("mode", colorSetting.getColorType().name());
+                    color.addProperty("speed", colorSetting.getSpeed());
                     JsonObject settingJson = new JsonObject();
                     settingJson.addProperty("type", "color");
                     settingJson.add("value", color);
@@ -330,6 +331,9 @@ public class ConfigManager {
                                             colorSetting.setColorType(ColorSetting.ColorType.valueOf(color.get("mode").getAsString()));
                                         } catch (IllegalArgumentException ignored) {
                                         }
+                                    }
+                                    if (color.has("speed")) {
+                                        colorSetting.setSpeed(color.get("speed").getAsFloat());
                                     }
                                 } else if (setting instanceof BindSetting && "bind".equals(type)) {
                                     ((BindSetting) setting).setValue(value.getAsInt());
