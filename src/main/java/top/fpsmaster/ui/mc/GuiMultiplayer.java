@@ -11,6 +11,7 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraftforge.fml.client.FMLClientHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
@@ -38,6 +39,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     private final List<ServerListEntry> serverListInternet = Lists.newArrayList();
 
     String action = "";
+    private static int initCount = 0;
 
     GuiButton join = new GuiButton("multiplayer.join", () -> {
         if (selectedServer == null)
@@ -93,6 +95,22 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     @Override
     public void initGui() {
         super.initGui();
+        logger.info("PINGDBG initGui #" + (++initCount));
+        // Forge patches OldServerPinger to feed every status response to
+        // FMLClientHandler.bindServerListData, whose backing maps are only created by vanilla
+        // GuiMultiplayer (constructor/initGui) via FMLClientHandler.setupServerList(). This custom
+        // screen replaces the vanilla one, so the init has to happen here or the first ping dies
+        // with an NPE inside Forge's bindServerListData.
+        if (!Boolean.getBoolean("fpsmaster.noforge")) {
+            try {
+                FMLClientHandler.instance().setupServerList();
+            } catch (NoClassDefFoundError e) {
+                // Forge-free runtime: no FMLClientHandler, and no Forge patch to feed either.
+            }
+        }
+        if (Boolean.getBoolean("fpsmaster.pingdbg")) {
+            logger.info("PINGDBG initGui stack:", new Exception("initGui caller"));
+        }
         loadServerList();
         selectedServer = null;
 
@@ -228,6 +246,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     @Override
     public void onGuiClosed() {
         super.onGuiClosed();
+        logger.info("PINGDBG onGuiClosed");
         this.oldServerPinger.clearPendingNetworks();
     }
 
