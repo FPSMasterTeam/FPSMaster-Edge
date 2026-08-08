@@ -5,9 +5,6 @@ import java.util.Deque;
 import com.google.common.collect.Queues;
 import org.lwjgl.util.vector.Quaternion;
 
-import javax.vecmath.Matrix3f;
-import javax.vecmath.Matrix4f;
-
 public class PoseStack {
     private final Deque<Pose> poseStack;
 

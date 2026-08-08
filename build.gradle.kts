@@ -161,6 +161,7 @@ tasks.withType(Jar::class) {
 }
 
 tasks.processResources {
+    inputs.property("version", version)
     inputs.property("mcversion", mcVersion)
     inputs.property("modid", modid)
     inputs.property("mixinGroup", mixinGroup)
@@ -685,12 +686,14 @@ tasks.register<JavaExec>("runFullClientOf") {
 
 // ============================================================================
 // Production AOT distribution (vanilla / no-Forge):
-// pre-remap notch→named at build time so runtime RuntimeDeobfTransformer is not needed.
+// Ships ONLY FPSMaster runtime + official↔named mappings. NEVER ships Mojang Minecraft
+// jars (notch or named) — that violates Mojang's EULA redistribution rules. The launcher
+// (or the developer) supplies the official notch client jar at launch time; runtime
+// deobf (RuntimeDeobfTransformer) always remaps FPSMaster named bytecode onto it.
 // Parallel to the Forge Modrinth jar (remapJar) — does not replace it.
 // ============================================================================
 val aotDistName = "fpsmaster-edge-aot-$version"
 val aotDistDir = layout.buildDirectory.dir("aot/$aotDistName")
-val aotClientNamedJar = aotDistDir.map { it.file("client-named.jar") }
 val aotRuntimeJar = aotDistDir.map { it.file("fpsmaster-runtime.jar") }
 val aotMappingsFile = aotDistDir.map { it.file("mappings.tiny") }
 val aotLoomMappings = File(
@@ -699,6 +702,15 @@ val aotLoomMappings = File(
 )
 val aotMappingsId =
     "mcp_stable.22-1.8.9/official→named (essential-loom 1.8.9 mappings.tiny)"
+// Filenames that must never appear in a redistributed AOT package (Mojang client jars /
+// remapped derivatives). Local Gradle POC tasks may still use loom-cache jars in-place.
+val aotForbiddenArtifactNames = setOf(
+    "client-named.jar",
+    "minecraft-client.jar",
+    "minecraft-mapped.jar",
+    "minecraft-srg.jar",
+    "named-noforge.jar",
+)
 
 fun aotLibJars(): List<File> {
     val remapCp = file(".gradle/loom-cache/remapClasspath.txt")
@@ -715,23 +727,10 @@ fun aotLibJars(): List<File> {
                 !p.contains("minecraft-srg.jar") &&
                 !p.contains("minecraft-client.jar") &&
                 !p.contains("named-noforge") &&
-                !p.contains("forge-")
+                !p.contains("forge-") &&
+                !p.endsWith("client-named.jar")
         }
         .map { file(it) }
-}
-
-tasks.register<Copy>("remapAotMinecraft") {
-    group = "fpsmaster-aot"
-    description = "Copy Forge-free named client jar into the AOT distribution directory."
-    dependsOn("remapPocMinecraft")
-    from(runtimeNamedJar)
-    into(aotDistDir)
-    rename { "client-named.jar" }
-    doLast {
-        val out = aotClientNamedJar.get().asFile
-        require(out.isFile) { "AOT client-named.jar missing after copy: $out" }
-        logger.lifecycle("[aot] client-named.jar → ${out.absolutePath}")
-    }
 }
 
 tasks.register<ShadowJar>("shadowAotRuntime") {
@@ -787,8 +786,8 @@ fun sha256Hex(file: File): String {
 tasks.register("packageAotDistribution") {
     group = "fpsmaster-aot"
     description =
-        "Assemble AOT distribution (named client + mappings for notch launch + runtime) and zip."
-    dependsOn("remapAotMinecraft", "shadowAotRuntime")
+        "Assemble AOT zip (runtime + mappings only). Never packages Mojang client jars."
+    dependsOn("shadowAotRuntime")
 
     val zipOut = layout.buildDirectory.file("libs/$aotDistName.zip")
     outputs.dir(aotDistDir)
@@ -797,15 +796,21 @@ tasks.register("packageAotDistribution") {
     doLast {
         val dir = aotDistDir.get().asFile
         dir.mkdirs()
-        val client = aotClientNamedJar.get().asFile
+        // Drop leftovers from older named-client AOT builds so they cannot re-enter the zip.
+        aotForbiddenArtifactNames.forEach { name ->
+            val stale = File(dir, name)
+            if (stale.isFile) {
+                check(stale.delete()) { "Failed to delete forbidden AOT artifact: $stale" }
+                logger.lifecycle("[aot] removed forbidden leftover $name")
+            }
+        }
+
         val runtime = aotRuntimeJar.get().asFile
         val mappingsOut = aotMappingsFile.get().asFile
-        require(client.isFile) { "Missing $client — run remapAotMinecraft" }
         require(runtime.isFile) { "Missing $runtime — run shadowAotRuntime" }
         require(aotLoomMappings.isFile) { "Missing mappings: $aotLoomMappings" }
         aotLoomMappings.copyTo(mappingsOut, overwrite = true)
 
-        val clientSha = sha256Hex(client)
         val runtimeSha = sha256Hex(runtime)
         val mappingsSha = sha256Hex(mappingsOut)
 
@@ -820,6 +825,8 @@ tasks.register("packageAotDistribution") {
               "mixinConfigs": "mixins.fpsmaster.json",
               "disableRefMap": true,
               "mappingsId": "$aotMappingsId",
+              "clientPolicy": "notch-only",
+              "clientNote": "AOT never ships Minecraft jars. Launcher/user must provide the official notch client; runtime deobf always runs.",
               "optifine": {
                 "mc": "1.8.9",
                 "recommended": "HD_U_M5",
@@ -830,8 +837,8 @@ tasks.register("packageAotDistribution") {
                 "vanilla": {
                   "useForge": false,
                   "useOptiFine": false,
-                  "client": "client-named.jar",
-                  "runtimeDeobf": false,
+                  "client": "notch",
+                  "runtimeDeobf": true,
                   "tweakClasses": ["$fullTweaker"]
                 },
                 "vanilla+of": {
@@ -854,10 +861,6 @@ tasks.register("packageAotDistribution") {
                   "note": "Forge + OptiFine jar in mods/ + Edge Forge mod"
                 }
               },
-              "namedClient": {
-                "file": "client-named.jar",
-                "sha256": "$clientSha"
-              },
               "mappings": {
                 "file": "mappings.tiny",
                 "sha256": "$mappingsSha"
@@ -875,16 +878,18 @@ tasks.register("packageAotDistribution") {
               "fullTweaker": "$fullTweaker",
               "optifineTweaker": "$ofTweaker",
               "runtimeJar": "fpsmaster-runtime.jar",
-              "namedClientJar": "client-named.jar",
               "mappingsFile": "mappings.tiny",
+              "client": "notch",
+              "runtimeDeobf": true,
               "jvm": {
                 "disableRefMap": true,
-                "noforge": true
+                "noforge": true,
+                "runtimeVanilla": true
               },
               "profiles": {
                 "vanilla": {
-                  "client": "client-named.jar",
-                  "runtimeDeobf": false,
+                  "client": "notch",
+                  "runtimeDeobf": true,
                   "tweakClasses": ["$fullTweaker"]
                 },
                 "vanilla+of": {
@@ -899,8 +904,13 @@ tasks.register("packageAotDistribution") {
         File(dir, "launch-profiles.json").writeText(launchProfiles)
 
         File(dir, "SHA256SUMS").writeText(
-            "$clientSha  client-named.jar\n$runtimeSha  fpsmaster-runtime.jar\n$mappingsSha  mappings.tiny\n"
+            "$runtimeSha  fpsmaster-runtime.jar\n$mappingsSha  mappings.tiny\n"
         )
+
+        val forbiddenPresent = aotForbiddenArtifactNames.filter { File(dir, it).exists() }
+        require(forbiddenPresent.isEmpty()) {
+            "AOT package must not contain Mojang client artifacts: $forbiddenPresent"
+        }
 
         val zipFile = zipOut.get().asFile
         zipFile.parentFile.mkdirs()
@@ -908,7 +918,7 @@ tasks.register("packageAotDistribution") {
         ant.withGroovyBuilder {
             "zip"("destfile" to zipFile.absolutePath, "basedir" to dir.absolutePath)
         }
-        logger.lifecycle("[aot] packaged ${dir.absolutePath}")
+        logger.lifecycle("[aot] packaged ${dir.absolutePath} (runtime + mappings only; no MC jar)")
         logger.lifecycle("[aot] zip       ${zipFile.absolutePath} (${zipFile.length()} bytes)")
     }
 }
@@ -916,7 +926,7 @@ tasks.register("packageAotDistribution") {
 tasks.register<JavaExec>("runAotClient") {
     group = "fpsmaster-aot"
     description =
-        "Launch FULL client from AOT artifacts (named client jar, no runtime deobf, no Forge)."
+        "Launch FULL AOT client against a local notch minecraft-client.jar + runtime deobf (never ships MC)."
     dependsOn("packageAotDistribution")
 
     mainClass.set("net.minecraft.launchwrapper.Launch")
@@ -934,67 +944,6 @@ tasks.register<JavaExec>("runAotClient") {
     val nativesDir = File(loomBase, "1.8.9/natives")
     val assetsDir = File(loomBase, "assets")
     val runDir = layout.buildDirectory.dir("poc-run-aot").get().asFile
-    val namedMc = aotClientNamedJar.get().asFile
-    val runtimeJar = aotRuntimeJar.get().asFile
-
-    classpath = files(runtimeJar, namedMc, aotLibJars())
-
-    systemProperty("java.library.path", nativesDir.absolutePath)
-    systemProperty("org.lwjgl.librarypath", nativesDir.absolutePath)
-    systemProperty("mixin.debug", "true")
-    systemProperty("mixin.env.disableRefMap", "true")
-    systemProperty("fpsmaster.noforge", "true")
-    systemProperty("fpsmaster.full", "true")
-    systemProperty("fpsmaster.aot", "true")
-    // Intentionally NOT fpsmaster.runtime.vanilla — AOT ships pre-named client-named.jar.
-
-    args(
-        "--tweakClass", "top.fpsmaster.runtime.FpsMasterFullTweaker",
-        "--version", "1.8.9",
-        "--accessToken", "0",
-        "--username", "FPSMasterAOT",
-        "--assetIndex", "1.8.9-1.8",
-        "--assetsDir", assetsDir.absolutePath,
-        "--gameDir", runDir.absolutePath
-    )
-
-    doFirst {
-        runDir.mkdirs()
-        require(namedMc.isFile) { "AOT client-named.jar missing: $namedMc" }
-        require(runtimeJar.isFile) { "AOT fpsmaster-runtime.jar missing: $runtimeJar" }
-        val forgeOnCp = classpath.files.filter {
-            it.path.contains("minecraftforge") || it.name.contains("forge-") ||
-                it.name.contains("minecraft-mapped")
-        }
-        require(forgeOnCp.isEmpty()) { "Forge leaked onto AOT classpath: $forgeOnCp" }
-        logger.lifecycle("[aot-run] classpath jars: ${classpath.files.size}")
-        logger.lifecycle("[aot-run] client-named:   ${namedMc.absolutePath}")
-        logger.lifecycle("[aot-run] runtime:        ${runtimeJar.absolutePath}")
-        logger.lifecycle("[aot-run] natives:        ${nativesDir.absolutePath}")
-    }
-}
-
-tasks.register<JavaExec>("runAotClientNotch") {
-    group = "fpsmaster-aot"
-    description =
-        "Launch FULL client with REAL notch minecraft-client.jar + AOT runtime + runtime deobf."
-    dependsOn("packageAotDistribution")
-
-    mainClass.set("net.minecraft.launchwrapper.Launch")
-
-    val java8Home = (findProperty("poc.java8") as String?) ?: System.getenv("JAVA8_HOME")
-    if (java8Home != null) {
-        executable = File(java8Home, "bin/java").absolutePath
-    } else {
-        javaLauncher.set(javaToolchains.launcherFor {
-            languageVersion.set(JavaLanguageVersion.of(8))
-        })
-    }
-
-    val loomBase = File(gradle.gradleUserHomeDir, "caches/essential-loom")
-    val nativesDir = File(loomBase, "1.8.9/natives")
-    val assetsDir = File(loomBase, "assets")
-    val runDir = layout.buildDirectory.dir("poc-run-aot-notch").get().asFile
     val defaultVanilla = File(loomBase, "1.8.9/minecraft-client.jar")
     val vanillaOverride = findProperty("minecraft.client") as String?
     val vanillaJar = if (vanillaOverride != null) file(vanillaOverride) else defaultVanilla
@@ -1018,7 +967,7 @@ tasks.register<JavaExec>("runAotClientNotch") {
         "--tweakClass", "top.fpsmaster.runtime.FpsMasterFullTweaker",
         "--version", "1.8.9",
         "--accessToken", "0",
-        "--username", "FPSMasterAOTNotch",
+        "--username", "FPSMasterAOT",
         "--assetIndex", "1.8.9-1.8",
         "--assetsDir", assetsDir.absolutePath,
         "--gameDir", runDir.absolutePath
@@ -1027,23 +976,30 @@ tasks.register<JavaExec>("runAotClientNotch") {
     doFirst {
         runDir.mkdirs()
         require(vanillaJar.isFile) {
-            "Missing notch client jar: $vanillaJar (override with -Pminecraft.client=/path/to/minecraft-client.jar)"
+            "Missing notch client jar: $vanillaJar (override with -Pminecraft.client=/path/to/minecraft-client.jar). AOT never ships Mojang jars."
         }
         require(runtimeJar.isFile) { "AOT fpsmaster-runtime.jar missing: $runtimeJar" }
         require(mappings.isFile) { "AOT mappings.tiny missing: $mappings (run packageAotDistribution)" }
-        val forgeOnCp = classpath.files.filter {
+        val forbiddenOnCp = classpath.files.filter {
             it.path.contains("minecraftforge") || it.name.contains("forge-") ||
                 it.name.contains("named-noforge") || it.name.contains("minecraft-mapped") ||
                 it.name == "client-named.jar"
         }
-        require(forgeOnCp.isEmpty()) { "Forbidden jar on AOT-notch classpath: $forgeOnCp" }
+        require(forbiddenOnCp.isEmpty()) { "Forbidden jar on AOT classpath: $forbiddenOnCp" }
         val hasVanilla = classpath.files.any { it == vanillaJar || it.name == "minecraft-client.jar" }
         require(hasVanilla) { "Notch minecraft-client.jar missing from classpath" }
-        logger.lifecycle("[aot-notch] classpath jars: ${classpath.files.size}")
-        logger.lifecycle("[aot-notch] REAL client jar: ${vanillaJar.absolutePath}")
-        logger.lifecycle("[aot-notch] runtime:         ${runtimeJar.absolutePath}")
-        logger.lifecycle("[aot-notch] mappings:        ${mappings.absolutePath}")
-        logger.lifecycle("[aot-notch] natives:         ${nativesDir.absolutePath}")
+        logger.lifecycle("[aot] classpath jars: ${classpath.files.size}")
+        logger.lifecycle("[aot] REAL notch jar: ${vanillaJar.absolutePath}")
+        logger.lifecycle("[aot] runtime:        ${runtimeJar.absolutePath}")
+        logger.lifecycle("[aot] mappings:       ${mappings.absolutePath}")
+        logger.lifecycle("[aot] natives:        ${nativesDir.absolutePath}")
     }
+}
+
+// Alias kept for existing docs/scripts; identical to runAotClient (notch-only).
+tasks.register("runAotClientNotch") {
+    group = "fpsmaster-aot"
+    description = "Alias of runAotClient (notch client + runtime deobf)."
+    dependsOn("runAotClient")
 }
 
