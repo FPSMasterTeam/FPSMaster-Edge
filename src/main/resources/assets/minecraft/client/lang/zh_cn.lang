@@ -41,6 +41,7 @@ colorsetting.type.static=静态
 colorsetting.type.breath=呼吸
 colorsetting.type.chroma=渐变
 colorsetting.type.rainbow=彩虹
+colorsetting.type.brightwave=明度渐变
 
 
 theme.title=主题
@@ -812,16 +813,26 @@ modslist=功能列表
 modslist.desc=显示开启的功能
 modslist.showtext=显示自定义文本
 modslist.text=自定义文本
+modslist.titlesize=标题大小
+modslist.titlecolor=标题颜色
 modslist.english=显示英文功能名
 modslist.color=功能列表颜色
-modslist.rainbow=功能列表彩色
 modslist.backgroundcolor=功能列表背景颜色
 modslist.betterfont=更好的字体
-modslist.roundradius=圆角半径
 modslist.background=背景
 modslist.spacing=间距
-modslist.round=背景圆角
 modslist.fontshadow=字体阴影
+modslist.backgroundstyle=背景样式
+modslist.backgroundstyle.solid=纯色
+modslist.backgroundstyle.bar=条状
+modslist.barcolor=条状矩形颜色
+modslist.barwidth=条状矩形宽度
+modslist.animation=开关动画
+modslist.animationspeed=动画速度
+modslist.animation.fade=淡入淡出
+modslist.animation.slide=滑动
+modslist.animation.zoom=缩放
+modslist.animation.none=关闭
 
 betterscreen=更好的界面
 betterscreen.desc=让原版的部分界面看起来更好

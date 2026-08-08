@@ -41,6 +41,7 @@ colorsetting.type.static=Static
 colorsetting.type.breath=Breath
 colorsetting.type.chroma=Chroma
 colorsetting.type.rainbow=Rainbow
+colorsetting.type.brightwave=Brightness Wave
 
 
 theme.title=Theme
@@ -811,16 +812,26 @@ modslist=Mod List
 modslist.desc=Show enabled modules
 modslist.showtext=Show Custom Text
 modslist.text=Custom Text
+modslist.titlesize=Title Size
+modslist.titlecolor=Title Color
 modslist.english=Use English Names
 modslist.color=Mod List Color
-modslist.rainbow=Rainbow Text
 modslist.backgroundcolor=Background Color
 modslist.betterfont=Clean Font
-modslist.roundradius=Corner Radius
 modslist.background=Show Background
 modslist.spacing=Spacing
-modslist.round=Rounded Corners
 modslist.fontshadow=Font Shadow
+modslist.backgroundstyle=Background Style
+modslist.backgroundstyle.solid=Solid
+modslist.backgroundstyle.bar=Bar
+modslist.barcolor=Bar Color
+modslist.barwidth=Bar Width
+modslist.animation=Toggle Animation
+modslist.animationspeed=Animation Speed
+modslist.animation.fade=Fade
+modslist.animation.slide=Slide
+modslist.animation.zoom=Zoom
+modslist.animation.none=Off
 
 betterscreen=Enhanced UI
 betterscreen.desc=Improves vanilla UI visuals
