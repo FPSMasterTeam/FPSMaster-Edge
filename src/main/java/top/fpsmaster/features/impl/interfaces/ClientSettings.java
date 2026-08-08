@@ -14,7 +14,6 @@ import top.fpsmaster.features.settings.impl.BindSetting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.utils.system.OptifineUtil;
 import top.fpsmaster.utils.core.Utility;
 
 import java.util.Locale;
@@ -103,12 +102,6 @@ public class ClientSettings extends Module {
         } else {
             language.setValue(0);
         }
-    }
-
-    @Override
-    public void onEnable() {
-        super.onEnable();
-        this.set(false);
     }
 
     @Subscribe

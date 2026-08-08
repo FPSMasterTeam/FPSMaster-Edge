@@ -1,5 +1,6 @@
 package top.fpsmaster.features.manager;
 
+import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
@@ -18,6 +19,7 @@ public class Module {
     public LinkedList<Setting<?>> settings = new LinkedList<>();
     public int key = 0;
 
+    @Getter
     private boolean isEnabled = false;
 
     public Module(String name, String description, Category category) {
@@ -53,6 +55,7 @@ public class Module {
     }
 
     public void toggle() {
+        if (name.equals("ClientSettings")) return;
         set(!isEnabled);
     }
 
@@ -98,9 +101,6 @@ public class Module {
         EventDispatcher.unregisterListener(this);
     }
 
-    public boolean isEnabled() {
-        return isEnabled;
-    }
 }
 
 

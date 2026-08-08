@@ -2,15 +2,16 @@ package top.fpsmaster.ui.click.modules;
 
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Hover;
-import top.fpsmaster.utils.render.draw.Colors;
 import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Rects;
 
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
+
 import java.util.Map;
 import java.util.HashMap;
 import java.io.IOException;
+
 import net.minecraft.client.Minecraft;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
@@ -67,10 +68,6 @@ public class ModuleRenderer extends ValueRender {
         return resolved;
     }
 
-    /** Lets a resource pack's icons appear without a restart. */
-    public static void clearIconCache() {
-        ICONS.clear();
-    }
     ArrayList<SettingRender<?>> settingsRenderers = new ArrayList<>();
     private float settingHeight = 0f;
     private float border = 0f;
@@ -101,10 +98,10 @@ public class ModuleRenderer extends ValueRender {
                 settingsRenderers.add(new ColorSettingRender(module, (ColorSetting) setting));
             } else if (setting instanceof BindSetting) {
                 settingsRenderers.add(new BindSettingRender(module, (BindSetting) setting));
-            } else if(setting instanceof MultipleItemSetting) {
-                settingsRenderers.add(new MultipleItemSettingRender(module,(MultipleItemSetting)setting));
-            } else if(setting instanceof AutoTextSetting) {
-                settingsRenderers.add(new AutoTextSettingRender(module,(AutoTextSetting)setting));
+            } else if (setting instanceof MultipleItemSetting) {
+                settingsRenderers.add(new MultipleItemSettingRender(module, (MultipleItemSetting) setting));
+            } else if (setting instanceof AutoTextSetting) {
+                settingsRenderers.add(new AutoTextSettingRender(module, (AutoTextSetting) setting));
             }
         });
     }
@@ -151,18 +148,18 @@ public class ModuleRenderer extends ValueRender {
 //                x + 5, y, width - 10, 37f, 0.5f, background.getColor(), Colors.alpha(
 //                        FPSMaster.theme.getModuleBorder(), (int) border)
 //        );
+        if (!mod.name.equals("ClientSettings")) {
+            Images.draw(
+                    new ResourceLocation("client/gui/settings/window/option.png"),
+                    x + width - 40,
+                    y + 16,
+                    21,
+                    10,
+                    option.getColor()
+            );
 
-        Images.draw(
-                new ResourceLocation("client/gui/settings/window/option.png"),
-                x + width - 40,
-                y + 16,
-                21,
-                10,
-                option.getColor()
-        );
-
-        Icons.draw("toggle-knob", x + width - 38 + optionX, y + 17.5f, 7f, -1);
-
+            Icons.draw("toggle-knob", x + width - 38 + optionX, y + 17.5f, 7f, -1);
+        }
 
         ResourceLocation icon = mod.category == Category.Interface
                 ? INTERFACE_ICON
