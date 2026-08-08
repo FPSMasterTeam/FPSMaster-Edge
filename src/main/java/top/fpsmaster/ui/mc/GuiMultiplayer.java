@@ -214,7 +214,15 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         super.updateScreen();
         // Forge's FMLClientHandler.setupServerList() only wires LAN/Realms discovery, which this
         // custom multiplayer screen does not use; the vanilla ping loop below is all we need.
-        this.oldServerPinger.pingPendingNetworks();
+        // Guard the ping loop: OldServerPinger's legacy-ping fallback can surface a netty NPE
+        // (Bootstrap.checkAddress with a null address) on the tick thread when a server entry
+        // fails to resolve, which would otherwise crash the whole client (issue #179). A single
+        // bad server ping must never take down the screen.
+        try {
+            this.oldServerPinger.pingPendingNetworks();
+        } catch (Throwable t) {
+            logger.error("Couldn't ping pending server networks", t);
+        }
     }
 
     @Override
