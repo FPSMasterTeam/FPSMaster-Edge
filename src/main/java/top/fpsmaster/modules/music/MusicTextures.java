@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -39,7 +40,30 @@ public final class MusicTextures {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                     + "Chrome/123.0.0.0 Safari/537.36";
 
-    private static final Map<String, ResourceLocation> READY = new HashMap<>();
+    /**
+     * 上限存在的原因：每张封面都是一个 {@link DynamicTexture}，它既占一份 GL 纹理，又在堆上长期
+     * 持有整幅图的 {@code int[]}。歌单/搜索结果每滚过一屏就是一批新 URL，没有上限的话浏览一会儿
+     * 就能攒出几百张常驻纹理——显存和堆一起涨，且永远不会回落。
+     *
+     * <p>取 64 是因为同屏最多也就 20 来张封面：淘汰的一定不是本帧要画的那张。
+     */
+    private static final int MAX_READY = 64;
+
+    /**
+     * 访问序 LRU。淘汰时必须连同 GL 纹理一起删，只把 map 项拿掉等于把纹理泄漏给 TextureManager：
+     * {@code getDynamicTextureLocation} 每次都生成一个全新的 location 并注册进去，没人删就没人回收。
+     */
+    private static final Map<String, ResourceLocation> READY =
+            new LinkedHashMap<String, ResourceLocation>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, ResourceLocation> eldest) {
+                    if (size() <= MAX_READY) {
+                        return false;
+                    }
+                    deleteTexture(eldest.getValue());
+                    return true;
+                }
+            };
     private static final Set<String> LOADING = new HashSet<>();
 
     // 所有 AWT/ImageIO 图片解码放到单一线程串行执行：macOS(尤其 Rosetta) 下并发调用
@@ -157,8 +181,29 @@ public final class MusicTextures {
     public static synchronized void invalidate(String rawKey) {
         for (String prefix : new String[]{"cover:", "b64:", "qr:"}) {
             String k = prefix + rawKey;
-            READY.remove(k);
+            deleteTexture(READY.remove(k));
             LOADING.remove(k);
+        }
+    }
+
+    /**
+     * 删除一个动态纹理。
+     *
+     * <p>只在渲染线程上调用：淘汰发生在 {@link #upload} 里的 {@code addScheduledTask} 中，
+     * {@link #invalidate} 也来自 UI 交互。TextureManager 为 null 说明客户端还没起来或已经关了，
+     * 那时候没有纹理需要删。
+     */
+    private static void deleteTexture(ResourceLocation location) {
+        if (location == null) {
+            return;
+        }
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            if (mc != null && mc.getTextureManager() != null) {
+                mc.getTextureManager().deleteTexture(location);
+            }
+        } catch (Throwable e) {
+            ClientLogger.warn("Failed to delete music texture " + location + ": " + e.getMessage());
         }
     }
 
@@ -213,7 +258,9 @@ public final class MusicTextures {
                             .getDynamicTextureLocation("music_" + Integer.toHexString(key.hashCode()),
                                     new DynamicTexture(argb));
                     synchronized (MusicTextures.class) {
-                        READY.put(key, loc);
+                        // 同一个 key 重复上传（淘汰后又被请求）时，旧 location 换下来也要删掉，
+                        // 否则 put 覆盖不会触发淘汰回调，那张纹理就没人管了。
+                        deleteTexture(READY.put(key, loc));
                         LOADING.remove(key);
                     }
                 } catch (Throwable e) {
