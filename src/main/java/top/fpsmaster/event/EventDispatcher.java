@@ -13,6 +13,15 @@ public class EventDispatcher {
     // dispatch reads it; the per-event lists are CopyOnWriteArrayList (read-heavy, write-rare).
     private static final Map<Class<? extends Event>, List<Handler>> eventListeners = new ConcurrentHashMap<>();
 
+    /**
+     * Subscribes every {@code @Subscribe} method on {@code listener}.
+     *
+     * <p>Registering the same object twice is ignored rather than doubled. Some listeners are
+     * attached from more than one place — {@code ClientSettings} subscribes in its constructor so it
+     * keeps working while the module reads as disabled, and {@code Module#onEnable} subscribes again
+     * if config later enables it — and a second copy of a handler both fires the body twice and
+     * keeps the listener referenced after one matching unregister.
+     */
     public static void registerListener(Object listener) {
         Method[] methods = listener.getClass().getDeclaredMethods();
         for (Method method : methods) {
@@ -21,16 +30,35 @@ public class EventDispatcher {
                 if (Event.class.isAssignableFrom(parameterType)) {
                     Class<? extends Event> eventType = (Class<? extends Event>) parameterType;
                     List<Handler> listeners = eventListeners.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>());
-                    listeners.add(new MethodHandleHandler(listener, method));
+                    if (!isRegistered(listeners, listener, method)) {
+                        listeners.add(new MethodHandleHandler(listener, method));
+                    }
                 }
             }
         }
     }
 
+    /**
+     * Unsubscribes {@code listener}.
+     *
+     * <p>Matched by identity. Matching by class instead — which is what this did — meant unregistering
+     * one instance detached every other instance of the same class, leaving those listeners believing
+     * they were still subscribed while their handlers were gone; and a handler that was removed on
+     * someone else's behalf is a live object the bus no longer holds but nobody knows to re-add.
+     */
     public static void unregisterListener(Object listener) {
         for (List<Handler> listeners : eventListeners.values()) {
-            listeners.removeIf(eventListener -> eventListener.getListener().getClass().equals(listener.getClass()));
+            listeners.removeIf(eventListener -> eventListener.getListener() == listener);
         }
+    }
+
+    private static boolean isRegistered(List<Handler> listeners, Object listener, Method method) {
+        for (Handler handler : listeners) {
+            if (handler.getListener() == listener && method.equals(handler.getMethod())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void dispatchEvent(Event event) {
