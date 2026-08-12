@@ -179,7 +179,7 @@ public class MainMenu extends ScaledGuiScreen {
             return;
         }
         loadedSkinPlayerId = normalizedPlayerId;
-        playerSkinTexture = null;
+        releasePlayerSkinTexture();
         playerSkinLoadFailed = false;
         try {
             FPSMaster.async.runnable(() -> loadPlayerSkinTexture(normalizedPlayerId));
@@ -232,6 +232,7 @@ public class MainMenu extends ScaledGuiScreen {
             if (minecraft == null || minecraft.getTextureManager() == null || !playerId.equals(loadedSkinPlayerId)) {
                 return;
             }
+            releasePlayerSkinTexture();
             playerSkinTexture = minecraft.getTextureManager()
                     .getDynamicTextureLocation("fpsmaster_player_skin_" + playerId, new DynamicTexture(textureImage));
             playerSkinLoadFailed = false;
@@ -240,6 +241,29 @@ public class MainMenu extends ScaledGuiScreen {
             fallbackToDefaultSkin(playerId);
         } finally {
             SKIN_LOADING.set(false);
+        }
+    }
+
+    /**
+     * Deletes the skin texture currently held, if any.
+     *
+     * <p>Every skin is registered with {@code getDynamicTextureLocation}, which mints a fresh
+     * location and hands ownership to the texture manager; dropping the field alone leaves both the
+     * GL texture and the {@code DynamicTexture}'s full-size {@code int[]} behind. Switching accounts
+     * used to leak one of each per switch.
+     *
+     * <p>Render thread only, which is why {@code fallbackToDefaultSkin} does not call it: that runs
+     * on the loader thread too, and by then the field has already been cleared here.
+     */
+    private static void releasePlayerSkinTexture() {
+        ResourceLocation previous = playerSkinTexture;
+        playerSkinTexture = null;
+        if (previous == null) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft != null && minecraft.getTextureManager() != null) {
+            minecraft.getTextureManager().deleteTexture(previous);
         }
     }
 

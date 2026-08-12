@@ -264,8 +264,27 @@ public class Backgrounds {
         titlePanoramaPaths = createPanoramaPaths(DEFAULT_PANORAMA_STYLE);
         panoramaTimer = 0;
         panoramaTimerLastUpdate = System.currentTimeMillis();
+        releaseViewportTexture();
+    }
+
+    /**
+     * Frees the panorama viewport texture so {@link #initGui()} can build a fresh one.
+     *
+     * <p>Dropping the two fields is not enough: the texture manager owns the {@code DynamicTexture}
+     * from the moment {@code getDynamicTextureLocation} registers it, so nulling them here and
+     * allocating a replacement in {@code initGui} leaked a 256×256 texture per cache clear.
+     */
+    private static void releaseViewportTexture() {
+        ResourceLocation previous = backgroundTexture;
         viewportTexture = null;
         backgroundTexture = null;
+        if (previous == null) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft != null && minecraft.getTextureManager() != null) {
+            minecraft.getTextureManager().deleteTexture(previous);
+        }
     }
 
     private static void rotateAndBlurSkybox(int width, int height, int zLevel) {

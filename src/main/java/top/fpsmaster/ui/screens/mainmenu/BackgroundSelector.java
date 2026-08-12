@@ -245,10 +245,14 @@ public class BackgroundSelector extends ScaledGuiScreen {
     }
 
     private void loadCustomPreview(File file, long modified) {
+        // Reloading is driven by the file's mtime, so picking a new background re-enters here. Each
+        // pass mints a brand new dynamic texture, and the texture manager keeps whatever it was
+        // given until told otherwise — without this the previous preview stayed resident, in VRAM
+        // and on the heap, for every image the player tried.
+        releaseCustomPreview();
         try {
             BufferedImage image = ImageIO.read(file);
             if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0) {
-                customPreviewTexture = null;
                 customPreviewLastModified = modified;
                 return;
             }
@@ -257,8 +261,15 @@ public class BackgroundSelector extends ScaledGuiScreen {
             customPreviewTexture = mc.getTextureManager().getDynamicTextureLocation("fpsmaster_custom_bg_preview", new DynamicTexture(image));
             customPreviewLastModified = modified;
         } catch (IOException exception) {
-            customPreviewTexture = null;
             customPreviewLastModified = modified;
+        }
+    }
+
+    private void releaseCustomPreview() {
+        ResourceLocation previous = customPreviewTexture;
+        customPreviewTexture = null;
+        if (previous != null && mc != null && mc.getTextureManager() != null) {
+            mc.getTextureManager().deleteTexture(previous);
         }
     }
 
