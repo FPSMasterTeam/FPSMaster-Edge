@@ -45,9 +45,11 @@ public final class MusicTextures {
      * 持有整幅图的 {@code int[]}。歌单/搜索结果每滚过一屏就是一批新 URL，没有上限的话浏览一会儿
      * 就能攒出几百张常驻纹理——显存和堆一起涨，且永远不会回落。
      *
-     * <p>取 64 是因为同屏最多也就 20 来张封面：淘汰的一定不是本帧要画的那张。
+     * <p>上限必须大于「一帧能画出来的封面数」，否则每帧都会把本帧还要用的那张挤掉，下一帧又重新
+     * 下载一遍——那比多占点显存糟得多。歌单网格和曲目列表都做了视口裁剪（{@code MusicScreen} 里
+     * 的 {@code continue}），同屏撑死几十张，128 留了足够余量。
      */
-    private static final int MAX_READY = 64;
+    private static final int MAX_READY = 128;
 
     /**
      * 访问序 LRU。淘汰时必须连同 GL 纹理一起删，只把 map 项拿掉等于把纹理泄漏给 TextureManager：
