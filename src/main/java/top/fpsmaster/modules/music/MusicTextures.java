@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +33,9 @@ import java.util.concurrent.Executors;
  *
  * <p>下载/解码在后台线程完成，纹理上传（GL 调用）通过 {@link Minecraft#addScheduledTask(Runnable)}
  * 回到渲染线程。首帧返回 {@code null}，调用方每帧重新查询即可（就绪后返回同一个 location）。
+ *
+ * <p>READY 是有界 LRU：封面浏览可以产生无限多个不同 URL，不淘汰会把 DynamicTexture 永久留在
+ * TextureManager 里。淘汰与 {@link #invalidate(String)} 都会 {@code deleteTexture}。
  */
 public final class MusicTextures {
 
@@ -39,7 +43,20 @@ public final class MusicTextures {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                     + "Chrome/123.0.0.0 Safari/537.36";
 
-    private static final Map<String, ResourceLocation> READY = new HashMap<>();
+    private static final int MAX_READY = 96;
+    private static final int MAX_LOADING = 32;
+
+    private static final Map<String, ResourceLocation> READY =
+            new LinkedHashMap<String, ResourceLocation>(64, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, ResourceLocation> eldest) {
+                    if (size() <= MAX_READY) {
+                        return false;
+                    }
+                    deleteTexture(eldest.getValue());
+                    return true;
+                }
+            };
     private static final Set<String> LOADING = new HashSet<>();
 
     // 所有 AWT/ImageIO 图片解码放到单一线程串行执行：macOS(尤其 Rosetta) 下并发调用
@@ -68,7 +85,7 @@ public final class MusicTextures {
         final String key = "cover:" + url;
         ResourceLocation loc = READY.get(key);
         if (loc != null) return loc;
-        if (LOADING.contains(key)) return null;
+        if (LOADING.contains(key) || LOADING.size() >= MAX_LOADING) return null;
         LOADING.add(key);
         NET_EXEC.execute(new Runnable() {
             @Override
@@ -108,7 +125,7 @@ public final class MusicTextures {
         final String key = "b64:" + Integer.toHexString(base64OrDataUrl.hashCode());
         ResourceLocation loc = READY.get(key);
         if (loc != null) return loc;
-        if (LOADING.contains(key)) return null;
+        if (LOADING.contains(key) || LOADING.size() >= MAX_LOADING) return null;
         LOADING.add(key);
         IMG_EXEC.execute(new Runnable() {
             @Override
@@ -132,11 +149,12 @@ public final class MusicTextures {
     }
 
     /** 由文本（网易云登录 codekey URL）生成二维码纹理。 */
-    public static synchronized ResourceLocation qr(final String text) {        if (text == null || text.isEmpty()) return null;
+    public static synchronized ResourceLocation qr(final String text) {
+        if (text == null || text.isEmpty()) return null;
         final String key = "qr:" + text;
         ResourceLocation loc = READY.get(key);
         if (loc != null) return loc;
-        if (LOADING.contains(key)) return null;
+        if (LOADING.contains(key) || LOADING.size() >= MAX_LOADING) return null;
         LOADING.add(key);
         IMG_EXEC.execute(new Runnable() {
             @Override
@@ -157,7 +175,8 @@ public final class MusicTextures {
     public static synchronized void invalidate(String rawKey) {
         for (String prefix : new String[]{"cover:", "b64:", "qr:"}) {
             String k = prefix + rawKey;
-            READY.remove(k);
+            ResourceLocation loc = READY.remove(k);
+            deleteTexture(loc);
             LOADING.remove(k);
         }
     }
@@ -193,6 +212,16 @@ public final class MusicTextures {
         LOADING.remove(key);
     }
 
+    private static void deleteTexture(ResourceLocation location) {
+        if (location == null) {
+            return;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc != null && mc.getTextureManager() != null) {
+            mc.getTextureManager().deleteTexture(location);
+        }
+    }
+
     private static void upload(final String key, final BufferedImage raw) {
         if (raw == null) {
             unmark(key);
@@ -213,7 +242,11 @@ public final class MusicTextures {
                             .getDynamicTextureLocation("music_" + Integer.toHexString(key.hashCode()),
                                     new DynamicTexture(argb));
                     synchronized (MusicTextures.class) {
-                        READY.put(key, loc);
+                        ResourceLocation previous = READY.put(key, loc);
+                        // Same key re-upload (QR refresh) must free the previous GL texture.
+                        if (previous != null && previous != loc) {
+                            deleteTexture(previous);
+                        }
                         LOADING.remove(key);
                     }
                 } catch (Throwable e) {

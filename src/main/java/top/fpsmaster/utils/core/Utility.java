@@ -11,6 +11,8 @@ public class Utility {
 
     public static Minecraft mc = Minecraft.getMinecraft();
 
+    private static final int MAX_QUEUED_MESSAGES = 100;
+
     static ArrayList<String> messages = new ArrayList<>();
 
     public static void sendChatMessage(String message) {
@@ -22,7 +24,7 @@ public class Utility {
         if (mc.theWorld != null) {
             mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentText(msg));
         } else {
-            messages.add(msg);
+            queueMessage(msg);
         }
     }
 
@@ -31,8 +33,15 @@ public class Utility {
         if (mc.theWorld != null) {
             mc.ingameGUI.getChatGUI().printChatMessage(new ChatComponentText(msg1));
         } else {
-            messages.add(msg1);
+            queueMessage(msg1);
         }
+    }
+
+    private static void queueMessage(String msg) {
+        while (messages.size() >= MAX_QUEUED_MESSAGES) {
+            messages.remove(0);
+        }
+        messages.add(msg);
     }
 
     public static void sendClientDebug(String msg) {

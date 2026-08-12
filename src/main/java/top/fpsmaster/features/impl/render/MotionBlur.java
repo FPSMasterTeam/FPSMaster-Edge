@@ -172,6 +172,20 @@ public class MotionBlur extends Module {
     public void onDisable() {
         super.onDisable();
         Minecraft.getMinecraft().entityRenderer.stopUseShader();
+        // Old-mode ping-pong FBOs are static and survive toggles; without an explicit delete the
+        // driver's framebuffer memory stays allocated until process exit.
+        deleteBlurBuffers();
+    }
+
+    private static void deleteBlurBuffers() {
+        if (blurBufferMain != null) {
+            blurBufferMain.deleteFramebuffer();
+            blurBufferMain = null;
+        }
+        if (blurBufferInto != null) {
+            blurBufferInto.deleteFramebuffer();
+            blurBufferInto = null;
+        }
     }
 
     public static void blur(float multiplier) {
