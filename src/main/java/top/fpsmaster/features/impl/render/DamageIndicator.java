@@ -18,7 +18,10 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 public class DamageIndicator extends Module {
-    private EntityLivingBase lastAttack;
+    private static final int MAX_INDICATORS = 64;
+    private static final DecimalFormat DAMAGE_FORMAT = new DecimalFormat("0.00");
+
+    private static EntityLivingBase lastAttack;
 
     public DamageIndicator() {
         super("DamageIndicator", Category.RENDER);
@@ -27,11 +30,27 @@ public class DamageIndicator extends Module {
     static ArrayList<Damage> indicators = new ArrayList<>();
 
     public static void addIndicator(float x, float y, float z, float damage) {
+        // Cap so a disable mid-fight (listeners stop, eviction stops) cannot leave an unbounded list.
+        while (indicators.size() >= MAX_INDICATORS) {
+            indicators.remove(0);
+        }
         indicators.add(new Damage(damage, x, y, z, 0f));
+    }
+
+    /** Drops retained entities and pending floats — world leave / module disable. */
+    public static void clearState() {
+        lastAttack = null;
+        indicators.clear();
     }
 
     MathTimer timer = new MathTimer();
     float health = 0;
+
+    @Override
+    public void onDisable() {
+        super.onDisable();
+        clearState();
+    }
 
     @Subscribe
     public void onAttack(EventAttack e) {
@@ -72,8 +91,7 @@ public class DamageIndicator extends Module {
 
     public void doRender(Damage indicator) {
         Minecraft mc = Minecraft.getMinecraft();
-        DecimalFormat df = new DecimalFormat("0.00");
-        String damage = df.format(-indicator.damage);
+        String damage = DAMAGE_FORMAT.format(-indicator.damage);
         GL11.glPushAttrib(GL11.GL_ALPHA | GL11.GL_BLEND | GL11.GL_TEXTURE_2D | GL11.GL_LIGHTING | GL11.GL_DEPTH_TEST | GL11.GL_CULL_FACE);
         GL11.glPushMatrix();
         GL11.glEnable(3042);

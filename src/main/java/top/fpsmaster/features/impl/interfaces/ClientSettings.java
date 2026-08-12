@@ -94,6 +94,9 @@ public class ClientSettings extends Module {
     public ClientSettings() {
         super("ClientSettings", Category.Utility);
         addSettings(language, keyBind, followGameScale, fixedScale, blur, theme, zoomBind, clientCommand, prefix);
+        // Always-on: language / blur guards must fire whether or not the module "enabled" flag is
+        // true in a profile. onEnable/onDisable are no-ops so ConfigManager.set(true) cannot stack
+        // a second registration on top of this one.
         EventDispatcher.registerListener(this);
         // get system language
         Locale locale = Locale.getDefault();
@@ -102,6 +105,16 @@ public class ClientSettings extends Module {
         } else {
             language.setValue(0);
         }
+    }
+
+    @Override
+    public void onEnable() {
+        // Registered once in the constructor; Module.set(true) must not register again.
+    }
+
+    @Override
+    public void onDisable() {
+        // Always-on listener — do not unregister when a profile writes enabled=false.
     }
 
     @Subscribe
