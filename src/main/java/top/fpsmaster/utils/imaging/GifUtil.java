@@ -32,8 +32,20 @@ public class GifUtil {
         // 读取GIF
         ImageReader reader = ImageIO.getImageReadersByFormatName("gif").next();
         ImageInputStream in = ImageIO.createImageInputStream(stream);
-        reader.setInput(in);
+        try {
+            reader.setInput(in);
+            return readFrames(reader);
+        } finally {
+            // reader 内部缓存着已解码的帧和调色板，in 背后是一个文件/内存句柄；两者都不随
+            // 方法返回自动释放，漏掉就是每转一次 GIF 多留一份。
+            reader.dispose();
+            if (in != null) {
+                in.close();
+            }
+        }
+    }
 
+    private static List<FrameData> readFrames(ImageReader reader) throws IOException {
         // 获取GIF的帧数
         int numImages = reader.getNumImages(true);
         List<FrameData> frames = new ArrayList<>();
@@ -56,9 +68,12 @@ public class GifUtil {
 
                 BufferedImage combined = new BufferedImage(master.getWidth(), master.getHeight(), BufferedImage.TYPE_INT_ARGB);
                 Graphics g = combined.getGraphics();
-
-                g.drawImage(master,0,0,null);
-                g.drawImage(image,x,y,null);
+                try {
+                    g.drawImage(master,0,0,null);
+                    g.drawImage(image,x,y,null);
+                } finally {
+                    g.dispose();
+                }
 
                 master = combined;
                 image = combined;
