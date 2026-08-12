@@ -172,6 +172,16 @@ public class MotionBlur extends Module {
     public void onDisable() {
         super.onDisable();
         Minecraft.getMinecraft().entityRenderer.stopUseShader();
+        // Old mode keeps two framebuffers for the session; free them when the effect is off so a
+        // resize cycle cannot leave orphaned FBOs after repeated toggle/churn.
+        if (blurBufferMain != null) {
+            blurBufferMain.deleteFramebuffer();
+            blurBufferMain = null;
+        }
+        if (blurBufferInto != null) {
+            blurBufferInto.deleteFramebuffer();
+            blurBufferInto = null;
+        }
     }
 
     public static void blur(float multiplier) {

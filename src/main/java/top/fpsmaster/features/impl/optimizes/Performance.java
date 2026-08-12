@@ -6,6 +6,7 @@ import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
+import top.fpsmaster.utils.render.ItemModelLists;
 import top.fpsmaster.utils.render.TextureResolution;
 import top.fpsmaster.utils.render.culling.EntityCulling;
 
@@ -529,6 +530,20 @@ public class Performance extends Module {
         hideDoubleTallFlowers.addChangeListener(rebuildChunks);
         hideFences.addChangeListener(rebuildChunks);
         hideFenceGates.addChangeListener(rebuildChunks);
+
+        // Display lists and in-flight occlusion probes must not outlive the feature that created
+        // them: the mixins stop using the caches when the switch is off, but GL objects and entity
+        // references stay reachable until something frees them.
+        cacheItemModels.addChangeListener((setting, oldValue, newValue) -> {
+            if (!Boolean.TRUE.equals(newValue)) {
+                ItemModelLists.invalidate();
+            }
+        });
+        entityCulling.addChangeListener((setting, oldValue, newValue) -> {
+            if (!Boolean.TRUE.equals(newValue)) {
+                ENTITY_CULLING.reset();
+            }
+        });
     }
 
 
@@ -555,6 +570,20 @@ public class Performance extends Module {
         super.onDisable();
         using = false;
         pendingWorldRefresh = true;
+        releaseCaches();
+    }
+
+    /**
+     * Drops GPU and entity state owned by this module's optimisations.
+     *
+     * <p>Resource reload already invalidates item lists, and the client tick already releases
+     * culling state when the world becomes {@code null}. Disabling the module (or its sub-features)
+     * has to do the same work, otherwise display lists and pending probe entities stay alive for
+     * the rest of the session.
+     */
+    public static void releaseCaches() {
+        ItemModelLists.invalidate();
+        ENTITY_CULLING.reset();
     }
 
     /**

@@ -264,6 +264,14 @@ public class Backgrounds {
         titlePanoramaPaths = createPanoramaPaths(DEFAULT_PANORAMA_STYLE);
         panoramaTimer = 0;
         panoramaTimerLastUpdate = System.currentTimeMillis();
+        // Nulling the Java refs alone orphans the DynamicTexture inside TextureManager for the
+        // rest of the session. Delete first when DevTools (or anyone else) flushes this cache.
+        if (backgroundTexture != null) {
+            Minecraft minecraft = Minecraft.getMinecraft();
+            if (minecraft != null && minecraft.getTextureManager() != null) {
+                minecraft.getTextureManager().deleteTexture(backgroundTexture);
+            }
+        }
         viewportTexture = null;
         backgroundTexture = null;
     }

@@ -3,10 +3,12 @@ package top.fpsmaster.ui.screens.mainmenu;
 import net.minecraft.client.gui.GuiScreen;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
+import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.minimap.Minimap;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.config.Configure;
 import top.fpsmaster.modules.logger.ClientLogger;
+import top.fpsmaster.modules.music.MusicTextures;
 import top.fpsmaster.ui.common.GuiButton;
 import top.fpsmaster.ui.screens.oobe.OobeScreen;
 import top.fpsmaster.utils.render.draw.Rects;
@@ -67,8 +69,12 @@ public class DevToolsScreen extends ScaledGuiScreen {
     }
 
     private void clearCaches() {
+        Backgrounds.clearCaches();
         Backgrounds.initGui();
+        Minimap.releaseWorldCaches();
         Minimap.clearBlockColours = true;
+        MusicTextures.clearAll();
+        Performance.releaseCaches();
         FPSMaster.fontManager.load();
         setStatus("Caches cleared", new Color(110, 255, 150).getRGB());
     }

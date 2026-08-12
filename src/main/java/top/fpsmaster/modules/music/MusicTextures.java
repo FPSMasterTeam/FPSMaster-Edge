@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +33,9 @@ import java.util.concurrent.Executors;
  *
  * <p>下载/解码在后台线程完成，纹理上传（GL 调用）通过 {@link Minecraft#addScheduledTask(Runnable)}
  * 回到渲染线程。首帧返回 {@code null}，调用方每帧重新查询即可（就绪后返回同一个 location）。
+ *
+ * <p>就绪表有上限：浏览大量封面时若不淘汰，每个 URL 会永久占住一张 {@link DynamicTexture}。淘汰时
+ * 必须 {@code deleteTexture}，否则只丢掉 Java 引用会把 GPU 纹理留在 {@code TextureManager} 里。
  */
 public final class MusicTextures {
 
@@ -39,7 +43,22 @@ public final class MusicTextures {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                     + "Chrome/123.0.0.0 Safari/537.36";
 
-    private static final Map<String, ResourceLocation> READY = new HashMap<>();
+    /** Upper bound on live cover/QR textures so browsing cannot grow VRAM without bound. */
+    private static final int MAX_READY = 64;
+
+    private static final Map<String, ResourceLocation> READY =
+            new LinkedHashMap<String, ResourceLocation>(32, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, ResourceLocation> eldest) {
+                    if (size() <= MAX_READY) {
+                        return false;
+                    }
+                    // Eviction runs from upload() on the render thread, which is the only place safe
+                    // to delete GL textures.
+                    deleteTexture(eldest.getValue());
+                    return true;
+                }
+            };
     private static final Set<String> LOADING = new HashSet<>();
 
     // 所有 AWT/ImageIO 图片解码放到单一线程串行执行：macOS(尤其 Rosetta) 下并发调用
@@ -132,7 +151,8 @@ public final class MusicTextures {
     }
 
     /** 由文本（网易云登录 codekey URL）生成二维码纹理。 */
-    public static synchronized ResourceLocation qr(final String text) {        if (text == null || text.isEmpty()) return null;
+    public static synchronized ResourceLocation qr(final String text) {
+        if (text == null || text.isEmpty()) return null;
         final String key = "qr:" + text;
         ResourceLocation loc = READY.get(key);
         if (loc != null) return loc;
@@ -157,9 +177,23 @@ public final class MusicTextures {
     public static synchronized void invalidate(String rawKey) {
         for (String prefix : new String[]{"cover:", "b64:", "qr:"}) {
             String k = prefix + rawKey;
-            READY.remove(k);
+            ResourceLocation loc = READY.remove(k);
             LOADING.remove(k);
+            deleteTexture(loc);
         }
+    }
+
+    /**
+     * Drops every cached music texture and deletes the GL objects behind them.
+     *
+     * <p>Must run on the render thread. Used by DevTools and any full cache flush.
+     */
+    public static synchronized void clearAll() {
+        for (ResourceLocation loc : READY.values()) {
+            deleteTexture(loc);
+        }
+        READY.clear();
+        LOADING.clear();
     }
 
     /**
@@ -193,6 +227,16 @@ public final class MusicTextures {
         LOADING.remove(key);
     }
 
+    private static void deleteTexture(ResourceLocation location) {
+        if (location == null) {
+            return;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc != null && mc.getTextureManager() != null) {
+            mc.getTextureManager().deleteTexture(location);
+        }
+    }
+
     private static void upload(final String key, final BufferedImage raw) {
         if (raw == null) {
             unmark(key);
@@ -213,8 +257,12 @@ public final class MusicTextures {
                             .getDynamicTextureLocation("music_" + Integer.toHexString(key.hashCode()),
                                     new DynamicTexture(argb));
                     synchronized (MusicTextures.class) {
-                        READY.put(key, loc);
+                        ResourceLocation previous = READY.put(key, loc);
                         LOADING.remove(key);
+                        // Same key refreshed (e.g. QR rotate): drop the previous GL texture.
+                        if (previous != null && previous != loc) {
+                            deleteTexture(previous);
+                        }
                     }
                 } catch (Throwable e) {
                     ClientLogger.error("Music texture upload failed: " + e.getMessage());

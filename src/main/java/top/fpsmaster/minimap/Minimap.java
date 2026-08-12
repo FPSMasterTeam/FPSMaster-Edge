@@ -790,6 +790,39 @@ public class Minimap {
         return !e.isSneaking() && !e.isInvisible();
     }
 
+    /**
+     * Drops entity and colour caches that pin a world after disconnect or while the module is off.
+     *
+     * <p>{@link #loadedEntities} (and the sibling lists) hold strong {@link Entity} references.
+     * When {@code mc.theWorld} is null the loader thread only sleeps, so without an explicit clear
+     * those entities — and typically the {@code WorldClient} they belong to — stay reachable until
+     * the next join. Colour maps are bounded by block types seen but also grow for the session and
+     * have no reason to survive a world change.
+     */
+    public static void releaseWorldCaches() {
+        if (Minimap.loadedPlayers != null) {
+            Minimap.loadedPlayers.clear();
+        }
+        if (Minimap.loadedLiving != null) {
+            Minimap.loadedLiving.clear();
+        }
+        if (Minimap.loadedHostile != null) {
+            Minimap.loadedHostile.clear();
+        }
+        if (Minimap.loadedItems != null) {
+            Minimap.loadedItems.clear();
+        }
+        if (Minimap.loadedEntities != null) {
+            Minimap.loadedEntities.clear();
+        }
+        if (Minimap.blockColours != null && !Minimap.blockColours.isEmpty()) {
+            Minimap.blockColours.clear();
+        }
+        if (Minimap.textureColours != null && !Minimap.textureColours.isEmpty()) {
+            Minimap.textureColours.clear();
+        }
+    }
+
     static {
         Minimap.loadingSide = 16;
         Minimap.loadedSide = 16;
@@ -831,6 +864,9 @@ public class Minimap {
             while (((IMinecraft) mc).arch$getRunning()) {
                 if(!MiniMap.using) {
                     try {
+                        // The module is off, so nothing should keep the last world's entities or
+                        // colour tables reachable across a long session with the HUD disabled.
+                        releaseWorldCaches();
                         Thread.sleep(1000L);
                         continue;
                     } catch (InterruptedException e) {
@@ -841,6 +877,10 @@ public class Minimap {
                 boolean sleep = true;
                 try {
                     if (mc.thePlayer == null || mc.theWorld == null) {
+                        // Disconnect / dimension change: the loader keeps sleeping here and used to
+                        // leave loadedEntities holding strong Entity refs (and through them the
+                        // old WorldClient) until the next join refreshed the lists.
+                        releaseWorldCaches();
                         Thread.sleep(100L);
                     } else {
                         if (updateChunkX == 0 && updateChunkZ == 0) {

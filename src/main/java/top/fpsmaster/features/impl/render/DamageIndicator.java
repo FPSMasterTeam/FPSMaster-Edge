@@ -33,6 +33,14 @@ public class DamageIndicator extends Module {
     MathTimer timer = new MathTimer();
     float health = 0;
 
+    @Override
+    public void onDisable() {
+        super.onDisable();
+        // lastAttack is a strong EntityLivingBase ref; indicators only shrink while rendering.
+        lastAttack = null;
+        indicators.clear();
+    }
+
     @Subscribe
     public void onAttack(EventAttack e) {
         if (e.target instanceof EntityLivingBase) {
