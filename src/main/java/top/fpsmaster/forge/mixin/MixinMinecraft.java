@@ -149,6 +149,8 @@ public abstract class MixinMinecraft implements IMinecraft {
         GlStateManager.disableFog();
         framebuffer.unbindFramebuffer();
         framebuffer.framebufferRender(sr.getScaledWidth() * i, sr.getScaledHeight() * i);
+        // Single-use compositing target: see MixinSplashScreen#start for why this has to be freed.
+        framebuffer.deleteFramebuffer();
         GlStateManager.enableAlpha();
         GlStateManager.alphaFunc(516, 0.1F);
         updateDisplay();

@@ -44,6 +44,10 @@ public class MixinSplashScreen {
         GlStateManager.disableFog();
         framebuffer.unbindFramebuffer();
         framebuffer.framebufferRender(scaledresolution.getScaledWidth() * i, scaledresolution.getScaledHeight() * i);
+        // Nothing reads this again — it exists to compose one frame. At display resolution that is a
+        // full-screen colour attachment plus a depth buffer, so leaving it undeleted burns tens of
+        // megabytes of VRAM for the rest of the session.
+        framebuffer.deleteFramebuffer();
         GlStateManager.enableAlpha();
         GlStateManager.alphaFunc(516, 0.1F);
         arch$updateDisplay();
