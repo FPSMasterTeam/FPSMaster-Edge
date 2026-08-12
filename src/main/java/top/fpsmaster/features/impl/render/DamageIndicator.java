@@ -18,7 +18,12 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 public class DamageIndicator extends Module {
-    private EntityLivingBase lastAttack;
+    /**
+     * Static so a world change can drop it: the module itself is a singleton that outlives every
+     * world, and an {@link EntityLivingBase} reaches its world, so holding the last thing hit past a
+     * disconnect keeps that whole world resident.
+     */
+    private static EntityLivingBase lastAttack;
 
     public DamageIndicator() {
         super("DamageIndicator", Category.RENDER);
@@ -31,7 +36,7 @@ public class DamageIndicator extends Module {
     }
 
     MathTimer timer = new MathTimer();
-    float health = 0;
+    static float health = 0;
 
     @Subscribe
     public void onAttack(EventAttack e) {
@@ -117,6 +122,18 @@ public class DamageIndicator extends Module {
         GL11.glNormal3f(1.0f, 1.0f, 1.0f);
         GL11.glPopMatrix();
         GL11.glPopAttrib();
+    }
+
+    /**
+     * Drops the attack target and any indicators still animating when the world changes.
+     *
+     * <p>The indicators themselves are only numbers, but they are positioned in the old world's
+     * coordinates and would otherwise finish their animation floating in the new one.
+     */
+    public static void releaseWorldState() {
+        lastAttack = null;
+        health = 0f;
+        indicators.clear();
     }
 
     private static class Damage {

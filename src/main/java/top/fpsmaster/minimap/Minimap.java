@@ -823,6 +823,22 @@ public class Minimap {
         Minimap.mapTexture = new DynamicTexture(InterfaceHandler.mapTextures);
     }
 
+    /**
+     * Drops the entities the radar last drew when the world changes.
+     *
+     * <p>The loader thread republishes these lists as it sweeps, so in a live world they turn over
+     * on their own. On a disconnect it stops sweeping instead, leaving up to a hundred entities from
+     * the old world referenced from static fields — and each of those reaches the world it came
+     * from, so the whole thing stays loaded until the player joins somewhere else.
+     */
+    public static void releaseWorldState() {
+        loadedPlayers = new ArrayList<>();
+        loadedLiving = new ArrayList<>();
+        loadedHostile = new ArrayList<>();
+        loadedItems = new ArrayList<>();
+        loadedEntities = new ArrayList<>();
+    }
+
     public class MapLoader implements Runnable {
         @Override
         public void run() {

@@ -25,6 +25,7 @@ import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.impl.optimizes.Performance;
+import top.fpsmaster.modules.client.WorldSession;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.notification.NotificationManager;
@@ -72,6 +73,7 @@ public class GlobalListener {
         // Entity rendering stops entirely after a disconnect, so culling cannot rely on its render
         // hook to notice a null world and release the old WorldClient/pending entity references.
         Performance.ENTITY_CULLING.updateWorld(minecraft.theWorld);
+        WorldSession.onClientTick();
         if (minecraft.theWorld != null) {
             ReplayRecorder.instance().startIfRequested();
         }

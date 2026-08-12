@@ -106,6 +106,18 @@ public class TargetDisplay extends InterfaceModule {
             lastHit = System.currentTimeMillis();
         }
     }
+
+    /**
+     * Drops the last target when the world changes.
+     *
+     * <p>This field is static and the HUD stops reading it three seconds after the hit, but nothing
+     * ever wrote null back — so the last player hit on a server stayed referenced until the next
+     * hit, and through {@code Entity.worldObj} that kept the entire disconnected world alive.
+     */
+    public static void releaseWorldState() {
+        target = null;
+        lastHit = 0L;
+    }
 }
 
 
