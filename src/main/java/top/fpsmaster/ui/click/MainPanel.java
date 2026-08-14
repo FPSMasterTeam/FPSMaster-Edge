@@ -35,7 +35,7 @@ public class MainPanel extends ScaledGuiScreen {
     boolean drag = false;
     float dragX = 0f;
     float dragY = 0f;
-    Category curType = Category.OPTIMIZE;
+    public Category curType = Category.OPTIMIZE;
     LinkedList<CategoryComponent> categories = new LinkedList<>();
     float modsWheel = 0f;
     float wheelTemp = 0f;
@@ -112,6 +112,11 @@ public class MainPanel extends ScaledGuiScreen {
             }
         }
         return n;
+    }
+
+    /** Screenshot-pipeline hook: filters the list down so one module's settings are on screen. */
+    public void searchForShot(String query) {
+        searchBar.setQuery(query);
     }
 
     private boolean isSearchActive() {

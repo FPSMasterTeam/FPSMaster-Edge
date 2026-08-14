@@ -188,6 +188,11 @@ public class ModuleRenderer extends ValueRender {
         }
     }
 
+    /** Screenshot-pipeline hook: opens this module's settings without a synthetic click. */
+    public void expandForShot() {
+        expand = true;
+    }
+
     private String moduleBindLock() {
         return "mod:" + mod.name;
     }
