@@ -18,6 +18,9 @@ public class DirectionDisplay extends Module {
 
     @Subscribe
     public void onRender(EventRender2D e) {
+        if (top.fpsmaster.replay.ReplayPlayer.instance().isActive()) {
+            return; // spectator view: the viewer's own HUD has no business over a recording
+        }
         ScaledResolution scaledResolution = new ScaledResolution(Utility.mc);
         compass.draw(scaledResolution);
     }
