@@ -43,8 +43,17 @@ public final class DirectorStore {
             if (track == null) {
                 return new CameraTrack();
             }
-            // Defensive: nulls from hand-edited files would NPE deep inside interpolation.
+            // Defensive: gson skips field initializers (Unsafe allocation), so lists missing
+            // from older or hand-edited files come back null, and nulls inside would NPE later.
+            if (track.keyframes == null) {
+                track.keyframes = new java.util.ArrayList<CameraKeyframe>();
+            }
+            if (track.segments == null) {
+                track.segments = new java.util.ArrayList<TimelineSegment>();
+            }
             track.keyframes.removeIf(frame -> frame == null);
+            track.segments.removeIf(segment -> segment == null);
+            track.sortSegments();
             for (CameraKeyframe frame : track.keyframes) {
                 if (frame.transition == null) {
                     frame.transition = CameraKeyframe.Transition.SMOOTH;
@@ -64,7 +73,7 @@ public final class DirectorStore {
     public static boolean save(File replayFile, CameraTrack track) {
         File sidecar = sidecarFor(replayFile);
         try {
-            if (track == null || track.isEmpty()) {
+            if (track == null || (track.isEmpty() && track.segments.isEmpty())) {
                 if (sidecar.isFile()) {
                     Files.delete(sidecar.toPath());
                 }

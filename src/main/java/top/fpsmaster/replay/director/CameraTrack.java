@@ -22,7 +22,13 @@ public final class CameraTrack {
     private static final BezierEasing EASE_OUT = BezierEasing.of(0.0, 0.0, 0.58, 1.0);
     private static final BezierEasing EASE_IN_OUT = BezierEasing.of(0.42, 0.0, 0.58, 1.0);
 
-    public final List<CameraKeyframe> keyframes = new ArrayList<CameraKeyframe>();
+    public List<CameraKeyframe> keyframes = new ArrayList<CameraKeyframe>();
+
+    /**
+     * Cut list. Empty = the whole replay, kept, at 1x. When non-empty the segments are kept
+     * sorted, non-overlapping and gap-free over [0, replayDuration] by the edit operations.
+     */
+    public List<TimelineSegment> segments = new ArrayList<TimelineSegment>();
 
     public boolean isEmpty() {
         return keyframes.isEmpty();
@@ -152,5 +158,158 @@ public final class CameraTrack {
             wrapped += 360f;
         }
         return wrapped;
+    }
+
+    // ------------------------------------------------------------------
+    // Cut list / time remapping
+    // ------------------------------------------------------------------
+
+    /** The effective segment list: the stored cuts, or one whole-replay segment when there are none. */
+    public List<TimelineSegment> effectiveSegments(int replayDuration) {
+        if (!segments.isEmpty()) {
+            return segments;
+        }
+        List<TimelineSegment> whole = new ArrayList<TimelineSegment>(1);
+        whole.add(new TimelineSegment(0, Math.max(1, replayDuration)));
+        return whole;
+    }
+
+    /** Ensures the cut list is materialized so edits have something to slice. */
+    private void materializeSegments(int replayDuration) {
+        if (segments.isEmpty()) {
+            segments.add(new TimelineSegment(0, Math.max(1, replayDuration)));
+        }
+    }
+
+    public void sortSegments() {
+        Collections.sort(segments, new Comparator<TimelineSegment>() {
+            @Override
+            public int compare(TimelineSegment a, TimelineSegment b) {
+                return Integer.compare(a.startMillis, b.startMillis);
+            }
+        });
+    }
+
+    /** Splits the segment containing {@code millis} in two; both halves keep its speed/state. */
+    public void splitAt(int millis, int replayDuration) {
+        materializeSegments(replayDuration);
+        for (TimelineSegment segment : new ArrayList<TimelineSegment>(segments)) {
+            if (millis > segment.startMillis && millis < segment.endMillis) {
+                TimelineSegment tail = new TimelineSegment(millis, segment.endMillis);
+                tail.speed = segment.speed;
+                tail.excluded = segment.excluded;
+                segment.endMillis = millis;
+                segments.add(tail);
+                sortSegments();
+                return;
+            }
+        }
+    }
+
+    /** Drops everything before {@code millis} — the editor's set-in-point. */
+    public void trimStart(int millis, int replayDuration) {
+        materializeSegments(replayDuration);
+        splitAt(millis, replayDuration);
+        for (TimelineSegment segment : segments) {
+            if (segment.endMillis <= millis) {
+                segment.excluded = true;
+            }
+        }
+    }
+
+    /** Drops everything after {@code millis} — the editor's set-out-point. */
+    public void trimEnd(int millis, int replayDuration) {
+        materializeSegments(replayDuration);
+        splitAt(millis, replayDuration);
+        for (TimelineSegment segment : segments) {
+            if (segment.startMillis >= millis) {
+                segment.excluded = true;
+            }
+        }
+    }
+
+    public TimelineSegment segmentAt(int millis, int replayDuration) {
+        for (TimelineSegment segment : effectiveSegments(replayDuration)) {
+            if (millis >= segment.startMillis && millis < segment.endMillis) {
+                return segment;
+            }
+        }
+        return null;
+    }
+
+    /** Merges adjacent segments with identical state back together (undo for a stray split). */
+    public void mergeAdjacent() {
+        sortSegments();
+        for (int i = segments.size() - 2; i >= 0; i--) {
+            TimelineSegment a = segments.get(i);
+            TimelineSegment b = segments.get(i + 1);
+            if (a.endMillis == b.startMillis && a.excluded == b.excluded && a.speed == b.speed) {
+                a.endMillis = b.endMillis;
+                segments.remove(i + 1);
+            }
+        }
+        // A single whole-range default segment is the same as no cut list at all.
+        if (segments.size() == 1 && segments.get(0).startMillis == 0
+                && !segments.get(0).excluded && segments.get(0).speed == 1f) {
+            segments.clear();
+        }
+    }
+
+    /** Output length of the whole edit in millis: kept segments, each stretched by speed. */
+    public long outputDurationMillis(int replayDuration) {
+        long total = 0;
+        for (TimelineSegment segment : effectiveSegments(replayDuration)) {
+            total += segment.outputLength();
+        }
+        return total;
+    }
+
+    /**
+     * Maps a moment of the output movie back to replay time. Monotonic, so an exporter walking
+     * output time forward also walks replay time forward (jumping across cuts).
+     */
+    public int mapOutputToSource(long outputMillis, int replayDuration) {
+        long acc = 0;
+        List<TimelineSegment> kept = effectiveSegments(replayDuration);
+        for (TimelineSegment segment : kept) {
+            long length = segment.outputLength();
+            if (length <= 0) {
+                continue;
+            }
+            if (outputMillis < acc + length) {
+                float speed = segment.speed <= 0f ? 1f : segment.speed;
+                return segment.startMillis + (int) ((outputMillis - acc) * speed);
+            }
+            acc += length;
+        }
+        // Past the end: the last kept moment.
+        for (int i = kept.size() - 1; i >= 0; i--) {
+            if (!kept.get(i).excluded) {
+                return kept.get(i).endMillis;
+            }
+        }
+        return replayDuration;
+    }
+
+    /** The first kept moment at or after {@code millis}, or -1 when nothing kept remains. */
+    public int nextKeptMillis(int millis, int replayDuration) {
+        for (TimelineSegment segment : effectiveSegments(replayDuration)) {
+            if (segment.excluded) {
+                continue;
+            }
+            if (millis < segment.endMillis) {
+                return Math.max(millis, segment.startMillis);
+            }
+        }
+        return -1;
+    }
+
+    public boolean hasKeptContent(int replayDuration) {
+        for (TimelineSegment segment : effectiveSegments(replayDuration)) {
+            if (!segment.excluded && segment.sourceLength() > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }

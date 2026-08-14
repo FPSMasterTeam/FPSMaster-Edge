@@ -62,7 +62,8 @@ public final class DirectorSmoke {
         }
         if (trackBuilt && !exportStarted) {
             exportStarted = true;
-            boolean ok = DirectorExporter.start(FPS);
+            // Custom resolution: exercises the framebuffer-resize path independent of the window.
+            boolean ok = DirectorExporter.start(FPS, 1280, 720);
             ClientLogger.info("director-smoke", "export start -> " + (ok ? "ok" : DirectorExporter.errorMessage()));
             if (!ok) {
                 shutdownSoon(mc);
@@ -101,9 +102,22 @@ public final class DirectorSmoke {
             track.keyframes.add(frame);
         }
         track.sort();
+
+        // Cut list: keep [start, start+4000], first half in 0.5x slow motion.
+        // Expected output: 2000/0.5 + 2000/1 = 6000ms regardless of the recording's length.
+        int replayDuration = Math.max(player.durationMillis(), player.elapsedMillis());
+        track.segments.clear();
+        track.trimStart(start, replayDuration);
+        track.trimEnd(start + 4000, replayDuration);
+        track.splitAt(start + 2000, replayDuration);
+        top.fpsmaster.replay.director.TimelineSegment slow = track.segmentAt(start + 1000, replayDuration);
+        if (slow != null && !slow.excluded) {
+            slow.speed = 0.5f;
+        }
         DirectorCamera.markDirty();
         DirectorCamera.saveIfDirty();
-        ClientLogger.info("director-smoke", "orbit track built: " + track.startMillis() + ".." + track.endMillis() + "ms");
+        ClientLogger.info("director-smoke", "orbit track built: " + track.startMillis() + ".." + track.endMillis()
+                + "ms, edit out=" + track.outputDurationMillis(replayDuration) + "ms segments=" + track.segments.size());
     }
 
     private static void shutdownSoon(Minecraft mc) {

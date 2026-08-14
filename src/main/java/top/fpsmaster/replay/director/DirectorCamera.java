@@ -85,13 +85,49 @@ public final class DirectorCamera {
         if (DirectorExporter.isRunning()) {
             return; // the exporter positions the camera itself, per frame
         }
-        if (!previewEnabled || track.isEmpty() || player.isPossessing()) {
+        if (!previewEnabled) {
+            restorePreviewSpeed(player);
+            clearOverride();
+            return;
+        }
+
+        // Cut list preview: skip excluded ranges, play each kept segment at its own speed.
+        int duration = Math.max(player.durationMillis(), player.elapsedMillis());
+        if (!track.segments.isEmpty() && !player.isSeeking()) {
+            TimelineSegment segment = track.segmentAt(player.elapsedMillis(), duration);
+            if (segment != null && segment.excluded) {
+                int next = track.nextKeptMillis(player.elapsedMillis(), duration);
+                if (next > player.elapsedMillis()) {
+                    player.seek(next);
+                } else if (next < 0 && !player.isPaused()) {
+                    player.togglePause(); // ran off the end of the kept content
+                }
+            } else if (segment != null) {
+                float want = segment.speed <= 0f ? 1f : segment.speed;
+                if (previewSpeed != want) {
+                    player.setSpeed(want);
+                    previewSpeed = want;
+                }
+            }
+        }
+
+        if (track.isEmpty() || player.isPossessing()) {
             clearOverride();
             return;
         }
         CameraPose pose = track.sample(player.elapsedMillis());
         if (pose != null) {
             applySmooth(pose);
+        }
+    }
+
+    /** Speed the preview last forced, NaN when it has not touched the player's speed. */
+    private static float previewSpeed = Float.NaN;
+
+    private static void restorePreviewSpeed(ReplayPlayer player) {
+        if (!Float.isNaN(previewSpeed)) {
+            player.setSpeed(1f);
+            previewSpeed = Float.NaN;
         }
     }
 
