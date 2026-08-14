@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge 原型 — 回放</title>
+<link rel="stylesheet" href="edge-ui.css">
+<style>
+  .wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ============ 录像库 ============ */
+  .panel {
+    width: min(680px, calc(100vw - 48px));
+    height: min(480px, calc(100vh - 64px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--stroke);
+  }
+  .head .title { font: 700 15.5px/1 var(--font); }
+  .head .count { font: 400 12px/1 var(--font); color: var(--text-3); }
+
+  /* 录制按钮的两种状态 */
+  .rec-btn .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    flex: none;
+  }
+  .rec-btn.recording {
+    background: rgba(240, 80, 110, 0.14);
+    border-color: rgba(240, 80, 110, 0.4);
+    color: var(--danger);
+    font-variant-numeric: tabular-nums;
+  }
+  .rec-btn.recording .dot { background: var(--danger); animation: blink 1.1s ease-in-out infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+  .list { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+
+  .replay {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 10px 14px;
+    border-radius: var(--r-card);
+    background: var(--layer);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    overflow: hidden;
+  }
+  .replay::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .replay:hover { background: var(--layer-hover); }
+  .replay.on { background: var(--accent-soft); border-color: rgba(89, 101, 241, 0.4); }
+  .replay.on::before { opacity: 1; }
+  .replay .ic {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.25);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2);
+    flex: none;
+  }
+  .replay .ic svg.i { width: 16px; height: 16px; stroke-width: 1.8; }
+  .replay .meta { flex: 1; min-width: 0; }
+  .replay .n { font: 600 13.5px/1.3 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .replay .d { font: 400 11.5px/1.4 var(--font); color: var(--text-2); display: flex; gap: 6px; }
+  .replay .dur {
+    font: 500 12px/1 var(--font);
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+  }
+  .replay .ops { display: flex; gap: 4px; opacity: 0; transition: opacity 0.12s; }
+  .replay:hover .ops { opacity: 1; }
+  .replay:hover .dur { display: none; }
+  .replay .ops .btn { width: 30px; height: 30px; padding: 0; }
+  .replay .ops .btn svg.i { width: 13px; height: 13px; }
+  .replay .ops .play-btn { width: auto; padding: 0 12px; gap: 6px; font-size: 12px; }
+
+  .empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-3);
+    font: 400 12.5px/1.6 var(--font);
+    text-align: center;
+  }
+
+  .foot {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-top: 1px solid var(--stroke);
+    background: rgba(0, 0, 0, 0.12);
+    font: 400 11.5px/1 var(--font);
+    color: var(--text-3);
+  }
+
+  /* ============ 播放控制条 (回放中, 屏幕顶部) ============ */
+  .hud {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(720px, calc(100vw - 48px));
+    padding: 12px 16px 10px;
+    display: none;
+    flex-direction: column;
+    gap: 9px;
+  }
+  body.playing .hud { display: flex; }
+  body.playing .wrap { display: none; }
+
+  .hud .row1 { display: flex; align-items: center; gap: 6px; }
+  .hud .clip { font: 600 13px/1.2 var(--font); margin-right: auto; }
+  .hud .clip .by { font: 400 11px/1.2 var(--font); color: var(--text-3); margin-left: 8px; }
+  .hud .btn { height: 30px; font-size: 12px; }
+  .hud .btn.icon { width: 30px; }
+  .hud .btn svg.i { width: 13px; height: 13px; }
+  .hud .speed { min-width: 44px; font-variant-numeric: tabular-nums; }
+  .hud .stop-btn { color: var(--danger); }
+  .hud .stop-btn:hover { background: rgba(240, 80, 110, 0.12); border-color: rgba(240, 80, 110, 0.3); }
+
+  .hud .row2 { display: flex; align-items: center; gap: 12px; }
+  .hud .time {
+    font: 500 11px/1 var(--font);
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+  }
+  .timeline {
+    position: relative;
+    flex: 1;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .timeline .track { width: 100%; height: 5px; border-radius: 3px; background: var(--layer-active); overflow: hidden; }
+  .timeline .fill { height: 100%; width: 26%; border-radius: 3px; background: var(--accent); }
+  .timeline .knob {
+    position: absolute;
+    left: 26%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  }
+  .hud .hint {
+    text-align: center;
+    font: 400 10.5px/1 var(--font);
+    color: var(--text-3);
+  }
+
+  /* 演示切换 */
+  .demo-switch {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    z-index: 50;
+  }
+</style>
+</head>
+<body>
+<div class="mc-world"></div>
+
+<!-- ============ 录像库 ============ -->
+<div class="wrap">
+  <div class="panel glass">
+    <div class="head">
+      <button class="btn icon ghost" title="返回"><svg class="i"><use href="#i-arrow-l"/></svg></button>
+      <span class="title">回放</span>
+      <span class="count">4 个录像 · 共 218 MB</span>
+      <span class="spacer"></span>
+      <button class="btn icon" title="打开文件夹"><svg class="i"><use href="#i-folder"/></svg></button>
+      <button class="btn primary rec-btn" id="recBtn" onclick="toggleRec(this)"><span class="dot"></span>开始录制</button>
+    </div>
+
+    <div class="list scroll">
+      <div class="replay on" onclick="sel(this)">
+        <div class="ic"><svg class="i"><use href="#i-film"/></svg></div>
+        <div class="meta">
+          <div class="n">hypixel-bedwars-0813</div>
+          <div class="d"><span>Steve</span>·<span>今天 13:52</span>·<span>64 MB</span></div>
+        </div>
+        <span class="dur">5:32</span>
+        <div class="ops">
+          <button class="btn primary play-btn"><svg class="i"><use href="#i-play"/></svg>播放</button>
+          <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+          <button class="btn icon ghost" title="删除" onclick="event.stopPropagation();document.getElementById('delDlg').classList.add('open')"><svg class="i"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+
+      <div class="replay" onclick="sel(this)">
+        <div class="ic"><svg class="i"><use href="#i-film"/></svg></div>
+        <div class="meta">
+          <div class="n">minemen-duels-final</div>
+          <div class="d"><span>Steve</span>·<span>昨天 21:04</span>·<span>38 MB</span></div>
+        </div>
+        <span class="dur">3:18</span>
+        <div class="ops">
+          <button class="btn primary play-btn"><svg class="i"><use href="#i-play"/></svg>播放</button>
+          <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+          <button class="btn icon ghost" title="删除"><svg class="i"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+
+      <div class="replay" onclick="sel(this)">
+        <div class="ic"><svg class="i"><use href="#i-film"/></svg></div>
+        <div class="meta">
+          <div class="n">uhc-meetup-16人混战</div>
+          <div class="d"><span>Steve</span>·<span>8 月 10 日</span>·<span>102 MB</span></div>
+        </div>
+        <span class="dur">12:45</span>
+        <div class="ops">
+          <button class="btn primary play-btn"><svg class="i"><use href="#i-play"/></svg>播放</button>
+          <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+          <button class="btn icon ghost" title="删除"><svg class="i"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+
+      <div class="replay" onclick="sel(this)" style="opacity:.55">
+        <div class="ic"><svg class="i"><use href="#i-alert"/></svg></div>
+        <div class="meta">
+          <div class="n">corrupted-0731</div>
+          <div class="d"><span style="color:var(--danger)">文件损坏，无法读取</span>·<span>14 MB</span></div>
+        </div>
+        <span class="dur">—</span>
+        <div class="ops">
+          <button class="btn icon ghost" title="删除"><svg class="i"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">录像保存于 replays/*.edgereplay · 录制时长与文件大小成正比</div>
+  </div>
+</div>
+
+<!-- ============ 播放控制条 (演示: 右下角切换) ============ -->
+<div class="hud glass">
+  <div class="row1">
+    <span class="clip">hypixel-bedwars-0813<span class="by">Steve 的录像</span></span>
+    <button class="btn icon" title="暂停" id="pauseBtn" onclick="togglePause(this)"><svg class="i"><use href="#i-pause"/></svg></button>
+    <button class="btn speed" title="播放速度" onclick="cycleSpeed(this)">1.0x</button>
+    <button class="btn icon" title="切换视角"><svg class="i"><use href="#i-eye"/></svg></button>
+    <button class="btn icon" title="录像列表"><svg class="i"><use href="#i-folder"/></svg></button>
+    <button class="btn icon stop-btn" title="停止回放"><svg class="i"><use href="#i-stop"/></svg></button>
+  </div>
+  <div class="row2">
+    <span class="time">1:26</span>
+    <div class="timeline" title="拖动跳转">
+      <div class="track"><div class="fill"></div></div>
+      <div class="knob"></div>
+    </div>
+    <span class="time">5:32</span>
+  </div>
+  <div class="hint">按 ESC 隐藏控制条并自由移动视角 · 拖动时间轴跳转</div>
+</div>
+
+<button class="btn demo-switch" onclick="document.body.classList.toggle('playing')">演示: 切换 库 / 播放中</button>
+
+<!-- 删除确认 -->
+<div class="modal-veil" id="delDlg" style="position:fixed;inset:0;background:rgba(4,6,10,.5);display:none;align-items:center;justify-content:center" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="glass" style="width:340px;padding:22px">
+    <h3 style="font:700 15px/1.3 var(--font);margin-bottom:8px">删除 “hypixel-bedwars-0813”？</h3>
+    <p style="font:400 12.5px/1.6 var(--font);color:var(--text-2);margin-bottom:18px">该录像文件 (64 MB) 将被永久删除，无法恢复。</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" onclick="document.getElementById('delDlg').classList.remove('open')">取消</button>
+      <button class="btn" style="background:var(--danger);border-color:transparent;color:#fff">删除</button>
+    </div>
+  </div>
+</div>
+<style>.modal-veil.open{display:flex !important}</style>
+
+<script src="icons.js"></script>
+<script>
+function sel(el){
+  el.parentElement.querySelectorAll('.replay').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+}
+let recTimer = null, recSec = 0;
+function toggleRec(btn){
+  if (btn.classList.toggle('recording')) {
+    recSec = 0;
+    btn.classList.remove('primary');
+    const tick = () => {
+      const m = String(Math.floor(recSec / 60)).padStart(1, '0');
+      const s = String(recSec % 60).padStart(2, '0');
+      btn.innerHTML = '<span class="dot"></span>停止录制 · ' + m + ':' + s;
+      recSec++;
+    };
+    tick();
+    recTimer = setInterval(tick, 1000);
+  } else {
+    clearInterval(recTimer);
+    btn.classList.add('primary');
+    btn.innerHTML = '<span class="dot"></span>开始录制';
+  }
+}
+function togglePause(btn){
+  const paused = btn.dataset.paused === '1';
+  btn.dataset.paused = paused ? '' : '1';
+  btn.innerHTML = paused
+    ? '<svg class="i"><use href="#i-pause"/></svg>'
+    : '<svg class="i"><use href="#i-play"/></svg>';
+}
+const speeds = ['0.25x', '0.5x', '1.0x', '2.0x', '4.0x'];
+function cycleSpeed(btn){
+  const i = speeds.indexOf(btn.textContent);
+  btn.textContent = speeds[(i + 1) % speeds.length];
+}
+if (new URLSearchParams(location.search).get('view') === 'hud')
+  document.body.classList.add('playing');
+</script>
+</body>
+</html>

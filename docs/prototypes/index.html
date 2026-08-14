@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FPSMaster Edge — UI 原型总览</title>
+<link rel="stylesheet" href="edge-ui.css">
+<style>
+  body { overflow: auto; }
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 64px; position: relative; }
+  h1 { font: 800 30px/1.2 var(--font); letter-spacing: 0.02em; }
+  .sub { margin-top: 8px; color: var(--text-2); font-size: 14px; max-width: 560px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-top: 32px; }
+  a.card {
+    display: block;
+    padding: 20px;
+    border-radius: var(--r-panel);
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.1s, border-color 0.15s;
+  }
+  a.card:hover { transform: translateY(-2px); border-color: var(--stroke-strong); }
+  .card .ic {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    margin-bottom: 14px;
+  }
+  .card .t { font: 600 15px/1.3 var(--font); }
+  .card .d { margin-top: 5px; font: 400 12.5px/1.55 var(--font); color: var(--text-2); }
+  .note { margin-top: 36px; padding: 18px 20px; border-radius: var(--r-card); font-size: 12.5px; line-height: 1.7; color: var(--text-2); }
+  .note b { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="mc-world"></div>
+<div class="page">
+  <h1>FPSMaster Edge · UI 重构原型</h1>
+  <div class="sub">统一设计语言：深色玻璃面板 + 大圆角 + 胶囊导航 + 靛蓝 accent (#5965F1)。所有令牌与 MC 实现换算规则见 <code>edge-ui.css</code> 文件头注释。</div>
+
+  <div class="grid">
+    <a class="card glass" href="main-menu.html"><div class="ic"><svg class="i" style="width:17px;height:17px;stroke-width:1.8"><use href="#i-home"/></svg></div><div class="t">主界面</div><div class="d">磁贴坞、继续游戏卡片、背景选择器</div></a>
+    <a class="card glass" href="multiplayer.html"><div class="ic"><svg class="i" style="width:17px;height:17px;stroke-width:1.8"><use href="#i-globe"/></svg></div><div class="t">多人游戏</div><div class="d">主从两栏、服务器详情、ping 指示</div></a>
+    <a class="card glass" href="clickgui.html"><div class="ic"><svg class="i" style="width:17px;height:17px;stroke-width:1.8"><use href="#i-sliders"/></svg></div><div class="t">客户端设置</div><div class="d">分类侧栏、模块列表、全部设置控件</div></a>
+    <a class="card glass" href="oobe.html"><div class="ic"><svg class="i" style="width:17px;height:17px;stroke-width:1.8"><use href="#i-sparkles"/></svg></div><div class="t">OOBE 初始设置</div><div class="d">步骤导轨、语言/显示/功能/账户</div></a>
+    <a class="card glass" href="music.html"><div class="ic"><svg class="i" style="width:17px;height:17px;stroke-width:1.8"><use href="#i-music"/></svg></div><div class="t">音乐</div><div class="d">沉浸播放栏、歌词、推荐歌单</div></a>
+    <a class="card glass" href="replay.html"><div class="ic"><svg class="i" style="width:17px;height:17px;stroke-width:1.8"><use href="#i-film"/></svg></div><div class="t">回放</div><div class="d">录像库、录制状态、播放控制条</div></a>
+    <a class="card glass" href="config-profiles.html"><div class="ic"><svg class="i" style="width:17px;height:17px;stroke-width:1.8"><use href="#i-folder"/></svg></div><div class="t">配置文件</div><div class="d">当前配置详情、档案卡片网格、危险操作确认</div></a>
+  </div>
+
+  <div class="note glass">
+    <b>MC 适配约定</b><br>
+    1. 玻璃面板的 backdrop-blur 在 MC 中通过 Blur.area (Kawase) 实现，作为<b>可选项</b>（默认关），关闭时面板不透明度提升到 94% 兜底，不影响可读性。<br>
+    2. HTML 尺寸按 2x 换算到 GUI 单位：面板圆角 18px -> 9，控件 10px -> 5，胶囊 -> 高度/2。<br>
+    3. 阴影仅为原型装饰，MC 不实现；描边用 roundedBorder + rgba(255,255,255,0.08)。<br>
+    4. 动画统一用现有 Animator + BezierEasing(0.25, 0.1, 0.25, 1)，时长 150-200ms，仅做透明度/位移/缩放插值，无逐帧滤镜。
+  </div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>

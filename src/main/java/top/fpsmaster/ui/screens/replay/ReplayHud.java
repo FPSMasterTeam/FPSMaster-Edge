@@ -6,16 +6,18 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.replay.ReplayPlayer;
-import top.fpsmaster.ui.common.GuiButton;
+import top.fpsmaster.ui.click.ClickGuiTheme;
+import top.fpsmaster.ui.click.UiChrome;
 import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.utils.render.gui.UiScale;
 
-import java.awt.Color;
-
 /**
- * The replay controls, along the top of the screen and always on it.
+ * The replay controls, along the top of the screen and always on it — after the .hud block of
+ * docs/prototypes/replay.html: clip title row with the transport buttons, then the timeline row,
+ * then a hint line.
  *
  * <p>Two things share this. The overlay draws it every frame so the timeline is readable while
  * flying, and {@link ReplayControlScreen} draws the same layout when the cursor is free so the same
@@ -29,29 +31,10 @@ import java.awt.Color;
  */
 public final class ReplayHud {
 
-    private static final float PANEL_MAX_WIDTH = 760f;
-    private static final float PANEL_HEIGHT = 66f;
-    private static final float PANEL_TOP = 10f;
-    private static final float INSET = 14f;
-    private static final float BUTTON_HEIGHT = 22f;
-    private static final float BUTTON_GAP = 6f;
-    private static final float BAR_HEIGHT = 6f;
-    private static final float KNOB = 5f;
-
-    private static final int PANEL = new Color(0, 0, 0, 150).getRGB();
-    private static final int TRACK = new Color(255, 255, 255, 45).getRGB();
-    private static final int FILL = new Color(113, 127, 254).getRGB();
-    private static final int KNOB_COLOR = new Color(226, 229, 255).getRGB();
-    private static final int TEXT = new Color(235, 235, 235).getRGB();
-    private static final int SUBTLE = new Color(185, 185, 185).getRGB();
-    private static final int HINT = new Color(140, 140, 140).getRGB();
-
-    private static final GuiButton PAUSE = new GuiButton("Pause", ReplayHud::togglePause).setText("Pause", false);
-    private static final GuiButton SPEED = new GuiButton("Speed", ReplayHud::cycleSpeed).setText("1x", false);
-    private static final GuiButton VIEW = new GuiButton("View", ReplayHud::toggleView).setText("View", false);
-    private static final GuiButton FILES = new GuiButton("Recordings", ReplayHud::openBrowser).setText("Recordings", false);
-    private static final GuiButton STOP = new GuiButton("Stop", () -> ReplayPlayer.instance().stop()).setText("Stop", false);
-    private static final GuiButton[] BUTTONS = {PAUSE, SPEED, VIEW, FILES, STOP};
+    private static final float PANEL_MAX_WIDTH = 360f;
+    private static final float PANEL_TOP = 9f;
+    private static final float INSET = 8f;
+    private static final float BUTTON_H = 15f;
 
     private static float panelX;
     private static float panelWidth;
@@ -109,37 +92,95 @@ public final class ReplayHud {
 
     private static void render(ReplayPlayer player, float guiWidth, ScaledGuiScreen screen,
                                int mouseX, int mouseY) {
-        panelWidth = Math.min(PANEL_MAX_WIDTH, guiWidth - 32f);
+        panelWidth = Math.min(PANEL_MAX_WIDTH, guiWidth - 24f);
         panelX = (guiWidth - panelWidth) / 2f;
-        barX = panelX + INSET;
-        barWidth = panelWidth - INSET * 2f;
-        barY = PANEL_TOP + 40f;
+        float panelHeight = 47f;
+        barY = PANEL_TOP + 27.5f;
 
-        Rects.rounded(panelX, PANEL_TOP, panelWidth, PANEL_HEIGHT, 6, PANEL);
+        UiChrome.panel(panelX, PANEL_TOP, panelWidth, panelHeight);
 
-        float buttonWidth = (barWidth - BUTTON_GAP * (BUTTONS.length - 1)) / BUTTONS.length;
-        PAUSE.setText(player.isPaused() ? "Resume" : "Pause", false);
-        SPEED.setText(formatSpeed(player.speed()), false);
-        VIEW.setText(player.isPossessing() ? "Free camera" : "Watch " + player.recorderName(), false);
-        for (int i = 0; i < BUTTONS.length; i++) {
-            float x = barX + i * (buttonWidth + BUTTON_GAP);
-            if (screen == null) {
-                BUTTONS[i].render(x, PANEL_TOP + 10f, buttonWidth, BUTTON_HEIGHT, mouseX, mouseY);
-            } else {
-                BUTTONS[i].renderInScreen(screen, x, PANEL_TOP + 10f, buttonWidth, BUTTON_HEIGHT,
-                        mouseX, mouseY);
+        // ---- row 1: clip name · transport buttons ----
+        float rowY = PANEL_TOP + 6f;
+        String clip = "";
+        if (player.file() != null) {
+            clip = player.file().getName();
+            if (clip.endsWith(".edgereplay")) {
+                clip = clip.substring(0, clip.length() - ".edgereplay".length());
             }
+        }
+        UiChrome.boldString(FPSMaster.fontManager.getFont(13), clip, panelX + INSET, rowY + 4f,
+                ClickGuiTheme.textPrimary().getRGB());
+        float clipW = FPSMaster.fontManager.getFont(13).getStringWidth(clip);
+        if (player.recorderName() != null && !player.recorderName().isEmpty()) {
+            FPSMaster.fontManager.getFont(11).drawString(
+                    String.format(FPSMaster.i18n.get("replay.hud.by"), player.recorderName()),
+                    panelX + INSET + clipW + 4f, rowY + 4.5f, ClickGuiTheme.textDisabled().getRGB());
+        }
+
+        float bx = panelX + panelWidth - INSET;
+        bx -= BUTTON_H;
+        boolean stopClicked = iconButton(screen, bx, rowY, "stop", true, mouseX, mouseY);
+        bx -= 3f + BUTTON_H;
+        boolean filesClicked = iconButton(screen, bx, rowY, "folder", false, mouseX, mouseY);
+        bx -= 3f + BUTTON_H;
+        boolean viewClicked = iconButton(screen, bx, rowY, "eye", false, mouseX, mouseY);
+        String speedText = formatSpeed(player.speed());
+        float speedW = Math.max(22f, FPSMaster.fontManager.getFont(11).getStringWidth(speedText) + 8f);
+        bx -= 3f + speedW;
+        boolean speedHover = screen != null && Hover.is(bx, rowY, speedW, BUTTON_H, mouseX, mouseY);
+        UiChrome.button(bx, rowY, speedW, BUTTON_H, speedHover);
+        FPSMaster.fontManager.getFont(11).drawCenteredString(speedText, bx + speedW / 2f, rowY + 5f,
+                ClickGuiTheme.textPrimary().getRGB());
+        boolean speedClicked = screen != null && screen.consumePressInBounds(bx, rowY, speedW, BUTTON_H, 0) != null;
+        bx -= 3f + BUTTON_H;
+        boolean pauseClicked = iconButton(screen, bx, rowY, player.isPaused() ? "play" : "pause", false, mouseX, mouseY);
+
+        if (pauseClicked) {
+            togglePause();
+        } else if (speedClicked) {
+            cycleSpeed();
+        } else if (viewClicked) {
+            toggleView();
+        } else if (filesClicked) {
+            openBrowser();
+        } else if (stopClicked) {
+            ReplayPlayer.instance().stop();
         }
 
         drawTimeline(player, screen, mouseX, mouseY);
+
+        // ---- hint line ----
+        String hint = FPSMaster.i18n.get(screen == null ? "replay.hud.hint.fly" : "replay.hud.hint");
+        FPSMaster.fontManager.getFont(10).drawCenteredString(hint, panelX + panelWidth / 2f,
+                PANEL_TOP + panelHeight - 8f, ClickGuiTheme.textDisabled().getRGB());
+    }
+
+    private static boolean iconButton(ScaledGuiScreen screen, float x, float y, String icon,
+                                      boolean danger, int mouseX, int mouseY) {
+        boolean hover = screen != null && Hover.is(x, y, BUTTON_H, BUTTON_H, mouseX, mouseY);
+        if (danger) {
+            UiChrome.dangerButton(x, y, BUTTON_H, BUTTON_H, hover);
+        } else {
+            UiChrome.button(x, y, BUTTON_H, BUTTON_H, hover);
+        }
+        int color = danger ? ClickGuiTheme.danger().getRGB()
+                : (hover ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB();
+        Icons.draw(icon, x + 4.25f, y + 4.25f, 6.5f, color);
+        return screen != null && screen.consumePressInBounds(x, y, BUTTON_H, BUTTON_H, 0) != null;
     }
 
     private static void drawTimeline(ReplayPlayer player, ScaledGuiScreen screen, int mouseX, int mouseY) {
         int duration = duration(player);
 
+        String elapsed = ReplayScreen.formatDuration(scrubbing ? scrubMillis : player.elapsedMillis());
+        String total = ReplayScreen.formatDuration(duration);
+        float timeW = 16f;
+        barX = panelX + INSET + timeW + 4f;
+        barWidth = panelWidth - INSET * 2f - (timeW + 4f) * 2f;
+
         if (screen != null) {
-            // A generous grab area: the bar is six pixels tall and the pointer should not have to be.
-            if (screen.beginDrag(ReplayHud.class, barX, barY - 8f, barWidth, BAR_HEIGHT + 16f)) {
+            // A generous grab area: the bar is thin and the pointer should not have to be.
+            if (screen.beginDrag(ReplayHud.class, barX, barY - 5f, barWidth, 12f)) {
                 scrubbing = true;
             }
             if (scrubbing) {
@@ -162,26 +203,24 @@ public final class ReplayHud {
         int shown = scrubbing ? scrubMillis : player.elapsedMillis();
         float progress = duration <= 0 ? 0f : Math.max(0f, Math.min(1f, shown / (float) duration));
 
-        Rects.fill(barX, barY, barWidth, BAR_HEIGHT, TRACK);
-        Rects.fill(barX, barY, barWidth * progress, BAR_HEIGHT, FILL);
-        if (screen != null
-                && (scrubbing || Hover.is(barX, barY - 8f, barWidth, BAR_HEIGHT + 16f, mouseX, mouseY))) {
-            Rects.rounded(barX + barWidth * progress - KNOB, barY + BAR_HEIGHT / 2f - KNOB,
-                    KNOB * 2f, KNOB * 2f, (int) KNOB, KNOB_COLOR);
+        FPSMaster.fontManager.getFont(11).drawString(elapsed, panelX + INSET, barY - 2.5f,
+                ClickGuiTheme.textSecondary().getRGB());
+        Rects.rounded(barX, barY - 1.25f, barWidth, 2.5f, 1, ClickGuiTheme.layerActive().getRGB(), false);
+        if (progress > 0f) {
+            Rects.rounded(barX, barY - 1.25f, barWidth * progress, 2.5f, 1, ClickGuiTheme.accent().getRGB(), false);
         }
+        if (screen != null && (scrubbing || Hover.is(barX, barY - 5f, barWidth, 12f, mouseX, mouseY))) {
+            Rects.rounded(barX + barWidth * progress - 3f, barY - 3f, 6f, 6f, 3, 0xFFFFFFFF, false);
+        }
+        float totalW = FPSMaster.fontManager.getFont(11).getStringWidth(total);
+        FPSMaster.fontManager.getFont(11).drawString(total, panelX + panelWidth - INSET - totalW,
+                barY - 2.5f, ClickGuiTheme.textSecondary().getRGB());
 
-        FPSMaster.fontManager.s16.drawString(clock(shown, duration), barX, barY + 11f, TEXT);
         if (player.isSeeking()) {
-            FPSMaster.fontManager.s16.drawCenteredString(
-                    "seeking  " + Math.round(player.seekProgress() * 100f) + "%",
-                    barX + barWidth / 2f, barY + 11f, FILL);
-        } else if (player.isPaused()) {
-            FPSMaster.fontManager.s16.drawCenteredString("paused", barX + barWidth / 2f, barY + 11f,
-                    SUBTLE);
+            FPSMaster.fontManager.getFont(11).drawCenteredString(
+                    "seeking " + Math.round(player.seekProgress() * 100f) + "%",
+                    barX + barWidth / 2f, barY + 5f, ClickGuiTheme.accentText().getRGB());
         }
-        String hint = screen == null ? "Esc for the cursor" : "Esc to fly";
-        FPSMaster.fontManager.s16.drawString(hint,
-                barX + barWidth - FPSMaster.fontManager.s16.getStringWidth(hint), barY + 11f, HINT);
     }
 
     /**
@@ -190,17 +229,6 @@ public final class ReplayHud {
      */
     static int duration(ReplayPlayer player) {
         return Math.max(player.durationMillis(), player.elapsedMillis());
-    }
-
-    private static String clock(int shown, int duration) {
-        int second = shown / 1000;
-        int durationSecond = duration / 1000;
-        if (second != cachedSecond || durationSecond != cachedDurationSecond) {
-            cachedSecond = second;
-            cachedDurationSecond = durationSecond;
-            cachedClock = ReplayScreen.formatDuration(shown) + " / " + ReplayScreen.formatDuration(duration);
-        }
-        return cachedClock;
     }
 
     /** "0.25x" reads better than "0.25000001x", and "2x" better than "2.0x". */

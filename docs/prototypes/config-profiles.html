@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge 原型 — 配置文件</title>
+<link rel="stylesheet" href="edge-ui.css">
+<style>
+  .wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .panel {
+    position: relative;
+    width: min(800px, calc(100vw - 48px));
+    height: min(500px, calc(100vh - 64px));
+    display: flex;
+    overflow: hidden;
+  }
+  .back { position: absolute; top: 14px; left: 14px; z-index: 5; }
+
+  /* ============ 左: 当前配置 ============ */
+  .current {
+    width: 280px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    padding: 56px 26px 24px;
+    border-right: 1px solid var(--stroke);
+    background:
+      radial-gradient(300px 220px at 50% -8%, rgba(89, 101, 241, 0.18), transparent 70%),
+      rgba(0, 0, 0, 0.16);
+  }
+  .current .label {
+    font: 600 11px/1 var(--font);
+    letter-spacing: 0.16em;
+    color: var(--accent-text);
+    text-transform: uppercase;
+  }
+  .current .tile {
+    margin-top: 16px;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--accent), #3a43b8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 800 26px/1 var(--font);
+    color: #fff;
+  }
+  .current .name { margin-top: 16px; font: 700 20px/1.2 var(--font); display: flex; align-items: center; gap: 8px; }
+  .current .sub { margin-top: 4px; font: 400 12px/1.5 var(--font); color: var(--text-2); }
+
+  .facts { margin-top: 22px; display: flex; flex-direction: column; }
+  .fact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--stroke);
+    font: 400 12.5px/1 var(--font);
+    color: var(--text-2);
+  }
+  .fact:last-child { border-bottom: none; }
+  .fact svg.i { width: 14px; height: 14px; stroke-width: 1.8; color: var(--text-3); }
+  .fact .v { margin-left: auto; color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .current .actions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+
+  /* ============ 右: 全部配置 ============ */
+  .all {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .all-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 22px 12px;
+  }
+  .all-head .t { font: 700 16px/1 var(--font); }
+  .all-head .n { font: 400 12px/1 var(--font); color: var(--text-3); }
+
+  .grid {
+    flex: 1;
+    min-height: 0;
+    padding: 4px 22px 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: min-content;
+    gap: 10px;
+    overflow-y: auto;
+  }
+  .card {
+    position: relative;
+    padding: 16px;
+    border-radius: var(--r-panel);
+    background: var(--layer);
+    border: 1px solid var(--stroke);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.1s;
+  }
+  .card:hover { background: var(--layer-hover); transform: translateY(-2px); }
+  .card.on { border-color: rgba(89, 101, 241, 0.55); background: var(--accent-soft); }
+  .card .row1 { display: flex; align-items: center; gap: 12px; }
+  .card .tile {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 800 16px/1 var(--font);
+    color: #fff;
+    flex: none;
+  }
+  .card .name { font: 600 14px/1.25 var(--font); display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .card .meta { font: 400 11px/1.4 var(--font); color: var(--text-3); margin-top: 2px; }
+  .card .ops {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .card:hover .ops { opacity: 1; }
+  .card .ops .btn { width: 28px; height: 28px; padding: 0; }
+  .card .ops .btn svg.i { width: 13px; height: 13px; }
+  .card .apply {
+    margin-top: 14px;
+    width: 100%;
+    height: 32px;
+    font-size: 12.5px;
+  }
+  .card.on .apply { pointer-events: none; opacity: 0; height: 0; margin-top: 0; overflow: hidden; }
+  .card .inuse {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: 500 12px/1 var(--font);
+    color: var(--accent-text);
+    height: 32px;
+  }
+  .card .inuse svg.i { width: 13px; height: 13px; }
+  .card:not(.on) .inuse { display: none; }
+
+  .card.new {
+    border-style: dashed;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-2);
+    font: 500 13px/1 var(--font);
+    min-height: 118px;
+  }
+  .card.new:hover { color: var(--text); background: var(--layer); }
+
+  .all-foot {
+    padding: 10px 22px;
+    border-top: 1px solid var(--stroke);
+    background: rgba(0, 0, 0, 0.12);
+    font: 400 11.5px/1 var(--font);
+    color: var(--text-3);
+  }
+
+  /* 确认对话框 */
+  .modal-veil {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 6, 10, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-veil.open { display: flex; }
+  .dialog { width: 340px; padding: 22px; }
+  .dialog h3 { font: 700 15px/1.3 var(--font); margin-bottom: 8px; }
+  .dialog p { font: 400 12.5px/1.6 var(--font); color: var(--text-2); margin-bottom: 18px; }
+  .dialog .btns { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+<div class="mc-world"></div>
+
+<div class="wrap">
+  <div class="panel glass">
+    <button class="btn icon ghost back" title="返回设置"><svg class="i"><use href="#i-arrow-l"/></svg></button>
+
+    <!-- 左: 当前配置 -->
+    <div class="current">
+      <div class="label">当前配置</div>
+      <div class="tile">D</div>
+      <div class="name">default</div>
+      <div class="sub">作者 Steve · 上次保存于今天 12:40</div>
+      <div class="facts">
+        <div class="fact"><svg class="i"><use href="#i-box"/></svg>启用模块<span class="v">24</span></div>
+        <div class="fact"><svg class="i"><use href="#i-grid"/></svg>HUD 组件<span class="v">12</span></div>
+        <div class="fact"><svg class="i"><use href="#i-folder"/></svg>文件大小<span class="v">18 KB</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn"><svg class="i"><use href="#i-upload"/></svg>导出分享</button>
+        <button class="btn danger" onclick="document.getElementById('resetDlg').classList.add('open')"><svg class="i"><use href="#i-replay"/></svg>恢复默认设置</button>
+      </div>
+    </div>
+
+    <!-- 右: 全部配置 -->
+    <div class="all">
+      <div class="all-head">
+        <span class="t">全部配置</span>
+        <span class="n">3 个</span>
+        <span class="spacer"></span>
+        <button class="btn" style="height:32px;font-size:12.5px"><svg class="i"><use href="#i-download"/></svg>导入</button>
+      </div>
+      <div class="grid scroll">
+        <div class="card on">
+          <div class="ops">
+            <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+          </div>
+          <div class="row1">
+            <div class="tile" style="background:linear-gradient(135deg,var(--accent),#3a43b8)">D</div>
+            <div style="min-width:0">
+              <div class="name">default</div>
+              <div class="meta">Steve · 今天 12:40</div>
+            </div>
+          </div>
+          <div class="inuse"><svg class="i"><use href="#i-check"/></svg>使用中</div>
+        </div>
+
+        <div class="card">
+          <div class="ops">
+            <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+            <button class="btn icon ghost" title="复制"><svg class="i"><use href="#i-copy"/></svg></button>
+            <button class="btn icon ghost danger" title="删除" onclick="event.stopPropagation();document.getElementById('delDlg').classList.add('open')"><svg class="i"><use href="#i-trash"/></svg></button>
+          </div>
+          <div class="row1">
+            <div class="tile" style="background:linear-gradient(135deg,#d98a3c,#8a4a12)">B</div>
+            <div style="min-width:0">
+              <div class="name">bedwars</div>
+              <div class="meta">Steve · 3 天前</div>
+            </div>
+          </div>
+          <button class="btn apply">应用此配置</button>
+        </div>
+
+        <div class="card">
+          <div class="ops">
+            <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+            <button class="btn icon ghost" title="复制"><svg class="i"><use href="#i-copy"/></svg></button>
+            <button class="btn icon ghost danger" title="删除"><svg class="i"><use href="#i-trash"/></svg></button>
+          </div>
+          <div class="row1">
+            <div class="tile" style="background:linear-gradient(135deg,#3fae7a,#1a5c3c)">U</div>
+            <div style="min-width:0">
+              <div class="name">uhc-practice</div>
+              <div class="meta">Steve · 上周</div>
+            </div>
+          </div>
+          <button class="btn apply">应用此配置</button>
+        </div>
+
+        <div class="card new">
+          <svg class="i"><use href="#i-plus"/></svg>新建配置
+        </div>
+      </div>
+      <div class="all-foot">存储于 config/*.json · 双击配置卡片可快速应用</div>
+    </div>
+  </div>
+</div>
+
+<!-- 删除确认 -->
+<div class="modal-veil" id="delDlg" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="dialog glass">
+    <h3>删除 “bedwars”？</h3>
+    <p>该配置文件将被永久删除，无法恢复。</p>
+    <div class="btns">
+      <button class="btn ghost" onclick="document.getElementById('delDlg').classList.remove('open')">取消</button>
+      <button class="btn" style="background:var(--danger);border-color:transparent;color:#fff">删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-veil" id="resetDlg" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="dialog glass">
+    <h3>恢复默认设置？</h3>
+    <p>当前配置文件 “default” 的所有模块与设置将重置为出厂状态。</p>
+    <div class="btns">
+      <button class="btn ghost" onclick="document.getElementById('resetDlg').classList.remove('open')">取消</button>
+      <button class="btn" style="background:var(--danger);border-color:transparent;color:#fff">恢复默认</button>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+</body>
+</html>

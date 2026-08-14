@@ -1,8 +1,6 @@
 package top.fpsmaster.ui.click;
 
-import top.fpsmaster.utils.render.gui.UiScale;
 import top.fpsmaster.utils.render.state.Alpha;
-import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Colors;
 import top.fpsmaster.utils.render.draw.Icons;
@@ -10,7 +8,6 @@ import top.fpsmaster.utils.render.draw.Rects;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
@@ -24,7 +21,6 @@ import top.fpsmaster.utils.math.anim.AnimMath;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.BezierEasing;
-import top.fpsmaster.utils.math.anim.ColorAnimator;
 import top.fpsmaster.utils.math.anim.Easings;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
@@ -49,19 +45,11 @@ public class MainPanel extends ScaledGuiScreen {
     private final Animator alphaAnimation = new Animator();
     private final Animator maskAlpha = new Animator();
     private final Animator themeSwitchAnim = new Animator();
-    private final ColorAnimator themeBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
-    private final ColorAnimator configBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
-    private final ColorAnimator musicBtnAnim = new ColorAnimator(ClickGuiTheme.themeBtnBg());
     private final SearchBar searchBar = new SearchBar();
     private boolean searchWasActive = false;
     private final AnimClock animClock = new AnimClock();
     private static final BezierEasing CLICKGUI_EASE = BezierEasing.of(0.25, 0.1, 0.25, 1.0);
     private static final int MASK_MAX_ALPHA = 110;
-
-    float selection = 0f;
-
-
-    float categoryAnimation = 30;
 
     boolean close = false;
     private boolean configSavedOnClose;
@@ -74,50 +62,56 @@ public class MainPanel extends ScaledGuiScreen {
 
     static int x = -1;
     static int y = -1;
-    static float width = 430f;
-    static float height = 245.5f;
-    public static final float leftWidth = 50f;
+    static float width = 490f;
+    static float height = 310f;
+    public static final float leftWidth = UiChrome.SIDEBAR;
     public static String bindLock = "";
     public static Module curModule = null;
     public MainPanel() {
         super();
     }
     private float getCategoryItemSpacing() {
-        return 27f;
+        return UiChrome.NAV_ITEM + 1f;
     }
 
-    private float getCategoryListHeight() {
-        return categories.size() * getCategoryItemSpacing();
+    private float getNavStartY() {
+        return y + 47f;
     }
 
-    private float getCategoryBgHeight() {
-        return Math.max(40f, getCategoryListHeight() + 8f);
-    }
-
-    private float getCategoryBgY() {
-        return y + (height - getCategoryBgHeight()) / 2f;
-    }
-
-    private float getCategoryStartY() {
-        return getCategoryBgY() + 10f;
-    }
-
-    // author:Serendisand
-    // reason:全局搜索
     private float getSearchBarX() {
-        return x + width - getSearchBarWidth();
+        return x + 5.5f;
     }
 
     private float getSearchBarY() {
-        return y - 3 - getSearchBarHeight();
+        return y + 25f;
     }
 
     private float getSearchBarWidth() {
-        return 130f;
+        return leftWidth - 11f;
     }
 
     private float getSearchBarHeight() {
-        return 18f;
+        return 16f;
+    }
+
+    private int countModules(Category category) {
+        int n = 0;
+        for (ModuleRenderer renderer : mods) {
+            if (renderer.mod.category == category) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private int countEnabled(Category category) {
+        int n = 0;
+        for (ModuleRenderer renderer : mods) {
+            if (renderer.mod.category == category && renderer.mod.isEnabled()) {
+                n++;
+            }
+        }
+        return n;
     }
 
     private boolean isSearchActive() {
@@ -148,8 +142,11 @@ public class MainPanel extends ScaledGuiScreen {
     public void render(int mouseX, int mouseY, float partialTicks) {
         updateZoomModifierState();
         //aiChatPanel.render(mouseX, mouseY, scaleFactor);
-        x = (int) ( guiWidth - width) / 2;
-        y = (int) (guiHeight - height) / 2;
+        // .panel: min(980px, 100vw-40px) x min(620px, 100vh-48px), halved to GUI units.
+        width = Math.min(490f, Math.max(300f, guiWidth - 20f));
+        height = Math.min(310f, Math.max(220f, guiHeight - 24f));
+        x = (int) ((guiWidth - width) / 2f);
+        y = (int) ((guiHeight - height) / 2f);
         if (!isMouseDown(0)) {
             drag = false;
         }
@@ -183,51 +180,70 @@ public class MainPanel extends ScaledGuiScreen {
         GL11.glScaled(scaleAnimation.get(), scaleAnimation.get(), 0.0);
         GlStateManager.translate(-guiWidth / 2.0, -guiHeight / 2.0, 0.0);
 
+        UiChrome.panel(x, y, width, height);
+        Rects.fill(x + 1, y + 1, leftWidth - 1, height - 2, ClickGuiTheme.categoryBg());
+        Rects.fill(x + leftWidth, y + 1, 0.5f, height - 2, ClickGuiTheme.divider());
 
-        Images.draw(new ResourceLocation("client/gui/settings/window/panel.png"),
-                x + leftWidth - 8,
-                y - 2,
-                width - leftWidth + 16,
-                height + 12,
-                -1
+        Rects.rounded(x + 7f, y + 7f, 12f, 12f, 4, ClickGuiTheme.accent().getRGB(), false);
+        UiChrome.boldCentered(FPSMaster.fontManager.getFont(12), "F", x + 13f, y + 10f, 0xFFFFFFFF);
+        UiChrome.boldString(FPSMaster.fontManager.getFont(13), "FPSMaster", x + 23f, y + 7f,
+                ClickGuiTheme.textPrimary().getRGB());
+        FPSMaster.fontManager.getFont(10).drawString(
+                "Edge · " + FPSMaster.CLIENT_VERSION,
+                x + 23f,
+                y + 15f,
+                ClickGuiTheme.textDisabled().getRGB()
         );
 
-        if (ClickGuiTheme.isLight()) {
-            Rects.rounded(Math.round(x + leftWidth), Math.round(y + 4),
-                    Math.round(width - leftWidth), Math.round(height),
-                    8, ClickGuiTheme.panelBg());
-        }
-
         searchBar.draw(this, getSearchBarX(), getSearchBarY(), getSearchBarWidth(), getSearchBarHeight(), mouseX, mouseY);
+
+        boolean searching = isSearchActive();
+        String query = searchBar.getQuery();
+        if (searching != searchWasActive) {
+            modsContainer.resetScroll();
+        }
+        searchWasActive = searching;
 
         moduleListAlpha = (float) AnimMath.base(moduleListAlpha, 255.0, 0.1f);
 
         float scale = (float) scaleAnimation.get();
         float centerX = guiWidth / 2f;
         float centerY = guiHeight / 2f;
-        float scissorX = centerX + (x - centerX) * scale;
-        float scissorY = centerY + (y - centerY + 10) * scale;
-        float scissorW = width * scale;
-        float scissorH = (height - 12) * scale;
+        float mainX = x + leftWidth;
+        float mainHeadY = y + 8f;
+        float listY = y + 22f;
+        float listH = height - 28f;
+        float containerWidth = width - leftWidth - 12f;
+
+        UiChrome.boldString(
+                FPSMaster.fontManager.s16,
+                searchingTitle(searching),
+                mainX + 9,
+                mainHeadY,
+                ClickGuiTheme.textPrimary().getRGB()
+        );
+        String meta = searching
+                ? ""
+                : String.format(
+                        FPSMaster.i18n.get("clickgui.category.meta"),
+                        countModules(curType),
+                        countEnabled(curType)
+                );
+        if (!meta.isEmpty()) {
+            FPSMaster.fontManager.getFont(12).drawString(meta, mainX + 9 + FPSMaster.fontManager.s16.getStringWidth(searchingTitle(searching)) + 5, mainHeadY + 1.5f, ClickGuiTheme.textSecondary().getRGB());
+        }
+
+        float scissorX = centerX + (mainX - centerX) * scale;
+        float scissorY = centerY + (listY - centerY) * scale;
+        float scissorW = (width - leftWidth) * scale;
+        float scissorH = listH * scale;
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        Scissor.apply(
-                scissorX, scissorY, scissorW,
-                scissorH
-        );
-        modHeight = 20f;
-        float containerWidth = width - leftWidth - 10;
+        Scissor.apply(scissorX, scissorY, scissorW, scissorH);
+        modHeight = 6f;
         int finalMouseY = mouseY;
-        boolean searching = isSearchActive();
-        String query = searchBar.getQuery();
-        // author:Serendisand
-        // reason:全局搜索 - 搜索激活/退出时回到列表顶部,避免结果在视口外
-        if (searching != searchWasActive) {
-            modsContainer.resetScroll();
-        }
-        searchWasActive = searching;
-        modsContainer.draw(this, x + leftWidth, y + 25f, containerWidth, height - 20f, mouseX, mouseY, () -> {
-            float modsY = y + 22f;
+        modsContainer.draw(this, mainX + 6, listY, containerWidth, listH, mouseX, mouseY, () -> {
+            float modsY = listY + 1f;
             boolean anyMatch = false;
             for (ModuleRenderer m : mods) {
                 m.highlight = searching ? query.trim() : null;
@@ -236,27 +252,28 @@ public class MainPanel extends ScaledGuiScreen {
                 if (show) {
                     anyMatch = true;
                     float moduleY = modsY + modsContainer.getScroll();
-                    if (moduleY + 40 + m.height > y && moduleY < y + height) {
+                    float row = UiChrome.MODULE_ROW;
+                    if (moduleY + row + m.height > listY && moduleY < listY + listH) {
                         m.render(
                                 this,
-                                x + leftWidth + 10,
+                                mainX + 6,
                                 moduleY,
-                                containerWidth - 10,
-                                40f,
+                                containerWidth - 6,
+                                row,
                                 mouseX,
                                 finalMouseY,
                                 curModule == m.mod
                         );
                     }
-                    modsY += 45 + m.height;
-                    modHeight += 45 + m.height;
+                    modsY += row + 3 + m.height;
+                    modHeight += row + 3 + m.height;
                 }
             }
             if (searching && !anyMatch) {
-                FPSMaster.fontManager.s16.drawCenteredString(
+                FPSMaster.fontManager.s14.drawCenteredString(
                         FPSMaster.i18n.get("clickgui.search.noresults"),
-                        x + leftWidth + containerWidth / 2f,
-                        y + 25f + (height - 20f) / 2f,
+                        mainX + containerWidth / 2f,
+                        listY + listH / 2f,
                         ClickGuiTheme.textDisabled().getRGB()
                 );
             }
@@ -265,91 +282,39 @@ public class MainPanel extends ScaledGuiScreen {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
-
-        float categoryBgHeight = getCategoryBgHeight();
-        float categoryBgY = getCategoryBgY();
-        float categoryStartY = getCategoryStartY();
-
-        if (Hover.is(x, (int) categoryBgY, categoryAnimation, categoryBgHeight, mouseX, mouseY)) {
-            categoryAnimation = (float) AnimMath.base(categoryAnimation, 100f, 0.15f);
-        } else {
-            categoryAnimation = (float) AnimMath.base(categoryAnimation, 30f, 0.15f);
-        }
-
-        Rects.roundedImage(
-                Math.round(x + categoryAnimation / 50f),
-                Math.round(categoryBgY),
-                Math.round(categoryAnimation),
-                Math.round(categoryBgHeight),
-                10,
-                ClickGuiTheme.categoryBg()
-        );
-
-        float my = categoryStartY;
-        Rects.roundedImage(
-                Math.round(x + 4 + categoryAnimation / 50f),
-                Math.round(selection - 6),
-                Math.round(categoryAnimation - 8),
-                22,
-                10,
-                ClickGuiTheme.categorySelection()
-        );
-
-
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        float categoryScissorX = centerX + (x - centerX) * scale;
-        float categoryScissorY = centerY + (categoryBgY - centerY) * scale;
-        float categoryScissorW = categoryAnimation * scale;
-        float categoryScissorH = categoryBgHeight * scale;
-        Scissor.apply(
-                categoryScissorX, categoryScissorY, categoryScissorW,
-                categoryScissorH
-        );
-
+        float navX = x + 5.5f;
+        float navW = leftWidth - 11f;
+        float my = getNavStartY();
         for (CategoryComponent m : categories) {
-            if (Hover.is(x, my - 6, leftWidth - 10, 20f, mouseX, mouseY)) {
-                m.categorySelectionColor.animateTo(ClickGuiTheme.categoryHover(), 0.15f, Easings.QUAD_OUT);
-            } else {
-                m.categorySelectionColor.animateTo(Colors.alpha(ClickGuiTheme.categoryHover(), 0), 0.15f, Easings.QUAD_OUT);
-            }
-            m.categorySelectionColor.update(dt);
-
-            if (m.category == curType) {
-                selection = drag
-                        ? my
-                        : (float) AnimMath.base(selection, my, 0.2);
-            }
-
             m.render(
-                    x + categoryAnimation / 50f,
+                    this,
+                    navX,
                     my,
-                    leftWidth - 10,
-                    20f,
+                    navW,
+                    UiChrome.NAV_ITEM,
                     mouseX,
                     mouseY,
                     curType == m.category,
+                    countModules(m.category),
                     dt
             );
-            my += 27f;
+            my += getCategoryItemSpacing();
         }
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
-        // Theme / config buttons (bottom-left)
         themeSwitchAnim.update(dt);
-        float sideBtnX = x + 4 + categoryAnimation / 50f;
-        float sideBtnW = categoryAnimation - 8;
-        float sideBtnH = 15;
+        float footerY = y + height - 7 - getCategoryItemSpacing() * 3;
+        UiChrome.hairlineH(x + 7, footerY - 4, leftWidth - 14);
         boolean isLightTheme = ClickGuiTheme.isLight();
-        if (renderMusicButton(sideBtnX, y + height - 53, sideBtnW, sideBtnH, "Music", musicBtnAnim, mouseX, mouseY)) {
+        if (renderSideNav(navX, footerY, navW, UiChrome.NAV_ITEM, FPSMaster.i18n.get("clickgui.nav.music"), "music", false, mouseX, mouseY)) {
             mc.displayGuiScreen(new top.fpsmaster.ui.screens.music.MusicScreen());
         }
-        String themeLabel = FPSMaster.i18n.get(isLightTheme ? "theme.light" : "theme.dark");
-        if (renderSideButton(sideBtnX, y + height - 36, sideBtnW, sideBtnH, themeLabel, themeBtnAnim, true, mouseX, mouseY)) {
+        if (renderSideNav(navX, footerY + getCategoryItemSpacing(), navW, UiChrome.NAV_ITEM, FPSMaster.i18n.get("configprofiles.button"), "folder", false, mouseX, mouseY)) {
+            mc.displayGuiScreen(new ConfigProfilesScreen(this));
+        }
+        String themeLabel = FPSMaster.i18n.get(isLightTheme ? "clickgui.nav.theme.light" : "clickgui.nav.theme.dark");
+        if (renderSideNav(navX, footerY + getCategoryItemSpacing() * 2, navW, UiChrome.NAV_ITEM, themeLabel, isLightTheme ? "sun" : "moon", true, mouseX, mouseY)) {
             ClientSettings.theme.setValue(isLightTheme ? 0 : 1);
             themeSwitchAnim.animateTo(isLightTheme ? 0.0 : 1.0, 0.35, Easings.CUBIC_OUT);
-        }
-        if (renderSideButton(sideBtnX, y + height - 19, sideBtnW, sideBtnH, FPSMaster.i18n.get("configprofiles.button"), configBtnAnim, false, mouseX, mouseY)) {
-            mc.displayGuiScreen(new ConfigProfilesScreen(this));
         }
 
         Alpha.set(1f);
@@ -357,53 +322,30 @@ public class MainPanel extends ScaledGuiScreen {
         handlePointerPress();
     }
 
-    private boolean renderSideButton(float x, float y, float width, float height, String text, ColorAnimator bgAnim, boolean themeIcon, int mouseX, int mouseY) {
-        boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
-        bgAnim.animateTo(hovered ? ClickGuiTheme.sideBtnHoverBg() : ClickGuiTheme.themeBtnBg(), 0.15, Easings.QUAD_OUT);
-        bgAnim.update();
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 4, bgAnim.get().getRGB());
+    private String searchingTitle(boolean searching) {
+        if (searching) {
+            return FPSMaster.i18n.get("clickgui.search.placeholder");
+        }
+        return FPSMaster.i18n.get("category." + curType.name().toLowerCase(Locale.getDefault()));
+    }
 
-        int contentColor = ClickGuiTheme.themeBtnText().getRGB();
-        float iconSize = 10f;
-        float textWidth = FPSMaster.fontManager.s14.getStringWidth(text);
-        boolean showText = width >= iconSize + textWidth + 16f;
-        float contentWidth = showText ? iconSize + 4f + textWidth : iconSize;
-        float contentX = x + (width - contentWidth) / 2f;
-        float iconY = y + (height - iconSize) / 2f;
+    private boolean renderSideNav(float x, float y, float width, float height, String text, String icon, boolean themeIcon, int mouseX, int mouseY) {
+        boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
+        UiChrome.navItem(x, y, width, height, false, hovered);
+        int contentColor = hovered ? ClickGuiTheme.textPrimary().getRGB() : ClickGuiTheme.textSecondary().getRGB();
+        float iconY = y + (height - 7) / 2f;
         if (themeIcon) {
             float progress = (float) themeSwitchAnim.get();
             if (progress < 0.999f) {
-                Icons.draw("moon", contentX, iconY, iconSize, fade(contentColor, 1f - progress));
+                Icons.draw("moon", x + 6, iconY, 7f, fade(contentColor, 1f - progress));
             }
             if (progress > 0.001f) {
-                Icons.draw("sun", contentX, iconY, iconSize, fade(contentColor, progress));
+                Icons.draw("sun", x + 6, iconY, 7f, fade(contentColor, progress));
             }
         } else {
-            Icons.draw("sliders", contentX, iconY, iconSize, contentColor);
+            Icons.draw(icon, x + 6, iconY, 7f, contentColor);
         }
-        if (showText) {
-            FPSMaster.fontManager.s14.drawString(text, contentX + iconSize + 4f, y + height / 2f - 4f, contentColor);
-        }
-        return consumePressInBounds(x, y, width, height) != null;
-    }
-
-    private boolean renderMusicButton(float x, float y, float width, float height, String text, ColorAnimator bgAnim, int mouseX, int mouseY) {
-        boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
-        bgAnim.animateTo(hovered ? ClickGuiTheme.sideBtnHoverBg() : ClickGuiTheme.themeBtnBg(), 0.15, Easings.QUAD_OUT);
-        bgAnim.update();
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 4, bgAnim.get().getRGB());
-
-        int contentColor = ClickGuiTheme.themeBtnText().getRGB();
-        float iconSize = 10f;
-        float textWidth = FPSMaster.fontManager.s14.getStringWidth(text);
-        boolean showText = width >= iconSize + textWidth + 16f;
-        float contentWidth = showText ? iconSize + 4f + textWidth : iconSize;
-        float contentX = x + (width - contentWidth) / 2f;
-        float iconY = y + (height - iconSize) / 2f;
-        Icons.draw("music", contentX, iconY, iconSize, contentColor);
-        if (showText) {
-            FPSMaster.fontManager.s14.drawString(text, contentX + iconSize + 4f, y + height / 2f - 4f, contentColor);
-        }
+        FPSMaster.fontManager.getFont(13).drawString(text, x + 17.5f, y + height / 2f - 3f, contentColor);
         return consumePressInBounds(x, y, width, height) != null;
     }
 
@@ -441,8 +383,6 @@ public class MainPanel extends ScaledGuiScreen {
         for (Category c : Category.values()) {
             categories.add(new CategoryComponent(c));
         }
-
-        selection = y + height / 2f;
     }
 
     @Override
@@ -460,6 +400,13 @@ public class MainPanel extends ScaledGuiScreen {
     public void keyTyped(char typedChar, int keyCode) throws IOException {
 //        aiChatPanel.keyTyped(typedChar, keyCode);
 
+        if (!bindLock.isEmpty()) {
+            for (ModuleRenderer m : mods) {
+                m.keyTyped(typedChar, keyCode);
+            }
+            return;
+        }
+
         if (searchBar.isFocused()) {
             searchBar.keyTyped(typedChar, keyCode);
             return;
@@ -473,7 +420,7 @@ public class MainPanel extends ScaledGuiScreen {
         }
 
         for (ModuleRenderer m : mods) {
-            if (m.mod.category == curType) {
+            if (isSearchActive() || m.mod.category == curType) {
                 m.keyTyped(typedChar, keyCode);
             }
         }
@@ -516,9 +463,11 @@ public class MainPanel extends ScaledGuiScreen {
         // a slider drag, yet the category strip still saw it and switched category underneath. Now that
         // peekAnyPress() skips consumed presses the guard is redundant: the press is gone on the frame
         // a drag begins, and later frames of the same drag produce no press at all.
-        float my = getCategoryStartY();
+        float my = getNavStartY();
+        float navX = x + 5.5f;
+        float navW = leftWidth - 11f;
         for (Category c : Category.values()) {
-            if (Hover.is(x, my - 8, leftWidth, 24f, mouseX, mouseY)) {
+            if (Hover.is(navX, my, navW, UiChrome.NAV_ITEM, mouseX, mouseY)) {
                 if (isSearchActive()) {
                     searchBar.clear();
                 }
@@ -529,7 +478,7 @@ public class MainPanel extends ScaledGuiScreen {
                 }
                 curType = c;
             }
-            my += 27f;
+            my += getCategoryItemSpacing();
         }
 
         if (mouseButton == 0) {

@@ -36,3 +36,4 @@ run-shots/
 # Local seed copy of the developer's server list — never publish
 benchmark/shot-seed/servers.dat
 .DS_Store
+hs_err_pid*.log

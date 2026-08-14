@@ -359,11 +359,14 @@ public class ScaledGuiScreen extends GuiScreen {
     }
 
     private int getLogicalMouseX() {
-        return clampLogicalMouseX((int) (Mouse.getX() / scaleFactor));
+        // Mouse reports window points; displayWidth (and with it scaleFactor's meaning) is
+        // backing pixels, so scale the cursor up first on a Retina backing.
+        return clampLogicalMouseX((int) (top.fpsmaster.utils.system.HiDpi.mouseToPixels(Mouse.getX()) / scaleFactor));
     }
 
     private int getLogicalMouseY() {
-        return clampLogicalMouseY((int) ((Minecraft.getMinecraft().displayHeight - Mouse.getY() - 1) / scaleFactor));
+        int mouseYPixels = top.fpsmaster.utils.system.HiDpi.mouseToPixels(Mouse.getY());
+        return clampLogicalMouseY((int) ((Minecraft.getMinecraft().displayHeight - mouseYPixels - 1) / scaleFactor));
     }
 
     private int getLogicalMouseX(int projectedMouseX) {

@@ -11,6 +11,10 @@ public class SettingRender<T extends Setting<?>> extends ValueRender {
         this.setting = setting;
     }
 
+    public boolean isWide() {
+        return false;
+    }
+
     @Override
     public void render(
             ScaledGuiScreen screen, float x, float y, float width, float height, float mouseX, float mouseY, boolean custom

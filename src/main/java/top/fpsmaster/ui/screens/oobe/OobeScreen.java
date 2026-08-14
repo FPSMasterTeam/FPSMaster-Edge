@@ -19,15 +19,18 @@ import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.render.ItemPhysics;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.ui.common.TextField;
+import top.fpsmaster.ui.click.ClickGuiTheme;
+import top.fpsmaster.ui.click.UiChrome;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
 import top.fpsmaster.modules.client.api.FPSMasterApiClient;
 import top.fpsmaster.modules.client.api.model.LoginResponse;
-import top.fpsmaster.modules.client.api.model.ApiResponse;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.AnimMath;
 import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
@@ -38,10 +41,20 @@ import java.awt.Color;
 import java.io.IOException;
 import java.net.URI;
 
+/**
+ * OOBE wizard, visual twin of {@code docs/prototypes/oobe.html}: a centered glass card with a
+ * step rail on the left, the page content on the right and a Back/Continue footer. All eight
+ * wizard pages (and their state machine) are kept; only the drawing changed.
+ */
 public class OobeScreen extends ScaledGuiScreen {
     private static final int PAGE_COUNT = 8;
+    private static final float RAIL_W = 110f;
     private static final String[] SCALE_LABELS = new String[]{"0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "2.0x", "2.5x", "3.0x"};
     private static final String[] GREETINGS = new String[]{"Hello, welcome.", "你好，欢迎使用。", "こんにちは、ようこそ。"};
+    private static final String[] STEP_ICONS = new String[]{"languages", "monitor", "box", "sparkles", "user", "sliders", "chev-r", "grid"};
+    private static final String[] STEP_KEYS = new String[]{
+            "oobe.step.language", "oobe.step.display", "oobe.step.tutorial", "oobe.step.features",
+            "oobe.step.account", "oobe.step.options", "oobe.step.guide", "oobe.step.qa"};
     private static final ResourceLocation PREVIEW_IMAGE = new ResourceLocation("client/background/panorama_1/panorama_0.png");
     private static final ResourceLocation PANORAMA_THREE = new ResourceLocation("client/background/panorama_3/panorama_0.png");
     private static final long TUTORIAL_SLIDE_DURATION_MS = 3000L;
@@ -127,6 +140,17 @@ public class OobeScreen extends ScaledGuiScreen {
     private String greetingPreviousText = "";
     private int greetingIndex;
     private boolean canGoBackQa = false;
+    private float followSwitchAnim;
+    private float antiCheatSwitchAnim;
+    private float anonymousSwitchAnim;
+
+    // Card layout metrics, refreshed once per frame in render().
+    private float cardX;
+    private float cardY;
+    private float cardW;
+    private float cardH;
+    private float contentX;
+    private float contentW;
 
     private TextField accountField;
     private TextField passwordField;
@@ -188,9 +212,9 @@ public class OobeScreen extends ScaledGuiScreen {
         scaleDropdown.setItems(SCALE_LABELS).setSelectedIndex(fixedScaleIndex).setEnabled(true);
 
         accountField = new TextField(FPSMaster.fontManager.s18, key("oobe.login.account.placeholder"),
-                new Color(255, 255, 255, 0).getRGB(), new Color(36, 44, 60).getRGB(), 32);
+                new Color(255, 255, 255, 0).getRGB(), ClickGuiTheme.textFieldText().getRGB(), 32);
         passwordField = new TextField(FPSMaster.fontManager.s18, true, key("oobe.login.password.placeholder"),
-                new Color(255, 255, 255, 0).getRGB(), new Color(36, 44, 60).getRGB(), 32);
+                new Color(255, 255, 255, 0).getRGB(), ClickGuiTheme.textFieldText().getRGB(), 32);
         accountField.setText(savedAccountText);
         passwordField.setText(savedPasswordText);
         loginFieldsHaveFont = FPSMaster.fontManager.s18 != null;
@@ -202,9 +226,9 @@ public class OobeScreen extends ScaledGuiScreen {
             return;
         }
         accountField = new TextField(FPSMaster.fontManager.s18, key("oobe.login.account.placeholder"),
-                new Color(255, 255, 255, 0).getRGB(), new Color(36, 44, 60).getRGB(), 32);
+                new Color(255, 255, 255, 0).getRGB(), ClickGuiTheme.textFieldText().getRGB(), 32);
         passwordField = new TextField(FPSMaster.fontManager.s18, true, key("oobe.login.password.placeholder"),
-                new Color(255, 255, 255, 0).getRGB(), new Color(36, 44, 60).getRGB(), 32);
+                new Color(255, 255, 255, 0).getRGB(), ClickGuiTheme.textFieldText().getRGB(), 32);
         accountField.setText(savedAccountText);
         passwordField.setText(savedPasswordText);
         loginFieldsHaveFont = true;
@@ -212,23 +236,31 @@ public class OobeScreen extends ScaledGuiScreen {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
+        cardW = Math.min(380f, guiWidth - 24f);
+        cardH = Math.min(250f, guiHeight - 32f);
+        cardX = (guiWidth - cardW) / 2f;
+        cardY = (guiHeight - cardH) / 2f;
+        contentX = cardX + RAIL_W + 20f;
+        contentW = cardW - RAIL_W - 40f;
+
         float dt = (float) animClock.tick();
         updateAnimations(dt);
         updateTutorialAutoplay();
 
         renderBackground();
         float introEased = easeOutCubic(introProgress);
-        float introOffsetY = (1f - introEased) * 22f;
+        float introOffsetY = (1f - introEased) * 14f;
 
         GL11.glPushMatrix();
         GL11.glTranslatef(0f, introOffsetY, 0f);
-        renderTopbar();
+        UiChrome.panel(cardX, cardY, cardW, cardH);
+        renderRail(mouseX, mouseY);
 
         GL11.glPushMatrix();
-        GL11.glTranslatef(pageMotionDirection * pageMotion * 34f, 0f, 0f);
+        GL11.glTranslatef(pageMotionDirection * pageMotion * 17f, 0f, 0f);
         switch (page) {
             case 0:
-                renderLanguagePage();
+                renderLanguagePage(mouseX, mouseY);
                 break;
             case 1:
                 renderScalePage(mouseX, mouseY);
@@ -237,19 +269,19 @@ public class OobeScreen extends ScaledGuiScreen {
                 renderTutorialPage(mouseX, mouseY);
                 break;
             case 3:
-                renderFeaturesPage();
+                renderFeaturesPage(mouseX, mouseY);
                 break;
             case 4:
                 renderLoginPage(mouseX, mouseY);
                 break;
             case 5:
-                renderOptionsPage();
+                renderOptionsPage(mouseX, mouseY);
                 break;
             case 6:
-                renderGuideEntryPage();
+                renderGuideEntryPage(mouseX, mouseY);
                 break;
             case 7:
-                renderQaPage();
+                renderQaPage(mouseX, mouseY);
                 break;
             default:
                 break;
@@ -276,6 +308,9 @@ public class OobeScreen extends ScaledGuiScreen {
         }
         forgotHoverAnim = (float) AnimMath.base(forgotHoverAnim, 0.0, 0.25);
         registerHoverAnim = (float) AnimMath.base(registerHoverAnim, 0.0, 0.25);
+        followSwitchAnim = (float) AnimMath.base(followSwitchAnim, followGameScaleEnabled ? 1.0 : 0.0, 0.3);
+        antiCheatSwitchAnim = (float) AnimMath.base(antiCheatSwitchAnim, antiCheatEnabled ? 1.0 : 0.0, 0.3);
+        anonymousSwitchAnim = (float) AnimMath.base(anonymousSwitchAnim, anonymousDataEnabled ? 1.0 : 0.0, 0.3);
         pageMotion += (0f - pageMotion) * Math.min(1f, dt * 8.5f);
         tutorialSlideTransition += (1f - tutorialSlideTransition) * Math.min(1f, dt * 8f);
         float introTarget = Math.min(1f, Math.max(0f, (System.currentTimeMillis() - introStartedAt) / (float) OOBE_INTRO_DURATION_MS));
@@ -294,247 +329,281 @@ public class OobeScreen extends ScaledGuiScreen {
                 greetingPreviousText = greetingCurrentText;
             }
         }
-        accountField.updateCursorCounter();
-        passwordField.updateCursorCounter();
+        if (accountField != null) {
+            accountField.updateCursorCounter();
+        }
+        if (passwordField != null) {
+            passwordField.updateCursorCounter();
+        }
     }
 
     private void renderBackground() {
-        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(244, 247, 255, 255));
-    }
-
-    private void renderTopbar() {
-        // Intentionally left blank: OOBE no longer uses a top header area.
+        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(12, 12, 12, 255));
     }
 
     private void renderIntroOverlay() {
         float eased = easeOutCubic(introProgress);
         int overlayAlpha = Math.min(255, Math.max(0, Math.round((1f - eased) * 255f)));
         if (overlayAlpha > 0) {
-            Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(244, 247, 255, overlayAlpha));
+            Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(12, 12, 12, overlayAlpha));
         }
     }
 
-    private void renderLanguagePage() {
-        float titleWidth = clamp(contentWidth() * 0.6f, 280f, 660f);
-        float x = centeredColumnX(titleWidth);
-        float y = contentTop() + 22f;
+    // ------------------------------------------------------------------
+    // Left rail: brand, step list, "skip all"
+    // ------------------------------------------------------------------
 
-        renderStepCounter(x, y - 30f);
-        renderAnimatedGreeting(x, y - 2f);
-        drawResponsiveTitle(key("oobe.language.title"), x, y + 28f);
-        drawBodyText(key("oobe.language.desc"), x, y + 76f, titleWidth);
+    private void renderRail(int mouseX, int mouseY) {
+        Rects.fill(cardX + 1f, cardY + 1f, RAIL_W - 1f, cardH - 2f, ClickGuiTheme.categoryBg());
+        UiChrome.hairlineV(cardX + RAIL_W, cardY + 1f, cardH - 2f);
 
-        float chipY = y + 108f;
-        float chipW = compactLayout() ? 112f : 122f;
-        float chipH = 30f;
-        renderChip(x, chipY, chipW, chipH, languageValue == 1, key("oobe.language.zh"));
-        renderChip(x + chipW + 12f, chipY, chipW, chipH, languageValue == 0, "English");
+        // Brand row
+        float markX = cardX + 12f;
+        float markY = cardY + 12f;
+        Rects.rounded(markX, markY, 15f, 15f, 4, ClickGuiTheme.accent().getRGB(), false);
+        UiChrome.boldCentered(FPSMaster.fontManager.getFont(14), "F", markX + 7.5f, markY + 4f, Color.WHITE.getRGB());
+        UiChrome.boldString(FPSMaster.fontManager.getFont(14), "FPSMaster", markX + 20f, markY + 0.5f,
+                ClickGuiTheme.textPrimary().getRGB());
+        FPSMaster.fontManager.getFont(10).drawString(key("oobe.brand.sub"), markX + 20f, markY + 9.5f,
+                ClickGuiTheme.textDisabled().getRGB());
 
-        if (consumePressInBounds(x, chipY, chipW, chipH, 0) != null) {
+        // Step list
+        float stepX = cardX + 8f;
+        float stepW = RAIL_W - 16f;
+        float stepsTop = markY + 15f + 11f;
+        float skipY = cardY + cardH - 19f;
+        float stepGap = 1f;
+        float avail = skipY - 4f - stepsTop;
+        float stepH = Math.min(23f, Math.max(14f, (avail - (PAGE_COUNT - 1) * stepGap) / PAGE_COUNT));
+        for (int i = 0; i < PAGE_COUNT; i++) {
+            float y = stepsTop + i * (stepH + stepGap);
+            boolean current = i == page;
+            boolean done = i < page;
+            if (current) {
+                Rects.rounded(stepX, y, stepW, stepH, 6, ClickGuiTheme.layer().getRGB(), false);
+            }
+            float dotSize = 13f;
+            float dotX = stepX + 5f;
+            float dotY = y + (stepH - dotSize) / 2f;
+            float iconInset = (dotSize - 6.5f) / 2f;
+            if (current) {
+                Rects.rounded(dotX, dotY, dotSize, dotSize, 6, ClickGuiTheme.accent().getRGB(), false);
+                Icons.draw(STEP_ICONS[i], dotX + iconInset, dotY + iconInset, 6.5f, Color.WHITE.getRGB());
+            } else if (done) {
+                Rects.rounded(dotX, dotY, dotSize, dotSize, 6, ClickGuiTheme.accentSoft().getRGB(), false);
+                Icons.draw("check", dotX + iconInset, dotY + iconInset, 6.5f, ClickGuiTheme.accentText().getRGB());
+            } else {
+                Rects.rounded(dotX - 0.5f, dotY - 0.5f, dotSize + 1f, dotSize + 1f, 7,
+                        ClickGuiTheme.stroke().getRGB(), false);
+                Rects.rounded(dotX, dotY, dotSize, dotSize, 6, ClickGuiTheme.layer().getRGB(), false);
+                Icons.draw(STEP_ICONS[i], dotX + iconInset, dotY + iconInset, 6.5f, ClickGuiTheme.textDisabled().getRGB());
+            }
+            int nameColor = current
+                    ? ClickGuiTheme.textPrimary().getRGB()
+                    : (done ? ClickGuiTheme.textSecondary() : ClickGuiTheme.textDisabled()).getRGB();
+            FPSMaster.fontManager.getFont(13).drawString(key(STEP_KEYS[i]),
+                    dotX + dotSize + 6f, y + stepH / 2f - 3.25f, nameColor);
+        }
+
+        // Skip-all ghost button
+        String skipLabel = key("oobe.skip.all");
+        UFontRenderer skipFont = FPSMaster.fontManager.getFont(12);
+        float skipW = skipFont.getStringWidth(skipLabel) + 8f;
+        float skipH = 12f;
+        float skipX = cardX + 8f;
+        boolean skipHover = !hasActiveModal() && Hover.is(skipX, skipY, skipW, skipH, mouseX, mouseY);
+        if (skipHover) {
+            Rects.rounded(skipX, skipY, skipW, skipH, 4, ClickGuiTheme.layer().getRGB(), false);
+        }
+        skipFont.drawString(skipLabel, skipX + 4f, skipY + skipH / 2f - 3f,
+                (skipHover ? ClickGuiTheme.textSecondary() : ClickGuiTheme.textDisabled()).getRGB());
+        if (!hasActiveModal() && consumePressInBounds(skipX, skipY, skipW, skipH, 0) != null) {
+            finishOobe();
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Shared content chrome
+    // ------------------------------------------------------------------
+
+    /** Title + lede at the top of the content column; returns the y where the page body starts. */
+    private float renderPageHeader(String title, String lede) {
+        float y = cardY + 18f;
+        UiChrome.boldString(FPSMaster.fontManager.getFont(24), title, contentX, y, ClickGuiTheme.textPrimary().getRGB());
+        int ledeLines = drawWrapped(FPSMaster.fontManager.getFont(13), lede, contentX, y + 16f, contentW, 8f, 2,
+                ClickGuiTheme.textSecondary().getRGB());
+        return y + 16f + ledeLines * 8f + 8f;
+    }
+
+    /** Prototype .choice card: big label + optional sub text; accent-soft when selected. */
+    private void renderChoiceCard(float x, float y, float width, float height, boolean selected, boolean hovered,
+                                  String big, String sub) {
+        if (selected) {
+            UiChrome.selectedSurface(x, y, width, height, UiChrome.CARD_RADIUS);
+        } else {
+            Color fill = hovered ? ClickGuiTheme.layerHover() : ClickGuiTheme.layer();
+            Rects.rounded(x - 0.5f, y - 0.5f, width + 1f, height + 1f, UiChrome.CARD_RADIUS + 1,
+                    ClickGuiTheme.stroke().getRGB(), false);
+            Rects.rounded(x, y, width, height, UiChrome.CARD_RADIUS, fill.getRGB(), false);
+        }
+        UiChrome.boldString(FPSMaster.fontManager.getFont(15), big, x + 9f, y + 9f, ClickGuiTheme.textPrimary().getRGB());
+        if (sub != null && !sub.isEmpty()) {
+            drawWrapped(FPSMaster.fontManager.getFont(11), sub, x + 9f, y + 19f, width - 18f, 6f, 2,
+                    ClickGuiTheme.textSecondary().getRGB());
+        }
+    }
+
+    /** Prototype .row left side: name + one-line desc. Row height is 19 units. */
+    private void renderSettingRow(float x, float y, String name, String desc) {
+        FPSMaster.fontManager.getFont(13).drawString(name, x, y + 2f, ClickGuiTheme.textPrimary().getRGB());
+        FPSMaster.fontManager.getFont(11).drawString(desc, x, y + 10.5f, ClickGuiTheme.textSecondary().getRGB());
+    }
+
+    // ------------------------------------------------------------------
+    // Pages
+    // ------------------------------------------------------------------
+
+    private void renderLanguagePage(int mouseX, int mouseY) {
+        float bodyY = renderPageHeader(key("oobe.language.title"), key("oobe.language.desc"));
+        float gap = 6f;
+        float w = (contentW - gap) / 2f;
+        float h = 36f;
+        float y = bodyY + 2f;
+        boolean modal = hasActiveModal();
+        boolean zhHover = !modal && Hover.is(contentX, y, w, h, mouseX, mouseY);
+        boolean enHover = !modal && Hover.is(contentX + w + gap, y, w, h, mouseX, mouseY);
+        renderChoiceCard(contentX, y, w, h, languageValue == 1, zhHover, key("oobe.language.zh"), key("oobe.language.zh.sub"));
+        renderChoiceCard(contentX + w + gap, y, w, h, languageValue == 0, enHover, "English", key("oobe.language.en.sub"));
+        if (!modal && consumePressInBounds(contentX, y, w, h, 0) != null) {
             switchLanguage(1);
         }
-        if (consumePressInBounds(x + chipW + 12f, chipY, chipW, chipH, 0) != null) {
+        if (!modal && consumePressInBounds(contentX + w + gap, y, w, h, 0) != null) {
             switchLanguage(0);
         }
     }
 
     private void renderScalePage(int mouseX, int mouseY) {
-        float layoutWidth = clamp(contentWidth() * 0.72f, 300f, contentWidth());
-        float x = centeredColumnX(layoutWidth);
-        float topY = contentTop();
+        float bodyY = renderPageHeader(key("oobe.scale.title"), key("oobe.scale.desc"));
+        float rowH = 19f;
+        boolean modal = hasActiveModal();
 
-        renderStepCounter(x, topY - 18f);
-        drawResponsiveTitle(key("oobe.scale.title"), x, topY + 12f);
-        drawBodyText(key("oobe.scale.desc"), x, topY + 58f, layoutWidth - 18f);
-
-        float pillY = topY + 86f;
-        float pillW = clamp(layoutWidth * 0.48f, 180f, 240f);
-        renderPill(x, pillY, pillW, 34f, followGameScaleEnabled, key("oobe.scale.follow"));
-
-        if (consumePressInBounds(x, pillY, pillW, 34f, 0) != null) {
+        // Follow game scale row + switch
+        float y = bodyY + 2f;
+        renderSettingRow(contentX, y, key("oobe.scale.follow"), key("oobe.scale.follow.desc"));
+        UiChrome.drawSwitch(contentX + contentW - UiChrome.SWITCH_W, y + (rowH - UiChrome.SWITCH_H) / 2f,
+                followGameScaleEnabled, followSwitchAnim);
+        if (!modal && consumePressInBounds(contentX, y, contentW, rowH, 0) != null) {
             followGameScaleEnabled = !followGameScaleEnabled;
             applyLiveScaleSettings();
         }
+        UiChrome.hairlineH(contentX, y + rowH + 1f, contentW);
 
-        float dropdownY = pillY + 44f;
-        scaleDropdown.setLabel(key("oobe.scale.label")).setItems(SCALE_LABELS).setSelectedIndex(fixedScaleIndex).setEnabled(true);
-        scaleDropdown.renderInScreen(this, x, dropdownY, clamp(layoutWidth * 0.40f, 172f, 220f), 32f, mouseX, mouseY);
-        fixedScaleIndex = scaleDropdown.getSelectedIndex();
-        if (scaleDropdown.consumeSelectionChanged()) {
-            applyLiveScaleSettings();
+        // Fixed multiplier row + segmented control
+        float y2 = y + rowH + 4f;
+        renderSettingRow(contentX, y2, key("oobe.scale.label"), key("oobe.scale.fixed.desc"));
+        float segY = y2 + rowH + 3f;
+        float segH = 14f;
+        UiChrome.seg(contentX, segY, contentW, segH);
+        float optW = (contentW - 3f) / SCALE_LABELS.length;
+        for (int i = 0; i < SCALE_LABELS.length; i++) {
+            float ox = contentX + 1.5f + i * optW;
+            boolean hover = !modal && Hover.is(ox, segY + 1.5f, optW, segH - 3f, mouseX, mouseY);
+            UiChrome.segOption(ox, segY + 1.5f, optW, segH - 3f, SCALE_LABELS[i], fixedScaleIndex == i, hover);
+            if (!modal && consumePressInBounds(ox, segY + 1.5f, optW, segH - 3f, 0) != null) {
+                fixedScaleIndex = i;
+                scaleDropdown.setSelectedIndex(fixedScaleIndex);
+                applyLiveScaleSettings();
+            }
         }
     }
 
     private void renderTutorialPage(int mouseX, int mouseY) {
-        float width = clamp(contentWidth() * 0.62f, 300f, 760f);
-        float x = centeredColumnX(width);
-        float y = contentTop() - 2f;
-        float cardHeight = clamp(width * 0.28f, 160f, 200f);
-        boolean tightHeight = availableContentHeight() < 300f;
+        float bodyY = renderPageHeader(key("oobe.tutorial.title"), key("oobe.tutorial.desc"));
         String[][] slides = new String[][]{
                 {key("oobe.tutorial.1.title"), key("oobe.tutorial.1.desc")},
                 {key("oobe.tutorial.2.title"), key("oobe.tutorial.2.desc")},
                 {key("oobe.tutorial.3.title"), key("oobe.tutorial.3.desc")}
         };
 
-        renderStepCounter(x, y - 10f);
-        drawResponsiveTitle(key("oobe.tutorial.title"), x, y + 18f);
+        float y = bodyY + 2f;
+        float h = Math.max(64f, cardY + cardH - 38f - y);
+        Rects.rounded(contentX - 0.5f, y - 0.5f, contentW + 1f, h + 1f, UiChrome.CARD_RADIUS + 1,
+                ClickGuiTheme.stroke().getRGB(), false);
+        Rects.rounded(contentX, y, contentW, h, UiChrome.CARD_RADIUS, ClickGuiTheme.layer().getRGB(), false);
+        FPSMaster.fontManager.getFont(11).drawString((tutorialIndex + 1) + " / " + slides.length,
+                contentX + 9f, y + 8f, ClickGuiTheme.textDisabled().getRGB());
 
-        float cardY = y + (tightHeight ? 72f : 86f);
-        drawGlassCard(x, cardY, width, cardHeight, 24f, new Color(255, 255, 255, 232), new Color(229, 235, 247, 210));
-        FPSMaster.fontManager.s16.drawString((tutorialIndex + 1) + " / " + slides.length, x + 24f, cardY + 20f, mutedText().getRGB());
-
-        int alpha = Math.min(255, (int)(tutorialSlideTransition * 255f));
-        Color titleColor = new Color(24, 32, 54, alpha);
-        Color descColor = new Color(92, 101, 118, alpha);
-
-        // Below four the renderer reads the colour as vanilla does - no alpha bits set means opaque -
-        // so a fade this shallow comes out solid rather than invisible. updateTutorialAutoplay resets
-        // the transition after updateAnimations has advanced it, which puts the frame a slide flips on
-        // at exactly zero: without this the new slide pops in at full opacity before its fade starts.
+        // Alpha below four reads as opaque to the renderer (no alpha bits == opaque, as vanilla),
+        // so both text passes bail out early instead of popping in solid.
+        int alpha = Math.min(255, (int) (tutorialSlideTransition * 255f));
         if (alpha > 3) {
             GL11.glPushMatrix();
-            GL11.glTranslatef(0f, (1f - tutorialSlideTransition) * 8f, 0f);
-            FPSMaster.fontManager.s18.drawString(slides[tutorialIndex][0], x + 24f, cardY + 54f, titleColor.getRGB());
-            drawMultilineBodyTextWithAlpha(extendTutorialDescription(slides[tutorialIndex][1], tutorialIndex), x + 24f, cardY + 94f, width - 48f, 4, alpha);
+            GL11.glTranslatef(0f, (1f - tutorialSlideTransition) * 4f, 0f);
+            Color titleColor = ClickGuiTheme.textPrimary();
+            UiChrome.boldString(FPSMaster.fontManager.getFont(15), slides[tutorialIndex][0], contentX + 9f, y + 18f,
+                    new Color(titleColor.getRed(), titleColor.getGreen(), titleColor.getBlue(), alpha).getRGB());
+            Color bodyColor = ClickGuiTheme.textSecondary();
+            drawWrapped(FPSMaster.fontManager.getFont(11),
+                    extendTutorialDescription(slides[tutorialIndex][1], tutorialIndex),
+                    contentX + 9f, y + 30f, contentW - 18f, 6.5f, 4,
+                    new Color(bodyColor.getRed(), bodyColor.getGreen(), bodyColor.getBlue(), alpha).getRGB());
             GL11.glPopMatrix();
         }
+
+        // Slide progress dots
+        float dotW = 4f;
+        float dotGap = 3f;
+        float dotsX = contentX + (contentW - (slides.length * dotW + (slides.length - 1) * dotGap)) / 2f;
+        for (int i = 0; i < slides.length; i++) {
+            Rects.rounded(dotsX + i * (dotW + dotGap), y + h - 9f, dotW, dotW, 2,
+                    (i == tutorialIndex ? ClickGuiTheme.accent() : ClickGuiTheme.layerActive()).getRGB(), false);
+        }
     }
 
-    private void renderFeaturesPage() {
-        float layoutWidth = clamp(contentWidth() * 0.84f, 300f, contentWidth());
-        float x = centeredColumnX(layoutWidth);
-        float y = contentTop() - 8f;
-        float gap = frameWidth() < 400f ? 8f : 12f;
-        float cardWidth = (layoutWidth - gap) / 2f;
-        float collapsedHeight = 72f;
-        float rowSpacing = 18f;
-
+    private void renderFeaturesPage(int mouseX, int mouseY) {
+        float bodyY = renderPageHeader(key("oobe.features.title"), key("oobe.features.desc"));
         String[][] cards = new String[][]{
-                {key("oobe.features.performance.title"), key("oobe.features.performance.desc"), key("oobe.features.performance.detail")},
-                {key("oobe.features.animations.title"), key("oobe.features.animations.desc"), key("oobe.features.animations.detail")},
-                {key("oobe.features.hud.title"), key("oobe.features.hud.desc"), key("oobe.features.hud.detail")},
-                {key("oobe.features.background.title"), key("oobe.features.background.desc"), key("oobe.features.background.detail")}
+                {key("oobe.features.performance.title"), key("oobe.features.performance.desc")},
+                {key("oobe.features.animations.title"), key("oobe.features.animations.desc")},
+                {key("oobe.features.hud.title"), key("oobe.features.hud.desc")},
+                {key("oobe.features.background.title"), key("oobe.features.background.desc")}
         };
+        String[] icons = new String[]{"zap", "sparkles", "grid", "image"};
 
-        renderStepCounter(x, y - 8f);
-        drawResponsiveTitle(key("oobe.features.title"), x, y + 20f);
-        drawBodyText(key("oobe.features.desc"), x, y + 66f, layoutWidth * 0.72f);
-
-        // If a card is expanded, show the detail view
-        if (expandedFeatureCard >= 0 && featureDetailExpand > 0.01f) {
-            renderFeatureDetailView(x, y + 94f, layoutWidth, cards[expandedFeatureCard], expandedFeatureCard);
-            // Show "Back to overview" button
-            float backY = y + 94f + clamp(layoutWidth * 0.4f, 180f, 240f) + 12f;
-            if (renderSmallButton(x, backY, 100f, 28f, isChinese() ? "返回概览" : "Back")) {
-                expandedFeatureCard = -1;
-            }
-            return;
-        }
-
+        float gap = 5f;
+        float w = (contentW - 2f * gap) / 3f;
+        float h = 54f;
         hoveredFeature = -1;
-        float baseCardY = y + 94f;
-
         for (int i = 0; i < cards.length; i++) {
-            int row = i / 2;
-            int column = i % 2;
-            float cardX = x + column * (cardWidth + gap);
-            float cardY = baseCardY + row * (collapsedHeight + rowSpacing);
-            float detailHeight = clamp(18f * featureExpand[i], 0f, 18f);
-            float totalHeight = collapsedHeight + detailHeight;
-            boolean hovered = Hover.is(cardX, cardY, cardWidth, totalHeight, getMouseX(), getMouseY());
-            if (hovered && expandedFeatureCard == -1) {
+            int row = i / 3;
+            int column = i % 3;
+            float x = contentX + column * (w + gap);
+            float y = bodyY + 2f + row * (h + gap);
+            boolean hovered = Hover.is(x, y, w, h, mouseX, mouseY);
+            if (hovered) {
                 hoveredFeature = i;
             }
-
-            drawGlassCard(cardX, cardY, cardWidth, totalHeight, 22f,
-                    new Color(255, 255, 255, hovered ? 236 : 228),
-                    hovered ? new Color(218, 226, 243, 220) : new Color(229, 235, 247, 210));
-            FPSMaster.fontManager.s18.drawString(cards[i][0], cardX + 16f, cardY + 16f, panelTitleText().getRGB());
-            drawBodyText(cards[i][1], cardX + 16f, cardY + 40f, cardWidth - 32f);
-
-            // Show small detail preview on hover
-            if (featureExpand[i] > 0.02f) {
-                int alpha = Math.min(255, Math.max(0, (int) (featureExpand[i] * 255f)));
-                Rects.fill(cardX + 16f, cardY + 62f, cardWidth - 32f, 1f, new Color(27, 35, 48, Math.max(18, alpha / 8)));
-                FPSMaster.fontManager.s16.drawString(cards[i][2], cardX + 16f, cardY + 66f,
-                        new Color(102, 111, 128, alpha).getRGB());
-            }
-
-            // Click to expand
-            if (!hasActiveModal() && consumePressInBounds(cardX, cardY, cardWidth, totalHeight, 0) != null) {
-                expandedFeatureCard = i;
-            }
+            Rects.rounded(x - 0.5f, y - 0.5f, w + 1f, h + 1f, UiChrome.CARD_RADIUS + 1,
+                    ClickGuiTheme.stroke().getRGB(), false);
+            Rects.rounded(x, y, w, h, UiChrome.CARD_RADIUS,
+                    (hovered ? ClickGuiTheme.layerHover() : ClickGuiTheme.layer()).getRGB(), false);
+            Rects.rounded(x + 7f, y + 7f, 16f, 16f, UiChrome.CTL_RADIUS, ClickGuiTheme.accentSoft().getRGB(), false);
+            Icons.draw(icons[i], x + 7f + 4.25f, y + 7f + 4.25f, 7.5f, ClickGuiTheme.accentText().getRGB());
+            UiChrome.boldString(FPSMaster.fontManager.getFont(12), cards[i][0], x + 7f, y + 27f,
+                    ClickGuiTheme.textPrimary().getRGB());
+            drawWrapped(FPSMaster.fontManager.getFont(11), cards[i][1], x + 7f, y + 35f, w - 14f, 6f, 2,
+                    ClickGuiTheme.textSecondary().getRGB());
         }
-    }
-
-    private void renderFeatureDetailView(float x, float y, float width, String[] cardData, int featureIndex) {
-        float detailHeight = clamp(width * 0.4f, 180f, 240f);
-        float imageWidth = width * 0.45f;
-        float textWidth = width - imageWidth - 20f;
-
-        // Dimmed background
-        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(244, 247, 255, 180));
-
-        // Main detail card
-        drawGlassCard(x, y, width, detailHeight, 24f,
-                new Color(255, 255, 255, 244),
-                new Color(218, 226, 243, 200));
-
-        // Title
-        drawPanelTitle(cardData[0], x + 24f, y + 24f);
-
-        // Description on left
-        float textX = x + 24f;
-        float textY = y + 60f;
-        drawBodyText(cardData[1], textX, textY, textWidth - 24f);
-        Rects.fill(textX, textY + 40f, textWidth - 24f, 1f, new Color(229, 235, 247, 200));
-        textY += 50f;
-        drawMultilineBodyText(cardData[2], textX, textY, textWidth - 24f, 6);
-
-        // Image placeholder on right
-        float imageX = x + width - imageWidth - 24f;
-        float imageY = y + 24f;
-        float imageHeight = detailHeight - 48f;
-        Rects.rounded(Math.round(imageX), Math.round(imageY), Math.round(imageWidth), Math.round(imageHeight), 16,
-                new Color(229, 235, 247, 150));
-        // Draw placeholder icon/text
-        String placeholderText = isChinese() ? "功能预览图" : "Preview";
-        FPSMaster.fontManager.s24.drawCenteredString(placeholderText, imageX + imageWidth / 2f, imageY + imageHeight / 2f - 8f,
-                new Color(150, 160, 180).getRGB());
-    }
-
-    private boolean renderSmallButton(float x, float y, float width, float height, String text) {
-        int mouseX = getMouseX();
-        int mouseY = getMouseY();
-        boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
-
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 14,
-                hovered ? new Color(104, 117, 247, 236) : new Color(229, 235, 247, 200));
-        FPSMaster.fontManager.s16.drawCenteredString(text, x + width / 2f, y + height / 2f - 5f,
-                hovered ? Color.WHITE.getRGB() : new Color(82, 100, 142).getRGB());
-
-        return hovered && consumePressInBounds(x, y, width, height, 0) != null;
     }
 
     private void renderLoginPage(int mouseX, int mouseY) {
-        float width = clamp(contentWidth() * 0.52f, 340f, 420f);
-        float x = centeredColumnX(width);
-        float y = contentTop() + 8f;
-        boolean tightHeight = availableContentHeight() < 270f;
-
-        renderStepCounter(x, y - 14f);
-
         // Show welcome screen if login was successful
         if (loginWelcomeShown && welcomeUsername != null) {
-            renderLoginWelcomeScreen(x, y, width, mouseX, mouseY);
+            renderLoginWelcome();
             return;
         }
 
-        drawResponsiveTitle(key("oobe.login.title"), x, y + 14f);
-        drawBodyText(key("oobe.login.desc"), x, y + 60f, width);
-
-        float fieldY = y + (tightHeight ? 86f : 96f);
+        float bodyY = renderPageHeader(key("oobe.login.title"), key("oobe.login.desc"));
 
         ensureLoginFields();
         if (accountField == null || passwordField == null) {
@@ -546,131 +615,80 @@ public class OobeScreen extends ScaledGuiScreen {
         accountField.setEnabled(inputEnabled);
         passwordField.setEnabled(inputEnabled);
 
-        drawTextField(accountField, x, fieldY, width, 34f);
-        drawTextField(passwordField, x, fieldY + 46f, width, 34f);
+        float formW = 150f;
+        float fieldH = 19f;
+        float y = bodyY + 4f;
+        drawTextField(accountField, contentX, y, formW, fieldH);
+        drawTextField(passwordField, contentX, y + fieldH + 5f, formW, fieldH);
 
-        // Calculate positions - error message above links
-        float errorY = fieldY + 88f;
-        float errorHeight = loginError != null ? 24f : 0f;
-        float linksY = errorY + errorHeight + 8f;
-
-        // Show error message if login failed
-        if (loginError != null) {
-            Rects.rounded(Math.round(x), Math.round(errorY), Math.round(width), 24f, 12,
-                    new Color(255, 120, 120, 40).getRGB());
-            FPSMaster.fontManager.s16.drawString(loginError, x + 12f, errorY + 8f,
-                    new Color(220, 60, 60).getRGB());
+        float btnY = y + (fieldH + 5f) * 2f + 2f;
+        String loginLabel = isLoggingIn ? (isChinese() ? "登录中..." : "Logging in...") : key("oobe.login.submit");
+        if (isLoggingIn) {
+            Rects.rounded(contentX, btnY, formW, fieldH, UiChrome.CTL_RADIUS, ClickGuiTheme.layerActive().getRGB(), false);
+            FPSMaster.fontManager.s14.drawCenteredString(loginLabel, contentX + formW / 2f, btnY + fieldH / 2f - 3.5f,
+                    ClickGuiTheme.textDisabled().getRGB());
+        } else if (UiChrome.buttonClicked(this, contentX, btnY, formW, fieldH, null, loginLabel,
+                UiChrome.Style.PRIMARY, mouseX, mouseY) && !hasActiveModal()) {
+            performLogin();
         }
 
+        float belowY = btnY + fieldH + 6f;
+        if (loginError != null) {
+            int errorLines = drawWrapped(FPSMaster.fontManager.getFont(11), loginError, contentX, belowY, contentW, 6f, 2,
+                    ClickGuiTheme.danger().getRGB());
+            belowY += errorLines * 6f + 4f;
+        }
+
+        UFontRenderer linkFont = FPSMaster.fontManager.getFont(11);
         String forgot = key("oobe.login.forgot");
         String register = key("oobe.login.register");
-        float forgotX = x;
-        float registerX = x + 132f;
-        boolean forgotHovered = Hover.is(forgotX, linksY - 2f, FPSMaster.fontManager.s18.getStringWidth(forgot), 18f, mouseX, mouseY);
-        boolean registerHovered = Hover.is(registerX, linksY - 2f, FPSMaster.fontManager.s18.getStringWidth(register), 18f, mouseX, mouseY);
+        float forgotW = linkFont.getStringWidth(forgot);
+        float registerX = contentX + forgotW + 12f;
+        float registerW = linkFont.getStringWidth(register);
+        boolean forgotHovered = Hover.is(contentX, belowY - 1f, forgotW, 8f, mouseX, mouseY);
+        boolean registerHovered = Hover.is(registerX, belowY - 1f, registerW, 8f, mouseX, mouseY);
         forgotHoverAnim = (float) AnimMath.base(forgotHoverAnim, forgotHovered ? 1.0 : 0.0, 0.24);
         registerHoverAnim = (float) AnimMath.base(registerHoverAnim, registerHovered ? 1.0 : 0.0, 0.24);
-        FPSMaster.fontManager.s18.drawString(forgot, forgotX, linksY,
-                blendColor(accentText(), new Color(82, 100, 142), forgotHoverAnim).getRGB());
-        FPSMaster.fontManager.s18.drawString(register, registerX, linksY,
-                blendColor(accentText(), new Color(82, 100, 142), registerHoverAnim).getRGB());
-        if (!hasActiveModal() && !isLoggingIn && consumePressInBounds(forgotX, linksY - 2f, FPSMaster.fontManager.s18.getStringWidth(forgot), 18f, 0) != null) {
+        linkFont.drawString(forgot, contentX, belowY,
+                blendColor(ClickGuiTheme.textDisabled(), ClickGuiTheme.accentText(), forgotHoverAnim).getRGB());
+        linkFont.drawString(register, registerX, belowY,
+                blendColor(ClickGuiTheme.textDisabled(), ClickGuiTheme.accentText(), registerHoverAnim).getRGB());
+        if (!hasActiveModal() && !isLoggingIn && consumePressInBounds(contentX, belowY - 1f, forgotW, 9f, 0) != null) {
             openLink("https://fpsmaster.top/forgot");
         }
-        if (!hasActiveModal() && !isLoggingIn && consumePressInBounds(registerX, linksY - 2f, FPSMaster.fontManager.s18.getStringWidth(register), 18f, 0) != null) {
+        if (!hasActiveModal() && !isLoggingIn && consumePressInBounds(registerX, belowY - 1f, registerW, 9f, 0) != null) {
             openLink("https://fpsmaster.top/login");
         }
-
-        // Adjust button Y based on whether error is shown
-        float buttonY = linksY + 30f;
-        String loginButtonText = isLoggingIn ? (isChinese() ? "登录中..." : "Logging in...") : key("oobe.login.submit");
-        loginButton.setText(loginButtonText).setPrimary(!loginSkipped).setEnabled(!isLoggingIn)
-                .renderInScreen(this, x, buttonY, 82f, 28f, mouseX, mouseY);
-        skipLoginButton.setText(key("oobe.login.skip")).setPrimary(loginSkipped).setEnabled(!isLoggingIn)
-                .renderInScreen(this, x + 92f, buttonY, 82f, 28f, mouseX, mouseY);
     }
 
-    private void renderLoginWelcomeScreen(float x, float y, float width, int mouseX, int mouseY) {
-        // Calculate card height to fit within available space
-        float availableHeight = contentBottom() - y - footerHeight() - 70f;
-        float cardHeight = clamp(availableHeight, 220f, 320f);
-        float cardY = y + 60f;
+    private void renderLoginWelcome() {
+        float centerX = contentX + contentW / 2f;
+        float top = cardY + 40f;
 
-        // Adjust width for smaller screens
-        float actualWidth = compactLayout() ? clamp(width, 280f, 360f) : width;
+        float badge = 26f;
+        Rects.rounded(centerX - badge / 2f, top, badge, badge, 13, ClickGuiTheme.accentSoft().getRGB(), false);
+        Icons.draw("check", centerX - 6.5f, top + 6.5f, 13f, ClickGuiTheme.accentText().getRGB());
 
-        // Draw welcome card
-        drawGlassCard(x, cardY, actualWidth, cardHeight, 24f,
-                new Color(255, 255, 255, 248),
-                new Color(218, 226, 243, 180));
-
-        float centerX = x + actualWidth / 2f;
-
-        // Success icon/checkmark - scale with card size
-        float checkSize = clamp(cardHeight * 0.15f, 36f, 48f);
-        float checkX = centerX - checkSize / 2f;
-        float checkY = cardY + clamp(cardHeight * 0.1f, 24f, 32f);
-        Rects.rounded(Math.round(checkX), Math.round(checkY), Math.round(checkSize), Math.round(checkSize), 24,
-                new Color(104, 117, 247, 200).getRGB());
-        float checkFontSize = clamp(cardHeight * 0.11f, 28f, 36f);
-        drawCenteredStringScaled("✓", checkX + checkSize / 2f, checkY + checkSize / 2f, checkFontSize,
-                Color.WHITE.getRGB());
-
-        // Welcome title - responsive font size
-        float titleY = checkY + checkSize + clamp(cardHeight * 0.18f, 20f, 28f);
-        String welcomeTitle = isChinese() ? "登录成功" : "Login Successful";
-        if (actualWidth < 320f) {
-            FPSMaster.fontManager.s24.drawCenteredString(welcomeTitle, centerX, titleY - 8f,
-                    new Color(27, 35, 48).getRGB());
-        } else {
-            FPSMaster.fontManager.s28.drawCenteredString(welcomeTitle, centerX, titleY - 10f,
-                    new Color(27, 35, 48).getRGB());
-        }
-
-        // Username
-        float userY = titleY + clamp(cardHeight * 0.12f, 26f, 34f);
+        UiChrome.boldCentered(FPSMaster.fontManager.getFont(18), isChinese() ? "登录成功" : "Login Successful",
+                centerX, top + badge + 10f, ClickGuiTheme.textPrimary().getRGB());
         String welcomeUserText = isChinese()
                 ? "欢迎回来, " + welcomeUsername + "!"
                 : "Welcome back, " + welcomeUsername + "!";
-        FPSMaster.fontManager.s18.drawCenteredString(welcomeUserText, centerX, userY,
-                new Color(82, 100, 142).getRGB());
+        FPSMaster.fontManager.getFont(12).drawCenteredString(welcomeUserText, centerX, top + badge + 24f,
+                ClickGuiTheme.textSecondary().getRGB());
 
-        // User level info (if available)
-        float levelY = userY + 22f;
+        float infoY = top + badge + 36f;
         if (welcomeUserLevel > 0) {
-            String levelText = isChinese()
-                    ? "等级: " + welcomeUserLevel
-                    : "Level: " + welcomeUserLevel;
-            FPSMaster.fontManager.s16.drawCenteredString(levelText, centerX, levelY,
-                    new Color(134, 142, 156).getRGB());
+            FPSMaster.fontManager.getFont(11).drawCenteredString((isChinese() ? "等级: " : "Level: ") + welcomeUserLevel,
+                    centerX, infoY, ClickGuiTheme.textDisabled().getRGB());
+            infoY += 10f;
         }
-
-        // Divider
-        float dividerY = levelY + (welcomeUserLevel > 0 ? 28f : 24f);
-        Rects.fill(x + 40f, dividerY, actualWidth - 80f, 1f, new Color(229, 235, 247, 180).getRGB());
-
-        // Info text - positioned to avoid overlap with footer
-        float infoY = dividerY + 16f;
+        UiChrome.hairlineH(contentX + 20f, infoY + 4f, contentW - 40f);
         String infoText = isChinese()
                 ? "您现在可以继续完成客户端配置"
                 : "You can continue with the client setup";
-        FPSMaster.fontManager.s16.drawCenteredString(infoText, centerX, infoY,
-                new Color(134, 142, 156).getRGB());
-
-        // Note: User clicks the "Next" button in the footer to continue
-    }
-
-    private void drawCenteredStringScaled(String text, float x, float y, float fontSize, int color) {
-        // Draw centered text with specific font size
-        if (fontSize >= 36f) {
-            FPSMaster.fontManager.s36.drawCenteredString(text, x, y - 12f, color);
-        } else if (fontSize >= 28f) {
-            FPSMaster.fontManager.s28.drawCenteredString(text, x, y - 10f, color);
-        } else if (fontSize >= 24f) {
-            FPSMaster.fontManager.s24.drawCenteredString(text, x, y - 8f, color);
-        } else {
-            FPSMaster.fontManager.s18.drawCenteredString(text, x, y - 5f, color);
-        }
+        FPSMaster.fontManager.getFont(11).drawCenteredString(infoText, centerX, infoY + 10f,
+                ClickGuiTheme.textDisabled().getRGB());
     }
 
     private void performLogin() {
@@ -712,104 +730,93 @@ public class OobeScreen extends ScaledGuiScreen {
         });
     }
 
-    private void renderOptionsPage() {
-        float mainWidth = clamp(contentWidth() * 0.86f, 300f, contentWidth());
-        float x = centeredColumnX(mainWidth);
-        float y = contentTop() - 8f;
-        renderStepCounter(x, y - 8f);
-        drawResponsiveTitle(key("oobe.options.title"), x, y + 20f);
-        drawBodyText(key("oobe.options.desc"), x, y + 66f, mainWidth);
+    private void renderOptionsPage(int mouseX, int mouseY) {
+        float bodyY = renderPageHeader(key("oobe.options.title"), key("oobe.options.desc"));
+        float rowH = 19f;
+        boolean modal = hasActiveModal();
 
-        float cardY = y + 106f;
-        float gap = 16f;
-        float cardWidth = (mainWidth - gap) / 2f;
-        float cardHeight = clamp(cardWidth * 0.55f, 160f, 200f);
-        renderOptionInfoCard(x, cardY, cardWidth, cardHeight, antiCheatEnabled,
-                key("oobe.options.anticheat"),
-                isChinese()
-                        ? "FPSMaster AntiCheat 帮助您在支持的服务器上获取受信任标识，避免遭受无意义的质疑；开启 FPSMaster AntiCheat 后，您的数据才能计入社区排行榜。如果您无需这两项功能，您可以选择不开启。"
-                        : "FPSMaster AntiCheat helps you obtain a trusted mark on supported servers and reduces unnecessary suspicion. Only when it is enabled can your data be counted in community leaderboards.");
-        renderOptionInfoCard(x + cardWidth + gap, cardY, cardWidth, cardHeight, anonymousDataEnabled,
-                key("oobe.options.anonymous"),
-                isChinese()
-                        ? "收集匿名信息功能不会上传任何您的敏感信息，您的玩家名、账号凭证、发送的消息等都不会被上传。我们收集的信息主要包括：设备配置、您在公开服务器上的部分游玩行为轨迹。这将用于更好地了解客户端的使用情况，帮助我们改善客户端服务。"
-                        : "Anonymous data collection never uploads sensitive information such as your player name, account credentials or chat messages. We only collect device profile and limited gameplay behavior on public servers to help improve the client.");
-
-        if (consumePressInBounds(x, cardY, cardWidth, cardHeight, 0) != null) {
+        float y = bodyY + 2f;
+        renderSettingRow(contentX, y, key("oobe.options.anticheat"), key("oobe.options.anticheat.sub"));
+        UiChrome.drawSwitch(contentX + contentW - UiChrome.SWITCH_W, y + (rowH - UiChrome.SWITCH_H) / 2f,
+                antiCheatEnabled, antiCheatSwitchAnim);
+        if (!modal && consumePressInBounds(contentX, y, contentW, rowH, 0) != null) {
             antiCheatEnabled = !antiCheatEnabled;
         }
-        if (consumePressInBounds(x + cardWidth + gap, cardY, cardWidth, cardHeight, 0) != null) {
+        UiChrome.hairlineH(contentX, y + rowH + 1f, contentW);
+
+        float y2 = y + rowH + 4f;
+        renderSettingRow(contentX, y2, key("oobe.options.anonymous"), key("oobe.options.anonymous.sub"));
+        UiChrome.drawSwitch(contentX + contentW - UiChrome.SWITCH_W, y2 + (rowH - UiChrome.SWITCH_H) / 2f,
+                anonymousDataEnabled, anonymousSwitchAnim);
+        if (!modal && consumePressInBounds(contentX, y2, contentW, rowH, 0) != null) {
             anonymousDataEnabled = !anonymousDataEnabled;
         }
     }
 
-    private void renderGuideEntryPage() {
-        float mainWidth = clamp(contentWidth() * 0.48f, 280f, 520f);
-        float x = centeredColumnX(mainWidth);
-        float y = contentTop() + 2f;
-
-        renderStepCounter(x, y - 12f);
-        drawResponsiveTitle(key("oobe.guide.title"), x, y + 14f);
-        drawBodyText(key("oobe.guide.desc"), x, y + 60f, mainWidth);
-
-        float cardY = y + 92f;
-        renderChoiceCard(x, cardY, mainWidth, 40f, enterGuide, key("oobe.guide.enter"));
-        renderChoiceCard(x, cardY + 50f, mainWidth, 40f, !enterGuide, key("oobe.guide.skip"));
-
-        if (consumePressInBounds(x, cardY, mainWidth, 40f, 0) != null) {
+    private void renderGuideEntryPage(int mouseX, int mouseY) {
+        float bodyY = renderPageHeader(key("oobe.guide.title"), key("oobe.guide.desc"));
+        float gap = 6f;
+        float w = (contentW - gap) / 2f;
+        float h = 40f;
+        float y = bodyY + 2f;
+        boolean modal = hasActiveModal();
+        boolean enterHover = !modal && Hover.is(contentX, y, w, h, mouseX, mouseY);
+        boolean skipHover = !modal && Hover.is(contentX + w + gap, y, w, h, mouseX, mouseY);
+        renderChoiceCard(contentX, y, w, h, enterGuide, enterHover,
+                key("oobe.guide.result.enter"), key("oobe.guide.enter"));
+        renderChoiceCard(contentX + w + gap, y, w, h, !enterGuide, skipHover,
+                key("oobe.guide.result.skip"), key("oobe.guide.skip"));
+        if (!modal && consumePressInBounds(contentX, y, w, h, 0) != null) {
             enterGuide = true;
         }
-        if (consumePressInBounds(x, cardY + 50f, mainWidth, 40f, 0) != null) {
+        if (!modal && consumePressInBounds(contentX + w + gap, y, w, h, 0) != null) {
             enterGuide = false;
         }
     }
 
-    private void renderQaPage() {
-        float cardWidth = clamp(contentWidth() * 0.52f, 300f, 620f);
-        float x = centeredColumnX(cardWidth);
-        float y = contentTop() - 2f;
-
+    private void renderQaPage(int mouseX, int mouseY) {
+        float bodyY = renderPageHeader(key("oobe.qa.title"), key("oobe.qa.desc"));
         String[][] questions = new String[][]{
                 {key("oobe.qa.1.question"), key("oobe.qa.1.a"), key("oobe.qa.1.b"), key("oobe.qa.1.c")},
                 {key("oobe.qa.2.question"), key("oobe.qa.2.a"), key("oobe.qa.2.b"), key("oobe.qa.2.c")},
                 {key("oobe.qa.3.question"), key("oobe.qa.3.a"), key("oobe.qa.3.b"), key("oobe.qa.3.c")}
         };
 
-        renderStepCounter(x, y - 12f);
-        drawResponsiveTitle(key("oobe.qa.title"), x, y + 14f);
-        drawBodyText(key("oobe.qa.desc"), x, y + 60f, cardWidth);
+        FPSMaster.fontManager.getFont(11).drawString((qaStep + 1) + " / " + questions.length,
+                contentX, bodyY, ClickGuiTheme.textDisabled().getRGB());
 
-        float cardY = y + 90f;
-        float qaHeight = clamp(cardWidth * 0.48f, 210f, 280f);
-        drawGlassCard(x, cardY, cardWidth, qaHeight, 22f, new Color(255, 255, 255, 232), new Color(229, 235, 247, 210));
-        FPSMaster.fontManager.s16.drawString((qaStep + 1) + " / " + questions.length, x + 18f, cardY + 16f, mutedText().getRGB());
-        drawPanelTitle(questions[qaStep][0], x + 18f, cardY + 44f);
-
-        // Add back button for previous question
+        // Back to previous question
         if (qaStep > 0) {
             String backLabel = isChinese() ? "← 上一题" : "← Back";
-            float backX = x + cardWidth - FPSMaster.fontManager.s18.getStringWidth(backLabel) - 20f;
-            float backY = cardY + 16f;
-            boolean backHovered = Hover.is(backX - 8f, backY - 2f, FPSMaster.fontManager.s18.getStringWidth(backLabel) + 16f, 20f, getMouseX(), getMouseY());
-            FPSMaster.fontManager.s18.drawString(backLabel, backX, backY,
-                    backHovered ? new Color(104, 117, 247).getRGB() : accentText().getRGB());
-            if (backHovered && !hasActiveModal() && consumePressInBounds(backX - 8f, backY - 2f, FPSMaster.fontManager.s18.getStringWidth(backLabel) + 16f, 20f, 0) != null) {
+            UFontRenderer backFont = FPSMaster.fontManager.getFont(11);
+            float backW = backFont.getStringWidth(backLabel);
+            float backX = contentX + contentW - backW;
+            boolean backHovered = Hover.is(backX - 4f, bodyY - 2f, backW + 8f, 10f, getMouseX(), getMouseY());
+            backFont.drawString(backLabel, backX, bodyY,
+                    (backHovered ? ClickGuiTheme.accent() : ClickGuiTheme.accentText()).getRGB());
+            if (backHovered && !hasActiveModal() && consumePressInBounds(backX - 4f, bodyY - 2f, backW + 8f, 10f, 0) != null) {
                 qaStep--;
                 // Clear the answer for the current step when going back
                 qaAnswers[qaStep + 1] = -1;
             }
         }
 
+        float qY = bodyY + 10f;
+        UiChrome.boldString(FPSMaster.fontManager.getFont(15), questions[qaStep][0], contentX, qY,
+                ClickGuiTheme.textPrimary().getRGB());
+
+        float optTop = qY + 14f;
         if (qaStep == 1) {
-            renderBackgroundPreviewChoices(x + 18f, cardY + 76f, cardWidth - 36f, questions[qaStep]);
+            renderBackgroundPreviewChoices(contentX, optTop, contentW, questions[qaStep], mouseX, mouseY);
         } else {
             for (int i = 1; i <= 3; i++) {
-                float optionY = cardY + 76f + (i - 1) * 36f;
+                float optionY = optTop + (i - 1) * 23f;
                 boolean selected = qaAnswers[qaStep] == i - 1;
-                boolean hovered = Hover.is(x + 18f, optionY, cardWidth - 36f, 30f, getMouseX(), getMouseY());
+                boolean hovered = Hover.is(contentX, optionY, contentW, 19f, getMouseX(), getMouseY());
                 qaOptionHover[i - 1] = (float) AnimMath.base(qaOptionHover[i - 1], hovered ? 1.0 : 0.0, 0.22);
-                renderQaOption(x + 18f, optionY, cardWidth - 36f, 30f, selected, hovered, qaOptionHover[i - 1], qaOptionPress[i - 1], questions[qaStep][i]);
-                if (!hasActiveModal() && consumePressInBounds(x + 18f, optionY, cardWidth - 36f, 30f, 0) != null) {
+                renderQaOption(contentX, optionY, contentW, 19f, selected, hovered, qaOptionPress[i - 1],
+                        questions[qaStep][i], 9f);
+                if (!hasActiveModal() && consumePressInBounds(contentX, optionY, contentW, 19f, 0) != null) {
                     qaOptionPress[i - 1] = 1.0f;
                     qaAnswers[qaStep] = i - 1;
                     applyQaAnswer();
@@ -819,34 +826,92 @@ public class OobeScreen extends ScaledGuiScreen {
                 }
             }
         }
-
     }
 
-    private void renderFooter(int mouseX, int mouseY) {
-        float barY = guiHeight - footerHeight();
-        Rects.fill(0f, barY, guiWidth, 1f, new Color(226, 232, 246, 112));
-        Rects.fill(0f, barY, guiWidth, footerHeight(), new Color(255, 255, 255, 76));
+    private void renderQaOption(float x, float y, float width, float height, boolean selected, boolean hovered,
+                                float pressAnim, String label, float textIndent) {
+        float inset = pressAnim * 0.8f;
+        float drawX = x + inset;
+        float drawY = y + inset;
+        float drawWidth = width - inset * 2f;
+        float drawHeight = height - inset * 2f;
+        if (selected) {
+            UiChrome.selectedSurface(drawX, drawY, drawWidth, drawHeight, UiChrome.CARD_RADIUS);
+        } else {
+            Color fill = hovered ? ClickGuiTheme.layerHover() : ClickGuiTheme.layer();
+            Rects.rounded(drawX - 0.5f, drawY - 0.5f, drawWidth + 1f, drawHeight + 1f, UiChrome.CARD_RADIUS + 1,
+                    ClickGuiTheme.stroke().getRGB(), false);
+            Rects.rounded(drawX, drawY, drawWidth, drawHeight, UiChrome.CARD_RADIUS, fill.getRGB(), false);
+        }
+        FPSMaster.fontManager.getFont(13).drawString(label, drawX + textIndent, drawY + drawHeight / 2f - 3.25f,
+                (selected ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB());
+    }
 
-        float progressX = pagePadding();
-        float progressY = barY + (footerHeight() - 5f) / 2f;
-        FPSMaster.fontManager.s14.drawString((page + 1) + " / " + PAGE_COUNT, progressX, progressY - 1f, new Color(110, 119, 136, 178).getRGB());
-        float dotsX = progressX + 44f;
-        for (int i = 0; i < PAGE_COUNT; i++) {
-            Color color = i == page
-                    ? new Color(104, 117, 247, 255)
-                    : (i < page ? new Color(104, 117, 247, 96) : new Color(27, 35, 48, 34));
-            Rects.rounded(Math.round(dotsX + i * 11f), Math.round(progressY), 5, 5, 3, color.getRGB());
+    private void renderBackgroundPreviewChoices(float x, float y, float width, String[] question, int mouseX, int mouseY) {
+        String[] previewIds = new String[]{"classic", "shader", "panorama_3"};
+        UFontRenderer tagFont = FPSMaster.fontManager.getFont(11);
+        for (int i = 0; i < 3; i++) {
+            float optionY = y + i * 23f;
+            boolean selected = qaAnswers[qaStep] == i;
+            boolean hovered = Hover.is(x, optionY, width, 19f, mouseX, mouseY);
+            qaOptionHover[i] = (float) AnimMath.base(qaOptionHover[i], hovered ? 1.0 : 0.0, 0.22);
+            renderQaOption(x, optionY, width, 19f, selected, hovered, qaOptionPress[i], question[i + 1], 27f);
+            renderMiniBackgroundPreview(x + 6f, optionY + 4.5f, 16f, 10f, previewIds[i]);
+            if ("shader".equals(previewIds[i]) && !isShaderBackgroundSupported()) {
+                String tag = isChinese() ? "当前设备不支持" : "Unsupported";
+                tagFont.drawString(tag, x + width - tagFont.getStringWidth(tag) - 9f, optionY + 7f,
+                        ClickGuiTheme.danger().getRGB());
+                continue;
+            }
+            if (!hasActiveModal() && consumePressInBounds(x, optionY, width, 19f, 0) != null) {
+                qaOptionPress[i] = 1.0f;
+                if ("shader".equals(previewIds[i]) && !ensureShaderBackgroundConfirmed()) {
+                    return;
+                }
+                qaAnswers[qaStep] = i;
+                applyQaAnswer();
+                if (qaStep < 2) {
+                    qaStep++;
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Footer: Back (ghost) + Continue/Finish (primary), right-aligned
+    // ------------------------------------------------------------------
+
+    private void renderFooter(int mouseX, int mouseY) {
+        UFontRenderer font = FPSMaster.fontManager.s14;
+        float btnH = 18f;
+        float btnY = cardY + cardH - 12f - btnH;
+        boolean allowNext = !hasActiveModal() && (page != 2 || tutorialPlaybackComplete);
+
+        String nextLabel = getNextLabel();
+        float nextW = Math.max(46f, font.getStringWidth(nextLabel) + UiChrome.BTN_PAD_X * 2f);
+        float nextX = cardX + cardW - 12f - nextW;
+        if (allowNext) {
+            if (UiChrome.buttonClicked(this, nextX, btnY, nextW, btnH, null, nextLabel,
+                    UiChrome.Style.PRIMARY, mouseX, mouseY)) {
+                onNext();
+            }
+        } else {
+            Rects.rounded(nextX, btnY, nextW, btnH, UiChrome.CTL_RADIUS, ClickGuiTheme.layerActive().getRGB(), false);
+            font.drawCenteredString(nextLabel, nextX + nextW / 2f, btnY + btnH / 2f - 3.5f,
+                    ClickGuiTheme.textDisabled().getRGB());
         }
 
-        float nextW = 84f;
-        float backW = 84f;
-        float gap = 12f;
-        float nextX = guiWidth - pagePadding() - nextW;
-        float backX = nextX - gap - backW;
-        float buttonY = barY + (footerHeight() - 26f) / 2f;
-        boolean allowNext = !hasActiveModal() && (page != 2 || tutorialPlaybackComplete);
-        backButton.setText(key("oobe.back")).setEnabled(page > 0 && !hasActiveModal()).setPrimary(false).renderInScreen(this, backX, buttonY, backW, 26f, mouseX, mouseY);
-        nextButton.setText(getNextLabel()).setEnabled(allowNext).setPrimary(true).renderInScreen(this, nextX, buttonY, nextW, 26f, mouseX, mouseY);
+        if (page > 0 && !hasActiveModal()) {
+            String backLabel = key("oobe.back");
+            float backW = Math.max(46f, font.getStringWidth(backLabel) + UiChrome.BTN_PAD_X * 2f);
+            float backX = nextX - 6f - backW;
+            if (UiChrome.buttonClicked(this, backX, btnY, backW, btnH, null, backLabel,
+                    UiChrome.Style.GHOST, mouseX, mouseY)) {
+                page--;
+                pageMotion = 1f;
+                pageMotionDirection = -1;
+            }
+        }
     }
 
     private void onNext() {
@@ -1009,30 +1074,6 @@ public class OobeScreen extends ScaledGuiScreen {
         return GREETINGS[greetingIndex];
     }
 
-    private void renderAnimatedGreeting(float x, float y) {
-        float eased = easeOutCubic(greetingTransition);
-        int currentAlpha = Math.min(255, Math.max(0, Math.round(eased * 255f)));
-        Color currentColor = new Color(accentText().getRed(), accentText().getGreen(), accentText().getBlue(), currentAlpha);
-
-        // Both passes stop at four rather than zero: the renderer reads a colour with no alpha bits
-        // as opaque, the way vanilla's does, so anything below that comes out solid. The fade-out is
-        // the one that matters - it is cubic, so previousAlpha sits in that band for the last 30-odd
-        // frames of the half-second crossfade, and the outgoing greeting would hold full opacity
-        // there and then vanish. Neither pass has anything left to show by four.
-        if (greetingTransition < 1f && greetingPreviousText != null && !greetingPreviousText.isEmpty()) {
-            float previousProgress = 1f - eased;
-            int previousAlpha = Math.min(255, Math.max(0, Math.round(previousProgress * 255f)));
-            if (previousAlpha > 3) {
-                Color previousColor = new Color(accentText().getRed(), accentText().getGreen(), accentText().getBlue(), previousAlpha);
-                FPSMaster.fontManager.s18.drawString(greetingPreviousText, x, y - eased * 8f, previousColor.getRGB());
-            }
-        }
-
-        if (currentAlpha > 3) {
-            FPSMaster.fontManager.s18.drawString(greetingCurrentText, x, y + (1f - eased) * 8f, currentColor.getRGB());
-        }
-    }
-
     private void switchLanguage(int newLanguage) {
         if (languageValue == newLanguage) {
             return;
@@ -1049,131 +1090,9 @@ public class OobeScreen extends ScaledGuiScreen {
         return key("oobe.next");
     }
 
-    private void renderPill(float x, float y, float width, float height, boolean active, String label) {
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 18,
-                active ? new Color(104, 117, 247, 236) : new Color(255, 255, 255, 242));
-        FPSMaster.fontManager.s18.drawCenteredString(label, x + width / 2f, y + height / 2f - 5f,
-                active ? Color.WHITE.getRGB() : new Color(54, 65, 89).getRGB());
-    }
-
-    private void renderChip(float x, float y, float width, float height, boolean active, String label) {
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 17,
-                active ? new Color(104, 117, 247, 236) : new Color(255, 255, 255, 170));
-        FPSMaster.fontManager.s16.drawCenteredString(label, x + width / 2f, y + height / 2f - 4f,
-                active ? Color.WHITE.getRGB() : new Color(88, 97, 114).getRGB());
-    }
-
-    private void renderChoiceCard(float x, float y, float width, float height, boolean selected, String label) {
-        drawGlassCard(x, y, width, height, 18f,
-                selected ? new Color(118, 133, 255, 226) : new Color(255, 255, 255, 234),
-                selected ? new Color(164, 176, 255, 170) : new Color(229, 235, 247, 210));
-        FPSMaster.fontManager.s16.drawString(label, x + 18f, y + height / 2f - 5f,
-                selected ? Color.WHITE.getRGB() : new Color(42, 52, 78).getRGB());
-    }
-
-    private void renderOptionInfoCard(float x, float y, float width, float height, boolean enabled, String title, String description) {
-        boolean hovered = Hover.is(x, y, width, height, getMouseX(), getMouseY());
-        drawGlassCard(x, y, width, height, 20f,
-                new Color(255, 255, 255, hovered ? 242 : 236),
-                hovered ? new Color(212, 221, 242, 224) : new Color(229, 235, 247, 210));
-        FPSMaster.fontManager.s18.drawString(title, x + 18f, y + 18f, panelTitleText().getRGB());
-        drawMultilineBodyText(description, x + 18f, y + 46f, width - 92f, 7);
-        renderSmallSwitch(x + width - 52f, y + 18f, enabled, hovered);
-    }
-
-    private void renderSmallSwitch(float x, float y, boolean enabled, boolean hovered) {
-        Rects.rounded(Math.round(x), Math.round(y), 34, 18, 9,
-                enabled
-                        ? new Color(104, 117, 247, hovered ? 246 : 236)
-                        : new Color(214, 220, 232, hovered ? 255 : 246));
-        Rects.rounded(Math.round(x + (enabled ? 17f : 2f)), Math.round(y + 2f), 14, 14, 7, Color.WHITE);
-    }
-
-    private void renderQaOption(float x, float y, float width, float height, boolean selected, boolean hovered, float hoverAnim, float pressAnim, String label) {
-        float inset = pressAnim * 1.2f;
-        float drawX = x + inset;
-        float drawY = y + inset;
-        float drawWidth = width - inset * 2f;
-        float drawHeight = height - inset * 2f;
-
-        // Default state: transparent/gray, Hovered: gray semi-transparent, Selected: blue
-        Color fill;
-        Color border;
-
-        if (selected) {
-            // Selected: blue fill and border
-            fill = new Color(122, 139, 255, 220);
-            border = new Color(164, 176, 255, 170);
-        } else if (hovered) {
-            // Hovered but not selected: gray semi-transparent fill and border
-            int grayAlpha = (int) (180 + hoverAnim * 75);  // 180 -> 255
-            fill = new Color(240, 242, 248, grayAlpha);
-            border = new Color(200, 205, 220, (int) (200 + hoverAnim * 55));
-        } else {
-            // Default: no visible border, very light fill
-            fill = new Color(247, 249, 255, 246);
-            border = new Color(229, 235, 247, 180);
-        }
-
-        // Draw hover rectangle
-        Rects.rounded(Math.round(drawX), Math.round(drawY), Math.round(drawWidth), Math.round(drawHeight), 18, fill.getRGB());
-        Rects.roundedBorder(Math.round(drawX), Math.round(drawY), Math.round(drawWidth), Math.round(drawHeight), 18, 1.5f, border.getRGB(), border.getRGB());
-        FPSMaster.fontManager.s18.drawString(label, drawX + 14f, drawY + drawHeight / 2f - 5f - pressAnim * 0.6f,
-                selected ? Color.WHITE.getRGB() : new Color(42, 52, 78).getRGB());
-    }
-
-    private void drawPreviewSurface(float x, float y, float width, float height) {
-        drawGlassCard(x, y, width, height, 18f, new Color(24, 35, 59, 236), new Color(255, 255, 255, 56));
-        Images.draw(PREVIEW_IMAGE, x, y, width, height, -1);
-        Rects.fill(x, y, width, height, new Color(8, 12, 20, 72));
-        Rects.fill(x, y + height * 0.58f, width, height * 0.42f, new Color(10, 14, 24, 64));
-        float previewScale = Math.min(width / 220f, height / 160f);
-        renderKeystrokesPreview(x + 18f * previewScale, y + 18f * previewScale, previewScale);
-    }
-
-    private void renderKeystrokesPreview(float x, float y, float previewScale) {
-        float scale = (0.72f + fixedScaleIndex * 0.07f) * previewScale;
-        float size = 24f * scale;
-        float gap = 5f * scale;
-        renderKey(x + size + gap, y, size, "W");
-        renderKey(x, y + size + gap, size, "A");
-        renderKey(x + size + gap, y + size + gap, size, "S");
-        renderKey(x + (size + gap) * 2f, y + size + gap, size, "D");
-    }
-
-    private void renderKey(float x, float y, float size, String text) {
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(size), Math.round(size), 9, new Color(18, 24, 36, 214));
-        Rects.roundedBorder(Math.round(x), Math.round(y), Math.round(size), Math.round(size), 9, 1f,
-                new Color(255, 255, 255, 58).getRGB(), new Color(255, 255, 255, 58).getRGB());
-        FPSMaster.fontManager.s18.drawCenteredString(text, x + size / 2f, y + size / 2f - 4f, Color.WHITE.getRGB());
-    }
-
-    private void renderBackgroundPreviewChoices(float x, float y, float width, String[] question) {
-        String[] previewIds = new String[]{"classic", "shader", "panorama_3"};
-        for (int i = 0; i < 3; i++) {
-            float optionY = y + i * 36f;
-            boolean selected = qaAnswers[qaStep] == i;
-            boolean hovered = Hover.is(x, optionY, width, 30f, getMouseX(), getMouseY());
-            qaOptionHover[i] = (float) AnimMath.base(qaOptionHover[i], hovered ? 1.0 : 0.0, 0.22);
-            renderQaOption(x, optionY, width, 30f, selected, hovered, qaOptionHover[i], qaOptionPress[i], question[i + 1]);
-            renderMiniBackgroundPreview(x + 8f, optionY + 4f, 42f, 20f, previewIds[i]);
-            if ("shader".equals(previewIds[i]) && !isShaderBackgroundSupported()) {
-                FPSMaster.fontManager.s16.drawString(isChinese() ? "当前设备不支持" : "Unsupported", x + width - 118f, optionY + 6f, new Color(167, 92, 92).getRGB());
-                continue;
-            }
-            if (!hasActiveModal() && consumePressInBounds(x, optionY, width, 30f, 0) != null) {
-                qaOptionPress[i] = 1.0f;
-                if ("shader".equals(previewIds[i]) && !ensureShaderBackgroundConfirmed()) {
-                    return;
-                }
-                qaAnswers[qaStep] = i;
-                applyQaAnswer();
-                if (qaStep < 2) {
-                    qaStep++;
-                }
-            }
-        }
-    }
+    // ------------------------------------------------------------------
+    // Shader background confirmation + benchmark state machine
+    // ------------------------------------------------------------------
 
     private boolean ensureShaderBackgroundConfirmed() {
         if (!isShaderBackgroundSupported()) {
@@ -1523,12 +1442,16 @@ public class OobeScreen extends ScaledGuiScreen {
                 || shaderBenchmarkResultDialogVisible;
     }
 
+    // ------------------------------------------------------------------
+    // Modal dialogs
+    // ------------------------------------------------------------------
+
     private void renderShaderDialogs(int mouseX, int mouseY) {
         if (!hasActiveModal()) {
             return;
         }
 
-        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(18, 22, 32, 92));
+        Rects.fill(0f, 0f, guiWidth, guiHeight, ClickGuiTheme.veil());
 
         // Render Benchmark Confirmation Dialog
         if (shaderBenchmarkConfirmDialogVisible) {
@@ -1561,48 +1484,52 @@ public class OobeScreen extends ScaledGuiScreen {
     }
 
     private void renderBenchmarkConfirmDialog(int mouseX, int mouseY) {
-        float width = clamp(guiWidth * 0.38f, 360f, 460f);
-        float height = 220f;
+        float width = clamp(guiWidth * 0.38f, 180f, 230f);
+        float height = 110f;
         float x = (guiWidth - width) / 2f;
         float y = (guiHeight - height) / 2f;
 
-        drawGlassCard(x, y, width, height, 22f, new Color(255, 255, 255, 244), new Color(229, 235, 247, 220));
+        UiChrome.panel(x, y, width, height);
 
         String title = isChinese() ? "GPU 性能测试" : "GPU Benchmark";
         String body = isChinese()
                 ? "Shader 背景需要较高的 GPU 性能。建议进行性能测试以确定您的设备是否适合使用。"
                 : "Shader backgrounds require higher GPU performance. We recommend running a benchmark to check if your device is suitable.";
 
-        drawPanelTitle(title, x + 20f, y + 24f);
-        drawBodyText(body, x + 20f, y + 64f, width - 40f);
+        UiChrome.boldString(FPSMaster.fontManager.getFont(15), title, x + 10f, y + 10f,
+                ClickGuiTheme.textPrimary().getRGB());
+        drawWrapped(FPSMaster.fontManager.getFont(11), body, x + 10f, y + 26f, width - 20f, 6.5f, 5,
+                ClickGuiTheme.textSecondary().getRGB());
 
-        float btnY = y + height - 54f;
+        float btnY = y + height - 25f;
         shaderBenchmarkConfirmYesButton.setText(isChinese() ? "运行测试" : "Run Test")
-                .renderInScreen(this, x + width - 274f, btnY, 88f, 30f, mouseX, mouseY);
+                .renderInScreen(this, x + width - 156f, btnY, 48f, 15f, mouseX, mouseY);
         shaderBenchmarkConfirmNoButton.setText(isChinese() ? "直接开启" : "Enable Anyway")
-                .renderInScreen(this, x + width - 180f, btnY, 88f, 30f, mouseX, mouseY);
+                .renderInScreen(this, x + width - 104f, btnY, 56f, 15f, mouseX, mouseY);
         shaderBenchmarkConfirmSkipButton.setText(isChinese() ? "取消" : "Cancel")
-                .renderInScreen(this, x + width - 86f, btnY, 76f, 30f, mouseX, mouseY);
+                .renderInScreen(this, x + width - 44f, btnY, 34f, 15f, mouseX, mouseY);
     }
 
     private void renderBenchmarkRunningDialog() {
-        float width = clamp(guiWidth * 0.32f, 300f, 400f);
-        float height = 180f;
+        float width = clamp(guiWidth * 0.32f, 150f, 200f);
+        float height = 90f;
         float x = (guiWidth - width) / 2f;
         float y = (guiHeight - height) / 2f;
 
-        drawGlassCard(x, y, width, height, 22f, new Color(255, 255, 255, 244), new Color(229, 235, 247, 220));
+        UiChrome.panel(x, y, width, height);
 
         String title = isChinese() ? "正在测试..." : "Running Benchmark...";
-        drawPanelTitle(title, x + 20f, y + 24f);
+        UiChrome.boldString(FPSMaster.fontManager.getFont(15), title, x + 10f, y + 10f,
+                ClickGuiTheme.textPrimary().getRGB());
 
-        float progressY = y + 70f;
-        float progressWidth = width - 40f;
-        float progressHeight = 8f;
-        float progressX = x + 20f;
+        float progressY = y + 38f;
+        float progressWidth = width - 20f;
+        float progressHeight = 4f;
+        float progressX = x + 10f;
 
         // Progress bar background
-        Rects.fill(progressX, progressY, progressWidth, progressHeight, new Color(40, 48, 64, 200));
+        Rects.rounded(progressX, progressY, progressWidth, progressHeight, 2,
+                ClickGuiTheme.layerActive().getRGB(), false);
 
         // Execute a small chunk of benchmark each frame (on main thread with OpenGL context)
         executeBenchmarkChunk();
@@ -1624,13 +1551,14 @@ public class OobeScreen extends ScaledGuiScreen {
         }
 
         // Add subtle animation to the progress bar
-        float animatedWidth = fillWidth + (float) Math.sin(System.currentTimeMillis() / 100.0) * 2f;
-        animatedWidth = Math.min(animatedWidth, progressWidth);
+        float animatedWidth = fillWidth + (float) Math.sin(System.currentTimeMillis() / 100.0) * 1f;
+        animatedWidth = Math.max(2f, Math.min(animatedWidth, progressWidth));
 
-        Rects.fill(progressX, progressY, animatedWidth, progressHeight, new Color(122, 139, 255, 255));
+        Rects.rounded(progressX, progressY, animatedWidth, progressHeight, 2,
+                ClickGuiTheme.accent().getRGB(), false);
 
-        float textWidth = FPSMaster.fontManager.s16.getStringWidth(statusText);
-        FPSMaster.fontManager.s16.drawString(statusText, progressX + (progressWidth - textWidth) / 2f, progressY + 20f, new Color(180, 188, 204).getRGB());
+        FPSMaster.fontManager.getFont(11).drawCenteredString(statusText, x + width / 2f, progressY + 10f,
+                ClickGuiTheme.textSecondary().getRGB());
     }
 
     /**
@@ -1696,16 +1624,16 @@ public class OobeScreen extends ScaledGuiScreen {
     }
 
     private void renderBenchmarkResultDialog(int mouseX, int mouseY) {
-        float width = clamp(guiWidth * 0.36f, 340f, 440f);
-        float height = 240f;
+        float width = clamp(guiWidth * 0.36f, 170f, 220f);
+        float height = 120f;
         float x = (guiWidth - width) / 2f;
         float y = (guiHeight - height) / 2f;
 
         // Determine if score is good enough (threshold: 25)
         boolean isGoodScore = shaderBenchmarkScore >= 25.0;
-        Color titleColor = isGoodScore ? new Color(100, 200, 140) : new Color(240, 160, 100);
+        Color titleColor = isGoodScore ? ClickGuiTheme.ok() : new Color(240, 160, 100);
 
-        drawGlassCard(x, y, width, height, 22f, new Color(255, 255, 255, 244), new Color(229, 235, 247, 220));
+        UiChrome.panel(x, y, width, height);
 
         String title = isChinese()
                 ? (isGoodScore ? "GPU 性能良好" : "GPU 性能较低")
@@ -1714,20 +1642,13 @@ public class OobeScreen extends ScaledGuiScreen {
                 ? ("测试分数: " + formatBenchmarkScore(shaderBenchmarkScore))
                 : ("Benchmark Score: " + formatBenchmarkScore(shaderBenchmarkScore));
 
-        // Draw title with custom color
-        if (contentWidth() < 520f) {
-            FPSMaster.fontManager.s24.drawString(title, x + 20f, y + 24f, titleColor.getRGB());
-        } else if (contentWidth() < 700f) {
-            FPSMaster.fontManager.s28.drawString(title, x + 20f, y + 24f, titleColor.getRGB());
-        } else {
-            FPSMaster.fontManager.s36.drawString(title, x + 20f, y + 24f, titleColor.getRGB());
-        }
+        UiChrome.boldString(FPSMaster.fontManager.getFont(15), title, x + 10f, y + 10f, titleColor.getRGB());
 
-        float scoreY = y + 64f;
         String formattedScore = String.format("%.1f", shaderBenchmarkScore);
-        float scoreTextWidth = FPSMaster.fontManager.s28.getStringWidth(formattedScore);
-        FPSMaster.fontManager.s28.drawString(formattedScore, x + (width - scoreTextWidth) / 2f, scoreY, titleColor.getRGB());
-        FPSMaster.fontManager.s16.drawString(scoreText, x + (width - FPSMaster.fontManager.s16.getStringWidth(scoreText)) / 2f, scoreY + 34f, new Color(160, 168, 184).getRGB());
+        UiChrome.boldCentered(FPSMaster.fontManager.getFont(18), formattedScore, x + width / 2f, y + 28f,
+                titleColor.getRGB());
+        FPSMaster.fontManager.getFont(11).drawCenteredString(scoreText, x + width / 2f, y + 42f,
+                ClickGuiTheme.textDisabled().getRGB());
 
         String body;
         if (isGoodScore) {
@@ -1740,60 +1661,65 @@ public class OobeScreen extends ScaledGuiScreen {
                     : "Your GPU may not handle shader backgrounds smoothly. You may experience stuttering. Continue anyway?";
         }
 
-        drawBodyText(body, x + 20f, y + 120f, width - 40f);
+        drawWrapped(FPSMaster.fontManager.getFont(11), body, x + 10f, y + 54f, width - 20f, 6.5f, 4,
+                ClickGuiTheme.textSecondary().getRGB());
 
-        float btnY = y + height - 54f;
+        float btnY = y + height - 25f;
         if (isGoodScore) {
             shaderBenchmarkResultOkButton.setText(isChinese() ? "开启 Shader 背景" : "Enable Shader")
-                    .renderInScreen(this, x + width - 126f, btnY, 106f, 30f, mouseX, mouseY);
+                    .renderInScreen(this, x + width - 72f, btnY, 62f, 15f, mouseX, mouseY);
         } else {
             shaderCancelButton.setText(isChinese() ? "取消" : "Cancel")
-                    .renderInScreen(this, x + width - 210f, btnY, 88f, 30f, mouseX, mouseY);
+                    .renderInScreen(this, x + width - 100f, btnY, 34f, 15f, mouseX, mouseY);
             shaderContinueButton.setText(isChinese() ? "仍要开启" : "Enable Anyway")
-                    .renderInScreen(this, x + width - 110f, btnY, 102f, 30f, mouseX, mouseY);
+                    .renderInScreen(this, x + width - 62f, btnY, 52f, 15f, mouseX, mouseY);
         }
     }
 
     private void renderUnsupportedDialog(int mouseX, int mouseY) {
-        float width = clamp(guiWidth * 0.32f, 300f, 400f);
-        float height = 170f;
+        float width = clamp(guiWidth * 0.32f, 150f, 200f);
+        float height = 80f;
         float x = (guiWidth - width) / 2f;
         float y = (guiHeight - height) / 2f;
 
-        drawGlassCard(x, y, width, height, 22f, new Color(255, 255, 255, 244), new Color(229, 235, 247, 220));
+        UiChrome.panel(x, y, width, height);
 
         String title = isChinese() ? "Shader 背景不可用" : "Shader background unsupported";
         String body = isChinese()
                 ? "检测到当前设备不支持 shader 背景，已禁用该选项。"
                 : "Your device does not support shader backgrounds. This option has been disabled.";
 
-        drawPanelTitle(title, x + 20f, y + 24f);
-        drawBodyText(body, x + 20f, y + 64f, width - 40f);
+        UiChrome.boldString(FPSMaster.fontManager.getFont(15), title, x + 10f, y + 10f,
+                ClickGuiTheme.textPrimary().getRGB());
+        drawWrapped(FPSMaster.fontManager.getFont(11), body, x + 10f, y + 26f, width - 20f, 6.5f, 3,
+                ClickGuiTheme.textSecondary().getRGB());
 
         shaderUnsupportedOkButton.setText(isChinese() ? "知道了" : "OK")
-                .renderInScreen(this, x + width - 108f, y + height - 44f, 88f, 30f, mouseX, mouseY);
+                .renderInScreen(this, x + width - 50f, y + height - 25f, 40f, 15f, mouseX, mouseY);
     }
 
     private void renderLowPerformanceDialog(int mouseX, int mouseY) {
-        float width = clamp(guiWidth * 0.34f, 320f, 420f);
-        float height = 176f;
+        float width = clamp(guiWidth * 0.34f, 160f, 210f);
+        float height = 88f;
         float x = (guiWidth - width) / 2f;
         float y = (guiHeight - height) / 2f;
 
-        drawGlassCard(x, y, width, height, 22f, new Color(255, 255, 255, 244), new Color(229, 235, 247, 220));
+        UiChrome.panel(x, y, width, height);
 
         String title = isChinese() ? "是否继续使用？" : "Continue anyway?";
         String body = isChinese()
-                ? "您的 GPU 性能较低，使用本背景样式可能引起卡顿，是否继续？\n基准分数: " + formatBenchmarkScore(shaderBenchmarkScore)
-                : "Your GPU appears to be low performance. This background may cause stutter.\nBenchmark score: " + formatBenchmarkScore(shaderBenchmarkScore);
+                ? "您的 GPU 性能较低，使用本背景样式可能引起卡顿，是否继续？基准分数: " + formatBenchmarkScore(shaderBenchmarkScore)
+                : "Your GPU appears to be low performance. This background may cause stutter. Benchmark score: " + formatBenchmarkScore(shaderBenchmarkScore);
 
-        drawPanelTitle(title, x + 20f, y + 24f);
-        drawBodyText(body, x + 20f, y + 60f, width - 40f);
+        UiChrome.boldString(FPSMaster.fontManager.getFont(15), title, x + 10f, y + 10f,
+                ClickGuiTheme.textPrimary().getRGB());
+        drawWrapped(FPSMaster.fontManager.getFont(11), body, x + 10f, y + 26f, width - 20f, 6.5f, 4,
+                ClickGuiTheme.textSecondary().getRGB());
 
         shaderCancelButton.setText(isChinese() ? "取消" : "Cancel")
-                .renderInScreen(this, x + width - 210f, y + height - 44f, 88f, 30f, mouseX, mouseY);
+                .renderInScreen(this, x + width - 96f, y + height - 25f, 34f, 15f, mouseX, mouseY);
         shaderContinueButton.setText(isChinese() ? "继续" : "Continue")
-                .renderInScreen(this, x + width - 110f, y + height - 44f, 88f, 30f, mouseX, mouseY);
+                .renderInScreen(this, x + width - 58f, y + height - 25f, 48f, 15f, mouseX, mouseY);
     }
 
     private String formatBenchmarkScore(double score) {
@@ -1801,72 +1727,25 @@ public class OobeScreen extends ScaledGuiScreen {
         return String.valueOf(integer / 10.0);
     }
 
-    private String resolveHoveredBackgroundPreview(int mouseX, int mouseY) {
-        if (page != 7 || qaStep != 1 || hasActiveModal()) {
-            return null;
-        }
-        float cardWidth = clamp(contentWidth() * 0.52f, 420f, 620f);
-        float x = centeredColumnX(cardWidth);
-        float y = contentTop() - 2f;
-        float cardY = y + 90f;
-        float optionsX = x + 18f;
-        float optionsY = cardY + 76f;
-        float optionsWidth = cardWidth - 36f;
-        String[] previewIds = new String[]{"classic", "shader", "panorama_3"};
-        for (int i = 0; i < previewIds.length; i++) {
-            float optionY = optionsY + i * 36f;
-            if (Hover.is(optionsX, optionY, optionsWidth, 30f, mouseX, mouseY)) {
-                return previewIds[i];
-            }
-        }
-        return null;
-    }
-
-    private void renderHoveredBackgroundPreview() {
-        if (hoveredBackgroundPreview == null) {
-            return;
-        }
-        if ("classic".equals(hoveredBackgroundPreview)) {
-            Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(28, 34, 45, 76));
-        } else if ("shader".equals(hoveredBackgroundPreview)) {
-            Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(28, 48, 92, 40));
-            Rects.fill(0f, 0f, guiWidth, guiHeight * 0.55f, new Color(76, 116, 196, 28));
-            Rects.fill(0f, guiHeight * 0.32f, guiWidth, guiHeight * 0.68f, new Color(38, 66, 138, 34));
-        } else if ("panorama_3".equals(hoveredBackgroundPreview)) {
-            Images.draw(PANORAMA_THREE, 0f, 0f, guiWidth, guiHeight, new Color(255, 255, 255, 110));
-            Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(22, 26, 34, 58));
-        }
-    }
-
     private void renderMiniBackgroundPreview(float x, float y, float width, float height, String id) {
         if ("classic".equals(id)) {
-            Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 8, new Color(43, 50, 65).getRGB());
+            Rects.rounded(x, y, width, height, 3, new Color(43, 50, 65).getRGB(), false);
             return;
         }
         if ("shader".equals(id)) {
-            Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 8, new Color(46, 71, 173).getRGB());
+            Rects.rounded(x, y, width, height, 3, new Color(46, 71, 173).getRGB(), false);
             Rects.fill(x, y, width, height, new Color(143, 160, 255, 72));
             return;
         }
         Images.draw(PANORAMA_THREE, x, y, width, height, -1);
     }
 
-    private void drawCoverCard(float x, float y, float width, float height) {
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 24, new Color(34, 55, 131, 242));
-        Rects.fill(x, y, width, height, new Color(108, 133, 248, 98));
-        Rects.fill(x, y + height * 0.44f, width, height * 0.56f, new Color(12, 18, 31, 28));
-        FPSMaster.fontManager.s18.drawString(pageStepLabel(), x + 18f, y + 19f, new Color(245, 248, 255, 220).getRGB());
-        FPSMaster.fontManager.s24.drawString(key("oobe.options.cover.title"), x + 18f, y + 52f, inverseTitleText().getRGB());
-        drawInverseBodyText(key("oobe.options.cover.desc"), x + 18f, y + 84f, width - 36f);
-    }
-
-    private void drawGlassCard(float x, float y, float width, float height, float radius, Color fill, Color border) {
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), Math.round(radius), fill.getRGB());
-        Rects.roundedBorder(Math.round(x), Math.round(y), Math.round(width), Math.round(height), Math.round(radius), 1f, border.getRGB(), border.getRGB());
-    }
+    // ------------------------------------------------------------------
+    // Text + widget helpers
+    // ------------------------------------------------------------------
 
     private void drawTextField(TextField field, float x, float y, float width, float height) {
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), 16, new Color(255, 255, 255, 244).getRGB());
+        UiChrome.inputBox(x, y, width, height, field.isFocused());
         field.drawTextBox(x, y, width, height);
         PointerEvent outsideClick = peekAnyPress();
         if (outsideClick != null && !Hover.is(x, y, width, height, outsideClick.x, outsideClick.y)) {
@@ -1878,54 +1757,22 @@ public class OobeScreen extends ScaledGuiScreen {
         }
     }
 
-    private void drawResponsiveTitle(String text, float x, float y) {
-        if (contentWidth() < 520f) {
-            FPSMaster.fontManager.s24.drawString(text, x, y, titleText().getRGB());
-        } else if (contentWidth() < 700f) {
-            FPSMaster.fontManager.s28.drawString(text, x, y, titleText().getRGB());
-        } else {
-            FPSMaster.fontManager.s36.drawString(text, x, y, titleText().getRGB());
-        }
-    }
-
-    private void drawPanelTitle(String text, float x, float y) {
-        if (contentWidth() < 520f) {
-            FPSMaster.fontManager.s24.drawString(text, x, y, panelTitleText().getRGB());
-        } else if (contentWidth() < 700f) {
-            FPSMaster.fontManager.s28.drawString(text, x, y, panelTitleText().getRGB());
-        } else {
-            FPSMaster.fontManager.s36.drawString(text, x, y, panelTitleText().getRGB());
-        }
-    }
-
-    private void drawBodyText(String text, float x, float y, float width) {
-        boolean useSmallFont = frameWidth() < 500f;
-        if (width < 300f) {
-            if (useSmallFont) {
-                FPSMaster.fontManager.s16.drawString(text, x, y, bodyText().getRGB());
-            } else {
-                FPSMaster.fontManager.s18.drawString(text, x, y, bodyText().getRGB());
-            }
-        } else {
-            if (useSmallFont) {
-                FPSMaster.fontManager.s16.drawString(text, x, y, new Color(92, 101, 118).getRGB());
-            } else {
-                FPSMaster.fontManager.s18.drawString(text, x, y, new Color(92, 101, 118).getRGB());
-            }
-        }
-    }
-
-    private void drawMultilineBodyText(String text, float x, float y, float width, int maxLines) {
+    /**
+     * Word/segment wrapped text. Splits after CJK punctuation and before spaces like the old
+     * body-text helper did. Returns the number of lines drawn (at most {@code maxLines}).
+     */
+    private int drawWrapped(UFontRenderer font, String text, float x, float y, float width, float lineHeight,
+                            int maxLines, int color) {
         if (text == null || text.isEmpty()) {
-            return;
+            return 0;
         }
-        String[] segments = text.split("(?<=[，。：；！？ ])|(?= )");
+        String[] segments = text.split("(?<=[，。：；！？、 ])|(?= )");
         StringBuilder line = new StringBuilder();
         int lineIndex = 0;
         for (int i = 0; i < segments.length && lineIndex < maxLines; i++) {
             String candidate = line.toString() + segments[i];
-            if (FPSMaster.fontManager.s16.getStringWidth(candidate) > width && line.length() > 0) {
-                FPSMaster.fontManager.s16.drawString(line.toString(), x, y + lineIndex * 16f, new Color(92, 101, 118).getRGB());
+            if (font.getStringWidth(candidate) > width && line.length() > 0) {
+                font.drawString(line.toString(), x, y + lineIndex * lineHeight, color);
                 line = new StringBuilder(segments[i]);
                 lineIndex++;
             } else {
@@ -1933,46 +1780,10 @@ public class OobeScreen extends ScaledGuiScreen {
             }
         }
         if (lineIndex < maxLines && line.length() > 0) {
-            FPSMaster.fontManager.s16.drawString(line.toString(), x, y + lineIndex * 16f, new Color(92, 101, 118).getRGB());
+            font.drawString(line.toString(), x, y + lineIndex * lineHeight, color);
+            lineIndex++;
         }
-    }
-
-    private void drawMultilineBodyTextWithAlpha(String text, float x, float y, float width, int maxLines, int alpha) {
-        if (text == null || text.isEmpty()) {
-            return;
-        }
-        String[] words = text.split(" ");
-        StringBuilder line = new StringBuilder();
-        int lineIndex = 0;
-        for (int i = 0; i < words.length && lineIndex < maxLines; i++) {
-            String candidate = line.length() == 0 ? words[i] : line + " " + words[i];
-            if (FPSMaster.fontManager.s16.getStringWidth(candidate) > width && line.length() > 0) {
-                FPSMaster.fontManager.s16.drawString(line.toString(), x, y + lineIndex * 16f, new Color(92, 101, 118, alpha).getRGB());
-                line = new StringBuilder(words[i]);
-                lineIndex++;
-            } else {
-                line = new StringBuilder(candidate);
-            }
-        }
-        if (lineIndex < maxLines && line.length() > 0) {
-            FPSMaster.fontManager.s16.drawString(line.toString(), x, y + lineIndex * 16f, new Color(92, 101, 118, alpha).getRGB());
-        }
-    }
-
-    private void drawInverseBodyText(String text, float x, float y, float width) {
-        if (width < 280f) {
-            FPSMaster.fontManager.s18.drawString(text, x, y, inverseBodyText().getRGB());
-        } else {
-            FPSMaster.fontManager.s18.drawString(text, x, y, new Color(245, 248, 255, 224).getRGB());
-        }
-    }
-
-    private void renderStepCounter(float x, float y) {
-        FPSMaster.fontManager.s16.drawString(pageStepLabel(), x, y, mutedText().getRGB());
-    }
-
-    private float centeredColumnX(float width) {
-        return (guiWidth - width) / 2f;
+        return lineIndex;
     }
 
     private void updateTutorialAutoplay() {
@@ -2143,150 +1954,6 @@ public class OobeScreen extends ScaledGuiScreen {
 
     private boolean isChinese() {
         return languageValue == 1;
-    }
-
-    private float frameLeft() {
-        return 12f;
-    }
-
-    private float frameTop() {
-        return 12f;
-    }
-
-    private float frameWidth() {
-        return guiWidth - 24f;
-    }
-
-    private float frameHeight() {
-        return guiHeight - 24f;
-    }
-
-    private float frameRight() {
-        return frameLeft() + frameWidth();
-    }
-
-    private float frameBottom() {
-        return frameTop() + frameHeight();
-    }
-
-    private float topBarHeight() {
-        return 0f;
-    }
-
-    private float footerHeight() {
-        return 38f;
-    }
-
-    private float pagePadding() {
-        float width = frameWidth();
-        if (width < 400f) {
-            return clamp(width * 0.035f, 12f, 18f);
-        } else if (width < 600f) {
-            return clamp(width * 0.038f, 16f, 24f);
-        } else {
-            return clamp(width * 0.042f, 22f, 52f);
-        }
-    }
-
-    private float responsiveSpacing(float baseSpacing) {
-        float width = frameWidth();
-        if (width < 400f) {
-            return baseSpacing * 0.7f;
-        } else if (width < 600f) {
-            return baseSpacing * 0.85f;
-        } else {
-            return baseSpacing;
-        }
-    }
-
-    private float cardPadding() {
-        float width = frameWidth();
-        if (width < 400f) {
-            return 12f;
-        } else if (width < 600f) {
-            return 14f;
-        } else {
-            return 16f;
-        }
-    }
-
-    private float contentInsetX() {
-        return clamp(frameWidth() * 0.01f, 4f, 12f);
-    }
-
-    private float pageLeft() {
-        return frameLeft() + pagePadding();
-    }
-
-    private float pageRight() {
-        return frameRight() - pagePadding();
-    }
-
-    private float contentTop() {
-        float availableHeight = guiHeight - footerHeight();
-        if (availableHeight < 400f) {
-            return 20f;
-        } else if (availableHeight < 500f) {
-            return availableHeight * 0.12f;
-        } else {
-            return availableHeight * 0.22f;
-        }
-    }
-
-    private float contentBottom() {
-        return guiHeight - footerHeight() - 10f;
-    }
-
-    private float contentWidth() {
-        return pageRight() - pageLeft();
-    }
-
-    private float availableContentHeight() {
-        return contentBottom() - contentTop();
-    }
-
-    private float columnGap() {
-        return clamp(frameWidth() * 0.018f, 8f, 18f);
-    }
-
-    private boolean compactLayout() {
-        return frameWidth() < 720f;
-    }
-
-    private boolean isSplitStacked() {
-        return false;
-    }
-
-    private Color titleText() {
-        return new Color(27, 35, 48);
-    }
-
-    private Color bodyText() {
-        return new Color(110, 119, 136);
-    }
-
-    private Color mutedText() {
-        return new Color(110, 119, 136);
-    }
-
-    private Color panelTitleText() {
-        return new Color(24, 32, 54);
-    }
-
-    private Color accentText() {
-        return new Color(104, 117, 247);
-    }
-
-    private Color inverseTitleText() {
-        return new Color(245, 248, 255);
-    }
-
-    private Color inverseBodyText() {
-        return new Color(245, 248, 255, 220);
-    }
-
-    private Color inverseMutedText() {
-        return new Color(245, 248, 255, 190);
     }
 
     private float clamp(float value, float min, float max) {

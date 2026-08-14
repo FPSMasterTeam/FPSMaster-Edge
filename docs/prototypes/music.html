@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge 原型 — 音乐</title>
+<link rel="stylesheet" href="edge-ui.css">
+<style>
+  .wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .panel {
+    position: relative;
+    width: min(960px, calc(100vw - 48px));
+    height: min(580px, calc(100vh - 64px));
+    display: flex;
+    overflow: hidden;
+  }
+  .close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 5;
+  }
+
+  /* ============ 左: 正在播放 ============ */
+  .now {
+    width: 320px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 32px 28px;
+    gap: 0;
+    border-right: 1px solid var(--stroke);
+    background:
+      radial-gradient(340px 260px at 50% -10%, rgba(224, 96, 138, 0.16), transparent 70%),
+      rgba(0, 0, 0, 0.16);
+  }
+  .cover {
+    width: 190px;
+    height: 190px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #e0608a, #6d2044);
+    box-shadow: 0 18px 44px rgba(224, 96, 138, 0.25);
+  }
+  .now .title { margin-top: 22px; font: 700 17px/1.3 var(--font); text-align: center; }
+  .now .artist { margin-top: 4px; font: 400 12.5px/1.3 var(--font); color: var(--text-2); }
+
+  /* 歌词: 当前行高亮 */
+  .lyrics {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    text-align: center;
+    min-height: 64px;
+  }
+  .lyrics .l { font: 400 12px/1.4 var(--font); color: var(--text-3); transition: color 0.2s; }
+  .lyrics .l.on { font: 600 13.5px/1.4 var(--font); color: var(--text); }
+
+  .now .spacer { flex: 1; }
+
+  .progress-row { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  .progress-row .bar {
+    position: relative;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .progress-row .track { width: 100%; height: 4px; border-radius: 2px; background: var(--layer-active); overflow: hidden; }
+  .progress-row .fill { height: 100%; width: 38%; border-radius: 2px; background: var(--accent); }
+  .progress-row .thumb {
+    position: absolute;
+    left: 38%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .progress-row .bar:hover .thumb { opacity: 1; }
+  .progress-row .times {
+    display: flex;
+    justify-content: space-between;
+    font: 400 10.5px/1 var(--font);
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .controls {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+  .ctl {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s, color 0.12s;
+  }
+  .ctl svg.i { width: 17px; height: 17px; stroke-width: 1.8; }
+  .ctl:hover { background: var(--layer-hover); color: var(--text); }
+  .ctl.play {
+    width: 48px; height: 48px;
+    background: var(--accent);
+    color: #fff;
+    margin: 0 6px;
+  }
+  .ctl.play svg.i { width: 20px; height: 20px; }
+  .ctl.play:hover { background: var(--accent-hover); }
+  .vol-row {
+    margin-top: 16px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-3);
+  }
+  .vol-row svg.i { width: 15px; height: 15px; stroke-width: 1.8; }
+  .vol-row .slider { flex: 1; }
+
+  /* ============ 右: 浏览 ============ */
+  .browse { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .browse-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 22px 52px 0 28px;
+  }
+  .browse-head .hi .t { font: 700 17px/1.2 var(--font); }
+  .browse-head .hi .s { font: 400 11.5px/1.4 var(--font); color: var(--text-2); margin-top: 2px; }
+  .browse-head .account {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px 5px 6px;
+    border-radius: var(--r-pill);
+    background: var(--layer);
+    border: 1px solid var(--stroke);
+    cursor: pointer;
+    font: 500 12px/1 var(--font);
+  }
+  .browse-head .account:hover { background: var(--layer-hover); }
+  .browse-head .account .ava { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #d84343, #7c1b1b); }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 28px 4px;
+  }
+  .toolbar .search { width: 230px; margin-left: auto; }
+
+  .browse-body { flex: 1; min-height: 0; padding: 6px 20px 16px 28px; }
+
+  .sec-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 14px 0 10px;
+    font: 600 13.5px/1 var(--font);
+  }
+  .sec-title .n { font: 400 11.5px/1 var(--font); color: var(--text-3); }
+  .sec-title .all { margin-left: auto; font: 500 11.5px/1 var(--font); color: var(--accent-text); cursor: pointer; }
+
+  /* 歌单卡片 */
+  .pl-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .pl-card {
+    border-radius: var(--r-card);
+    background: var(--layer);
+    border: 1px solid transparent;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background 0.12s, transform 0.1s, border-color 0.12s;
+  }
+  .pl-card:hover { background: var(--layer-hover); transform: translateY(-2px); border-color: var(--stroke); }
+  .pl-card .art { height: 84px; position: relative; }
+  .pl-card .art .play-fab {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .pl-card .art .play-fab svg.i { width: 12px; height: 12px; }
+  .pl-card:hover .art .play-fab { opacity: 1; }
+  .pl-card .info { padding: 9px 11px 11px; }
+  .pl-card .n { font: 500 12.5px/1.3 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pl-card .c { font: 400 10.5px/1.3 var(--font); color: var(--text-3); margin-top: 2px; }
+
+  /* 曲目行 */
+  .track {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .track:hover { background: var(--layer); }
+  .track.playing { background: var(--accent-soft); }
+  .track .idx { width: 20px; text-align: right; font: 500 11.5px/1 var(--font); color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .track.playing .idx { color: var(--accent-text); }
+  .track .idx svg.i { width: 12px; height: 12px; margin-left: auto; }
+  .track .name { flex: 1; min-width: 0; font: 500 13px/1.3 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+  .track.playing .name { color: var(--accent-text); }
+  .track .artist { width: 130px; font: 400 11.5px/1 var(--font); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track .dur { width: 40px; text-align: right; font: 400 11.5px/1 var(--font); color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .vip {
+    height: 14px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: rgba(217, 164, 65, 0.18);
+    color: #d9a441;
+    font: 700 9px/14px var(--font);
+    flex: none;
+  }
+</style>
+</head>
+<body>
+<div class="mc-world"></div>
+
+<div class="wrap">
+  <div class="panel glass">
+    <button class="btn icon ghost close" title="关闭"><svg class="i"><use href="#i-x"/></svg></button>
+
+    <!-- 左: 正在播放 -->
+    <div class="now">
+      <div class="cover"></div>
+      <div class="title">富士山下</div>
+      <div class="artist">陈奕迅 · What's Going On…?</div>
+      <div class="lyrics">
+        <div class="l">谁都只得那双手 靠拥抱亦难任你拥有</div>
+        <div class="l on">要拥有必先懂失去怎接受</div>
+        <div class="l">曾沿着雪路浪游 为何为好事泪流</div>
+      </div>
+      <span class="spacer"></span>
+      <div class="progress-row">
+        <div class="bar">
+          <div class="track"><div class="fill"></div></div>
+          <div class="thumb"></div>
+        </div>
+        <div class="times"><span>1:38</span><span>4:19</span></div>
+      </div>
+      <div class="controls">
+        <button class="ctl" title="收藏"><svg class="i"><use href="#i-heart"/></svg></button>
+        <button class="ctl" title="上一首"><svg class="i"><use href="#i-skip-back"/></svg></button>
+        <button class="ctl play" title="暂停"><svg class="i"><use href="#i-pause"/></svg></button>
+        <button class="ctl" title="下一首"><svg class="i"><use href="#i-skip-fwd"/></svg></button>
+        <button class="ctl" title="歌词"><svg class="i"><use href="#i-lyrics"/></svg></button>
+      </div>
+      <div class="vol-row">
+        <svg class="i"><use href="#i-volume"/></svg>
+        <div class="slider" style="width:auto">
+          <div class="track" style="background:var(--layer-active)"><div class="fill" style="width:70%"></div></div>
+          <div class="thumb" style="left:70%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右: 浏览 -->
+    <div class="browse">
+      <div class="browse-head">
+        <div class="hi">
+          <div class="t">下午好，云村居民</div>
+          <div class="s">每日推荐已更新</div>
+        </div>
+        <span class="spacer"></span>
+        <div class="seg" id="srcs">
+          <span class="opt on">网易云</span><span class="opt">QQ 音乐</span>
+        </div>
+        <div class="account"><span class="ava"></span>云村居民</div>
+      </div>
+
+      <div class="toolbar">
+        <div class="seg" id="tabs">
+          <span class="opt on">发现</span><span class="opt">我的歌单</span><span class="opt">搜索</span>
+        </div>
+        <div class="search"><svg class="i"><use href="#i-search"/></svg><input placeholder="搜索歌曲、歌手、专辑…"></div>
+      </div>
+
+      <div class="browse-body scroll">
+        <div class="sec-title">推荐歌单 <span class="all">查看全部</span></div>
+        <div class="pl-row">
+          <div class="pl-card">
+            <div class="art" style="background:linear-gradient(135deg,#58a6d6,#1e3d5c)"><span class="play-fab"><svg class="i"><use href="#i-play"/></svg></span></div>
+            <div class="info"><div class="n">私人雷达</div><div class="c">30 首 · 每日更新</div></div>
+          </div>
+          <div class="pl-card">
+            <div class="art" style="background:linear-gradient(135deg,#8cc16a,#2c5522)"><span class="play-fab"><svg class="i"><use href="#i-play"/></svg></span></div>
+            <div class="info"><div class="n">粤语经典 · 岁月留声</div><div class="c">128 首</div></div>
+          </div>
+          <div class="pl-card">
+            <div class="art" style="background:linear-gradient(135deg,#9a6fd0,#3a2260)"><span class="play-fab"><svg class="i"><use href="#i-play"/></svg></span></div>
+            <div class="info"><div class="n">PvP 战斗歌单</div><div class="c">56 首</div></div>
+          </div>
+        </div>
+
+        <div class="sec-title">每日推荐 <span class="n">30 首</span>
+          <span class="all">播放全部</span>
+        </div>
+        <div class="tracks">
+          <div class="track playing">
+            <span class="idx"><svg class="i"><use href="#i-play"/></svg></span>
+            <span class="name">富士山下</span>
+            <span class="artist">陈奕迅</span>
+            <span class="dur">4:19</span>
+          </div>
+          <div class="track">
+            <span class="idx">2</span>
+            <span class="name">海阔天空 <span class="vip">VIP</span></span>
+            <span class="artist">Beyond</span>
+            <span class="dur">5:23</span>
+          </div>
+          <div class="track">
+            <span class="idx">3</span>
+            <span class="name">晴天</span>
+            <span class="artist">周杰伦</span>
+            <span class="dur">4:29</span>
+          </div>
+          <div class="track">
+            <span class="idx">4</span>
+            <span class="name">Viva La Vida</span>
+            <span class="artist">Coldplay</span>
+            <span class="dur">4:01</span>
+          </div>
+          <div class="track">
+            <span class="idx">5</span>
+            <span class="name">夜曲 <span class="vip">VIP</span></span>
+            <span class="artist">周杰伦</span>
+            <span class="dur">3:46</span>
+          </div>
+          <div class="track">
+            <span class="idx">6</span>
+            <span class="name">Counting Stars</span>
+            <span class="artist">OneRepublic</span>
+            <span class="dur">4:17</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script>
+['tabs','srcs'].forEach(id=>{
+  document.querySelectorAll('#'+id+' .opt').forEach(i=>i.onclick=()=>{
+    document.querySelectorAll('#'+id+' .opt').forEach(x=>x.classList.remove('on'));
+    i.classList.add('on');
+  });
+});
+</script>
+</body>
+</html>
