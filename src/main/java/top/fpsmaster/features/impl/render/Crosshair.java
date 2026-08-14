@@ -53,6 +53,9 @@ public class Crosshair extends Module {
 
     @Subscribe
     public void onRender(EventRender2D e) {
+        if (top.fpsmaster.replay.ReplayPlayer.instance().isActive()) {
+            return; // spectator view: the viewer's own HUD has no business over a recording
+        }
         ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
         float gapValue = gap.getValue().floatValue() + dyna;
         float lineWidth = width.getValue().floatValue();

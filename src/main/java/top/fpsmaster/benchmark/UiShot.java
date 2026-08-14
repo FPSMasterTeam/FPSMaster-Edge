@@ -119,6 +119,8 @@ public final class UiShot {
             mc.displayGuiScreen(new top.fpsmaster.ui.click.ConfigProfilesScreen(null));
         } else if ("bgselector".equals(screen)) {
             mc.displayGuiScreen(new top.fpsmaster.ui.screens.mainmenu.BackgroundSelector());
+        } else if ("current".equals(screen)) {
+            // capture whatever is on screen right now — playback overlays, in-world HUD, ...
         } else if ("mainmenu".equals(screen) || screen.isEmpty()) {
             mc.displayGuiScreen(new top.fpsmaster.ui.screens.mainmenu.MainMenu());
         } else {

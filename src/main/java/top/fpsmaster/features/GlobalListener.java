@@ -115,11 +115,18 @@ public class GlobalListener {
         float mouseY = scaledResolution.getScaledHeight() - (float) Mouse.getY() / scaledResolution.getScaleFactor();
 
         long started = HudBreakdown.enabled() ? System.nanoTime() : 0L;
+        // Watching a recording is the spectator's view, not the recorder's session: the client HUD
+        // (FPS, keystrokes, CPS, ...) would show the viewer's own numbers over someone else's game.
+        // Only the replay bar and notifications belong on screen during playback.
+        boolean replaying = ReplayPlayer.instance().isActive();
+
         // Size everything first: the blur mask and the anchor math below both read width/height, and
         // components only assign those while drawing.
-        FPSMaster.componentsManager.measureAll();
+        if (!replaying) {
+            FPSMaster.componentsManager.measureAll();
+        }
 
-        if (ClientSettings.blur.getValue()) {
+        if (!replaying && ClientSettings.blur.getValue()) {
             StencilUtil.initStencilToWrite();
             try {
                 EventDispatcher.dispatchEvent(new EventShader());
@@ -135,7 +142,9 @@ public class GlobalListener {
             }
         }
 
-        FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);
+        if (!replaying) {
+            FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);
+        }
         if (started != 0L) {
             HudBreakdown.record("~components total", System.nanoTime() - started);
             started = System.nanoTime();
