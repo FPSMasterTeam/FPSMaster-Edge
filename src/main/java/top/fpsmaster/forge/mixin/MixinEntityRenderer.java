@@ -75,6 +75,18 @@ public abstract class MixinEntityRenderer {
     @Shadow
     private float fovModifierHandPrev;
 
+    /**
+     * Mouse look while the director drives the camera: the keyframe track rewrites the rotation
+     * every tick, so player input would only fight it (visible as jitter). Swallow the deltas.
+     */
+    @Redirect(method = "updateCameraAndRender", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/entity/EntityPlayerSP;setAngles(FF)V"))
+    private void edge$directorMouseLook(net.minecraft.client.entity.EntityPlayerSP player, float yaw, float pitch) {
+        if (!top.fpsmaster.replay.director.DirectorCamera.isDrivingCamera()) {
+            player.setAngles(yaw, pitch);
+        }
+    }
+
     @Inject(method = "getFOVModifier", at = @At("HEAD"), cancellable = true)
     private void getFOVModifier(float partialTicks, boolean useFOVSetting, CallbackInfoReturnable<Float> cir) {
         // Director camera track drives FOV during replay preview/export; wins over everything.

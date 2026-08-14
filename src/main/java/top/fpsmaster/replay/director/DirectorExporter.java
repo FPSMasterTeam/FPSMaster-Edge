@@ -57,6 +57,7 @@ public final class DirectorExporter {
     private static int restoreWidth;
     private static int restoreHeight;
     private static boolean resized;
+    private static long exportStartNanos;
 
     private DirectorExporter() {
     }
@@ -186,6 +187,11 @@ public final class DirectorExporter {
 
         hudWasHidden = mc.gameSettings.hideGUI;
         mc.gameSettings.hideGUI = true;
+        // Any open screen (the workbench included) renders into the same framebuffer the capture
+        // reads — it would be baked into every exported frame.
+        if (mc.currentScreen != null) {
+            mc.displayGuiScreen(null);
+        }
         if (player.isPaused()) {
             player.togglePause();
         }
@@ -239,16 +245,33 @@ public final class DirectorExporter {
             return;
         }
         if (state == State.SEEKING) {
+            if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_ESCAPE)) {
+                cancel();
+                return;
+            }
             if (player.isSeeking()) {
                 return;
             }
             // Seek landed at (or before) the edit start; step the clock onto the exact frame grid.
             player.setExternalClock(true);
             stepTo(player, 0);
+            exportStartNanos = System.nanoTime();
             state = State.RUNNING;
             return; // this iteration renders frame 0; captured on the next
         }
         if (state == State.RUNNING) {
+            // ESC = cancel, Premiere-style. No screen is open during export, so poll directly.
+            if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_ESCAPE)) {
+                cancel();
+                return;
+            }
+            // A screen that opened mid-export (pause menu, disconnect, ...) would be baked into
+            // the frame the loop just rendered: close it and re-render this frame instead of
+            // capturing the contaminated one.
+            if (Minecraft.getMinecraft().currentScreen != null) {
+                Minecraft.getMinecraft().displayGuiScreen(null);
+                return;
+            }
             if (!capture()) {
                 return;
             }
@@ -345,6 +368,177 @@ public final class DirectorExporter {
             process.destroy();
             return false;
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Export presentation (window-side; never reaches the exported frames)
+    // ------------------------------------------------------------------
+
+    /**
+     * Paints the Premiere-style export screen straight into the window's backbuffer, with a small
+     * live preview of the frame the game just rendered offscreen. Returns false when no export is
+     * running, so the caller falls through to the normal frame blit.
+     */
+    public static boolean presentExportScreen(net.minecraft.client.shader.Framebuffer framebuffer) {
+        if (!isRunning()) {
+            return false;
+        }
+        int windowWidth = restoreWidth;
+        int windowHeight = restoreHeight;
+        if (windowWidth <= 0 || windowHeight <= 0) {
+            return false;
+        }
+        // Raw GL throughout: UiChrome/Rects/Images mix cached GlStateManager calls with raw
+        // glEnable/glDisable, so the caches cannot be trusted mid-pass. Truth is re-synced below.
+        GL11.glViewport(0, 0, windowWidth, windowHeight);
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthMask(false);
+        GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glLoadIdentity();
+        float logicalHeight = 400f;
+        float logicalWidth = windowWidth * logicalHeight / windowHeight;
+        GL11.glOrtho(0, logicalWidth, logicalHeight, 0, -1, 1);
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glLoadIdentity();
+        GL11.glClearColor(0.035f, 0.035f, 0.045f, 1f);
+        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+
+        drawExportUi(framebuffer, logicalWidth, logicalHeight);
+        maybeSavePresentShot(windowWidth, windowHeight);
+
+        // Leave GL exactly where vanilla framebufferRender would have: depth test off, depth
+        // writes on, alpha/blend off — and force each GlStateManager cache through a transition
+        // so cache and real GL agree again no matter what the UI helpers left behind.
+        net.minecraft.client.renderer.GlStateManager.enableDepth();
+        net.minecraft.client.renderer.GlStateManager.disableDepth();
+        net.minecraft.client.renderer.GlStateManager.depthMask(false);
+        net.minecraft.client.renderer.GlStateManager.depthMask(true);
+        net.minecraft.client.renderer.GlStateManager.enableAlpha();
+        net.minecraft.client.renderer.GlStateManager.disableAlpha();
+        net.minecraft.client.renderer.GlStateManager.enableBlend();
+        net.minecraft.client.renderer.GlStateManager.disableBlend();
+        net.minecraft.client.renderer.GlStateManager.enableTexture2D();
+        GL11.glColor4f(1f, 1f, 1f, 1f);
+        return true;
+    }
+
+    private static boolean presentShotSaved;
+
+    /**
+     * Debug capture of the presentation screen itself ({@code -Dedge.director.presentshot=<png>}).
+     * Reads the window backbuffer — a normal screenshot would show the offscreen export frame.
+     */
+    private static void maybeSavePresentShot(int windowWidth, int windowHeight) {
+        String path = System.getProperty("edge.director.presentshot");
+        if (path == null || presentShotSaved || frameIndex < totalFrames / 2) {
+            return;
+        }
+        presentShotSaved = true;
+        try {
+            java.nio.ByteBuffer pixels =
+                    org.lwjgl.BufferUtils.createByteBuffer(windowWidth * windowHeight * 4);
+            GL11.glReadBuffer(GL11.GL_BACK);
+            GL11.glReadPixels(0, 0, windowWidth, windowHeight,
+                    GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
+            java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(
+                    windowWidth, windowHeight, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            for (int y = 0; y < windowHeight; y++) {
+                int srcRow = (windowHeight - 1 - y) * windowWidth * 4;
+                for (int x = 0; x < windowWidth; x++) {
+                    int i = srcRow + x * 4;
+                    image.setRGB(x, y, ((pixels.get(i) & 0xFF) << 16)
+                            | ((pixels.get(i + 1) & 0xFF) << 8) | (pixels.get(i + 2) & 0xFF));
+                }
+            }
+            File out = new File(path);
+            javax.imageio.ImageIO.write(image, "png", out);
+            ClientLogger.info("director", "present shot -> " + out.getAbsolutePath());
+        } catch (Exception e) {
+            ClientLogger.error("director", "present shot failed: " + e);
+        }
+    }
+
+    private static void drawExportUi(net.minecraft.client.shader.Framebuffer framebuffer,
+                                     float logicalWidth, float logicalHeight) {
+        float centerX = logicalWidth / 2f;
+
+        // preview window, aspect of the export, capped in both directions
+        float previewH = 216f;
+        float previewW = previewH * width / (float) height;
+        float maxW = logicalWidth - 80f;
+        if (previewW > maxW) {
+            previewW = maxW;
+            previewH = previewW * height / (float) width;
+        }
+        float px = centerX - previewW / 2f;
+        float py = 40f;
+        top.fpsmaster.utils.render.draw.Rects.rounded(px - 1f, py - 1f, previewW + 2f, previewH + 2f, 4,
+                top.fpsmaster.ui.click.ClickGuiTheme.strokeStrong().getRGB(), false);
+        drawFramebufferQuad(framebuffer, px, py, previewW, previewH);
+
+        String title = FPSMaster.i18n.get("director.export.running")
+                + (outputFile == null ? "" : "  " + outputFile.getName());
+        top.fpsmaster.ui.click.UiChrome.boldCentered(FPSMaster.fontManager.s16, title,
+                centerX, py + previewH + 14f, top.fpsmaster.ui.click.ClickGuiTheme.textPrimary().getRGB());
+
+        // progress bar
+        float barW = Math.min(300f, logicalWidth * 0.6f);
+        float barX = centerX - barW / 2f;
+        float barY = py + previewH + 32f;
+        top.fpsmaster.utils.render.draw.Rects.rounded(barX, barY, barW, 4f, 2,
+                top.fpsmaster.ui.click.ClickGuiTheme.layerActive().getRGB(), false);
+        float p = progress();
+        if (p > 0f) {
+            top.fpsmaster.utils.render.draw.Rects.rounded(barX, barY, Math.max(2f, barW * p), 4f, 2,
+                    top.fpsmaster.ui.click.ClickGuiTheme.accent().getRGB(), false);
+        }
+
+        // stats: frames · percent · eta
+        String eta = "—";
+        if (frameIndex > 0 && exportStartNanos > 0) {
+            long elapsedMs = (System.nanoTime() - exportStartNanos) / 1_000_000L;
+            long remaining = elapsedMs * (totalFrames - frameIndex) / Math.max(1, frameIndex);
+            eta = top.fpsmaster.ui.screens.replay.ReplayScreen.formatDuration(remaining);
+        }
+        String stats = String.format(FPSMaster.i18n.get("director.export.stats"),
+                frameIndex, totalFrames, (int) (p * 100), eta);
+        FPSMaster.fontManager.getFont(12).drawCenteredString(stats, centerX, barY + 12f,
+                top.fpsmaster.ui.click.ClickGuiTheme.textSecondary().getRGB());
+
+        FPSMaster.fontManager.getFont(11).drawCenteredString(
+                FPSMaster.i18n.get("director.export.cancelhint"),
+                centerX, logicalHeight - 24f,
+                top.fpsmaster.ui.click.ClickGuiTheme.textDisabled().getRGB());
+    }
+
+    /** Blits the game FBO into a rect of the current ortho space, v-flipped to read upright. */
+    private static void drawFramebufferQuad(net.minecraft.client.shader.Framebuffer framebuffer,
+                                            float x, float y, float w, float h) {
+        framebuffer.bindFramebufferTexture();
+        // Raw state: the rounded-rect helper re-enabled depth test behind GlStateManager's back,
+        // and the FBO's alpha channel holds garbage that alpha test or blend would act on.
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthMask(false);
+        GL11.glDisable(GL11.GL_ALPHA_TEST);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glColor4f(1f, 1f, 1f, 1f);
+        float u = framebuffer.framebufferWidth / (float) framebuffer.framebufferTextureWidth;
+        float v = framebuffer.framebufferHeight / (float) framebuffer.framebufferTextureHeight;
+        GL11.glBegin(GL11.GL_QUADS);
+        GL11.glTexCoord2f(0f, v);
+        GL11.glVertex2f(x, y);
+        GL11.glTexCoord2f(0f, 0f);
+        GL11.glVertex2f(x, y + h);
+        GL11.glTexCoord2f(u, 0f);
+        GL11.glVertex2f(x + w, y + h);
+        GL11.glTexCoord2f(u, v);
+        GL11.glVertex2f(x + w, y);
+        GL11.glEnd();
+        framebuffer.unbindFramebufferTexture();
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
     }
 
     private static void drainStderr(final Process process) {

@@ -51,8 +51,7 @@ public final class DirectorPanel {
 
     public static void draw(ScaledGuiScreen screen, float guiWidth, float guiHeight, int mouseX, int mouseY) {
         if (DirectorExporter.isRunning()) {
-            drawExportOverlay(screen, guiWidth, guiHeight, mouseX, mouseY);
-            return;
+            return; // the exporter paints its own presentation straight to the window
         }
         if (!open) {
             return;
@@ -452,30 +451,6 @@ public final class DirectorPanel {
         }
         if (screen.consumePressOutside(x, y, w, h) != null) {
             exportDialogOpen = false;
-        }
-    }
-
-    private static void drawExportOverlay(ScaledGuiScreen screen, float guiWidth, float guiHeight,
-                                          int mouseX, int mouseY) {
-        float w = 190f;
-        float h = 64f;
-        float x = (guiWidth - w) / 2f;
-        float y = guiHeight - 12f - h;
-        UiChrome.panel(x, y, w, h);
-        UiChrome.boldString(FPSMaster.fontManager.s14, FPSMaster.i18n.get("director.export.running"),
-                x + 11f, y + 9f, ClickGuiTheme.textPrimary().getRGB());
-        FPSMaster.fontManager.getFont(11).drawString(DirectorExporter.progressText(),
-                x + 11f, y + 21f, ClickGuiTheme.textSecondary().getRGB());
-        float barY = y + 32f;
-        Rects.rounded(x + 11f, barY, w - 22f, 3f, 1, ClickGuiTheme.layerActive().getRGB(), false);
-        float p = DirectorExporter.progress();
-        if (p > 0f) {
-            Rects.rounded(x + 11f, barY, Math.max(2f, (w - 22f) * p), 3f, 1,
-                    ClickGuiTheme.accent().getRGB(), false);
-        }
-        if (UiChrome.buttonClicked(screen, x + w - 11f - 40f, y + h - 24f, 40f, 16f, null,
-                FPSMaster.i18n.get("common.cancel"), UiChrome.Style.GHOST, mouseX, mouseY)) {
-            DirectorExporter.cancel();
         }
     }
 

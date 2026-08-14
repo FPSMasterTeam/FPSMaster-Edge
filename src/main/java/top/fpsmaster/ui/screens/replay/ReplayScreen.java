@@ -504,7 +504,7 @@ public class ReplayScreen extends ScaledGuiScreen {
         this.statusColor = color;
     }
 
-    static String formatDuration(long millis) {
+    public static String formatDuration(long millis) {
         long totalSeconds = millis / 1000L;
         return String.format("%d:%02d", totalSeconds / 60L, totalSeconds % 60L);
     }

@@ -51,6 +51,18 @@ public final class DirectorCamera {
         return fovOverride;
     }
 
+    /**
+     * True while the track (or the exporter) owns the camera — mouse look must not fight it.
+     * The per-tick snap would win anyway, but the tug-of-war reads as jitter.
+     */
+    public static boolean isDrivingCamera() {
+        if (DirectorExporter.isRunning()) {
+            return true;
+        }
+        ReplayPlayer player = ReplayPlayer.instance();
+        return previewEnabled && player.isActive() && !track.isEmpty() && !player.isPossessing();
+    }
+
     public static void markDirty() {
         dirty = true;
     }

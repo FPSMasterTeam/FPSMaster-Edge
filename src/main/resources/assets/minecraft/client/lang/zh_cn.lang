@@ -1116,3 +1116,5 @@ director.export.res=分辨率
 director.export.res.window=窗口
 director.export.estimate=成片时长 %s · 约 %d 帧
 director.export.start=开始导出
+director.export.stats=%d / %d 帧 · %d%% · 剩余 %s
+director.export.cancelhint=按 ESC 取消导出

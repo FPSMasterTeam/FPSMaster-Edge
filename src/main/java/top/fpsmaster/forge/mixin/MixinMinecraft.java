@@ -348,6 +348,19 @@ public abstract class MixinMinecraft implements IMinecraft {
         return top.fpsmaster.utils.system.HiDpi.pointsToPixels(Display.getHeight());
     }
 
+    /**
+     * The frame's trip to the window. During an export the game renders at the export resolution
+     * into its FBO; presenting that raw would show a stretched quarter-view of raw footage.
+     * Instead the exporter paints its own progress screen with a small live preview.
+     */
+    @Redirect(method = "runGameLoop", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/shader/Framebuffer;framebufferRender(II)V"))
+    private void edge$presentFrame(net.minecraft.client.shader.Framebuffer framebuffer, int width, int height) {
+        if (!top.fpsmaster.replay.director.DirectorExporter.presentExportScreen(framebuffer)) {
+            framebuffer.framebufferRender(width, height);
+        }
+    }
+
     /** Fullscreen enter: the desktop DisplayMode is in points on macOS as well. */
     @Redirect(method = "toggleFullscreen", at = @At(value = "INVOKE",
             target = "Lorg/lwjgl/opengl/DisplayMode;getWidth()I"))
