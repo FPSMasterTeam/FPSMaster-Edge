@@ -1,0 +1,2490 @@
+{
+  "schemaVersion": 1,
+  "client": {
+    "background": "classic",
+    "oobeCompleted": true,
+    "antiCheatEnabled": true,
+    "anonymousDataEnabled": true,
+    "classicBackgroundColor": -16777216,
+    "classicBackgroundHue": 0.0,
+    "classicBackgroundSaturation": 0.0,
+    "classicBackgroundBrightness": 0.08,
+    "classicBackgroundAlpha": 1.0,
+    "classicBackgroundMode": "STATIC"
+  },
+  "components": [
+    {
+      "module": "FPSDisplay",
+      "x": 0.059259254,
+      "y": 0.34113923,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "SaturationDisplay",
+      "x": 0.02,
+      "y": 0.11,
+      "position": "RB",
+      "scale": 1.0
+    },
+    {
+      "module": "ArmorDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "Scoreboard",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "PotionDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "CPSDisplay",
+      "x": 0.043055553,
+      "y": 0.16814345,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "Keystrokes",
+      "x": 0.05787037,
+      "y": 0.49900487,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "ReachDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "ComboDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "InventoryDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "TargetDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "PlayerDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "PingDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "CoordsDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "PerformanceHud",
+      "x": 0.59942365,
+      "y": 0.123957396,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "ModsList",
+      "x": 0.23631124,
+      "y": 0.123957396,
+      "position": "RT",
+      "scale": 1.0
+    },
+    {
+      "module": "MiniMap",
+      "x": 0.0,
+      "y": 0.3,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "Sprint",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "ToggleSneak",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "BlockIndicator",
+      "x": 0.5,
+      "y": 0.0,
+      "position": "CT",
+      "scale": 1.0
+    },
+    {
+      "module": "PlayTime",
+      "x": 0.05,
+      "y": 0.15,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "ClockDisplay",
+      "x": 0.6,
+      "y": 0.05,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "ServerAddressDisplay",
+      "x": 0.02,
+      "y": 0.05,
+      "position": "LT",
+      "scale": 1.0
+    },
+    {
+      "module": "ItemCountDisplay",
+      "x": 0.0,
+      "y": 0.0,
+      "position": "LT",
+      "scale": 1.0
+    }
+  ],
+  "modules": {
+    "ClientSettings": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Language": {
+          "type": "mode",
+          "value": 1
+        },
+        "ClickGuiKey": {
+          "type": "bind",
+          "value": 54
+        },
+        "FixedScaleEnabled": {
+          "type": "boolean",
+          "value": true
+        },
+        "FixedScale": {
+          "type": "mode",
+          "value": 2
+        },
+        "blur": {
+          "type": "boolean",
+          "value": false
+        },
+        "Theme": {
+          "type": "mode",
+          "value": 0
+        },
+        "ZoomBind": {
+          "type": "bind",
+          "value": 29
+        },
+        "Command": {
+          "type": "boolean",
+          "value": true
+        },
+        "prefix": {
+          "type": "text",
+          "value": "."
+        }
+      }
+    },
+    "BetterScreen": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "Blur": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundAnimation": {
+          "type": "boolean",
+          "value": true
+        },
+        "noFlickering": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "Sprint": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "ToggleSprint": {
+          "type": "boolean",
+          "value": true
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "Replay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "ToggleSneak": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "ToggleSneak": {
+          "type": "boolean",
+          "value": true
+        },
+        "ToggleKey": {
+          "type": "bind",
+          "value": 42
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "Performance": {
+      "enabled": true,
+      "key": 0,
+      "settings": {
+        "IgnoreStands": {
+          "type": "boolean",
+          "value": true
+        },
+        "FastLoad": {
+          "type": "boolean",
+          "value": true
+        },
+        "BatchModelRendering": {
+          "type": "boolean",
+          "value": true
+        },
+        "LowAnimationTick": {
+          "type": "boolean",
+          "value": true
+        },
+        "FPSLimit": {
+          "type": "number",
+          "value": 30.0
+        },
+        "ParticlesLimit": {
+          "type": "number",
+          "value": 400.0
+        },
+        "StaticParticleColor": {
+          "type": "boolean",
+          "value": true
+        },
+        "LimitChunks": {
+          "type": "boolean",
+          "value": true
+        },
+        "ChunkUpdateLimit": {
+          "type": "number",
+          "value": 50.0
+        },
+        "DownscalePackIcons": {
+          "type": "boolean",
+          "value": true
+        },
+        "ParticleCulling": {
+          "type": "boolean",
+          "value": true
+        },
+        "EntityCulling": {
+          "type": "boolean",
+          "value": true
+        },
+        "CacheArmorTextures": {
+          "type": "boolean",
+          "value": true
+        },
+        "SignTextCulling": {
+          "type": "boolean",
+          "value": true
+        },
+        "BlockEntityCulling": {
+          "type": "boolean",
+          "value": false
+        },
+        "BlockEntityDistance": {
+          "type": "number",
+          "value": 32.0
+        },
+        "CullPlayers": {
+          "type": "boolean",
+          "value": false
+        },
+        "EntityCullingInterval": {
+          "type": "number",
+          "value": 50.0
+        },
+        "EntityCullingMinEntities": {
+          "type": "number",
+          "value": 0.0
+        },
+        "CacheSkyColor": {
+          "type": "boolean",
+          "value": true
+        },
+        "CustomHudFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "CustomHudFontSize": {
+          "type": "number",
+          "value": 16.0
+        },
+        "FastRender": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideTallGrass": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideDoubleTallGrass": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideFlowers": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideDoubleTallFlowers": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideFences": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideFenceGates": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideSkulls": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideArmorStands": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideItemFrames": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideMapsInItemFrames": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideStuckArrows": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideGroundArrows": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideLavaParticles": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideSpawnerParticles": {
+          "type": "boolean",
+          "value": false
+        },
+        "HideMobInSpawner": {
+          "type": "boolean",
+          "value": false
+        },
+        "HidePortalParticles": {
+          "type": "boolean",
+          "value": false
+        },
+        "PlayerRenderDistance": {
+          "type": "number",
+          "value": 1.0
+        },
+        "PassiveRenderDistance": {
+          "type": "number",
+          "value": 1.0
+        },
+        "HostileRenderDistance": {
+          "type": "number",
+          "value": 1.0
+        },
+        "MiscRenderDistance": {
+          "type": "number",
+          "value": 1.0
+        },
+        "TextureResolution": {
+          "type": "mode",
+          "value": 0
+        },
+        "FastCollision": {
+          "type": "boolean",
+          "value": false
+        },
+        "AdaptiveChunkBudget": {
+          "type": "boolean",
+          "value": false
+        },
+        "FastTextureUpload": {
+          "type": "boolean",
+          "value": true
+        },
+        "ReuseVisibleChunks": {
+          "type": "boolean",
+          "value": true
+        },
+        "ReuseLevel": {
+          "type": "mode",
+          "value": 0
+        },
+        "ComposedModelTransform": {
+          "type": "boolean",
+          "value": false
+        },
+        "BatchVanillaFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FastGlyphLookup": {
+          "type": "boolean",
+          "value": true
+        },
+        "SlowObfuscation": {
+          "type": "boolean",
+          "value": false
+        },
+        "MergeTextShadow": {
+          "type": "boolean",
+          "value": true
+        },
+        "CacheItemModels": {
+          "type": "boolean",
+          "value": false
+        }
+      }
+    },
+    "MotionBlur": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Mode": {
+          "type": "mode",
+          "value": 1
+        },
+        "Strength": {
+          "type": "number",
+          "value": 2.0
+        }
+      }
+    },
+    "SmoothZoom": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "smoothZoom": {
+          "type": "boolean",
+          "value": false
+        },
+        "Speed": {
+          "type": "number",
+          "value": 4.0
+        },
+        "ZoomBind": {
+          "type": "bind",
+          "value": 46
+        },
+        "SmoothMouse": {
+          "type": "boolean",
+          "value": false
+        },
+        "wheelZoom": {
+          "type": "boolean",
+          "value": false
+        }
+      }
+    },
+    "WavyCape": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "FullBright": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "ItemPhysics": {
+      "enabled": true,
+      "key": 0,
+      "settings": {}
+    },
+    "MinimizedBobbing": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "MoreParticles": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Sharpness": {
+          "type": "number",
+          "value": 2.0
+        },
+        "AlwaysSharpness": {
+          "type": "boolean",
+          "value": false
+        },
+        "Crit": {
+          "type": "number",
+          "value": 2.0
+        },
+        "AlwaysCrit": {
+          "type": "boolean",
+          "value": false
+        },
+        "Special": {
+          "type": "mode",
+          "value": 0
+        },
+        "killEffect": {
+          "type": "mode",
+          "value": 0
+        }
+      }
+    },
+    "ChatAvatars": {
+      "enabled": true,
+      "key": 0,
+      "settings": {
+        "Size": {
+          "type": "number",
+          "value": 8.0
+        },
+        "Gap": {
+          "type": "number",
+          "value": 4.0
+        },
+        "OffsetX": {
+          "type": "number",
+          "value": 0.0
+        },
+        "OffsetY": {
+          "type": "number",
+          "value": 1.0
+        }
+      }
+    },
+    "FPSDisplay": {
+      "enabled": true,
+      "key": 0,
+      "settings": {
+        "TextColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "SaturationDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "BarColor": {
+          "type": "color",
+          "value": {
+            "h": 0.111111104,
+            "s": 0.7647059,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "ArmorDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Mode": {
+          "type": "mode",
+          "value": 0
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        },
+        "Spacing": {
+          "type": "number",
+          "value": 0.0
+        }
+      }
+    },
+    "BetterChat": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "FoldMessage": {
+          "type": "boolean",
+          "value": false
+        },
+        "CopyMessage": {
+          "type": "boolean",
+          "value": false
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "BlockIndicator": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "ShowId": {
+          "type": "boolean",
+          "value": true
+        },
+        "ShowCoords": {
+          "type": "boolean",
+          "value": true
+        },
+        "YOffset": {
+          "type": "number",
+          "value": 18.0
+        },
+        "PanelColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 0.09411765,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "AccentColor": {
+          "type": "color",
+          "value": {
+            "h": 0.5833333,
+            "s": 0.5882353,
+            "b": 1.0,
+            "a": 0.8627451,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "ClockDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "ShowSeconds": {
+          "type": "boolean",
+          "value": true
+        },
+        "Hour24": {
+          "type": "boolean",
+          "value": true
+        },
+        "Label": {
+          "type": "text",
+          "value": ""
+        },
+        "TextColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "ServerAddressDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Label": {
+          "type": "text",
+          "value": ""
+        },
+        "TextColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "PlayTime": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "DisplayMode": {
+          "type": "mode",
+          "value": 0
+        },
+        "Label": {
+          "type": "text",
+          "value": ""
+        },
+        "TextColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "BetterFishingRod": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "StringWidth": {
+          "type": "number",
+          "value": 1.0
+        }
+      }
+    },
+    "ComboDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "TextColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "CPSDisplay": {
+      "enabled": true,
+      "key": 0,
+      "settings": {
+        "TextColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "PotionDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "BetterAnimation": {
+          "type": "boolean",
+          "value": false
+        },
+        "NoticeableReminder": {
+          "type": "boolean",
+          "value": false
+        },
+        "ReminderTime": {
+          "type": "number",
+          "value": 20.0
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        },
+        "Spacing": {
+          "type": "number",
+          "value": 0.0
+        }
+      }
+    },
+    "ReachDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "TextColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "Scoreboard": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Score": {
+          "type": "boolean",
+          "value": false
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "OldAnimations": {
+      "enabled": true,
+      "key": 0,
+      "settings": {
+        "NoShield": {
+          "type": "boolean",
+          "value": true
+        },
+        "AnimationSneak": {
+          "type": "boolean",
+          "value": true
+        },
+        "OldRod": {
+          "type": "boolean",
+          "value": true
+        },
+        "OldBow": {
+          "type": "boolean",
+          "value": true
+        },
+        "OldSwing": {
+          "type": "boolean",
+          "value": true
+        },
+        "OldThirdPerson": {
+          "type": "boolean",
+          "value": true
+        },
+        "BlockSwing": {
+          "type": "boolean",
+          "value": true
+        },
+        "OldDamage": {
+          "type": "boolean",
+          "value": true
+        },
+        "OldUsing": {
+          "type": "boolean",
+          "value": true
+        },
+        "OldBlock": {
+          "type": "boolean",
+          "value": true
+        },
+        "AnimationMode": {
+          "type": "mode",
+          "value": 0
+        },
+        "X": {
+          "type": "number",
+          "value": 0.0
+        },
+        "Y": {
+          "type": "number",
+          "value": 0.0
+        },
+        "Z": {
+          "type": "number",
+          "value": 0.0
+        }
+      }
+    },
+    "HitColor": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Color": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 1.0,
+            "b": 1.0,
+            "a": 0.47058824,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        }
+      }
+    },
+    "BlockOverlay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Fill": {
+          "type": "boolean",
+          "value": true
+        },
+        "FillColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 0.19607843,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Outline": {
+          "type": "boolean",
+          "value": true
+        },
+        "Width": {
+          "type": "number",
+          "value": 1.0
+        },
+        "OutlineColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "ThroughBlock": {
+          "type": "boolean",
+          "value": false
+        }
+      }
+    },
+    "CleanView": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "DragonWings": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Scale": {
+          "type": "number",
+          "value": 100.0
+        },
+        "Color": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Colored": {
+          "type": "boolean",
+          "value": false
+        },
+        "Chroma": {
+          "type": "boolean",
+          "value": false
+        }
+      }
+    },
+    "FireModifier": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Height": {
+          "type": "number",
+          "value": 0.2
+        },
+        "CustomColor": {
+          "type": "boolean",
+          "value": false
+        },
+        "Color": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 1.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        }
+      }
+    },
+    "FreeLook": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "bind": {
+          "type": "bind",
+          "value": 56
+        }
+      }
+    },
+    "AutoGG": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "AutoPlay": {
+          "type": "boolean",
+          "value": false
+        },
+        "DelayToPlay": {
+          "type": "number",
+          "value": 5.0
+        },
+        "Message": {
+          "type": "text",
+          "value": "gg"
+        },
+        "Servers": {
+          "type": "mode",
+          "value": 0
+        },
+        "DetectionMode": {
+          "type": "mode",
+          "value": 2
+        }
+      }
+    },
+    "AutoText": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Entries": {
+          "type": "autoText",
+          "value": [
+            {
+              "key": 34,
+              "msg": "gg"
+            }
+          ]
+        }
+      }
+    },
+    "TimeChanger": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Time": {
+          "type": "number",
+          "value": 0.0
+        }
+      }
+    },
+    "TNTTimer": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Duration": {
+          "type": "number",
+          "value": 4.0
+        }
+      }
+    },
+    "HitBoxes": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Color": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        }
+      }
+    },
+    "Nametags": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "ShowSelf": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.19607843,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "Keystrokes": {
+      "enabled": true,
+      "key": 0,
+      "settings": {
+        "PressedColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 0.47058824,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "FontColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "PressedFontColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.7882353,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "BorderColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 0.3137255,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "BorderWidth": {
+          "type": "number",
+          "value": 1.0
+        },
+        "PressAnimMode": {
+          "type": "mode",
+          "value": 0
+        },
+        "PressAnimColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 0.47058824,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "PressAnimDuration": {
+          "type": "number",
+          "value": 0.25
+        },
+        "ShowSpace": {
+          "type": "boolean",
+          "value": true
+        },
+        "CPSMode": {
+          "type": "mode",
+          "value": 0
+        },
+        "WASDStyle": {
+          "type": "mode",
+          "value": 0
+        },
+        "SpaceStyle": {
+          "type": "mode",
+          "value": 0
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        },
+        "Spacing": {
+          "type": "number",
+          "value": 0.0
+        }
+      }
+    },
+    "Crosshair": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Dynamic": {
+          "type": "number",
+          "value": 3.0
+        },
+        "Outline": {
+          "type": "boolean",
+          "value": true
+        },
+        "OutlineColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "OutlineWidth": {
+          "type": "number",
+          "value": 0.8
+        },
+        "Gap": {
+          "type": "number",
+          "value": 3.5
+        },
+        "Width": {
+          "type": "number",
+          "value": 0.6
+        },
+        "Length": {
+          "type": "number",
+          "value": 3.0
+        },
+        "Color": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Enemy": {
+          "type": "color",
+          "value": {
+            "h": 0.004065037,
+            "s": 0.8039216,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Friend": {
+          "type": "color",
+          "value": {
+            "h": 0.35815606,
+            "s": 0.92156863,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        }
+      }
+    },
+    "CustomTitles": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "x": {
+          "type": "number",
+          "value": 0.0
+        },
+        "y": {
+          "type": "number",
+          "value": 0.0
+        },
+        "scale": {
+          "type": "number",
+          "value": 1.0
+        }
+      }
+    },
+    "CustomFov": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "NoSpeedFov": {
+          "type": "boolean",
+          "value": false
+        },
+        "NoFlyFov": {
+          "type": "boolean",
+          "value": false
+        },
+        "NoBowFov": {
+          "type": "boolean",
+          "value": false
+        }
+      }
+    },
+    "CustomFog": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Color": {
+          "type": "color",
+          "value": {
+            "h": 0.53594774,
+            "s": 1.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "FogMode": {
+          "type": "mode",
+          "value": 0
+        },
+        "StartDistance": {
+          "type": "number",
+          "value": 32.0
+        },
+        "EndDistance": {
+          "type": "number",
+          "value": 64.0
+        },
+        "AffectWater": {
+          "type": "boolean",
+          "value": false
+        },
+        "AffectLava": {
+          "type": "boolean",
+          "value": false
+        }
+      }
+    },
+    "InventoryDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "PlayerDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "TargetDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "TargetESP": {
+          "type": "mode",
+          "value": 0
+        },
+        "TargetHUD": {
+          "type": "mode",
+          "value": 0
+        },
+        "EspColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "OmitName": {
+          "type": "boolean",
+          "value": true
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "NoHurtCam": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "NameProtect": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Name": {
+          "type": "text",
+          "value": "Hide"
+        }
+      }
+    },
+    "RawInput": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "FixedInventory": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "NoHitDelay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "PingDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "TextColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "CoordsDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "LimitDisplay": {
+          "type": "boolean",
+          "value": false
+        },
+        "LimitDisplayY": {
+          "type": "number",
+          "value": 92.0
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "PerformanceHud": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "ShowGraph": {
+          "type": "boolean",
+          "value": true
+        },
+        "ShowDistribution": {
+          "type": "boolean",
+          "value": true
+        },
+        "ShowMemory": {
+          "type": "boolean",
+          "value": true
+        },
+        "ShowGC": {
+          "type": "boolean",
+          "value": true
+        },
+        "ColorByHealth": {
+          "type": "boolean",
+          "value": true
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "Spacing": {
+          "type": "number",
+          "value": 0.0
+        }
+      }
+    },
+    "ModsList": {
+      "enabled": true,
+      "key": 0,
+      "settings": {
+        "ShowText": {
+          "type": "boolean",
+          "value": true
+        },
+        "Text": {
+          "type": "text",
+          "value": "FPSMaster Edge"
+        },
+        "English": {
+          "type": "boolean",
+          "value": true
+        },
+        "Color": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.36792454,
+            "b": 1.0,
+            "a": 1.0,
+            "mode": "CHROMA",
+            "speed": 1.7811321
+          }
+        },
+        "TitleSize": {
+          "type": "number",
+          "value": 39.0
+        },
+        "TitleColor": {
+          "type": "color",
+          "value": {
+            "h": 0.6501182,
+            "s": 0.5551181,
+            "b": 0.99607843,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "BackgroundStyle": {
+          "type": "mode",
+          "value": 0
+        },
+        "BarColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 1.0,
+            "b": 1.0,
+            "a": 0.60116565,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "BarWidth": {
+          "type": "number",
+          "value": 3.0
+        },
+        "Animation": {
+          "type": "mode",
+          "value": 0
+        },
+        "AnimationSpeed": {
+          "type": "number",
+          "value": 8.0
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.43866557,
+            "a": 1.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": true
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "DirectionDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "DamageIndicator": {
+      "enabled": false,
+      "key": 0,
+      "settings": {}
+    },
+    "TabOverlay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "ShowPing": {
+          "type": "boolean",
+          "value": true
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "ItemCountDisplay": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "mode": {
+          "type": "mode",
+          "value": 0
+        },
+        "items": {
+          "type": "multiItem",
+          "value": []
+        },
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        },
+        "Spacing": {
+          "type": "number",
+          "value": 0.0
+        }
+      }
+    },
+    "SoundModifier": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Liquid": {
+          "type": "number",
+          "value": 1.0
+        },
+        "Dig": {
+          "type": "number",
+          "value": 1.0
+        },
+        "Game": {
+          "type": "number",
+          "value": 1.0
+        },
+        "Mob": {
+          "type": "number",
+          "value": 1.0
+        }
+      }
+    },
+    "ParticlesModifier": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Block": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    },
+    "HideIndicator": {
+      "enabled": false,
+      "key": 0,
+      "settings": {
+        "Background": {
+          "type": "boolean",
+          "value": true
+        },
+        "BackgroundColor": {
+          "type": "color",
+          "value": {
+            "h": 0.0,
+            "s": 0.0,
+            "b": 0.0,
+            "a": 0.0,
+            "mode": "STATIC",
+            "speed": 1.0
+          }
+        },
+        "Round": {
+          "type": "boolean",
+          "value": true
+        },
+        "RoundRadius": {
+          "type": "number",
+          "value": 3.0
+        },
+        "BetterFont": {
+          "type": "boolean",
+          "value": false
+        },
+        "FontShadow": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    }
+  },
+  "shortcuts": []
+}
