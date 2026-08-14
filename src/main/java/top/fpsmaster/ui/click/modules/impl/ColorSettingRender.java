@@ -27,18 +27,28 @@ import static java.lang.Math.min;
 
 /**
  * Color row after the prototype: collapsed shows "#RRGGBB" + a color dot on the right; clicking
- * them unfolds a compact HSBA editor (mode chip, palette, hue / alpha rails, optional speed).
+ * them unfolds an editor card — a segmented mode selector, an HSBA palette with hue / alpha rails
+ * for the static-ish modes, and sliders styled like every other slider in the GUI for the rest.
  */
 public class ColorSettingRender extends SettingRender<ColorSetting> {
     private static final float ROW_H = 19f;
     private static final float DOT = 9f;
-    private static final float PICKER_W = 56f;
-    private static final float PICKER_H = 40f;
-    private static final float RAIL_W = 5f;
+    private static final float PICKER_W = 64f;
+    private static final float PICKER_H = 44f;
+    private static final float RAIL_W = 6f;
+    private static final float RAIL_GAP = 5f;
+    private static final float PAD = 6f;
+    private static final float SEG_PAD = 1.5f;
+    private static final float SEG_H = 16f;
+    private static final float TRACK_H = 2.5f;
+    private static final float THUMB = 5.5f;
+    private static final float SLIDER_ROW_H = 13f;
     private static final ResourceLocation CURSOR = new ResourceLocation("client/gui/settings/values/color.png");
+    private static final ResourceLocation ALPHA_CHECKER = new ResourceLocation("client/gui/settings/values/alpha.png");
 
     private float expandedHeight = 0f;
-    private boolean expand = false;
+    /** Screenshot-pipeline hook: -Dedge.uishot.expandcolors renders every color row unfolded. */
+    private boolean expand = Boolean.getBoolean("edge.uishot.expandcolors");
     private final ColorSettingBinding binding;
     private final String paletteCaptureId;
     private final String hueCaptureId;
@@ -84,29 +94,63 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
                 new Color(255, 255, 255, 64).getRGB(), false);
         Rects.rounded(dotX, dotY, DOT, DOT, (int) (DOT / 2f), previewColor.getRGB(), false);
 
-        boolean showPalette = setting.getColorType() == ColorSetting.ColorType.STATIC
-                || setting.getColorType() == ColorSetting.ColorType.WAVE
-                || setting.getColorType() == ColorSetting.ColorType.WAVE_BRIGHTNESS;
-        boolean showSpeed = setting.getColorType() != ColorSetting.ColorType.STATIC;
-        float targetHeight = expand ? (showPalette ? (showSpeed ? PICKER_H + 14f : PICKER_H + 4f) : 40f) : 0f;
+        ColorSetting.ColorType[] types = setting.getAvailableTypes();
+        boolean showModes = types.length > 1;
+        ColorSetting.ColorType type = setting.getColorType();
+        boolean showPalette = type == ColorSetting.ColorType.STATIC
+                || type == ColorSetting.ColorType.WAVE
+                || type == ColorSetting.ColorType.WAVE_BRIGHTNESS;
+        boolean showSpeed = type != ColorSetting.ColorType.STATIC;
+
+        // --- card metrics: the card hugs its content instead of floating in the row ---
+        float labelColW = sliderLabelWidth();
+        float valueColW = sliderValueWidth();
+        float trackW = 78f;
+        float sliderRowW = labelColW + 5f + trackW + 5f + valueColW;
+        float paletteBlockW = PICKER_W + RAIL_GAP + RAIL_W + RAIL_GAP + RAIL_W;
+        float editorW = showPalette
+                ? max(paletteBlockW, showSpeed ? sliderRowW : 0f)
+                : sliderRowW;
+        float segOptW = 0f;
+        if (showModes) {
+            for (ColorSetting.ColorType t : types) {
+                segOptW = max(segOptW, FPSMaster.fontManager.getFont(11).getStringWidth(FPSMaster.i18n.get(t.i18nKey)) + 12f);
+            }
+        }
+        float segW = showModes ? types.length * segOptW + SEG_PAD * 2f : 0f;
+        float contentW = max(editorW, segW);
+        float cardW = min(width - 10f, contentW + PAD * 2f);
+        contentW = cardW - PAD * 2f;
+        trackW = max(40f, min(trackW, contentW - labelColW - valueColW - 10f));
+
+        float editorH = showPalette
+                ? PICKER_H + (showSpeed ? SLIDER_ROW_H + 3f : 0f)
+                : SLIDER_ROW_H * 3f;
+        float cardH = PAD + (showModes ? SEG_H + 5f : 0f) + editorH + PAD;
+
+        float targetHeight = expand ? cardH + 4f : 0f;
         expandedHeight = (float) AnimMath.base(expandedHeight, targetHeight, 0.2);
 
         if (expandedHeight > 1f) {
-            float editorY = y + ROW_H + 2f;
-            float modeW = 40f;
-            boolean modeHover = Hover.is(x + 5, editorY, modeW, 11f, (int) mouseX, (int) mouseY);
-            Rects.rounded(x + 5, editorY, modeW, 11f, 4,
-                    (modeHover ? ClickGuiTheme.layerHover() : ClickGuiTheme.layer()).getRGB(), false);
-            FPSMaster.fontManager.getFont(11).drawCenteredString(
-                    FPSMaster.i18n.get(setting.getColorType().i18nKey),
-                    x + 5 + modeW / 2f, editorY + 3f, ClickGuiTheme.modeText().getRGB());
-            if (showPalette) {
-                renderStaticOrWaveEditor(screen, x + 5 + modeW + 6f, editorY, mouseX, mouseY, customColor, showSpeed);
-            } else {
-                renderDynamicEditor(screen, x + 5 + modeW + 6f, editorY, mouseX, mouseY, customColor);
+            float cardX = x + 5f;
+            float cardY = y + ROW_H + 2f;
+            Rects.rounded(cardX - 0.5f, cardY - 0.5f, cardW + 1f, cardH + 1f, 7,
+                    ClickGuiTheme.stroke().getRGB(), false);
+            Rects.rounded(cardX, cardY, cardW, cardH, 6, ClickGuiTheme.layer().getRGB(), false);
+
+            float cx = cardX + PAD;
+            float cy = cardY + PAD;
+            if (showModes) {
+                drawModeSegments(screen, types, type, cx, cy, contentW, segOptW, mouseX, mouseY);
+                cy += SEG_H + 5f;
             }
-            if (screen.consumePressInBounds(x + 5, editorY, modeW, 11f, 0) != null) {
-                setting.cycleColorType();
+            if (showPalette) {
+                renderPalette(screen, cx, cy, mouseX, mouseY, customColor);
+                if (showSpeed) {
+                    renderSpeedSlider(screen, cx, cy + PICKER_H + 3f, labelColW, trackW, valueColW, mouseX);
+                }
+            } else {
+                renderChromaSliders(screen, cx, cy, labelColW, trackW, valueColW, mouseX, customColor);
             }
         }
 
@@ -117,7 +161,27 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
         this.height = expandedHeight + ROW_H;
     }
 
-    private void renderStaticOrWaveEditor(ScaledGuiScreen screen, float pickerX, float pickerY, float mouseX, float mouseY, CustomColor customColor, boolean showSpeed) {
+    private void drawModeSegments(ScaledGuiScreen screen, ColorSetting.ColorType[] types,
+                                  ColorSetting.ColorType current, float x, float y, float contentW,
+                                  float optW, float mouseX, float mouseY) {
+        float segW = min(contentW, types.length * optW + SEG_PAD * 2f);
+        optW = (segW - SEG_PAD * 2f) / types.length;
+        UiChrome.seg(x, y, segW, SEG_H);
+        for (int i = 0; i < types.length; i++) {
+            float ox = x + SEG_PAD + i * optW;
+            boolean selected = types[i] == current;
+            boolean hover = Hover.is(ox, y + SEG_PAD, optW, SEG_H - SEG_PAD * 2f, (int) mouseX, (int) mouseY);
+            UiChrome.segOption(ox, y + SEG_PAD, optW, SEG_H - SEG_PAD * 2f,
+                    FPSMaster.i18n.get(types[i].i18nKey), selected, hover);
+            if (screen.consumePressInBounds(ox, y, optW, SEG_H) != null) {
+                setting.setColorType(types[i]);
+            }
+        }
+    }
+
+    private void renderPalette(ScaledGuiScreen screen, float pickerX, float pickerY, float mouseX, float mouseY, CustomColor customColor) {
+        Rects.rounded(pickerX - 0.5f, pickerY - 0.5f, PICKER_W + 1f, PICKER_H + 1f, 4,
+                ClickGuiTheme.stroke().getRGB(), false);
         if (OSUtil.supportShader()) {
             GradientUtils.applyGradient(
                     UiScale.toPixel(pickerX),
@@ -149,27 +213,34 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
             saturation = max(min((mouseX - pickerX) / PICKER_W, 1f), 0f);
             brightness = max(min(1f - (mouseY - pickerY) / PICKER_H, 1f), 0f);
         }
+        float cursorX = pickerX + saturation * PICKER_W;
+        float cursorY = pickerY + (1 - brightness) * PICKER_H;
+        Images.draw(CURSOR, cursorX - 2.5f, cursorY - 2.5f, 5f, 5f, -1);
 
-        float cursorX = saturation * PICKER_W;
-        float cursorY = (1 - brightness) * PICKER_H;
-        Images.draw(CURSOR, pickerX + cursorX - 2f, pickerY + cursorY - 2f, 4f, 4f, -1);
-
-        float hueX = pickerX + PICKER_W + 4f;
+        float hueX = pickerX + PICKER_W + RAIL_GAP;
         float hue = customColor.hue;
+        Rects.rounded(hueX - 0.5f, pickerY - 0.5f, RAIL_W + 1f, PICKER_H + 1f, 3,
+                ClickGuiTheme.stroke().getRGB(), false);
         Gradients.hue(hueX, pickerY, (int) RAIL_W, PICKER_H);
-        Images.draw(CURSOR, hueX + RAIL_W / 2f - 2f, pickerY + PICKER_H * customColor.hue - 2f, 4f, 4f, -1);
+        Images.draw(CURSOR, hueX + RAIL_W / 2f - 2.5f, pickerY + PICKER_H * customColor.hue - 2.5f, 5f, 5f, -1);
         screen.beginPointerCapture(hueCaptureId, 0, hueX, pickerY, RAIL_W, PICKER_H);
         if (screen.isPointerCapturedBy(hueCaptureId, 0)) {
             hue = max(min((mouseY - pickerY) / PICKER_H, 1f), 0f);
         }
 
-        float alphaX = hueX + RAIL_W + 4f;
+        float alphaX = hueX + RAIL_W + RAIL_GAP;
         float alpha = customColor.alpha;
-        Images.draw(new ResourceLocation("client/gui/settings/values/alpha.png"), alphaX, pickerY, RAIL_W, PICKER_H, -1);
+        Rects.rounded(alphaX - 0.5f, pickerY - 0.5f, RAIL_W + 1f, PICKER_H + 1f, 3,
+                ClickGuiTheme.stroke().getRGB(), false);
+        Images.draw(ALPHA_CHECKER, alphaX, pickerY, RAIL_W, PICKER_H, -1);
         if (OSUtil.supportShader()) {
-            GradientUtils.drawGradientVertical(alphaX, pickerY, RAIL_W, PICKER_H, new Color(255, 255, 255), new Color(255, 255, 255, 0));
+            // The rail fades the setting's own color out, not white: what the knob picks is what
+            // the rail shows at that height.
+            Color base = new Color(Color.HSBtoRGB(customColor.hue, customColor.saturation, customColor.brightness));
+            GradientUtils.drawGradientVertical(alphaX, pickerY, RAIL_W, PICKER_H,
+                    base, new Color(base.getRed(), base.getGreen(), base.getBlue(), 0));
         }
-        Images.draw(CURSOR, alphaX + RAIL_W / 2f - 2f, pickerY + PICKER_H * (1 - alpha) - 2f, 4f, 4f, -1);
+        Images.draw(CURSOR, alphaX + RAIL_W / 2f - 2.5f, pickerY + PICKER_H * (1 - alpha) - 2.5f, 5f, 5f, -1);
         screen.beginPointerCapture(alphaCaptureId, 0, alphaX, pickerY, RAIL_W, PICKER_H);
         if (screen.isPointerCapturedBy(alphaCaptureId, 0)) {
             alpha = max(min(1f - (mouseY - pickerY) / PICKER_H, 1f), 0f);
@@ -178,57 +249,73 @@ public class ColorSettingRender extends SettingRender<ColorSetting> {
         if (hue != customColor.hue || saturation != customColor.saturation || brightness != customColor.brightness || alpha != customColor.alpha) {
             binding.setHsba(hue, saturation, brightness, alpha);
         }
-
-        if (showSpeed) {
-            renderSpeedSlider(screen, pickerX, pickerY + PICKER_H + 4f, PICKER_W, mouseX, mouseY);
-        }
     }
 
-    private void renderSpeedSlider(ScaledGuiScreen screen, float sliderX, float sliderY, float sliderW, float mouseX, float mouseY) {
-        float speed = setting.getSpeed();
-        Rects.rounded(sliderX, sliderY, sliderW, 3f, 1, ClickGuiTheme.layerActive().getRGB(), false);
-        Rects.rounded(sliderX, sliderY, sliderW * (speed - 0.1f) / 9.9f, 3f, 1, ClickGuiTheme.accent().getRGB(), false);
-        FPSMaster.fontManager.getFont(11).drawString("T", sliderX - 6f, sliderY - 1.5f, ClickGuiTheme.textSecondary().getRGB());
-        FPSMaster.fontManager.getFont(11).drawString(String.format(Locale.getDefault(), "%.1f", speed), sliderX + sliderW + 3f, sliderY - 1.5f, ClickGuiTheme.textSecondary().getRGB());
-
-        float newSpeed = speed;
-        screen.beginPointerCapture(speedCaptureId, 0, sliderX, sliderY - 2, sliderW, 7f);
-        if (screen.isPointerCapturedBy(speedCaptureId, 0)) {
-            newSpeed = 0.1f + max(min((mouseX - sliderX) / sliderW, 1f), 0f) * 9.9f;
-        }
-        if (Math.abs(newSpeed - speed) > 0.01f) {
-            setting.setSpeed(newSpeed);
-        }
-    }
-
-    private void renderDynamicEditor(ScaledGuiScreen screen, float sliderX, float editorY, float mouseX, float mouseY, CustomColor customColor) {
-        float satY = editorY + 2f;
-        float brightY = editorY + 12f;
-        float sliderW = 56f;
-
-        FPSMaster.fontManager.getFont(11).drawString("S", sliderX - 6f, satY - 1.5f, ClickGuiTheme.textSecondary().getRGB());
-        FPSMaster.fontManager.getFont(11).drawString("B", sliderX - 6f, brightY - 1.5f, ClickGuiTheme.textSecondary().getRGB());
-
-        Rects.rounded(sliderX, satY, sliderW, 3f, 1, ClickGuiTheme.layerActive().getRGB(), false);
-        Rects.rounded(sliderX, brightY, sliderW, 3f, 1, ClickGuiTheme.layerActive().getRGB(), false);
-        Rects.rounded(sliderX, satY, sliderW * customColor.saturation, 3f, 1, new Color(114, 173, 255).getRGB(), false);
-        Rects.rounded(sliderX, brightY, sliderW * customColor.brightness, 3f, 1, new Color(255, 223, 114).getRGB(), false);
-
-        float saturation = customColor.saturation;
-        float brightness = customColor.brightness;
-        screen.beginPointerCapture(saturationCaptureId, 0, sliderX, satY - 2, sliderW, 7f);
-        if (screen.isPointerCapturedBy(saturationCaptureId, 0)) {
-            saturation = max(min((mouseX - sliderX) / sliderW, 1f), 0f);
-        }
-        screen.beginPointerCapture(brightnessCaptureId, 0, sliderX, brightY - 2, sliderW, 7f);
-        if (screen.isPointerCapturedBy(brightnessCaptureId, 0)) {
-            brightness = max(min((mouseX - sliderX) / sliderW, 1f), 0f);
-        }
-
+    private void renderChromaSliders(ScaledGuiScreen screen, float x, float y, float labelW, float trackW, float valueW, float mouseX, CustomColor customColor) {
+        float saturation = drawSlider(screen, saturationCaptureId,
+                FPSMaster.i18n.get("colorsetting.saturation"), x, y, labelW, trackW, valueW,
+                customColor.saturation, Math.round(customColor.saturation * 100f) + "%", mouseX);
+        float brightness = drawSlider(screen, brightnessCaptureId,
+                FPSMaster.i18n.get("colorsetting.brightness"), x, y + SLIDER_ROW_H, labelW, trackW, valueW,
+                customColor.brightness, Math.round(customColor.brightness * 100f) + "%", mouseX);
         if (saturation != customColor.saturation || brightness != customColor.brightness) {
             binding.setHsba(customColor.hue, saturation, brightness, customColor.alpha);
         }
+        renderSpeedSlider(screen, x, y + SLIDER_ROW_H * 2f, labelW, trackW, valueW, mouseX);
+    }
 
-        renderSpeedSlider(screen, sliderX, editorY + 24f, sliderW, mouseX, mouseY);
+    private void renderSpeedSlider(ScaledGuiScreen screen, float x, float y, float labelW, float trackW, float valueW, float mouseX) {
+        float speed = setting.getSpeed();
+        float value01 = (speed - 0.1f) / 9.9f;
+        float dragged = drawSlider(screen, speedCaptureId,
+                FPSMaster.i18n.get("colorsetting.speed"), x, y, labelW, trackW, valueW,
+                value01, String.format(Locale.getDefault(), "%.1f", speed), mouseX);
+        if (dragged != value01) {
+            setting.setSpeed(0.1f + dragged * 9.9f);
+        }
+    }
+
+    /**
+     * One slider row in the shared GUI vocabulary (track + fill + round thumb + fixed-width
+     * right-aligned value). Returns the possibly-dragged 0..1 value.
+     */
+    private float drawSlider(ScaledGuiScreen screen, String captureId, String label,
+                             float x, float y, float labelW, float trackW, float valueW,
+                             float value01, String valueText, float mouseX) {
+        FPSMaster.fontManager.getFont(11).drawString(label, x, y + 1f, ClickGuiTheme.textSecondary().getRGB());
+        float trackX = x + labelW + 5f;
+        float trackY = y + 3f;
+        Rects.rounded(trackX, trackY, trackW, TRACK_H, 1, ClickGuiTheme.layerActive().getRGB(), false);
+        float fillW = trackW * max(0f, min(1f, value01));
+        if (fillW > 0.5f) {
+            Rects.rounded(trackX, trackY, fillW, TRACK_H, 1, ClickGuiTheme.sliderFill().getRGB(), false);
+        }
+        float thumbX = trackX + max(0f, min(trackW - THUMB, fillW - THUMB / 2f));
+        Rects.rounded(thumbX, trackY + (TRACK_H - THUMB) / 2f, THUMB, THUMB, (int) (THUMB / 2f),
+                0xFFFFFFFF, false);
+        float textW = FPSMaster.fontManager.getFont(11).getStringWidth(valueText);
+        FPSMaster.fontManager.getFont(11).drawString(valueText,
+                trackX + trackW + 5f + (valueW - textW), y + 1f, ClickGuiTheme.textSecondary().getRGB());
+
+        screen.beginPointerCapture(captureId, 0, trackX, trackY - 4f, trackW, TRACK_H + 8f);
+        if (screen.isPointerCapturedBy(captureId, 0)) {
+            return max(0f, min(1f, (mouseX - trackX) / trackW));
+        }
+        return value01;
+    }
+
+    /** Widest slider label of the editor, so all three rows share one label column. */
+    private float sliderLabelWidth() {
+        float w = 0f;
+        w = max(w, FPSMaster.fontManager.getFont(11).getStringWidth(FPSMaster.i18n.get("colorsetting.saturation")));
+        w = max(w, FPSMaster.fontManager.getFont(11).getStringWidth(FPSMaster.i18n.get("colorsetting.brightness")));
+        w = max(w, FPSMaster.fontManager.getFont(11).getStringWidth(FPSMaster.i18n.get("colorsetting.speed")));
+        return min(w, 34f);
+    }
+
+    /** Fixed value column ("100%" / "10.0" are the widest), so tracks never shift while dragging. */
+    private float sliderValueWidth() {
+        return max(FPSMaster.fontManager.getFont(11).getStringWidth("100%"),
+                FPSMaster.fontManager.getFont(11).getStringWidth("88.8"));
     }
 }

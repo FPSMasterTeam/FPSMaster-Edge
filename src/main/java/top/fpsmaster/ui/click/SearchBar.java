@@ -91,6 +91,11 @@ public class SearchBar {
         field.setFocused(focused);
     }
 
+    public void setQuery(String query) {
+        ensureField();
+        field.setText(query);
+    }
+
     public void clear() {
         ensureField();
         field.setText("");

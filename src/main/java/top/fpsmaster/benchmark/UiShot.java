@@ -102,6 +102,17 @@ public final class UiShot {
         Minecraft mc = Minecraft.getMinecraft();
         if ("clickgui".equals(screen)) {
             mc.displayGuiScreen(FPSMaster.moduleManager.mainPanel);
+            String module = System.getProperty("edge.uishot.module");
+            if (module != null) {
+                for (top.fpsmaster.ui.click.modules.ModuleRenderer renderer : FPSMaster.moduleManager.mainPanel.mods) {
+                    if (renderer.mod.name.equalsIgnoreCase(module)) {
+                        renderer.expandForShot();
+                        FPSMaster.moduleManager.mainPanel.curType = renderer.mod.category;
+                        FPSMaster.moduleManager.mainPanel.searchForShot(
+                                FPSMaster.i18n.get(renderer.mod.name.toLowerCase(java.util.Locale.getDefault())));
+                    }
+                }
+            }
         } else if ("language".equals(screen)) {
             // Vanilla's own font on a screen that never moves, and whose entries span both
             // the bitmap page and the unicode pages - the two paths a font change can break.
