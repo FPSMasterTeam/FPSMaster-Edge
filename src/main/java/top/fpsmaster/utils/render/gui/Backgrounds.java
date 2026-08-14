@@ -247,6 +247,17 @@ public class Backgrounds {
 
     private static DynamicTexture viewportTexture;
     private static ResourceLocation backgroundTexture;
+    /**
+     * Offscreen target for the panorama + blur passes. The vanilla technique scribbles on the
+     * window backbuffer and copies out of it — on macOS the GL-on-Metal layer reallocates the
+     * drawable during a live resize/maximize and crashes natively (SIGSEGV in
+     * AppleMetalOpenGLRenderer) when that happens mid-draw. Rendering into our own FBO never
+     * touches the drawable, and also keeps full blur quality when the window is under 256 px.
+     */
+    private static net.minecraft.client.shader.Framebuffer panoramaFbo;
+    /** Pixel size of the panorama pass in the current frame (FBO size, or clamped window size). */
+    private static int panoramaCopyWidth;
+    private static int panoramaCopyHeight;
 
     public static void initGui(){
         if (viewportTexture == null || backgroundTexture == null) {
@@ -266,6 +277,23 @@ public class Backgrounds {
         panoramaTimerLastUpdate = System.currentTimeMillis();
         viewportTexture = null;
         backgroundTexture = null;
+        if (panoramaFbo != null) {
+            panoramaFbo.deleteFramebuffer();
+            panoramaFbo = null;
+        }
+    }
+
+    /** Binds the offscreen panorama target; false = FBOs unavailable, caller uses the backbuffer. */
+    private static boolean bindPanoramaFbo() {
+        if (!net.minecraft.client.renderer.OpenGlHelper.isFramebufferEnabled()) {
+            return false;
+        }
+        if (panoramaFbo == null) {
+            panoramaFbo = new net.minecraft.client.shader.Framebuffer(
+                    PANORAMA_VIEWPORT_SIZE, PANORAMA_VIEWPORT_SIZE, false);
+        }
+        panoramaFbo.bindFramebuffer(false);
+        return true;
     }
 
     private static void rotateAndBlurSkybox(int width, int height, int zLevel) {
@@ -273,8 +301,8 @@ public class Backgrounds {
             return;
         }
 
-        int copyWidth = Math.min(PANORAMA_VIEWPORT_SIZE, Math.max(0, mc.displayWidth));
-        int copyHeight = Math.min(PANORAMA_VIEWPORT_SIZE, Math.max(0, mc.displayHeight));
+        int copyWidth = panoramaCopyWidth;
+        int copyHeight = panoramaCopyHeight;
         if (copyWidth <= 0 || copyHeight <= 0) {
             return;
         }
@@ -320,14 +348,24 @@ public class Backgrounds {
 
         ensurePanoramaStyle(style);
         updatePanoramaTimer();
-        mc.getFramebuffer().unbindFramebuffer();
-        int viewportWidth = Math.min(PANORAMA_VIEWPORT_SIZE, mc.displayWidth);
-        int viewportHeight = Math.min(PANORAMA_VIEWPORT_SIZE, mc.displayHeight);
+        boolean offscreen = bindPanoramaFbo();
+        int viewportWidth;
+        int viewportHeight;
+        if (offscreen) {
+            viewportWidth = PANORAMA_VIEWPORT_SIZE;
+            viewportHeight = PANORAMA_VIEWPORT_SIZE;
+        } else {
+            mc.getFramebuffer().unbindFramebuffer();
+            viewportWidth = Math.min(PANORAMA_VIEWPORT_SIZE, mc.displayWidth);
+            viewportHeight = Math.min(PANORAMA_VIEWPORT_SIZE, mc.displayHeight);
+        }
         if (viewportWidth <= 0 || viewportHeight <= 0) {
             mc.getFramebuffer().bindFramebuffer(true);
             Rects.fill(0f, 0f, width, height, new Color(0, 0, 0, 255));
             return;
         }
+        panoramaCopyWidth = viewportWidth;
+        panoramaCopyHeight = viewportHeight;
         GlStateManager.viewport(0, 0, viewportWidth, viewportHeight);
         drawPanorama(partialTicks);
         rotateAndBlurSkybox(width, height, zLevel);
