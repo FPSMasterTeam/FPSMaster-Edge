@@ -35,6 +35,9 @@ public class NoForgeMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
+        // Earliest hook we own: runs during mixin bootstrap, long before Display.create().
+        // The Retina backing can only be requested before the window exists.
+        top.fpsmaster.utils.system.HiDpi.requestHighDpiBacking();
     }
 
     @Override

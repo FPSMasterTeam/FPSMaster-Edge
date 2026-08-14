@@ -8,14 +8,16 @@ import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
+import top.fpsmaster.ui.click.ClickGuiTheme;
+import top.fpsmaster.ui.click.UiChrome;
 import top.fpsmaster.ui.click.component.ScrollContainer;
 import top.fpsmaster.ui.click.modules.impl.ColorSettingRender;
-import top.fpsmaster.ui.common.GuiButton;
 import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.Easings;
 import top.fpsmaster.utils.render.draw.Hover;
+import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.Backgrounds;
@@ -35,10 +37,10 @@ import top.fpsmaster.exception.FileException;
 
 public class BackgroundSelector extends ScaledGuiScreen {
 
-    private static final float CARD_HEIGHT = 75f;
-    private static final float CARD_GAP = 8f;
-    private static final float LIST_TOP_PADDING = 6f;
-    private static final float LIST_BOTTOM_PADDING = 6f;
+    private static final float CARD_HEIGHT = 48f;
+    private static final float CARD_GAP = 5f;
+    private static final float LIST_TOP_PADDING = 2f;
+    private static final float LIST_BOTTOM_PADDING = 5f;
     private static final float CLASSIC_EDITOR_BOTTOM_GAP = CARD_GAP;
 
     private final Animator openAnimation = new Animator();
@@ -68,9 +70,6 @@ public class BackgroundSelector extends ScaledGuiScreen {
     private long customPreviewLastModified = -1L;
     private float customPreviewWidth = 1f;
     private float customPreviewHeight = 1f;
-
-    private final GuiButton backButton = new GuiButton("mainmenu.back", () -> mc.displayGuiScreen(new MainMenu()),
-            new Color(0, 0, 0, 140), new Color(113, 127, 254));
 
     @Override
     public void initGui() {
@@ -111,48 +110,63 @@ public class BackgroundSelector extends ScaledGuiScreen {
         openAnimation.update(dt);
         float alpha = (float) openAnimation.get();
 
-        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(0, 0, 0, (int) (170 * alpha)));
+        Rects.fill(0f, 0f, guiWidth, guiHeight, new Color(4, 6, 10, (int) (128 * alpha)));
         if (alpha < 0.05f) {
             return;
         }
 
-        float panelWidth = Math.min(410f, guiWidth - 40f);
-        float panelHeight = Math.min(320f, guiHeight - 40f);
+        // .bg-selector: width 500px, max-height 78vh — halved to GUI units. The column shrinks
+        // to its content like the flex prototype instead of always standing max-height tall.
+        float panelWidth = Math.min(250f, guiWidth - 24f);
+        int optionRows = (OPTIONS.length + 1) / 2;
+        float contentTotal = LIST_TOP_PADDING + optionRows * (CARD_HEIGHT + CARD_GAP) + LIST_BOTTOM_PADDING
+                + (isOptionSelected("classic") ? getClassicEditorHeight() + CLASSIC_EDITOR_BOTTOM_GAP : 0f);
+        float panelHeight = Math.min(30f + contentTotal + 10f, Math.min(guiHeight * 0.78f, guiHeight - 24f));
         float panelX = (guiWidth - panelWidth) / 2f;
         float panelY = (guiHeight - panelHeight) / 2f;
 
-        Rects.rounded(Math.round(panelX), Math.round(panelY), Math.round(panelWidth), Math.round(panelHeight), 12, new Color(24, 24, 28, (int) (240 * alpha)));
-        Rects.rounded(Math.round(panelX), Math.round(panelY), Math.round(panelWidth), 44, 12, new Color(30, 30, 36, (int) (210 * alpha)));
-        FPSMaster.fontManager.s20.drawCenteredString(FPSMaster.i18n.get("backgroundselector.title"), panelX + panelWidth / 2f, panelY + 24f, new Color(255, 255, 255, (int) (255 * alpha)).getRGB());
+        UiChrome.panel(panelX, panelY, panelWidth, panelHeight);
 
-        backButton.renderInScreen(this, panelX + panelWidth - 68f, panelY + panelHeight - 34f, 56f, 22f, mouseX, mouseY);
+        // head: back · title · spacer · pick-image
+        float headY = panelY + 8f;
+        boolean backHover = Hover.is(panelX + 8f, headY, 15f, 15f, mouseX, mouseY);
+        UiChrome.ghostButton(panelX + 8f, headY, 15f, 15f, backHover);
+        Icons.draw("back", panelX + 12f, headY + 4f, 7f,
+                (backHover ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB());
+        if (consumePressInBounds(panelX + 8f, headY, 15f, 15f, 0) != null) {
+            mc.displayGuiScreen(new MainMenu());
+        }
+        UiChrome.boldString(FPSMaster.fontManager.s16, FPSMaster.i18n.get("backgroundselector.title"),
+                panelX + 28f, headY + 3.5f, ClickGuiTheme.textPrimary().getRGB());
+        float pickW = FPSMaster.fontManager.getFont(13).getStringWidth(FPSMaster.i18n.get("backgroundselector.pick")) + 16f;
+        if (UiChrome.buttonClicked(this, panelX + panelWidth - 10f - pickW, headY, pickW, 15f, null,
+                FPSMaster.i18n.get("backgroundselector.pick"), UiChrome.Style.DEFAULT, mouseX, mouseY)) {
+            selectCustomImage();
+        }
 
-        float contentX = panelX + 12f;
-        float contentY = panelY + 52f;
-        float contentWidth = panelWidth - 24f;
-        float contentHeight = panelHeight - 92f;
+        float contentX = panelX + 10f;
+        float contentY = panelY + 30f;
+        float contentWidth = panelWidth - 20f;
+        float contentHeight = panelHeight - 40f;
 
         GL11.glPushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         Scissor.apply(contentX, contentY, contentWidth, contentHeight);
 
+        final float cardW = (contentWidth - CARD_GAP) / 2f;
         scrollContainer.draw(this, contentX, contentY, contentWidth, contentHeight, mouseX, mouseY, () -> {
-            float listY = LIST_TOP_PADDING + scrollContainer.getScroll();
-            for (BackgroundOption option : OPTIONS) {
-                float cardY = contentY + listY;
-                renderCard(contentX, cardY, contentWidth, option, mouseX, mouseY, alpha);
-                listY += CARD_HEIGHT;
-                if ("classic".equals(option.id) && isOptionSelected("classic")) {
-                    float editorY = contentY + listY;
-                    renderClassicColorEditor(contentX, editorY, contentWidth, mouseX, mouseY, alpha);
-                    listY += getClassicEditorHeight() + CLASSIC_EDITOR_BOTTOM_GAP;
-                } else {
-                    listY += CARD_GAP;
-                }
+            float scroll = scrollContainer.getScroll();
+            for (int i = 0; i < OPTIONS.length; i++) {
+                float cx = contentX + (i % 2) * (cardW + CARD_GAP);
+                float cy = contentY + LIST_TOP_PADDING + (i / 2) * (CARD_HEIGHT + CARD_GAP) + scroll;
+                renderCard(cx, cy, cardW, OPTIONS[i], mouseX, mouseY, alpha);
             }
-            float totalHeight = LIST_TOP_PADDING + OPTIONS.length * CARD_HEIGHT + (OPTIONS.length - 1) * CARD_GAP + LIST_BOTTOM_PADDING;
+            int rows = (OPTIONS.length + 1) / 2;
+            float totalHeight = LIST_TOP_PADDING + rows * (CARD_HEIGHT + CARD_GAP) + LIST_BOTTOM_PADDING;
             if (isOptionSelected("classic")) {
-                totalHeight += getClassicEditorHeight();
+                float editorY = contentY + LIST_TOP_PADDING + rows * (CARD_HEIGHT + CARD_GAP) + scroll;
+                renderClassicColorEditor(contentX, editorY, contentWidth, mouseX, mouseY, alpha);
+                totalHeight += getClassicEditorHeight() + CLASSIC_EDITOR_BOTTOM_GAP;
             }
             scrollContainer.setHeight(totalHeight);
         });
@@ -169,27 +183,24 @@ public class BackgroundSelector extends ScaledGuiScreen {
         boolean selected = isOptionSelected(option.id);
         boolean hovered = Hover.is(x, y, width, CARD_HEIGHT, mouseX, mouseY);
 
-        Color bg = selected
-                ? new Color(66, 133, 244, (int) (178 * alpha))
-                : (hovered ? new Color(52, 52, 58, (int) (205 * alpha)) : new Color(35, 35, 40, (int) (180 * alpha)));
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(CARD_HEIGHT), 10, bg);
+        // preview fills the card, hairline (accent when selected) around it
+        Rects.rounded(x - 0.5f, y - 0.5f, width + 1f, CARD_HEIGHT + 1f, UiChrome.CARD_RADIUS + 1,
+                (selected ? ClickGuiTheme.accent()
+                        : hovered ? ClickGuiTheme.strokeStrong() : ClickGuiTheme.stroke()).getRGB(), false);
+        Rects.rounded(x, y, width, CARD_HEIGHT, UiChrome.CARD_RADIUS, new Color(22, 22, 25).getRGB(), false);
+        renderPreview(x + 1f, y + 1f, width - 2f, CARD_HEIGHT - 2f, option);
 
+        // bottom label scrim
+        float labelH = 13f;
+        Rects.rounded(x + 1f, y + CARD_HEIGHT - 1f - labelH, width - 2f, labelH, UiChrome.CARD_RADIUS,
+                new Color(0, 0, 0, 166).getRGB(), false);
+        FPSMaster.fontManager.getFont(12).drawString(FPSMaster.i18n.get(option.nameKey),
+                x + 6f, y + CARD_HEIGHT - 1f - labelH + 3.5f, ClickGuiTheme.textPrimary().getRGB());
         if (selected) {
-            Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(CARD_HEIGHT), 10, new Color(130, 190, 255, (int) (42 * alpha)));
-        }
-
-        float iconSize = 46f;
-        float iconX = x + 10f;
-        float iconY = y + (CARD_HEIGHT - iconSize) / 2f;
-        Rects.rounded(Math.round(iconX), Math.round(iconY), Math.round(iconSize), Math.round(iconSize), 6, new Color(22, 22, 25, (int) (255 * alpha)));
-        renderPreview(iconX + 2f, iconY + 2f, iconSize - 4f, iconSize - 4f, option);
-
-        float textX = iconX + iconSize + 10f;
-        FPSMaster.fontManager.s18.drawString(FPSMaster.i18n.get(option.nameKey), textX, y + 14f, new Color(255, 255, 255, (int) (255 * alpha)).getRGB());
-        FPSMaster.fontManager.s14.drawString(FPSMaster.i18n.get(option.descKey), textX, y + 36f, new Color(188, 188, 188, (int) (255 * alpha)).getRGB());
-
-        if (option.id.equals("custom")) {
-            renderPickButton(textX, y + 56f, mouseX, mouseY, alpha);
+            float ckX = x + width - 14f;
+            float ckY = y + CARD_HEIGHT - 1f - labelH + 2.5f;
+            Rects.rounded(ckX, ckY, 8f, 8f, 4, ClickGuiTheme.accent().getRGB(), false);
+            Icons.draw("check", ckX + 1.5f, ckY + 1.5f, 5f, 0xFFFFFFFF);
         }
     }
 
@@ -262,20 +273,11 @@ public class BackgroundSelector extends ScaledGuiScreen {
         }
     }
 
-    private void renderPickButton(float x, float y, int mouseX, int mouseY, float alpha) {
-        float w = 90f;
-        float h = 12f;
-        boolean hovered = Hover.is(x, y, w, h, mouseX, mouseY);
-        Color bg = hovered ? new Color(100, 181, 246, (int) (180 * alpha)) : new Color(66, 133, 244, (int) (160 * alpha));
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(w), Math.round(h), 4, bg);
-        FPSMaster.fontManager.s14.drawCenteredString(FPSMaster.i18n.get("backgroundselector.pick"), x + w / 2f, y + h / 2f - 4f, new Color(255, 255, 255, (int) (255 * alpha)).getRGB());
-    }
-
     private void renderClassicColorEditor(float x, float y, float width, int mouseX, int mouseY, float alpha) {
         float editorHeight = getClassicEditorHeight();
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(editorHeight), 10,
-                new Color(35, 35, 40, (int) (180 * alpha)));
-        classicColorRender.render(this, x + 4f, y + 4f, width - 8f, 12f, mouseX, mouseY, true);
+        Rects.rounded(x, y, width, editorHeight, UiChrome.CARD_RADIUS,
+                ClickGuiTheme.layer().getRGB(), false);
+        classicColorRender.render(this, x + 3f, y + 3f, width - 6f, 12f, mouseX, mouseY, true);
     }
 
     private void syncClassicBackgroundConfig() {
@@ -293,44 +295,28 @@ public class BackgroundSelector extends ScaledGuiScreen {
     }
 
     private void handlePendingClick(float panelX, float panelY, float panelWidth, float panelHeight) {
-        float contentX = panelX + 12f;
-        float contentY = panelY + 52f;
-        float contentWidth = panelWidth - 24f;
-        float contentHeight = panelHeight - 92f;
+        float contentX = panelX + 10f;
+        float contentY = panelY + 30f;
+        float contentWidth = panelWidth - 20f;
+        float contentHeight = panelHeight - 40f;
 
         ScaledGuiScreen.PointerEvent click = consumePressInBounds(contentX, contentY, contentWidth, contentHeight, 0);
-        if (click == null) {
+        if (click != null) {
+            float cardW = (contentWidth - CARD_GAP) / 2f;
+            float scroll = scrollContainer.getScroll();
+            for (int i = 0; i < OPTIONS.length; i++) {
+                float cx = contentX + (i % 2) * (cardW + CARD_GAP);
+                float cy = contentY + LIST_TOP_PADDING + (i / 2) * (CARD_HEIGHT + CARD_GAP) + scroll;
+                if (Hover.is(cx, cy, cardW, CARD_HEIGHT, click.x, click.y)) {
+                    FPSMaster.configManager.configure.background = OPTIONS[i].id;
+                    return;
+                }
+            }
             return;
         }
-
-        int mouseX = click.x;
-        int mouseY = click.y;
-
-        float listY = LIST_TOP_PADDING + scrollContainer.getScroll();
-        for (BackgroundOption option : OPTIONS) {
-            float cardY = contentY + listY;
-            if (Hover.is(contentX, cardY, contentWidth, CARD_HEIGHT, mouseX, mouseY)) {
-                if ("custom".equals(option.id)) {
-                    float iconSize = 46f;
-                    float textX = contentX + 10f + iconSize + 10f;
-                    float btnX = textX;
-                    float btnY = cardY + 56f;
-                    if (Hover.is(btnX, btnY, 90f, 12f, mouseX, mouseY)) {
-                        selectCustomImage();
-                    } else {
-                        FPSMaster.configManager.configure.background = "custom";
-                    }
-                } else {
-                    FPSMaster.configManager.configure.background = option.id;
-                }
-                return;
-            }
-            listY += CARD_HEIGHT;
-            if ("classic".equals(option.id) && isOptionSelected("classic")) {
-                listY += getClassicEditorHeight() + CLASSIC_EDITOR_BOTTOM_GAP;
-            } else {
-                listY += CARD_GAP;
-            }
+        // click outside the panel dismisses the modal
+        if (consumePressOutside(panelX, panelY, panelWidth, panelHeight) != null) {
+            mc.displayGuiScreen(new MainMenu());
         }
     }
 

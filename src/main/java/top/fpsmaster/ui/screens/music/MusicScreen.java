@@ -1,6 +1,5 @@
 package top.fpsmaster.ui.screens.music;
 
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -8,13 +7,14 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.modules.music.MusicManager;
 import top.fpsmaster.modules.music.MusicTextures;
-import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.music.Lyric;
 import top.fpsmaster.music.LyricLine;
 import top.fpsmaster.music.MusicSource;
 import top.fpsmaster.music.QrCode;
 import top.fpsmaster.music.QrLoginState;
 import top.fpsmaster.music.Track;
+import top.fpsmaster.ui.click.ClickGuiTheme;
+import top.fpsmaster.ui.click.UiChrome;
 import top.fpsmaster.ui.common.TextField;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Icons;
@@ -24,48 +24,29 @@ import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.utils.render.gui.Scissor;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 /**
  * 音乐界面：源切换（网易云 / QQ）、搜索、发现、歌单、扫码/Cookie 登录、播放控制、进度/音量、歌词。
  *
  * <p>数据来自开源库 Cadence（top.fpsmaster:music-api），播放走 {@link top.fpsmaster.modules.music.AudioEngine}。
- * UI 遵循 Edge 既有框架（{@link ScaledGuiScreen} + Rects/Images/字体 + 手动滚动/裁剪）。
+ * 视觉层对应原型 {@code docs/prototypes/music.html}（1 GUI 单位 = 原型 CSS px / 2），
+ * 配色走 {@link ClickGuiTheme}，通用控件走 {@link UiChrome}。
  */
 public class MusicScreen extends ScaledGuiScreen {
 
     private enum Tab {DISCOVER, PLAYLISTS, SEARCH, LYRICS}
 
-    // 间距系统：统一用 PAD 作为面板内边距基准
-    private static final float PAD = 20f;
-
-    /** Sidebar content (≈215px) + player bar (46px) + margin. Below this the sidebar overflows. */
-    private static final float MIN_PANEL_HEIGHT = 300f;
-
-    // 配色（跟随 ClickGUI 主题，见 refreshTheme）
-    private static final int DIM = 0xCC000000;
+    /** VIP 标签金色（原型 #d9a441，与主题无关）。 */
     private static final int BADGE = 0xFFD9A441;
-    private int PANEL, PANEL2, CARD, CARD_HOVER, TEXT, SUB, TRACK_BG, DIVIDER;
 
-    private void refreshTheme() {
-        // ClickGUI 暗色主题的 panelBg 是透明的（真实面板用 panel.png 图片），直接用会导致面板无背景。
-        // 这里用显式不透明色，随主题切换，保证面板始终可见且风格一致。
-        boolean light = ClickGuiTheme.isLight();
-        PANEL = light ? 0xFFF4F5F7 : 0xFF16161B;
-        PANEL2 = light ? 0xFFE8EAEE : 0xFF1F1F26;
-        CARD = light ? 0xFFECEEF2 : 0xFF23232B;
-        CARD_HOVER = light ? 0xFFE0E3E9 : 0xFF2E2E38;
-        TEXT = ClickGuiTheme.textPrimary().getRGB();
-        SUB = ClickGuiTheme.textSecondary().getRGB();
-        TRACK_BG = light ? 0xFFD6DAE0 : 0xFF33333D;
-        DIVIDER = light ? 0x12000000 : 0x14FFFFFF;
-    }
+    /** 左列「正在播放」宽度（原型 .now 320px）。 */
+    private static final float NOW_W = 160f;
 
     private final MusicManager m;
     private Tab tab = Tab.DISCOVER;
     private Tab previousTab = Tab.DISCOVER;
-
-    private UFontRenderer f14, f16, f18, f20, f24;
 
     private TextField searchField;
     private TextField qqUin, qqKey;
@@ -92,6 +73,12 @@ public class MusicScreen extends ScaledGuiScreen {
     private float previewFrac = 0;
     private boolean draggingVolume = false;
 
+    /** 收藏按钮的本地视觉状态（暂无收藏后端）。 */
+    private boolean liked = false;
+
+    /** 歌单占位渐变的近似纯色（原型卡片渐变的取中值）。 */
+    private static final int[] ART_PLACEHOLDER = {0xFF58A6D6, 0xFF8CC16A, 0xFF9A6FD0, 0xFFE0608A};
+
     public MusicScreen() {
         this.m = MusicManager.get();
     }
@@ -99,20 +86,16 @@ public class MusicScreen extends ScaledGuiScreen {
     @Override
     public void initGui() {
         super.initGui();
-        f14 = FPSMaster.fontManager.s14;
-        f16 = FPSMaster.fontManager.s16;
-        f18 = FPSMaster.fontManager.s18;
-        f20 = FPSMaster.fontManager.s20;
-        f24 = FPSMaster.fontManager.s24;
-
         // initGui also runs on every window resize, and rebuilding the fields there threw away whatever
         // the user had typed — including a pasted QQ musickey, which is tedious to obtain. Keep the
         // existing instances instead of recreating and re-populating them: setText() runs
         // setCursorPosition(), which derives the scroll offset from getWidth(), and width is only
         // assigned inside drawTextBox() — so on a field that has never been drawn it reads 0, pushes
         // lineScrollOffset past the end of the text, and the box renders empty from then on.
+        // Surfaces (searchBox/inputBox) are drawn by UiChrome, so the fields keep a transparent bg.
         if (searchField == null) {
-            searchField = new TextField(f16, "搜索歌曲 / 歌手…", CARD, TEXT, 60, new Runnable() {
+            searchField = new TextField(FPSMaster.fontManager.getFont(13), "搜索歌曲、歌手、专辑…",
+                    0x00000000, text(), 60, new Runnable() {
                 @Override
                 public void run() {
                     doSearch();
@@ -120,10 +103,10 @@ public class MusicScreen extends ScaledGuiScreen {
             });
         }
         if (qqUin == null) {
-            qqUin = new TextField(f14, "musicid (uin)", CARD, TEXT, 32);
+            qqUin = new TextField(FPSMaster.fontManager.getFont(12), "musicid (uin)", 0x00000000, text(), 32);
         }
         if (qqKey == null) {
-            qqKey = new TextField(f14, "musickey (qm_keyst)", CARD, TEXT, 256);
+            qqKey = new TextField(FPSMaster.fontManager.getFont(12), "musickey (qm_keyst)", 0x00000000, text(), 256);
         }
     }
 
@@ -131,11 +114,26 @@ public class MusicScreen extends ScaledGuiScreen {
         return ClickGuiTheme.accent().getRGB();
     }
 
+    private static int text() {
+        return ClickGuiTheme.textPrimary().getRGB();
+    }
+
+    private static int sub() {
+        return ClickGuiTheme.textSecondary().getRGB();
+    }
+
+    private static int dis() {
+        return ClickGuiTheme.textDisabled().getRGB();
+    }
+
+    private static UFontRenderer f(int size) {
+        return FPSMaster.fontManager.getFont(size);
+    }
+
     // ================= 渲染 =================
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        refreshTheme();
         int mx = getMouseX();
         int my = getMouseY();
         // Peek, don't consume: whichever widget actually contains the press claims it inside in().
@@ -144,142 +142,299 @@ public class MusicScreen extends ScaledGuiScreen {
         int cx = click ? pe.x : -1;
         int cy = click ? pe.y : -1;
 
-        Rects.fill(0, 0, guiWidth, guiHeight, DIM);
+        UiChrome.veil(guiWidth, guiHeight, 1f);
 
-        float pw = Math.min(guiWidth - 30, 500);
-        // The sidebar's content height is fixed (title + 3 nav rows + source header + 2 source rows +
-        // the bottom-aligned login button), so a panel shorter than this let the source rows spill past
-        // contentBottom and land on top of the player bar — where a single click hit both, starting
-        // playback and switching source at once. Keep the panel tall enough that it cannot happen.
-        float ph = Math.max(Math.min(guiHeight - 30, 316), MIN_PANEL_HEIGHT);
+        float pw = Math.min(480f, guiWidth - 24f);
+        float ph = Math.min(290f, guiHeight - 32f);
         float px = (guiWidth - pw) / 2f;
         float py = (guiHeight - ph) / 2f;
 
-        Rects.rounded((int) px, (int) py, (int) pw, (int) ph, 8, PANEL);
+        UiChrome.panel(px, py, pw, ph);
 
         boolean modal = loginOpen;
         int hcx = modal ? -1 : cx;
         int hcy = modal ? -1 : cy;
 
-        float playerH = 46;
-        float contentBottom = py + ph - playerH;
-        float sidebarW = Math.max(92f, Math.min(122f, pw * 0.24f));
+        // 左列底衬（原型有径向渐变，这里用轻微加深近似）+ 竖分隔线
+        Rects.fill(px + 1, py + 1, NOW_W - 1, ph - 2, ClickGuiTheme.mask(40).getRGB());
+        UiChrome.hairlineV(px + NOW_W, py + 1, ph - 2);
 
-        // 侧边栏（导航 + 来源 + 登录）
-        drawSidebar(px, py, sidebarW, contentBottom - py, mx, my, hcx, hcy);
-        Rects.fill(px + sidebarW, py + 12, 1, contentBottom - py - 24, DIVIDER);
+        drawNowPlaying(px, py, NOW_W, ph, mx, my, hcx, hcy);
 
-        // 关闭（右上角）
-        float clS = 18;
-        float clX = px + pw - clS - 10;
-        float clY = py + 10;
+        // 右上角关闭
+        float clS = 16f;
+        float clX = px + pw - 7f - clS;
+        float clY = py + 7f;
         boolean clHov = Hover.is(clX, clY, clS, clS, mx, my);
-        Rects.rounded(clX, clY, clS, clS, 5, clHov ? CARD_HOVER : CARD);
-        drawCloseIcon(clX + clS / 2f, clY + clS / 2f, 4, clHov ? TEXT : SUB);
+        UiChrome.ghostButton(clX, clY, clS, clS, clHov);
+        Icons.draw("close", clX + (clS - 8f) / 2f, clY + (clS - 8f) / 2f, 8f, clHov ? text() : sub());
         if (in(hcx, hcy, clX, clY, clS, clS)) {
             mc.displayGuiScreen(null);
             return;
         }
 
-        // 主内容区
-        float mainX = px + sidebarW + 14;
-        float mainW = pw - sidebarW - 26;
-        drawMain(mainX, py + 12, mainW, contentBottom - py - 24, mx, my, hcx, hcy);
+        float bx = px + NOW_W;
+        float bw = pw - NOW_W;
+        drawBrowseHead(bx, py, bw, clX, mx, my, hcx, hcy);
 
-        // 播放条
-        Rects.fill(px + 12, contentBottom, pw - 24, 1, DIVIDER);
-        drawPlayerBar(px, contentBottom, pw, playerH, mx, my, hcx, hcy);
+        float toolbarY = py + 34f;
+        drawToolbar(bx, toolbarY, bw, hcx, hcy, mx, my);
+
+        float contentX = bx + 14f;
+        float contentW = bw - 24f;
+        float contentY = toolbarY + UiChrome.SEARCH_H + 5f;
+        float contentH = py + ph - 8f - contentY;
+        drawMain(contentX, contentY, contentW, contentH, mx, my, hcx, hcy);
 
         if (loginOpen) {
-            drawLoginModal(px, py, pw, ph, mx, my, cx, cy);
+            drawLoginModal(mx, my, cx, cy);
         }
     }
 
-    // ================= 侧边栏 =================
+    // ================= 正在播放 =================
 
-    private void drawSidebar(float x, float y, float w, float h, int mx, int my, int cx, int cy) {
-        float pad = 12;
-        f18.drawString("Music", x + pad, y + 13, TEXT);
+    private void drawNowPlaying(float x, float y, float w, float h, int mx, int my, int cx, int cy) {
+        Track cur = m.getCurrent();
 
-        float iy = y + 40;
-        iy = sidebarNav(x, iy, w, "搜索", Tab.SEARCH, 0, mx, my, cx, cy);
-        iy = sidebarNav(x, iy, w, "发现", Tab.DISCOVER, 1, mx, my, cx, cy);
-        iy = sidebarNav(x, iy, w, "歌单", Tab.PLAYLISTS, 2, mx, my, cx, cy);
+        // 封面 95x95，顶部 padding 20，水平居中
+        float cover = 95f;
+        float cvX = x + (w - cover) / 2f;
+        float cvY = y + 20f;
+        ResourceLocation art = cur == null ? null : MusicTextures.cover(cur.getCoverUrl());
+        if (art != null) {
+            Images.drawSmooth(art, cvX, cvY, cover, cover, -1);
+        } else {
+            Rects.rounded(cvX, cvY, cover, cover, 10, ClickGuiTheme.layerActive().getRGB(), false);
+            Icons.draw("music", cvX + cover / 2f - 12f, cvY + cover / 2f - 12f, 24f, dis());
+        }
+        if (in(cx, cy, cvX, cvY, cover, cover)) {
+            toggleLyrics();
+        }
 
-        iy += 12;
-        f14.drawString("来源", x + pad, iy, SUB);
-        iy += 18;
-        iy = sidebarSource(x, iy, w, "网易云", MusicSource.NETEASE, mx, my, cx, cy);
-        iy = sidebarSource(x, iy, w, "QQ音乐", MusicSource.QQ, mx, my, cx, cy);
+        // 标题 + 歌手行
+        UFontRenderer f16 = FPSMaster.fontManager.s16;
+        UFontRenderer f12 = f(12);
+        String title = cur == null ? "未在播放" : cur.getName();
+        String artist = cur == null ? sourceName() : (m.getStatus().isEmpty() ? cur.getArtists() : m.getStatus());
+        UiChrome.boldCentered(f16, f16.trimStringToWidth(title, w - 20f), x + w / 2f, cvY + cover + 11f, text());
+        f12.drawCenteredString(f12.trimStringToWidth(artist, w - 20f), x + w / 2f, cvY + cover + 21f,
+                m.getStatus().isEmpty() ? sub() : BADGE);
 
-        // 底部：登录 / 退出
-        float lbH = 26;
-        float lbX = x + pad;
-        float lbW = w - pad * 2;
-        float lbY = y + h - lbH - 10;
-        String label = m.isLoggedIn() ? "退出登录" : "登录";
-        boolean lbHov = Hover.is(lbX, lbY, lbW, lbH, mx, my);
-        Rects.rounded(lbX, lbY, lbW, lbH, 6, lbHov ? CARD_HOVER : CARD);
-        f14.drawCenteredString(label, lbX + lbW / 2f, lbY + lbH / 2f - f14.getHeight() / 2f, m.isLoggedIn() ? accent() : TEXT);
-        if (in(cx, cy, lbX, lbY, lbW, lbH)) {
+        // 歌词预览 3 行
+        drawLyricPreview(x, cvY + cover + 33f, w);
+
+        // ---- 底部对齐区：进度条 / 时间 / 控制排 / 音量排 ----
+        long dur = m.engine().getDurationMs();
+        if (dur <= 0 && cur != null) dur = cur.getDurationMs();
+        long pos = m.engine().getPositionMs();
+        float frac = dur > 0 ? (float) pos / dur : 0;
+        if (draggingProgress) frac = previewFrac;
+
+        float barX = x + 16f;
+        float barW = w - 32f;
+        float barBoxY = y + h - 83f;
+        drawSlider(barX, barBoxY, barW, frac, mx, my, cx, cy, true);
+        UFontRenderer f10 = f(10);
+        float timesY = barBoxY + 11f;
+        f10.drawString(formatMs(pos), barX, timesY, dis());
+        String durText = formatMs(dur);
+        f10.drawString(durText, barX + barW - f10.getStringWidth(durText), timesY, dis());
+
+        // 控制排：heart / prev / play / next / lyrics（小钮 18，主钮 24）
+        float ctlCy = y + h - 45f;
+        float bs = 18f;
+        float ps = 24f;
+        float rowW = bs * 4f + ps + 4f * 2f + 6f * 2f;
+        float ix = x + (w - rowW) / 2f;
+
+        boolean heartHov = Hover.is(ix, ctlCy - bs / 2f, bs, bs, mx, my);
+        UiChrome.ghostButton(ix, ctlCy - bs / 2f, bs, bs, heartHov);
+        Icons.draw("heart", ix + (bs - 8f) / 2f, ctlCy - 4f, 8f,
+                liked ? ClickGuiTheme.danger().getRGB() : (heartHov ? text() : sub()));
+        if (in(cx, cy, ix, ctlCy - bs / 2f, bs, bs)) liked = !liked;
+        ix += bs + 4f;
+
+        boolean prevHov = Hover.is(ix, ctlCy - bs / 2f, bs, bs, mx, my);
+        UiChrome.ghostButton(ix, ctlCy - bs / 2f, bs, bs, prevHov);
+        Icons.draw("prev", ix + (bs - 8f) / 2f, ctlCy - 4f, 8f, prevHov ? text() : sub());
+        if (in(cx, cy, ix, ctlCy - bs / 2f, bs, bs)) m.prev();
+        ix += bs + 6f;
+
+        Rects.rounded(ix, ctlCy - ps / 2f, ps, ps, (int) (ps / 2f), accent(), false);
+        Icons.draw(m.engine().isPlaying() ? "pause" : "play", ix + (ps - 10f) / 2f, ctlCy - 5f, 10f, 0xFFFFFFFF);
+        if (in(cx, cy, ix, ctlCy - ps / 2f, ps, ps) && cur != null) m.togglePause();
+        ix += ps + 6f;
+
+        boolean nextHov = Hover.is(ix, ctlCy - bs / 2f, bs, bs, mx, my);
+        UiChrome.ghostButton(ix, ctlCy - bs / 2f, bs, bs, nextHov);
+        Icons.draw("next", ix + (bs - 8f) / 2f, ctlCy - 4f, 8f, nextHov ? text() : sub());
+        if (in(cx, cy, ix, ctlCy - bs / 2f, bs, bs)) m.next();
+        ix += bs + 4f;
+
+        boolean lyOn = tab == Tab.LYRICS;
+        boolean lyHov = Hover.is(ix, ctlCy - bs / 2f, bs, bs, mx, my);
+        UiChrome.ghostButton(ix, ctlCy - bs / 2f, bs, bs, lyHov);
+        Icons.draw("lyrics", ix + (bs - 8f) / 2f, ctlCy - 4f, 8f,
+                lyOn ? accent() : (lyHov ? text() : sub()));
+        if (in(cx, cy, ix, ctlCy - bs / 2f, bs, bs)) toggleLyrics();
+
+        // 音量排
+        float volIconY = y + h - 23f;
+        Icons.draw("volume", x + 16f, volIconY, 7.5f, sub());
+        float vsX = x + 16f + 7.5f + 5f;
+        drawSlider(vsX, y + h - 25f, x + w - 16f - vsX, m.getVolume() / 100f, mx, my, cx, cy, false);
+    }
+
+    private void drawLyricPreview(float x, float y, float w) {
+        UFontRenderer f13 = f(13);
+        UFontRenderer f12 = f(12);
+        Lyric ly = m.getCurrentLyric();
+        if (ly == null || ly.getLines() == null || ly.getLines().isEmpty()) {
+            f12.drawCenteredString(ly == null ? "歌词加载中…" : "暂无歌词", x + w / 2f, y + 11f, dis());
+            return;
+        }
+        List<LyricLine> lines = ly.getLines();
+        int cur = m.currentLyricLine();
+        int start = Math.max(0, cur - 1);
+        float lyY = y;
+        for (int i = start; i < Math.min(lines.size(), start + 3); i++) {
+            LyricLine line = lines.get(i);
+            if (line.getText() == null || line.getText().isEmpty()) {
+                continue;
+            }
+            boolean on = i == cur;
+            if (on) {
+                UiChrome.boldCentered(f13, f13.trimStringToWidth(line.getText(), w - 20f), x + w / 2f, lyY, text());
+            } else {
+                f12.drawCenteredString(f12.trimStringToWidth(line.getText(), w - 20f), x + w / 2f, lyY, dis());
+            }
+            lyY += 11f;
+        }
+    }
+
+    private static String formatMs(long ms) {
+        if (ms <= 0) {
+            return "0:00";
+        }
+        long total = ms / 1000L;
+        return (total / 60L) + ":" + String.format("%02d", (int) (total % 60L));
+    }
+
+    // ================= 浏览头部 / 工具栏 =================
+
+    private void drawBrowseHead(float x, float y, float w, float closeX, int mx, int my, int cx, int cy) {
+        UFontRenderer f16 = FPSMaster.fontManager.s16;
+        UFontRenderer f12 = f(12);
+        UFontRenderer f11 = f(11);
+
+        UiChrome.boldString(f16, greeting(), x + 14f, y + 11f, text());
+        f11.drawString(greetingSub(), x + 14f, y + 21f, sub());
+
+        float rowH = 15f;
+        float rowY = y + 11f;
+        boolean qq = m.getSource() == MusicSource.QQ;
+
+        // 账户胶囊（头像圆 11 + 文本），未登录时显示"登录"
+        String accLabel = m.isLoggedIn() ? "已登录" : "登录";
+        float labelW = f12.getStringWidth(accLabel);
+        float pillW = 2f + 11f + 4f + labelW + 6f;
+        float pillX = closeX - 6f - pillW;
+        boolean accHov = Hover.is(pillX, rowY, pillW, rowH, mx, my);
+        Rects.rounded(pillX - 0.5f, rowY - 0.5f, pillW + 1f, rowH + 1f, 8,
+                ClickGuiTheme.stroke().getRGB(), false);
+        Rects.rounded(pillX, rowY, pillW, rowH, 7,
+                (accHov ? ClickGuiTheme.layerHover() : ClickGuiTheme.layer()).getRGB(), false);
+        float avaX = pillX + 2f;
+        float avaY = rowY + 2f;
+        Rects.rounded(avaX, avaY, 11f, 11f, 5, qq ? 0xFF2FBE77 : 0xFFE7392F, false);
+        Icons.draw("user", avaX + 2.5f, avaY + 2.5f, 6f, 0xFFFFFFFF);
+        f12.drawString(accLabel, avaX + 11f + 4f, rowY + rowH / 2f - 3f, text());
+        if (in(cx, cy, pillX, rowY, pillW, rowH)) {
             if (m.isLoggedIn()) m.logout();
             else openLogin();
         }
-    }
 
-    private float sidebarNav(float x, float baseY, float w, String label, Tab t, int icon, int mx, int my, int cx, int cy) {
-        float pad = 7;
-        float ix = x + pad;
-        float iw = w - pad * 2;
-        float ih = 26;
-        boolean active = tab == t;
-        boolean hov = Hover.is(ix, baseY, iw, ih, mx, my);
-        if (active) Rects.rounded(ix, baseY, iw, ih, 6, withAlpha(accent(), 30));
-        else if (hov) Rects.rounded(ix, baseY, iw, ih, 6, CARD);
-        int col = active ? accent() : (hov ? TEXT : SUB);
-        float iconX = ix + 8;
-        drawNavIcon(icon, iconX, baseY + ih / 2f - 5, 10, col);
-        f14.drawString(label, iconX + 17, baseY + ih / 2f - f14.getHeight() / 2f, active ? TEXT : col);
-        if (in(cx, cy, ix, baseY, iw, ih) && tab != t) {
-            tab = t;
-            scroll = 0;
-            // The search box only gets a chance to lose focus while the search tab is rendering, so
-            // without this it stays focused after navigating away and keeps swallowing keystrokes into
-            // a field that is no longer on screen.
-            if (searchField != null) {
-                searchField.setFocused(false);
+        // 源分段控件（网易云 / QQ 音乐）
+        String[] srcLabels = {"网易云", "QQ 音乐"};
+        float segPad = 1.5f;
+        float[] optW = new float[2];
+        float segW = segPad * 2f;
+        for (int i = 0; i < 2; i++) {
+            optW[i] = f12.getStringWidth(srcLabels[i]) + 14f;
+            segW += optW[i];
+        }
+        float segX = pillX - 6f - segW;
+        UiChrome.seg(segX, rowY, segW, rowH);
+        float ox = segX + segPad;
+        for (int i = 0; i < 2; i++) {
+            boolean selected = (i == 1) == qq;
+            boolean hov = Hover.is(ox, rowY, optW[i], rowH, mx, my);
+            UiChrome.segOption(ox, rowY + segPad, optW[i], rowH - segPad * 2f, srcLabels[i], selected, hov);
+            if (in(cx, cy, ox, rowY, optW[i], rowH) && !selected) {
+                m.setSource(i == 1 ? MusicSource.QQ : MusicSource.NETEASE);
+                onSourceChanged();
             }
+            ox += optW[i];
         }
-        return baseY + ih + 3;
     }
 
-    private float sidebarSource(float x, float baseY, float w, String label, MusicSource src, int mx, int my, int cx, int cy) {
-        float pad = 7;
-        float ix = x + pad;
-        float iw = w - pad * 2;
-        float ih = 22;
-        boolean active = m.getSource() == src;
-        boolean hov = Hover.is(ix, baseY, iw, ih, mx, my);
-        if (hov && !active) Rects.rounded(ix, baseY, iw, ih, 5, CARD);
-        int dot = src == MusicSource.QQ ? 0xFF2FBE77 : 0xFFE7392F;
-        Rects.rounded(ix + 8, baseY + ih / 2f - 3, 7, 7, 3, active ? dot : withAlpha(dot, 90));
-        f14.drawString(label, ix + 22, baseY + ih / 2f - f14.getHeight() / 2f, active ? TEXT : SUB);
-        if (in(cx, cy, ix, baseY, iw, ih) && !active) {
-            m.setSource(src);
-            onSourceChanged();
+    private void drawToolbar(float x, float y, float w, int cx, int cy, int mx, int my) {
+        float h = UiChrome.SEARCH_H;
+        UFontRenderer f12 = f(12);
+
+        // 分段控件：发现 / 我的歌单 / 搜索
+        Tab[] tabs = {Tab.DISCOVER, Tab.PLAYLISTS, Tab.SEARCH};
+        String[] labels = {"发现", "我的歌单", "搜索"};
+        float segPad = 1.5f;
+        float[] optW = new float[tabs.length];
+        float segW = segPad * 2f;
+        for (int i = 0; i < tabs.length; i++) {
+            optW[i] = f12.getStringWidth(labels[i]) + 18f;
+            segW += optW[i];
         }
-        return baseY + ih + 2;
+        float segX = x + 14f;
+        UiChrome.seg(segX, y, segW, h);
+        float ox = segX + segPad;
+        for (int i = 0; i < tabs.length; i++) {
+            boolean selected = tab == tabs[i];
+            boolean hov = Hover.is(ox, y, optW[i], h, mx, my);
+            UiChrome.segOption(ox, y + segPad, optW[i], h - segPad * 2f, labels[i], selected, hov);
+            if (in(cx, cy, ox, y, optW[i], h) && tab != tabs[i]) {
+                tab = tabs[i];
+                scroll = 0;
+                // The search box only gets a chance to lose focus while it is being clicked, so
+                // without this it would keep swallowing keystrokes after navigating away.
+                if (searchField != null) {
+                    searchField.setFocused(false);
+                }
+            }
+            ox += optW[i];
+        }
+
+        // 搜索框（searchField 逻辑保留，回车触发 doSearch）
+        float sw = 115f;
+        float sx = x + w - 14f - sw;
+        UiChrome.searchBox(sx, y, sw, h, searchField.isFocused());
+        Icons.draw("search", sx + 6f, y + (h - 7f) / 2f, 7f, sub());
+        searchField.backGroundColor = 0x00000000;
+        searchField.fontColor = text();
+        searchField.drawTextBox(sx + 16f, y + 2f, sw - 22f, h - 4f);
+        if (cx >= 0) {
+            searchField.mouseClicked(cx, cy, 0);
+            // 落在搜索框内的按压就地消费，避免穿透到其他控件
+            in(cx, cy, sx, y, sw, h);
+        }
     }
 
-    private static final String[] NAV_ICONS = {"search", "discover", "playlist"};
-
-    private void drawNavIcon(int type, float x, float y, float s, int color) {
-        Icons.draw(NAV_ICONS[type], x, y, s, color);
+    private String greeting() {
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        String time = hour < 6 ? "夜深了" : hour < 12 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
+        return time + "，" + (m.getSource() == MusicSource.QQ ? "Q音听友" : "云村居民");
     }
 
-    private void drawCloseIcon(float cx, float cy, float r, int color) {
-        float s = r * 2.6f;
-        Icons.draw("close", cx - s / 2f, cy - s / 2f, s, color);
+    private String greetingSub() {
+        if (m.getSource() == MusicSource.QQ) return "热歌榜已更新";
+        return m.isLoggedIn() ? "每日推荐已更新" : "登录后查看每日推荐";
     }
 
     private void onSourceChanged() {
@@ -290,8 +445,10 @@ public class MusicScreen extends ScaledGuiScreen {
         scroll = 0;
     }
 
+    // ================= 内容区 =================
+
     private void drawMain(float x, float y, float w, float h, int mx, int my, int cx, int cy) {
-        // 歌词是全区沉浸视图，不显示页面标题
+        // 歌词是全区沉浸视图
         if (tab == Tab.LYRICS) {
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
             Scissor.apply(x, y, w, h);
@@ -300,44 +457,28 @@ public class MusicScreen extends ScaledGuiScreen {
             return;
         }
 
-        String title = tab == Tab.PLAYLISTS ? "歌单" : tab == Tab.SEARCH ? "搜索" : "发现";
-        f18.drawString(title, x, y, TEXT);
-        float contentY = y + 28;
-
-        if (tab == Tab.SEARCH) {
-            float sfW = Math.min(300, w);
-            searchField.drawTextBox(x, contentY, sfW, 24);
-            if (cx >= 0) searchField.mouseClicked(cx, cy, 0);
-            contentY += 34;
-        }
-
-        float ch = y + h - contentY;
-        int wheel = consumeWheelDelta(x, contentY, w, ch);
+        int wheel = consumeWheelDelta(x, y, w, h);
         if (wheel != 0) scroll -= wheel / 8f;
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        Scissor.apply(x, contentY, w, ch);
+        Scissor.apply(x, y, w, h);
         switch (tab) {
             case DISCOVER:
                 ensureDiscover();
-                drawTrackList(discoverTracks, discoverSubtitle(), x, contentY, w, ch, cx, cy);
+                drawTrackSection(discoverTracks,
+                        m.getSource() == MusicSource.QQ ? "热歌榜" : "每日推荐", x, y, w, h, cx, cy);
                 break;
             case PLAYLISTS:
                 ensurePlaylists();
-                drawPlaylistGrid(x, contentY, w, ch, mx, my, cx, cy);
+                drawPlaylistGrid(x, y, w, h, mx, my, cx, cy);
                 break;
             case SEARCH:
-                drawTrackList(resultTracks, resultTitle, x, contentY, w, ch, cx, cy);
+                drawTrackSection(resultTracks, resultTitle.isEmpty() ? "搜索" : resultTitle, x, y, w, h, cx, cy);
                 break;
             default:
                 break;
         }
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
-    }
-
-    private String discoverSubtitle() {
-        if (m.getSource() == MusicSource.QQ) return "QQ音乐 · 热歌榜";
-        return m.isLoggedIn() ? "网易云 · 每日推荐" : "网易云 · 登录后查看每日推荐";
     }
 
     private String sourceName() {
@@ -370,11 +511,26 @@ public class MusicScreen extends ScaledGuiScreen {
         });
     }
 
-    private void drawTrackList(List<Track> list, String title, float x, float y, float w, float h, int cx, int cy) {
-        float rowH = 40;
-        boolean hasHead = title != null && !title.isEmpty();
-        float headH = hasHead ? 18 : 0;
-        if (hasHead) f14.drawString(title, x, y, SUB);
+    /** 小节标题（伪粗 13 + 数量 + 右侧"播放全部"）+ 曲目行列表。 */
+    private void drawTrackSection(List<Track> list, String title, float x, float y, float w, float h, int cx, int cy) {
+        UFontRenderer f13 = f(13);
+        UFontRenderer f12 = f(12);
+        UFontRenderer f11 = f(11);
+        UFontRenderer f10 = f(10);
+        UFontRenderer f9 = f(9);
+
+        float headH = 13f;
+        String head = f13.trimStringToWidth(title, w - 70f);
+        UiChrome.boldString(f13, head, x, y, text());
+        if (!list.isEmpty()) {
+            f11.drawString(list.size() + " 首", x + f13.getStringWidth(head) + 4f, y + 1.5f, dis());
+            String all = "播放全部";
+            float aw = f11.getStringWidth(all);
+            f11.drawString(all, x + w - aw, y + 1.5f, ClickGuiTheme.accentText().getRGB());
+            if (in(cx, cy, x + w - aw - 3f, y - 1f, aw + 6f, 10f)) {
+                m.playList(list, 0);
+            }
+        }
         float listY = y + headH;
         float listH = h - headH;
 
@@ -384,47 +540,58 @@ public class MusicScreen extends ScaledGuiScreen {
             else if (tab == Tab.DISCOVER && m.getSource() == MusicSource.NETEASE && !m.isLoggedIn())
                 hint = "登录网易云后可见每日推荐，或用搜索";
             else hint = "暂无内容";
-            f14.drawString(hint, x, listY + 8, SUB);
+            f12.drawString(hint, x, listY + 8f, sub());
             return;
         }
 
+        float rowH = 16f;
         clampScroll(list.size() * rowH, listH);
+        int mX = getMouseX();
         int mY = getMouseY();
+
+        // 列布局：序号(右对齐 10) | 曲名(弹性) | 歌手(65) | 时长(右对齐 20)，行内边距 5
+        float idxRight = x + 5f + 10f;
+        float nameX = idxRight + 6f;
+        float artW = 65f;
+        float artX = x + w - 5f - 20f - 6f - artW;
 
         for (int i = 0; i < list.size(); i++) {
             Track t = list.get(i);
             float ry = listY + i * rowH - scroll;
             if (ry + rowH < listY || ry > listY + listH) continue;
             boolean inView = mY >= listY && mY <= listY + listH;
-            boolean hov = inView && Hover.is(x, ry, w, rowH, getMouseX(), mY);
+            boolean hov = inView && Hover.is(x, ry, w, rowH, mX, mY);
             boolean playing = t == m.getCurrent();
             if (playing) {
-                Rects.rounded((int) x, (int) (ry + 1), (int) w, (int) (rowH - 3), 5, withAlpha(accent(), 26));
+                Rects.rounded(x, ry + 0.5f, w, rowH - 1f, 5, ClickGuiTheme.accentSoft().getRGB(), false);
             } else if (hov) {
-                Rects.rounded((int) x, (int) (ry + 1), (int) w, (int) (rowH - 3), 5, CARD);
+                Rects.rounded(x, ry + 0.5f, w, rowH - 1f, 5, ClickGuiTheme.layer().getRGB(), false);
             }
-            // 封面
-            float cvS = 28;
-            float cvY = ry + (rowH - cvS) / 2f;
-            ResourceLocation cover = MusicTextures.cover(t.getCoverUrl());
-            if (cover != null) {
-                Images.draw(cover, x + 6, cvY, cvS, cvS);
+
+            int accText = ClickGuiTheme.accentText().getRGB();
+            if (playing) {
+                Icons.draw("play", idxRight - 6f, ry + (rowH - 6f) / 2f, 6f, accText);
             } else {
-                Rects.rounded((int) (x + 6), (int) cvY, (int) cvS, (int) cvS, 4, PANEL2);
+                String no = String.valueOf(i + 1);
+                f11.drawString(no, idxRight - f11.getStringWidth(no), ry + rowH / 2f - 2.5f, dis());
             }
-            float tx = x + 6 + cvS + 10;
+
             String dur = fmt(t.getDurationMs());
-            float durW = f14.getStringWidth(dur);
-            float textMax = w - (tx - x) - durW - 16;
-            String name = f16.trimStringToWidth(t.getName(), textMax - (t.getVip() ? 24 : 0));
-            f16.drawString(name, tx, ry + 6, playing ? accent() : TEXT);
+            float durW = f11.getStringWidth(dur);
+            f11.drawString(dur, x + w - 5f - durW, ry + rowH / 2f - 2.5f, dis());
+
+            f11.drawString(f11.trimStringToWidth(t.getArtists(), artW), artX, ry + rowH / 2f - 2.5f, sub());
+
+            float vipW = t.getVip() ? f9.getStringWidth("VIP") + 4f : 0f;
+            float nameMax = artX - 6f - nameX - (t.getVip() ? vipW + 3f : 0f);
+            String name = f13.trimStringToWidth(t.getName(), nameMax);
+            f13.drawString(name, nameX, ry + rowH / 2f - 3.2f, playing ? accText : text());
             if (t.getVip()) {
-                float nw = f16.getStringWidth(name);
-                Rects.rounded((int) (tx + nw + 5), (int) (ry + 7), 22, 11, 3, withAlpha(BADGE, 45));
-                f14.drawString("VIP", tx + nw + 8, ry + 7, BADGE);
+                float tagX = nameX + f13.getStringWidth(name) + 3f;
+                float tagY = ry + (rowH - 7f) / 2f;
+                Rects.rounded(tagX, tagY, vipW, 7f, 2, withAlpha(BADGE, 46), false);
+                f9.drawCenteredString("VIP", tagX + vipW / 2f, tagY + 1.2f, BADGE);
             }
-            f14.drawString(f14.trimStringToWidth(t.getArtists(), textMax), tx, ry + 21, SUB);
-            f14.drawString(dur, x + w - durW - 4, ry + (rowH - f14.getHeight()) / 2f, SUB);
 
             if (in(cx, cy, x, ry, w, rowH) && cy >= listY && cy <= listY + listH) {
                 m.playList(list, i);
@@ -432,41 +599,65 @@ public class MusicScreen extends ScaledGuiScreen {
         }
     }
 
+    /** 歌单卡片 3 列网格（封面区 42 + 信息区）。 */
     private void drawPlaylistGrid(float x, float y, float w, float h, int mx, int my, int cx, int cy) {
-        f14.drawString("歌单 · " + sourceName(), x, y, SUB);
-        float top = y + 18;
-        float gridH = h - 18;
+        UFontRenderer f13 = f(13);
+        UFontRenderer f12 = f(12);
+        UFontRenderer f11 = f(11);
+        UFontRenderer f10 = f(10);
+
+        UiChrome.boldString(f13, "我的歌单", x, y, text());
+        if (!playlists.isEmpty()) {
+            f11.drawString(playlists.size() + " 个", x + f13.getStringWidth("我的歌单") + 4f, y + 1.5f, dis());
+        }
+        float top = y + 13f;
+        float gridH = h - 13f;
+
         if (playlists.isEmpty()) {
             String hint = playlistsLoading ? "加载中…" :
                     (m.getSource() == MusicSource.NETEASE && !m.isLoggedIn() ? "登录网易云后可见我的歌单" : "暂无歌单");
-            f14.drawString(hint, x, top + 8, SUB);
+            f12.drawString(hint, x, top + 8f, sub());
             return;
         }
+
         int cols = 3;
-        float gap = 10;
-        float pad = 6;
-        float cw = (w - gap * (cols - 1)) / cols;
-        float imgS = cw - pad * 2;
-        float chh = imgS + 22; // 图片 + 名字行
+        float cw = (w - 20f) / 3f;
+        float gap = (w - cw * cols) / (cols - 1);
+        float artH = 42f;
+        float chh = artH + 22f;
+        float vGap = 8f;
         int rows = (playlists.size() + cols - 1) / cols;
-        clampScroll(rows * (chh + gap), gridH);
+        clampScroll(rows * (chh + vGap), gridH);
 
         for (int i = 0; i < playlists.size(); i++) {
             int col = i % cols;
             int row = i / cols;
             float cardX = x + col * (cw + gap);
-            float cardY = top + row * (chh + gap) - scroll;
+            float cardY = top + row * (chh + vGap) - scroll;
             if (cardY + chh < top || cardY > top + gridH) continue;
             MusicManager.PlaylistItem p = playlists.get(i);
             boolean hov = Hover.is(cardX, cardY, cw, chh, mx, my) && my >= top && my <= top + gridH;
-            Rects.rounded((int) cardX, (int) cardY, (int) cw, (int) chh, 5, hov ? CARD_HOVER : CARD);
+            UiChrome.card(cardX, cardY, cw, chh, hov, false);
+
             ResourceLocation cover = MusicTextures.cover(p.cover);
             if (cover != null) {
-                Images.draw(cover, cardX + pad, cardY + pad, imgS, imgS);
+                Images.drawSmooth(cover, cardX + 1f, cardY + 1f, cw - 2f, artH - 1f, -1);
             } else {
-                Rects.rounded((int) (cardX + pad), (int) (cardY + pad), (int) imgS, (int) imgS, 4, PANEL2);
+                Rects.rounded(cardX + 1f, cardY + 1f, cw - 2f, artH - 1f, 5,
+                        ART_PLACEHOLDER[i % ART_PLACEHOLDER.length], false);
             }
-            f14.drawString(f14.trimStringToWidth(p.name, cw - pad * 2), cardX + pad, cardY + pad + imgS + 3, TEXT);
+            if (hov) {
+                float fs = 14f;
+                float fx = cardX + cw - 4f - fs;
+                float fy = cardY + artH - 4f - fs;
+                Rects.rounded(fx, fy, fs, fs, 7, 0x8C000000, false);
+                Icons.draw("play", fx + 4f, fy + 4f, 6f, 0xFFFFFFFF);
+            }
+
+            f12.drawString(f12.trimStringToWidth(p.name, cw - 11f), cardX + 5.5f, cardY + artH + 4.5f, text());
+            String count = p.count > 0 ? p.count + " 首" : sourceName();
+            f10.drawString(f10.trimStringToWidth(count, cw - 11f), cardX + 5.5f, cardY + artH + 11.5f, dis());
+
             if (in(cx, cy, cardX, cardY, cw, chh) && cy >= top && cy <= top + gridH) {
                 openPlaylist(p);
             }
@@ -476,24 +667,27 @@ public class MusicScreen extends ScaledGuiScreen {
     private void drawLyrics(float x, float y, float w, float h) {
         float cxm = x + w / 2f;
         Track cur = m.getCurrent();
+        UFontRenderer f14 = FPSMaster.fontManager.s14;
+        UFontRenderer f12 = f(12);
+        UFontRenderer f11 = f(11);
         if (cur == null) {
-            f16.drawCenteredString("未在播放", cxm, y + h / 2f - 8, SUB);
+            f12.drawCenteredString("未在播放", cxm, y + h / 2f - 3f, sub());
             return;
         }
         // 顶部歌曲信息（居中）
-        f18.drawCenteredString(f18.trimStringToWidth(cur.getName(), w), cxm, y + 6, TEXT);
-        f14.drawCenteredString(f14.trimStringToWidth(cur.getArtists(), w), cxm, y + 26, SUB);
+        UiChrome.boldCentered(f14, f14.trimStringToWidth(cur.getName(), w), cxm, y + 4f, text());
+        f11.drawCenteredString(f11.trimStringToWidth(cur.getArtists(), w), cxm, y + 13f, sub());
 
-        float lyY = y + 44;
-        float lyH = h - 44;
+        float lyY = y + 24f;
+        float lyH = h - 24f;
         Lyric ly = m.getCurrentLyric();
         if (ly == null || ly.getLines() == null || ly.getLines().isEmpty()) {
-            f14.drawCenteredString(ly == null ? "歌词加载中…" : "暂无歌词", cxm, lyY + lyH / 2f - 6, SUB);
+            f12.drawCenteredString(ly == null ? "歌词加载中…" : "暂无歌词", cxm, lyY + lyH / 2f - 3f, sub());
             return;
         }
         List<LyricLine> lines = ly.getLines();
         int cur_i = m.currentLyricLine();
-        float lineH = 24;
+        float lineH = 14f;
         // 自动滚动：当前行垂直居中
         float centerOffset = lyH / 2f - lineH / 2f;
         float targetScroll = cur_i < 0 ? 0f : (cur_i * lineH - centerOffset);
@@ -507,104 +701,26 @@ public class MusicScreen extends ScaledGuiScreen {
             if (text == null || text.isEmpty()) continue;
             boolean active = i == cur_i;
             int dist = cur_i < 0 ? i : Math.abs(i - cur_i);
-            UFontRenderer font = active ? f18 : f16;
-            int base = active ? accent() : (line.isMetadata() ? SUB : TEXT);
-            int alpha = active ? 255 : Math.max(40, 200 - dist * 42);
-            font.drawCenteredString(font.trimStringToWidth(text, w), cxm, ly2, withAlpha(base, alpha));
+            if (active) {
+                UiChrome.boldCentered(f14, f14.trimStringToWidth(text, w), cxm, ly2, text());
+            } else {
+                int alpha = Math.max(40, 200 - dist * 42);
+                f12.drawCenteredString(f12.trimStringToWidth(text, w), cxm, ly2, withAlpha(dis(), alpha));
+            }
             String tr = line.getTranslation();
             if (active && tr != null && !tr.isEmpty()) {
-                f14.drawCenteredString(f14.trimStringToWidth(tr, w), cxm, ly2 + 16, withAlpha(SUB, 230));
+                f11.drawCenteredString(f11.trimStringToWidth(tr, w), cxm, ly2 + 7.5f, withAlpha(sub(), 230));
             }
         }
     }
 
-    private void drawPlayerBar(float x, float y, float w, float h, int mx, int my, int cx, int cy) {
-        Track cur = m.getCurrent();
-        float left = x + 14;
-        float right = x + w - 12;
-
-        // 顶部整条细进度条（始终可拖动，窄窗口也不丢失）
-        long dur = m.engine().getDurationMs();
-        if (dur <= 0 && cur != null) dur = cur.getDurationMs();
-        long pos = m.engine().getPositionMs();
-        float frac = dur > 0 ? (float) pos / dur : 0;
-        if (draggingProgress) frac = previewFrac;
-        drawSlider(left, y + 5, right - left, frac, mx, my, cx, cy, true);
-
-        float rcy = y + 6 + (h - 6) / 2f;
-
-        // 左：上一首 / 播放 / 下一首（紧凑）
-        float pr = 10;
-        float prevCx = left + 9;
-        float playCx = left + 35;
-        float nextCx = left + 61;
-        boolean prevH = Hover.is(prevCx - 9, rcy - 9, 18, 18, mx, my);
-        Icons.draw("prev", prevCx - 6, rcy - 6, 12, prevH ? TEXT : SUB);
-        if (in(cx, cy, prevCx - 9, rcy - 9, 18, 18)) m.prev();
-        Rects.rounded(playCx - pr, rcy - pr, pr * 2, pr * 2, (int) pr, accent());
-        Icons.draw(m.engine().isPlaying() ? "pause" : "play", playCx - 6, rcy - 6, 12, 0xFFFFFFFF);
-        if (in(cx, cy, playCx - pr, rcy - pr, pr * 2, pr * 2) && cur != null) m.togglePause();
-        boolean nextH = Hover.is(nextCx - 9, rcy - 9, 18, 18, mx, my);
-        Icons.draw("next", nextCx - 6, rcy - 6, 12, nextH ? TEXT : SUB);
-        if (in(cx, cy, nextCx - 9, rcy - 9, 18, 18)) m.next();
-        float transportRight = left + 72;
-
-        // 右：歌词开关 + 音量（窄窗口只留图标）
-        float rx = right;
-        boolean showVolSlider = w > 420;
-        if (showVolSlider) {
-            float vsx = rx - 48;
-            drawSlider(vsx, rcy - 1, 48, m.getVolume() / 100f, mx, my, cx, cy, false);
-            rx = vsx - 7;
-        }
-        Icons.draw("volume", rx - 13, rcy - 6, 13, SUB);
-        rx -= 13;
-        float lyS = 20;
-        float lyX = rx - 10 - lyS;
-        float lyY = rcy - lyS / 2f;
-        boolean lyOn = m.isShowLyricsInGame();
-        boolean lyHov = Hover.is(lyX, lyY, lyS, lyS, mx, my);
-        Rects.rounded(lyX, lyY, lyS, lyS, 5, lyOn ? withAlpha(accent(), 60) : (lyHov ? CARD_HOVER : CARD));
-        Icons.draw("lyrics", lyX + 4, lyY + 4, 12, lyOn ? accent() : SUB);
-        if (in(cx, cy, lyX, lyY, lyS, lyS)) m.setShowLyricsInGame(!lyOn);
-        float clusterLeft = lyX;
-
-        // 中：正在播放（封面 + 标题/歌手），空间不足时隐藏
-        float centerLeft = transportRight + 14;
-        float centerRight = clusterLeft - 14;
-        float centerW = centerRight - centerLeft;
-        if (cur != null && centerW > 130) {
-            float cvS = 30;
-            float cvX = centerLeft;
-            float cvY = rcy - cvS / 2f;
-            ResourceLocation cover = MusicTextures.cover(cur.getCoverUrl());
-            if (cover != null) Images.draw(cover, cvX, cvY, cvS, cvS);
-            else Rects.rounded(cvX, cvY, cvS, cvS, 5, CARD);
-            if (Hover.is(cvX, cvY, cvS, cvS, mx, my)) Rects.rounded(cvX, cvY, cvS, cvS, 5, 0x55000000);
-            if (in(cx, cy, cvX, cvY, cvS, cvS)) toggleLyrics();
-            float tX = cvX + cvS + 10;
-            float tW = centerRight - tX;
-            f14.drawString(f14.trimStringToWidth(cur.getName(), tW), tX, rcy - 12, TEXT);
-            String sub = m.getStatus().isEmpty() ? cur.getArtists() : m.getStatus();
-            f14.drawString(f14.trimStringToWidth(sub, tW), tX, rcy + 2, m.getStatus().isEmpty() ? SUB : BADGE);
-        } else if (cur == null && centerW > 60) {
-            f14.drawCenteredString("未在播放", (centerLeft + centerRight) / 2f, rcy - f14.getHeight() / 2f, SUB);
-        }
-    }
-
-    private void drawSlider(float x, float y, float w, float frac, int mx, int my, int cx, int cy, boolean isProgress) {
+    private void drawSlider(float x, float boxY, float w, float frac, int mx, int my, int cx, int cy, boolean isProgress) {
         if (frac < 0) frac = 0;
         if (frac > 1) frac = 1;
-        float trackH = 3;
-        float ty = y;
-        boolean hovBar = Hover.is(x, y - 4, w, 11, mx, my);
-        Rects.rounded(x, ty, w, trackH, 1, TRACK_BG);
-        Rects.rounded(x, ty, w * frac, trackH, 1, accent());
+        boolean hovBar = Hover.is(x, boxY, w, UiChrome.SLIDER_H, mx, my);
         // 悬停/拖动时才显示圆形滑块，平时保持极简
-        if (hovBar || (isProgress && draggingProgress) || (!isProgress && draggingVolume)) {
-            float knobX = x + w * frac;
-            Rects.rounded(knobX - 3, ty + trackH / 2f - 3, 6, 6, 3, 0xFFFFFFFF);
-        }
+        boolean showThumb = hovBar || (isProgress && draggingProgress) || (!isProgress && draggingVolume);
+        UiChrome.slider(x, boxY, w, frac, showThumb);
 
         // Routed through the shared drag capture rather than a private boolean, so the capture is
         // released centrally when the button goes up — including when it goes up outside the window,
@@ -615,7 +731,7 @@ public class MusicScreen extends ScaledGuiScreen {
         // the two consumption paths race for the same event, which is why dragging only worked
         // sometimes. Release is still handled centrally on button-up, so an alt-tab cannot strand it.
         Object captureId = isProgress ? PROGRESS_CAPTURE : VOLUME_CAPTURE;
-        if (in(cx, cy, x, y - 4, w, 11)) {
+        if (in(cx, cy, x, boxY, w, UiChrome.SLIDER_H)) {
             acquireDrag(captureId, 0);
         }
         boolean capturing = isPointerCapturedBy(captureId, 0);
@@ -665,34 +781,36 @@ public class MusicScreen extends ScaledGuiScreen {
         });
     }
 
-    private void drawLoginModal(float px, float py, float pw, float ph, int mx, int my, int cx, int cy) {
-        Rects.fill(px, py, pw, ph, 0xC8000000);
+    private void drawLoginModal(int mx, int my, int cx, int cy) {
+        UiChrome.veil(guiWidth, guiHeight, 0.9f);
         boolean qq = m.getSource() == MusicSource.QQ;
-        float mw = 258;
-        float mh = qq ? 296 : 210;
-        float mxp = px + (pw - mw) / 2f;
-        float myp = py + (ph - mh) / 2f;
-        Rects.rounded(mxp, myp, mw, mh, 8, PANEL2);
+        float mw = 190f;
+        float mh = qq ? 210f : 134f;
+        float mxp = (guiWidth - mw) / 2f;
+        float myp = (guiHeight - mh) / 2f;
+        UiChrome.panel(mxp, myp, mw, mh);
 
-        f16.drawString((qq ? "QQ音乐" : "网易云") + " 登录", mxp + 14, myp + 12, TEXT);
+        UFontRenderer f14 = FPSMaster.fontManager.s14;
+        UFontRenderer f11 = f(11);
+        UiChrome.boldString(f14, (qq ? "QQ音乐" : "网易云") + " 登录", mxp + 12f, myp + 9f, text());
 
         // 关闭
-        float clS = 18;
-        float clX = mxp + mw - clS - 10;
-        float clY = myp + 9;
+        float clS = 14f;
+        float clX = mxp + mw - clS - 6f;
+        float clY = myp + 6f;
         boolean ch = Hover.is(clX, clY, clS, clS, mx, my);
-        Rects.rounded(clX, clY, clS, clS, 5, ch ? CARD_HOVER : CARD);
-        drawCloseIcon(clX + clS / 2f, clY + clS / 2f, 4, ch ? TEXT : SUB);
+        UiChrome.ghostButton(clX, clY, clS, clS, ch);
+        Icons.draw("close", clX + (clS - 7f) / 2f, clY + (clS - 7f) / 2f, 7f, ch ? text() : sub());
         if (in(cx, cy, clX, clY, clS, clS)) {
             closeLogin();
             return;
         }
 
-        // 二维码
-        float qs = 120;
+        // 二维码（70x70 白底圆角）
+        float qs = 70f;
         float qx = mxp + (mw - qs) / 2f;
-        float qy = myp + 36;
-        Rects.rounded(qx - 4, qy - 4, qs + 8, qs + 8, 5, 0xFFFFFFFF);
+        float qy = myp + 26f;
+        Rects.rounded(qx - 3f, qy - 3f, qs + 6f, qs + 6f, 6, 0xFFFFFFFF, false);
         QrCode qr = m.getQrCode();
         ResourceLocation qrTex = null;
         if (qr != null) {
@@ -704,37 +822,43 @@ public class MusicScreen extends ScaledGuiScreen {
         if (qrTex != null) {
             Images.draw(qrTex, qx, qy, qs, qs);
         } else {
-            f14.drawCenteredString("二维码生成中…", qx + qs / 2f, qy + qs / 2f - 4, SUB);
+            f11.drawCenteredString("二维码生成中…", qx + qs / 2f, qy + qs / 2f - 3f, 0xFF555555);
         }
 
-        f14.drawCenteredString(qrStatusText(), mxp + mw / 2f, qy + qs + 8, accent());
+        f11.drawCenteredString(qrStatusText(), mxp + mw / 2f, qy + qs + 7f, ClickGuiTheme.accentText().getRGB());
 
         // 刷新
-        float rbW = 78, rbH = 20;
+        float rbW = 64f, rbH = 14f;
         float rbX = mxp + (mw - rbW) / 2f;
-        float rbY = qy + qs + 22;
-        boolean rh = Hover.is(rbX, rbY, rbW, rbH, mx, my);
-        Rects.rounded(rbX, rbY, rbW, rbH, 5, rh ? CARD_HOVER : CARD);
-        f14.drawCenteredString("刷新二维码", rbX + rbW / 2f, rbY + rbH / 2f - f14.getHeight() / 2f, TEXT);
-        if (in(cx, cy, rbX, rbY, rbW, rbH)) startQr();
+        float rbY = qy + qs + 15f;
+        if (UiChrome.buttonClicked(this, rbX, rbY, rbW, rbH, "refresh", "刷新二维码", UiChrome.Style.DEFAULT, mx, my)) {
+            startQr();
+        }
 
         // QQ Cookie 登录
         if (qq) {
-            float fw = mw - 28;
-            float fx = mxp + 14;
-            float fy = rbY + 26;
-            f14.drawString("或手动 Cookie 登录（y.qq.com 复制）", fx, fy, SUB);
-            qqUin.drawTextBox(fx, fy + 14, fw, 18);
-            qqKey.drawTextBox(fx, fy + 36, fw, 18);
-            float lbY = fy + 60;
-            boolean lh = Hover.is(fx, lbY, fw, 20, mx, my);
-            Rects.rounded(fx, lbY, fw, 20, 5, lh ? accent() : CARD);
-            f14.drawCenteredString("Cookie 登录", fx + fw / 2f, lbY + 10 - f14.getHeight() / 2f, TEXT);
+            float fx = mxp + 12f;
+            float fw = mw - 24f;
+            float fy = rbY + rbH + 8f;
+            f11.drawString("或手动 Cookie 登录（y.qq.com 复制）", fx, fy, sub());
+            qqUin.backGroundColor = 0x00000000;
+            qqUin.fontColor = text();
+            qqKey.backGroundColor = 0x00000000;
+            qqKey.fontColor = text();
+            float in1Y = fy + 8f;
+            UiChrome.inputBox(fx, in1Y, fw, UiChrome.INPUT_H, qqUin.isFocused());
+            qqUin.drawTextBox(fx + 2f, in1Y + 1f, fw - 4f, UiChrome.INPUT_H - 2f);
+            float in2Y = in1Y + UiChrome.INPUT_H + 4f;
+            UiChrome.inputBox(fx, in2Y, fw, UiChrome.INPUT_H, qqKey.isFocused());
+            qqKey.drawTextBox(fx + 2f, in2Y + 1f, fw - 4f, UiChrome.INPUT_H - 2f);
             if (cx >= 0) {
                 qqUin.mouseClicked(cx, cy, 0);
                 qqKey.mouseClicked(cx, cy, 0);
             }
-            if (in(cx, cy, fx, lbY, fw, 20)) doQqCookieLogin();
+            float lbY = in2Y + UiChrome.INPUT_H + 7f;
+            if (UiChrome.buttonClicked(this, fx, lbY, fw, 15f, null, "Cookie 登录", UiChrome.Style.PRIMARY, mx, my)) {
+                doQqCookieLogin();
+            }
         }
     }
 

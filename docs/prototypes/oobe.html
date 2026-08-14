@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge 原型 — OOBE 初始设置</title>
+<link rel="stylesheet" href="edge-ui.css">
+<style>
+  .wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    width: min(760px, calc(100vw - 48px));
+    height: min(500px, calc(100vh - 64px));
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ============ 左: 步骤导轨 ============ */
+  .rail {
+    width: 220px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px 20px;
+    border-right: 1px solid var(--stroke);
+    background: rgba(0, 0, 0, 0.16);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 22px; }
+  .brand .mark {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), #3a43b8);
+    display: flex; align-items: center; justify-content: center;
+    font: 800 14px/1 var(--font); color: #fff;
+  }
+  .brand .t { font: 700 14px/1.15 var(--font); }
+  .brand .v { font: 400 10.5px/1.15 var(--font); color: var(--text-3); }
+
+  .steps { display: flex; flex-direction: column; gap: 2px; position: relative; }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 10px;
+    border-radius: var(--r-card);
+    color: var(--text-3);
+    font: 500 13px/1 var(--font);
+    transition: background 0.15s, color 0.15s;
+  }
+  .step .dot {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--layer);
+    border: 1px solid var(--stroke);
+    display: flex; align-items: center; justify-content: center;
+    flex: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .step .dot svg.i { width: 13px; height: 13px; stroke-width: 1.8; }
+  .step.done { color: var(--text-2); }
+  .step.done .dot { background: var(--accent-soft); border-color: transparent; color: var(--accent-text); }
+  .step.on { color: var(--text); background: var(--layer); }
+  .step.on .dot { background: var(--accent); border-color: transparent; color: #fff; }
+
+  .rail .skip {
+    margin-top: auto;
+    align-self: flex-start;
+    padding: 8px 10px;
+    font: 500 12px/1 var(--font);
+    color: var(--text-3);
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .rail .skip:hover { color: var(--text-2); background: var(--layer); }
+
+  /* ============ 右: 内容 ============ */
+  .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .page-body { flex: 1; min-height: 0; padding: 36px 40px 8px; overflow-y: auto; }
+  h1 { font: 700 24px/1.25 var(--font); margin-bottom: 6px; }
+  .lede { font: 400 13px/1.6 var(--font); color: var(--text-2); max-width: 420px; }
+
+  .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .choice {
+    padding: 18px;
+    border-radius: var(--r-card);
+    background: var(--layer);
+    border: 1px solid var(--stroke);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.08s;
+  }
+  .choice:hover { background: var(--layer-hover); transform: translateY(-1px); }
+  .choice.on { border-color: var(--accent); background: var(--accent-soft); }
+  .choice .big { font: 600 15.5px/1.3 var(--font); }
+  .choice .sub { font: 400 11.5px/1.5 var(--font); color: var(--text-2); margin-top: 4px; }
+
+  .rows { margin-top: 18px; display: flex; flex-direction: column; gap: 2px; }
+
+  .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 22px; }
+  .feat {
+    padding: 14px 13px;
+    border-radius: var(--r-card);
+    background: var(--layer);
+    border: 1px solid var(--stroke);
+  }
+  .feat .ic {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .feat .ic svg.i { width: 15px; height: 15px; stroke-width: 1.8; }
+  .feat .t { font: 600 12.5px/1.3 var(--font); }
+  .feat .d { font: 400 11px/1.5 var(--font); color: var(--text-2); margin-top: 3px; }
+
+  .form { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; max-width: 300px; }
+  .form .input { height: 38px; }
+
+  .foot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 24px 18px;
+  }
+  .foot .btn { min-width: 92px; }
+
+  .step-page { display: none; }
+  .step-page.on { display: block; }
+</style>
+</head>
+<body>
+<div class="mc-world"></div>
+
+<div class="wrap">
+  <div class="card glass">
+    <!-- 左: 步骤 -->
+    <div class="rail">
+      <div class="brand">
+        <div class="mark">F</div>
+        <div><div class="t">FPSMaster</div><div class="v">初始设置</div></div>
+      </div>
+      <div class="steps" id="steps">
+        <div class="step on"><span class="dot"><svg class="i"><use href="#i-languages"/></svg></span>语言</div>
+        <div class="step"><span class="dot"><svg class="i"><use href="#i-monitor"/></svg></span>显示</div>
+        <div class="step"><span class="dot"><svg class="i"><use href="#i-box"/></svg></span>功能</div>
+        <div class="step"><span class="dot"><svg class="i"><use href="#i-user"/></svg></span>账户</div>
+      </div>
+      <div class="skip">跳过全部设置</div>
+    </div>
+
+    <!-- 右: 内容 -->
+    <div class="content">
+      <div class="page-body scroll">
+        <!-- 语言 -->
+        <div class="step-page on">
+          <h1>欢迎使用 FPSMaster Edge</h1>
+          <div class="lede">几步简单设置，为你调好客户端。首先，选择界面语言。</div>
+          <div class="choice-grid">
+            <div class="choice on" onclick="pick(this)">
+              <div class="big">简体中文</div>
+              <div class="sub">默认使用中文界面与搜索</div>
+            </div>
+            <div class="choice" onclick="pick(this)">
+              <div class="big">English</div>
+              <div class="sub">Use English for interface and search</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 显示 -->
+        <div class="step-page">
+          <h1>界面缩放与效果</h1>
+          <div class="lede">决定客户端界面的大小与质感。跟随游戏时使用 Minecraft 的 GUI 比例。</div>
+          <div class="rows">
+            <div class="row">
+              <div class="info">
+                <div class="name">跟随游戏 GUI 比例</div>
+                <div class="desc">关闭后可手动指定固定倍率</div>
+              </div>
+              <div class="switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="row">
+              <div class="info">
+                <div class="name">固定倍率</div>
+                <div class="desc">仅在不跟随游戏比例时生效</div>
+              </div>
+              <div class="seg">
+                <span class="opt">1x</span><span class="opt on">2x</span><span class="opt">3x</span><span class="opt">自动</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="info">
+                <div class="name">毛玻璃效果</div>
+                <div class="desc">界面背景实时模糊，低端设备建议关闭以保证帧率</div>
+              </div>
+              <div class="switch" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 功能 -->
+        <div class="step-page">
+          <h1>你会用到的功能</h1>
+          <div class="lede">这些功能已按推荐配置就绪，之后随时可以在设置里调整。</div>
+          <div class="feat-grid">
+            <div class="feat"><div class="ic"><svg class="i"><use href="#i-zap"/></svg></div><div class="t">性能优化</div><div class="d">更高帧率与更稳的区块加载</div></div>
+            <div class="feat"><div class="ic"><svg class="i"><use href="#i-grid"/></svg></div><div class="t">HUD 组件</div><div class="d">FPS、键位、CPS 等自由摆放</div></div>
+            <div class="feat"><div class="ic"><svg class="i"><use href="#i-music"/></svg></div><div class="t">游戏内音乐</div><div class="d">网易云 / QQ 音乐随时听</div></div>
+            <div class="feat"><div class="ic"><svg class="i"><use href="#i-replay"/></svg></div><div class="t">回放系统</div><div class="d">录制并回看你的对局</div></div>
+            <div class="feat"><div class="ic"><svg class="i"><use href="#i-image"/></svg></div><div class="t">菜单背景</div><div class="d">全景 / 自定义图片 / Shader</div></div>
+            <div class="feat"><div class="ic"><svg class="i"><use href="#i-folder"/></svg></div><div class="t">配置档案</div><div class="d">多套配置一键切换与分享</div></div>
+          </div>
+        </div>
+
+        <!-- 账户 -->
+        <div class="step-page">
+          <h1>登录 FPSMaster 账户</h1>
+          <div class="lede">同步你的配置与身份标识。也可以先跳过，之后在设置中登录。</div>
+          <div class="form">
+            <input class="input" placeholder="邮箱">
+            <input class="input" type="password" placeholder="密码">
+            <button class="btn primary" style="height:38px;margin-top:4px">登录</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <button class="btn ghost" id="prev" onclick="go(-1)">上一步</button>
+        <button class="btn primary" id="next" onclick="go(1)">继续</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script>
+let cur = 0;
+const pages = document.querySelectorAll('.step-page');
+const steps = document.querySelectorAll('#steps .step');
+function go(d){
+  cur = Math.max(0, Math.min(pages.length - 1, cur + d));
+  pages.forEach((p, i) => p.classList.toggle('on', i === cur));
+  steps.forEach((s, i) => {
+    s.classList.toggle('on', i === cur);
+    s.classList.toggle('done', i < cur);
+    if (i < cur) s.querySelector('.dot').innerHTML = '<svg class="i"><use href="#i-check"/></svg>';
+  });
+  document.getElementById('prev').style.visibility = cur === 0 ? 'hidden' : 'visible';
+  document.getElementById('next').textContent = cur === pages.length - 1 ? '完成' : '继续';
+}
+go(0);
+function pick(el){
+  el.parentElement.querySelectorAll('.choice').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+</script>
+</body>
+</html>

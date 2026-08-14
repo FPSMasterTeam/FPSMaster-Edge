@@ -217,7 +217,7 @@ public final class ConfigProfileUtils {
         for (File file : files) {
             String fileName = file.getName();
             String profileName = fileName.substring(0, fileName.length() - JSON_SUFFIX.length());
-            profiles.add(new ConfigProfile(profileName, "", file, activeProfileName.equals(profileName)));
+            profiles.add(new ConfigProfile(profileName, readProfileAuthor(file), file, activeProfileName.equals(profileName)));
         }
 
         Collections.sort(profiles, Comparator

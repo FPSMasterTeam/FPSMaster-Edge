@@ -3,10 +3,11 @@ package top.fpsmaster.benchmark;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ScreenShotHelper;
 import top.fpsmaster.FPSMaster;
-import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Screenshots the client's own interface and exits.
@@ -14,104 +15,138 @@ import java.io.File;
  * <p>The scenario screenshots go through the benchmark runner, which needs a world, a player and a
  * camera path — so every gate in this project has been pointed at a scene with no client-drawn text
  * in it. A change to the font renderer could double the size of every string in the interface and
- * still pass, which is exactly what happened. This captures the one screen that is nothing but
- * client text.
+ * still pass, which is exactly what happened. This captures the screens that are nothing but
+ * client-drawn chrome and text.
  *
  * <pre>
- *   -Dedge.uishot=6            capture the main menu six seconds in, then quit
- *   -Dedge.uishot.name=before  file name to write
- *   -Dedge.uishot.screen=clickgui  open the click GUI first
+ *   -Dedge.uishot=6                     capture six seconds after each screen opens, then quit
+ *   -Dedge.uishot.name=before           file name stem to write
+ *   -Dedge.uishot.screen=clickgui       screen to open first ('' = main menu)
+ *   -Dedge.uishot.screen=mainmenu,clickgui,music   several screens in one launch;
+ *                                       each is written as &lt;name&gt;-&lt;screen&gt;.png
  * </pre>
+ *
+ * Known screens: mainmenu, clickgui, music, replay, multiplayer, oobe, configprofiles,
+ * bgselector, language.
  */
 public final class UiShot {
 
     private static final int DELAY_SECONDS = Integer.getInteger("edge.uishot", -1).intValue();
 
-    private static long firstTickMillis;
-    private static long lastDumpMillis;
-    private static boolean captured;
+    private static List<String> screens;
+    private static int screenIndex = -1;
+    private static long screenOpenedMillis;
+    private static long lastHeartbeatMillis;
+    private static boolean done;
 
     private UiShot() {
     }
 
     public static void onClientTick() {
-        if (DELAY_SECONDS < 0 || captured) {
+        if (DELAY_SECONDS < 0 || done) {
             return;
         }
         Minecraft mc = Minecraft.getMinecraft();
+        long heartbeatNow = System.currentTimeMillis();
+        if (heartbeatNow - lastHeartbeatMillis >= 5000L) {
+            lastHeartbeatMillis = heartbeatNow;
+            ClientLogger.info("uishot", "tick: screen="
+                    + (mc.currentScreen == null ? "null" : mc.currentScreen.getClass().getName())
+                    + " world=" + (mc.theWorld != null)
+                    + " display=" + mc.displayWidth + "x" + mc.displayHeight
+                    + " lwjgl=" + org.lwjgl.opengl.Display.getWidth() + "x" + org.lwjgl.opengl.Display.getHeight()
+                    + " pixelScale=" + org.lwjgl.opengl.Display.getPixelScaleFactor()
+                    + " guiScale=" + mc.gameSettings.guiScale
+                    + " srFactor=" + new net.minecraft.client.gui.ScaledResolution(mc).getScaleFactor()
+                    + " uiScale=" + top.fpsmaster.features.impl.interfaces.ClientSettings.getUiScale()
+                    + " follow=" + top.fpsmaster.features.impl.interfaces.ClientSettings.isFollowGameScaleEnabled());
+        }
         if (mc.currentScreen == null && mc.theWorld == null) {
             return;  // still starting up
         }
         long now = System.currentTimeMillis();
-        if (firstTickMillis == 0L) {
-            firstTickMillis = now;
-            // The click GUI is the densest text in the client - hundreds of distinct characters,
-            // enough to make the glyph atlas grow - so it is the screen worth pointing this at.
-            String screen = System.getProperty("edge.uishot.screen", "");
-            if ("clickgui".equals(screen)) {
-                mc.displayGuiScreen(FPSMaster.moduleManager.mainPanel);
-            } else if ("language".equals(screen)) {
-                // Vanilla's own font on a screen that never moves, and whose entries span both
-                // the bitmap page and the unicode pages - the two paths a font change can break.
-                mc.displayGuiScreen(new net.minecraft.client.gui.GuiLanguage(
-                        null, mc.gameSettings, mc.getLanguageManager()));
-            } else if ("replay".equals(screen)) {
-                mc.displayGuiScreen(new top.fpsmaster.ui.screens.replay.ReplayScreen(null));
-            } else if ("multiplayer".equals(screen)) {
-                mc.displayGuiScreen(new top.fpsmaster.ui.mc.GuiMultiplayer());
+        if (screens == null) {
+            screens = new ArrayList<String>();
+            for (String part : System.getProperty("edge.uishot.screen", "").split(",")) {
+                screens.add(part.trim());
             }
             stressGlyphs();
+            openNext();
             return;
         }
-        if (now - firstTickMillis < DELAY_SECONDS * 1000L) {
-            if (now - lastDumpMillis >= 5000L) {
-                lastDumpMillis = now;
-                dumpServers();
-            }
+        if (now - screenOpenedMillis < DELAY_SECONDS * 1000L) {
             return;
         }
-        captured = true;
-        dumpServers();
+        capture();
+        openNext();
+    }
 
+    private static void openNext() {
+        Minecraft mc = Minecraft.getMinecraft();
+        screenIndex++;
+        if (screenIndex >= screens.size()) {
+            done = true;
+            mc.shutdown();
+            return;
+        }
+        String screen = screens.get(screenIndex);
+        try {
+            display(screen);
+        } catch (RuntimeException exception) {
+            ClientLogger.error("uishot", "failed to open screen '" + screen + "': " + exception);
+        }
+        screenOpenedMillis = System.currentTimeMillis();
+    }
+
+    private static void display(String screen) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if ("clickgui".equals(screen)) {
+            mc.displayGuiScreen(FPSMaster.moduleManager.mainPanel);
+        } else if ("language".equals(screen)) {
+            // Vanilla's own font on a screen that never moves, and whose entries span both
+            // the bitmap page and the unicode pages - the two paths a font change can break.
+            mc.displayGuiScreen(new net.minecraft.client.gui.GuiLanguage(
+                    null, mc.gameSettings, mc.getLanguageManager()));
+        } else if ("replay".equals(screen)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.screens.replay.ReplayScreen(null));
+        } else if ("multiplayer".equals(screen)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.mc.GuiMultiplayer());
+        } else if ("music".equals(screen)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.screens.music.MusicScreen());
+        } else if ("oobe".equals(screen)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.screens.oobe.OobeScreen());
+        } else if ("configprofiles".equals(screen)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.click.ConfigProfilesScreen(null));
+        } else if ("bgselector".equals(screen)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.screens.mainmenu.BackgroundSelector());
+        } else if ("mainmenu".equals(screen) || screen.isEmpty()) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.screens.mainmenu.MainMenu());
+        } else {
+            ClientLogger.error("uishot", "unknown screen '" + screen + "', capturing current screen");
+        }
+    }
+
+    private static void capture() {
+        Minecraft mc = Minecraft.getMinecraft();
         File directory = new File(mc.mcDataDir, "bench-results");
         if (!directory.isDirectory() && !directory.mkdirs()) {
             ClientLogger.error("uishot", "could not create " + directory);
             return;
         }
         String name = System.getProperty("edge.uishot.name", "ui");
-        ScreenShotHelper.saveScreenshot(directory, name + ".png",
+        String screen = screens.get(screenIndex);
+        String file = screens.size() > 1
+                ? name + "-" + (screen.isEmpty() ? "mainmenu" : screen) + ".png"
+                : name + ".png";
+        ScreenShotHelper.saveScreenshot(directory, file,
                 mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
         // Report a measurement alongside the image, so a size regression is a number and not a
         // judgement about a picture.
-        ClientLogger.info("uishot", "captured " + name + " on "
+        ClientLogger.info("uishot", "captured " + file + " on "
                 + (mc.currentScreen == null ? "in-world HUD" : mc.currentScreen.getClass().getSimpleName())
                 + " - s16 height " + FPSMaster.fontManager.s16.getHeight()
                 + ", s16 width of 'Multiplayer' " + FPSMaster.fontManager.s16.getStringWidth("Multiplayer")
                 + ", s24 height " + FPSMaster.fontManager.s24.getHeight());
-
-        // HUD components live in a space defined by the vanilla gui scale; the draggable area has to
-        // match the reach of the mouse in that same space or part of the screen becomes unreachable.
-        net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(mc);
-        float mouseReachX = sr.getScaledWidth() * sr.getScaleFactor() / 2f;
-        float mouseReachY = sr.getScaledHeight() * sr.getScaleFactor() / 2f;
-        float boundsX = sr.getScaledWidth() / 2f * sr.getScaleFactor();
-        float boundsY = sr.getScaledHeight() / 2f * sr.getScaleFactor();
-        float oldBoundsX = (float) (sr.getScaledWidth() / 2f * ClientSettings.getUiScale());
-        ClientLogger.info("uishot", "hud space: mouse reaches " + mouseReachX + "x" + mouseReachY
-                + ", drag bounds " + boundsX + "x" + boundsY
-                + " (previously " + oldBoundsX + " wide, uiScale " + ClientSettings.getUiScale()
-                + ", vanilla scale " + sr.getScaleFactor() + ")");
-        mc.shutdown();
-    }
-
-    private static void dumpServers() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.currentScreen instanceof top.fpsmaster.ui.mc.GuiMultiplayer) {
-            top.fpsmaster.ui.mc.GuiMultiplayer gm = (top.fpsmaster.ui.mc.GuiMultiplayer) mc.currentScreen;
-            ClientLogger.info("uishot", "screen is custom GuiMultiplayer");
-        } else {
-            ClientLogger.info("uishot", "screen=" + (mc.currentScreen == null ? "null" : mc.currentScreen.getClass().getName()));
-        }
     }
 
     /**

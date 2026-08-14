@@ -113,6 +113,35 @@ public class FPSMaster {
     }
 
 
+    /**
+     * With the Retina backing on, displayWidth doubles and a fixed vanilla guiScale (1-3) suddenly
+     * means GUIs at half their previous visual size. Double it once so the first HiDPI launch looks
+     * exactly like the last non-HiDPI one, just sharp. Auto (0) already adapts and is left alone.
+     */
+    private static boolean hidpiMigrationChecked = false;
+
+    /** Runs on the first client tick — during startup Forge reloads options.txt after FML init
+     * (finishMinecraftLoading -> loadOptions), which would undo the change if done any earlier. */
+    public void migrateGuiScaleForHiDpi() {
+        if (hidpiMigrationChecked) {
+            return;
+        }
+        if (configManager == null || configManager.configure == null || mc.gameSettings == null) {
+            return;
+        }
+        hidpiMigrationChecked = true;
+        if (!top.fpsmaster.utils.system.HiDpi.active() || configManager.configure.hidpiGuiScaleMigrated) {
+            return;
+        }
+        configManager.configure.hidpiGuiScaleMigrated = true;
+        int guiScale = mc.gameSettings.guiScale;
+        if (guiScale >= 1 && guiScale <= 3) {
+            mc.gameSettings.guiScale = guiScale * 2;
+            mc.gameSettings.saveOptions();
+            ClientLogger.info("HiDPI: doubled vanilla guiScale " + guiScale + " -> " + mc.gameSettings.guiScale);
+        }
+    }
+
     private void checkOptifine() {
         try {
             Class.forName("optifine.Patcher");

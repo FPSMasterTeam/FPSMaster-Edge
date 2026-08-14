@@ -26,7 +26,7 @@ import java.util.Set;
  * Duplicate non-zero bindings are rejected with an inline warning.
  */
 public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
-    private static final int ROW_H = 16;
+    private static final int ROW_H = 13;
     private static final int CORNER = 3;
 
     private int capturingRow = -1;
@@ -39,10 +39,15 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
         rebuildTextFields();
     }
 
+    @Override
+    public boolean isWide() {
+        return true;
+    }
+
     private void rebuildTextFields() {
         textFields.clear();
         for (AutoTextEntry entry : setting.getValue()) {
-            TextField tf = new TextField(FPSMaster.fontManager.s16, false, "",
+            TextField tf = new TextField(FPSMaster.fontManager.getFont(12), false, "",
                     ClickGuiTheme.textFieldBg().getRGB(), ClickGuiTheme.textFieldText().getRGB(), 256);
             tf.setText(entry.message);
             textFields.add(tf);
@@ -55,7 +60,7 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
 
         // Rebuild text fields if entry count changed externally
         while (textFields.size() < entries.size()) {
-            TextField tf = new TextField(FPSMaster.fontManager.s16, false, "",
+            TextField tf = new TextField(FPSMaster.fontManager.getFont(12), false, "",
                     ClickGuiTheme.textFieldBg().getRGB(), ClickGuiTheme.textFieldText().getRGB(), 256);
             tf.setText(entries.get(textFields.size()).message);
             textFields.add(tf);
@@ -91,16 +96,16 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
         float rowX = x + 10;
         float rowY = y + 2;
 
-        FPSMaster.fontManager.s16.drawString(
+        FPSMaster.fontManager.getFont(12).drawString(
                 FPSMaster.i18n.get((mod.name + "." + setting.name).toLowerCase(java.util.Locale.getDefault())),
                 rowX, rowY, ClickGuiTheme.textSecondary().getRGB()
         );
-        rowY += 14;
+        rowY += 11;
 
         if (entries.isEmpty()) {
-            FPSMaster.fontManager.s14.drawString(
+            FPSMaster.fontManager.getFont(12).drawString(
                     FPSMaster.i18n.get("autotext.empty"),
-                    rowX + (width - 20 - FPSMaster.fontManager.s14.getStringWidth(FPSMaster.i18n.get("autotext.empty"))) / 2,
+                    rowX + (width - 20 - FPSMaster.fontManager.getFont(12).getStringWidth(FPSMaster.i18n.get("autotext.empty"))) / 2,
                     rowY + 4, ClickGuiTheme.textSecondary().getRGB()
             );
             this.height = 38;
@@ -112,14 +117,14 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
 
                 // Bind button
                 String keyName = entry.keyCode != 0 ? Keyboard.getKeyName(entry.keyCode) : "None";
-                float bindW = FPSMaster.fontManager.s16.getStringWidth(keyName) + 6;
+                float bindW = FPSMaster.fontManager.getFont(12).getStringWidth(keyName) + 6;
                 boolean isCapturing = capturingRow == i;
                 Color bindBg = isCapturing
                         ? ClickGuiTheme.bindBgActive()
                         : (Hover.is(rX, rY, bindW, ROW_H, (int) mouseX, (int) mouseY)
                         ? ClickGuiTheme.bindBgInactive() : ClickGuiTheme.textFieldBg());
                 Rects.rounded(Math.round(rX), Math.round(rY), Math.round(bindW), ROW_H, CORNER, bindBg);
-                FPSMaster.fontManager.s16.drawString(keyName, rX + 3, rY + 3, ClickGuiTheme.textPrimary().getRGB());
+                FPSMaster.fontManager.getFont(12).drawString(keyName, rX + 3, rY + 3, ClickGuiTheme.textPrimary().getRGB());
 
                 ScaledGuiScreen.PointerEvent bindClick = screen.consumePressInBounds(rX, rY, bindW, ROW_H, 0);
                 if (bindClick != null) {
@@ -144,7 +149,7 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
                 boolean delHover = Hover.is(delX, rY, 12, ROW_H, (int) mouseX, (int) mouseY);
                 Rects.rounded(Math.round(delX), Math.round(rY), 12, ROW_H, CORNER,
                         delHover ? ClickGuiTheme.buttonHoverBg() : ClickGuiTheme.buttonBg());
-                FPSMaster.fontManager.s16.drawString("x", delX + 3, rY + 2, ClickGuiTheme.textPrimary().getRGB());
+                FPSMaster.fontManager.getFont(12).drawString("x", delX + 3, rY + 2, ClickGuiTheme.textPrimary().getRGB());
 
                 ScaledGuiScreen.PointerEvent delClick = screen.consumePressInBounds(delX, rY, 12, ROW_H, 0);
                 if (delClick != null) {
@@ -158,7 +163,7 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
 
             // Capacity indicator
             String capText = entries.size() + "/" + AutoTextSetting.MAX_CAPACITY;
-            FPSMaster.fontManager.s14.drawString(capText, x + width - 20 - 50, y + 2, ClickGuiTheme.textSecondary().getRGB());
+            FPSMaster.fontManager.getFont(12).drawString(capText, x + width - 20 - 50, y + 2, ClickGuiTheme.textSecondary().getRGB());
 
             this.height = 16 + entries.size() * (ROW_H + 3) + 4;
         }
@@ -170,7 +175,7 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
         boolean addHover = Hover.is(addX, addY, 14, 14, (int) mouseX, (int) mouseY);
         Color addBg = canAdd && addHover ? ClickGuiTheme.buttonHoverBg() : (canAdd ? ClickGuiTheme.buttonBg() : ClickGuiTheme.textFieldBg());
         Rects.rounded(Math.round(addX), Math.round(addY), 14, 14, CORNER, addBg);
-        FPSMaster.fontManager.s16.drawString("+", addX + 3, addY + 2, canAdd ? ClickGuiTheme.textPrimary().getRGB() : ClickGuiTheme.textSecondary().getRGB());
+        FPSMaster.fontManager.getFont(12).drawString("+", addX + 3, addY + 2, canAdd ? ClickGuiTheme.textPrimary().getRGB() : ClickGuiTheme.textSecondary().getRGB());
 
         if (canAdd) {
             ScaledGuiScreen.PointerEvent addClick = screen.consumePressInBounds(addX, addY, 14, 14, 0);
@@ -185,7 +190,7 @@ public class AutoTextSettingRender extends SettingRender<AutoTextSetting> {
 
         // Duplicate warning
         if (!duplicateWarning.isEmpty()) {
-            FPSMaster.fontManager.s14.drawString(duplicateWarning, x + 10, addY + 16, new Color(255, 80, 80).getRGB());
+            FPSMaster.fontManager.getFont(12).drawString(duplicateWarning, x + 10, addY + 16, new Color(255, 80, 80).getRGB());
             this.height += 14;
         }
 

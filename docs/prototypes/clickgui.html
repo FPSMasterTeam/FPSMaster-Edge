@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge 原型 — 客户端设置 (ClickGUI)</title>
+<link rel="stylesheet" href="edge-ui.css">
+<style>
+  .wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .panel {
+    width: min(980px, calc(100vw - 40px));
+    height: min(620px, calc(100vh - 48px));
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* 侧边栏 (窄) */
+  .side {
+    width: 184px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 11px;
+    gap: 11px;
+    border-right: 1px solid var(--stroke);
+    background: rgba(0, 0, 0, 0.14);
+  }
+  .brand { display: flex; align-items: center; gap: 8px; padding: 2px 4px 2px; }
+  .brand .mark {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--accent), #3a43b8);
+    display: flex; align-items: center; justify-content: center;
+    font: 800 12px/1 var(--font); color: #fff;
+  }
+  .brand .t { font: 700 13px/1.1 var(--font); }
+  .brand .v { font: 400 10px/1.1 var(--font); color: var(--text-3); }
+  .side .search { height: 32px; padding: 0 10px; gap: 6px; }
+  .side .search input { font-size: 12px; }
+  .side .search svg.i { width: 13px; height: 13px; }
+
+  .nav { gap: 2px; }
+  .nav .item { height: 34px; padding: 0 12px; font: 500 13px/1 var(--font); gap: 9px; }
+  .nav .item .ic svg.i { width: 14px; height: 14px; }
+  .nav .item .n {
+    margin-left: auto;
+    font: 500 10.5px/1 var(--font);
+    color: var(--text-3);
+  }
+  .nav .item.on .n { color: rgba(255, 255, 255, 0.7); }
+
+  /* 主区 */
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .main-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 18px 10px;
+  }
+  .main-head .title { font: 700 15.5px/1 var(--font); }
+  .main-head .sub { font: 400 11.5px/1 var(--font); color: var(--text-2); }
+  .modules { flex: 1; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+  .module {
+    border-radius: 10px;
+    background: var(--layer);
+    border: 1px solid transparent;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .module:hover { background: var(--layer-hover); }
+  .module.expanded { border-color: var(--stroke); background: rgba(0, 0, 0, 0.18); }
+  .module .head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .module .info { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; }
+  .module .name { font: 500 13.5px/1.3 var(--font); flex: none; }
+  .module .desc {
+    font: 400 11.5px/1.3 var(--font);
+    color: var(--text-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .module .chev { color: var(--text-3); display: flex; transition: transform 0.15s; }
+  .module.expanded .chev { transform: rotate(90deg); }
+  .module .chev svg.i { width: 12px; height: 12px; }
+  .keybind { min-width: 38px; height: 23px; padding: 0 8px; font-size: 10.5px; border-radius: 7px; }
+
+  /* 展开的设置区: 两列布局提高密度 */
+  .settings {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 20px;
+    padding: 6px 12px 10px;
+    border-top: 1px solid var(--stroke);
+  }
+  .module.expanded .settings { display: grid; }
+  .settings .row { padding: 8px 10px; gap: 14px; border-radius: 9px; min-height: 38px; }
+  .settings .row .info .name { font-size: 12.5px; }
+  .settings .row .info .desc { font-size: 11px; margin-top: 2px; }
+  .settings .row.wide { grid-column: 1 / -1; }
+  .settings .slider { width: 144px; }
+  .settings .seg .opt { padding: 4px 10px; font-size: 11.5px; }
+  .settings .input { height: 30px; font-size: 12px; width: 144px; }
+  .settings .color-dot { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+<div class="mc-world"></div>
+
+<div class="wrap">
+  <div class="panel glass">
+    <!-- 侧边栏 -->
+    <div class="side">
+      <div class="brand">
+        <div class="mark">F</div>
+        <div><div class="t">FPSMaster</div><div class="v">Edge · 1.0.0</div></div>
+      </div>
+      <div class="search"><svg class="i"><use href="#i-search"/></svg><input placeholder="搜索模块…"></div>
+      <div class="nav" id="cats">
+        <div class="item on"><span class="ic"><svg class="i"><use href="#i-zap"/></svg></span>优化<span class="n">12</span></div>
+        <div class="item"><span class="ic"><svg class="i"><use href="#i-sparkles"/></svg></span>渲染<span class="n">18</span></div>
+        <div class="item"><span class="ic"><svg class="i"><use href="#i-wrench"/></svg></span>实用工具<span class="n">15</span></div>
+        <div class="item"><span class="ic"><svg class="i"><use href="#i-grid"/></svg></span>界面<span class="n">24</span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="hr"></div>
+      <div class="nav">
+        <div class="item"><span class="ic"><svg class="i"><use href="#i-music"/></svg></span>音乐</div>
+        <div class="item"><span class="ic"><svg class="i"><use href="#i-folder"/></svg></span>配置文件</div>
+        <div class="item"><span class="ic"><svg class="i"><use href="#i-moon"/></svg></span>深色主题</div>
+      </div>
+    </div>
+
+    <!-- 主区 -->
+    <div class="main">
+      <div class="main-head">
+        <span class="title">优化</span>
+        <span class="sub">12 个模块 · 已启用 5 个</span>
+      </div>
+      <div class="modules scroll">
+        <div class="module">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">Performance</span><span class="desc">核心性能优化：区块渲染、实体剔除与批处理</span></div>
+            <span class="keybind">无</span>
+            <div class="switch sm on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+        </div>
+
+        <div class="module expanded">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">FastRender</span><span class="desc">加速 2D 渲染管线，可能与部分模糊效果冲突</span></div>
+            <span class="keybind">R</span>
+            <div class="switch sm on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+          <div class="settings">
+            <div class="row wide">
+              <div class="info"><div class="name">批处理等级</div><div class="desc">越高越激进，兼容性略降</div></div>
+              <div class="seg">
+                <span class="opt">保守</span><span class="opt on">平衡</span><span class="opt">激进</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="info"><div class="name">目标帧率</div></div>
+              <div class="slider">
+                <div class="track"><div class="fill" style="width:62%"></div></div>
+                <div class="thumb" style="left:62%"></div>
+                <span class="num">240</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="info"><div class="name">跳过隐藏面</div></div>
+              <div class="switch sm on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="row">
+              <div class="info"><div class="name">调试标签</div></div>
+              <input class="input" placeholder="输入文本…" value="batch">
+            </div>
+            <div class="row">
+              <div class="info"><div class="name">指示器颜色</div></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="faint" style="font-size:11px">#5965F1</span>
+                <div class="color-dot" style="background:#5965f1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">EntityCulling</span><span class="desc">跳过视野外实体的渲染计算</span></div>
+            <span class="keybind">无</span>
+            <div class="switch sm on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">ChunkOptimizer</span><span class="desc">平滑区块加载，减少卡顿尖峰</span></div>
+            <span class="keybind listening">按任意键…</span>
+            <div class="switch sm" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">MemorySaver</span><span class="desc">空闲时释放纹理与缓冲内存</span></div>
+            <span class="keybind">无</span>
+            <div class="switch sm" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">ParticleLimiter</span><span class="desc">限制粒子数量上限，密集战斗时更流畅</span></div>
+            <span class="keybind">无</span>
+            <div class="switch sm on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">FastChest</span><span class="desc">简化箱子模型渲染</span></div>
+            <span class="keybind">无</span>
+            <div class="switch sm on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">SmoothFPS</span><span class="desc">帧率平滑与垂直同步策略</span></div>
+            <span class="keybind">无</span>
+            <div class="switch sm" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="head" onclick="expand(this)">
+            <div class="info"><span class="name">LagSpikeReducer</span><span class="desc">GC 调优与主线程卡顿治理</span></div>
+            <span class="keybind">无</span>
+            <div class="switch sm" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+            <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script>
+document.querySelectorAll('#cats .item').forEach(i=>i.onclick=()=>{
+  document.querySelectorAll('#cats .item').forEach(x=>x.classList.remove('on'));
+  i.classList.add('on');
+});
+function expand(head){ head.parentElement.classList.toggle('expanded'); }
+</script>
+</body>
+</html>

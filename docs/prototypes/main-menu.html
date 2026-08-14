@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge 原型 — 主界面</title>
+<link rel="stylesheet" href="edge-ui.css">
+<style>
+  /* ============ 左上: 账户区 (悬浮展开) ============ */
+  .acct-zone { position: fixed; top: 22px; left: 24px; z-index: 20; }
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px 8px 8px;
+    border-radius: var(--r-pill);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .acct-zone:hover .user-chip { border-color: var(--stroke-strong); }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex: none;
+    background: linear-gradient(135deg, #7d8dff, #4a3f9e);
+  }
+  .user-chip .name { font: 600 13.5px/1.2 var(--font); }
+  .user-chip .sub { font: 400 11px/1.2 var(--font); color: var(--text-2); }
+  .user-chip .chev { color: var(--text-3); margin-left: 2px; transition: transform 0.18s; }
+  .user-chip .chev svg.i { width: 13px; height: 13px; }
+  .acct-zone:hover .chev, .acct-zone.open .chev { transform: rotate(180deg); }
+
+  .acct-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 248px;
+    padding: 6px;
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+    transition: opacity 0.16s, transform 0.16s;
+  }
+  /* hover 桥: 避免鼠标移动间隙时收起 */
+  .acct-pop::before { content: ""; position: absolute; top: -10px; left: 0; right: 0; height: 10px; }
+  .acct-zone:hover .acct-pop, .acct-zone.open .acct-pop {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .acct {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .acct:hover { background: var(--layer-hover); }
+  .acct .meta { flex: 1; min-width: 0; }
+  .acct .n { font: 500 13px/1.25 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acct .t { font: 400 10.5px/1.3 var(--font); color: var(--text-3); display: flex; align-items: center; gap: 5px; }
+  .acct .on-mark { color: var(--accent-text); display: flex; }
+  .acct .on-mark svg.i { width: 14px; height: 14px; }
+  .acct .rm {
+    display: none;
+    color: var(--text-3);
+    padding: 4px;
+    border-radius: 6px;
+  }
+  .acct .rm:hover { color: var(--danger); background: rgba(240, 80, 110, 0.12); }
+  .acct .rm svg.i { width: 13px; height: 13px; }
+  .acct:hover .rm { display: flex; }
+  .acct:hover .on-mark { display: none; }
+  .acct.add { color: var(--text-2); }
+  .acct.add:hover { color: var(--text); }
+  .acct.add .plus {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px dashed var(--stroke-strong);
+    display: flex; align-items: center; justify-content: center;
+    flex: none;
+  }
+  .acct.add .plus svg.i { width: 14px; height: 14px; }
+  .acct-pop .hr { margin: 4px 8px; }
+
+  /* 微软四格标 */
+  .mslogo {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5px;
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+  .mslogo i { background: #f25022; }
+  .mslogo i:nth-child(2) { background: #7fba00; }
+  .mslogo i:nth-child(3) { background: #00a4ef; }
+  .mslogo i:nth-child(4) { background: #ffb900; }
+  .mslogo.lg { width: 20px; height: 20px; gap: 2px; }
+
+  /* ============ 添加账户 / 微软登录模态 ============ */
+  .dialog {
+    width: 380px;
+    padding: 26px;
+    display: flex;
+    flex-direction: column;
+  }
+  .dialog .d-title { font: 700 16px/1.3 var(--font); }
+  .dialog .d-sub { margin-top: 4px; font: 400 12px/1.6 var(--font); color: var(--text-2); }
+  .dialog .view { display: none; flex-direction: column; }
+  .dialog .view.on { display: flex; }
+
+  .login-choice { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .login-opt {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 15px 16px;
+    border-radius: var(--r-card);
+    background: var(--layer);
+    border: 1px solid var(--stroke);
+    cursor: pointer;
+    transition: background 0.13s, border-color 0.13s;
+  }
+  .login-opt:hover { background: var(--layer-hover); border-color: var(--stroke-strong); }
+  .login-opt .ico {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    background: rgba(0, 0, 0, 0.25);
+    display: flex; align-items: center; justify-content: center;
+    flex: none;
+    color: var(--text-2);
+  }
+  .login-opt .ico svg.i { width: 17px; height: 17px; stroke-width: 1.8; }
+  .login-opt .n { font: 600 13.5px/1.3 var(--font); }
+  .login-opt .d { font: 400 11.5px/1.45 var(--font); color: var(--text-2); margin-top: 2px; }
+  .login-opt .go { margin-left: auto; color: var(--text-3); display: flex; }
+  .login-opt .go svg.i { width: 14px; height: 14px; }
+
+  .d-actions { margin-top: 20px; display: flex; gap: 8px; justify-content: flex-end; }
+  .d-actions .grow { flex: 1; }
+
+  /* 微软: 设备代码 */
+  .code-box {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: var(--r-card);
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--stroke);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .code-box .code {
+    flex: 1;
+    font: 700 24px/1 "SF Mono", "Cascadia Code", Consolas, monospace;
+    letter-spacing: 0.12em;
+    text-align: center;
+    color: var(--text);
+    user-select: all;
+  }
+  .waiting {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font: 400 12px/1 var(--font);
+    color: var(--text-3);
+  }
+  .waiting .dots { display: inline-flex; gap: 3px; }
+  .waiting .dots i {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .waiting .dots i:nth-child(2) { animation-delay: 0.2s; }
+  .waiting .dots i:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+  /* 微软: 验证中 / 结果 */
+  .state-fig { margin: 26px auto 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .spin {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 3px solid var(--layer-active);
+    border-top-color: var(--accent);
+    animation: rot 0.8s linear infinite;
+  }
+  @keyframes rot { to { transform: rotate(1turn); } }
+  .state-fig .big-ic {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .state-fig .big-ic.ok { background: rgba(62, 207, 142, 0.14); color: var(--ok); }
+  .state-fig .big-ic.err { background: rgba(240, 80, 110, 0.13); color: var(--danger); }
+  .state-fig .big-ic svg.i { width: 24px; height: 24px; }
+  .state-fig .avatar.lg { width: 52px; height: 52px; border-radius: 14px; }
+  .state-fig .st-t { font: 600 14.5px/1.3 var(--font); text-align: center; }
+  .state-fig .st-d { font: 400 12px/1.6 var(--font); color: var(--text-2); text-align: center; margin-top: -6px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spin, .waiting .dots i { animation-duration: 2s; }
+  }
+
+  .top-actions { position: fixed; top: 22px; right: 24px; display: flex; gap: 8px; }
+  .top-actions .btn { border-radius: var(--r-pill); width: 38px; height: 38px; }
+
+  /* 左下字标区 */
+  .hero {
+    position: fixed;
+    left: 6vw;
+    bottom: 218px;
+    user-select: none;
+  }
+  .hero .greet {
+    font: 500 14px/1 var(--font);
+    color: var(--text-2);
+    letter-spacing: 0.02em;
+  }
+  .hero .logo {
+    margin-top: 14px;
+    font: 800 52px/1 var(--font);
+    letter-spacing: 0.1em;
+    text-shadow: 0 6px 40px rgba(89, 101, 241, 0.4);
+  }
+  .hero .edition {
+    margin-top: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font: 600 12px/1 var(--font);
+    letter-spacing: 0.4em;
+    color: var(--accent-text);
+    text-transform: uppercase;
+  }
+  .hero .edition::after {
+    content: "";
+    width: 48px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  /* 底部磁贴坞 */
+  .dock {
+    position: fixed;
+    left: 6vw;
+    right: 6vw;
+    bottom: 64px;
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
+    width: 118px;
+    height: 128px;
+    padding: 16px;
+    border-radius: var(--r-panel);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--stroke);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    overflow: hidden;
+  }
+  .tile::before {
+    /* 签名: 悬停时左侧 accent 亮边 */
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 24%;
+    bottom: 24%;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s, top 0.15s, bottom 0.15s;
+  }
+  .tile:hover { background: rgba(28, 28, 28, 0.9); border-color: var(--stroke-strong); transform: translateY(-3px); }
+  .tile:hover::before { opacity: 1; top: 14%; bottom: 14%; }
+  .tile .ic { color: var(--text-2); transition: color 0.15s; }
+  .tile .ic svg.i { width: 22px; height: 22px; stroke-width: 1.8; }
+  .tile:hover .ic { color: var(--accent-text); }
+  .tile .label { font: 600 13.5px/1.2 var(--font); }
+  .tile .sub { font: 400 11px/1.3 var(--font); color: var(--text-3); margin-top: -6px; }
+
+  .tile.continue { width: 250px; justify-content: space-between; }
+  .tile.continue .top { display: flex; align-items: center; justify-content: space-between; }
+  .tile.continue .tag {
+    font: 600 10.5px/1 var(--font);
+    letter-spacing: 0.14em;
+    color: var(--accent-text);
+    text-transform: uppercase;
+  }
+  .tile.continue .server { font: 700 17px/1.25 var(--font); }
+  .tile.continue .meta { display: flex; align-items: center; gap: 10px; font: 400 11.5px/1 var(--font); color: var(--text-2); }
+  .ping { display: inline-flex; align-items: flex-end; gap: 1.5px; height: 9px; }
+  .ping i { width: 3px; border-radius: 1px; background: var(--ok); }
+  .ping i:nth-child(1) { height: 3px; } .ping i:nth-child(2) { height: 5px; }
+  .ping i:nth-child(3) { height: 7px; } .ping i:nth-child(4) { height: 9px; }
+
+  .tile.quit { width: 84px; align-items: center; justify-content: center; }
+  .tile.quit .ic { color: var(--text-3); }
+  .tile.quit:hover .ic { color: var(--danger); }
+  .tile.quit:hover::before { background: var(--danger); }
+  .tile.quit .label { font-size: 12px; color: var(--text-2); }
+
+  .dock .spacer { flex: 1; }
+
+  .footer {
+    position: fixed;
+    bottom: 22px;
+    left: 6vw;
+    right: 6vw;
+    display: flex;
+    justify-content: space-between;
+    font: 400 11.5px/1 var(--font);
+    color: var(--text-3);
+  }
+
+  /* 背景选择器模态 */
+  .modal-veil {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 6, 10, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-veil.open { display: flex; }
+  .bg-selector { width: 500px; max-height: 78vh; display: flex; flex-direction: column; }
+  .bg-selector .head { display: flex; align-items: center; gap: 10px; padding: 16px 20px 12px; }
+  .bg-selector .head .title { font: 600 15px/1 var(--font); }
+  .bg-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 4px 20px 20px; overflow-y: auto; }
+  .bg-card {
+    position: relative;
+    height: 96px;
+    border-radius: var(--r-card);
+    border: 1px solid var(--stroke);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.08s;
+  }
+  .bg-card:hover { transform: translateY(-1px); border-color: var(--stroke-strong); }
+  .bg-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .bg-card .preview { position: absolute; inset: 0; }
+  .bg-card .label {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 18px 12px 8px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.65));
+    font: 500 12.5px/1 var(--font);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .bg-card .check {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .bg-card .check svg.i { width: 10px; height: 10px; stroke-width: 3; }
+  .bg-card.on .check { display: inline-flex; }
+</style>
+</head>
+<body>
+<div class="mc-world"></div>
+
+<div class="acct-zone" id="acctZone">
+  <div class="user-chip glass">
+    <div class="avatar"></div>
+    <div>
+      <div class="name">Steve</div>
+      <div class="sub">微软账户</div>
+    </div>
+    <span class="chev"><svg class="i"><use href="#i-chev-d"/></svg></span>
+  </div>
+
+  <!-- 悬浮展开的账户列表 -->
+  <div class="acct-pop glass">
+    <div class="acct">
+      <div class="avatar"></div>
+      <div class="meta">
+        <div class="n">Steve</div>
+        <div class="t"><span class="mslogo"><i></i><i></i><i></i><i></i></span>微软账户</div>
+      </div>
+      <span class="on-mark"><svg class="i"><use href="#i-check"/></svg></span>
+      <span class="rm" title="移除账户"><svg class="i"><use href="#i-trash"/></svg></span>
+    </div>
+    <div class="acct">
+      <div class="avatar" style="background:linear-gradient(135deg,#57c76c,#1e6c3c)"></div>
+      <div class="meta">
+        <div class="n">Alex_2333</div>
+        <div class="t"><svg class="i" style="width:11px;height:11px"><use href="#i-cloud-off"/></svg>离线账户</div>
+      </div>
+      <span class="rm" title="移除账户"><svg class="i"><use href="#i-trash"/></svg></span>
+    </div>
+    <div class="hr"></div>
+    <div class="acct add" onclick="openAcct('choice')">
+      <span class="plus"><svg class="i"><use href="#i-plus"/></svg></span>
+      <div class="meta"><div class="n">添加账户</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="top-actions">
+  <button class="btn icon" title="背景" onclick="document.getElementById('bgsel').classList.add('open')"><svg class="i"><use href="#i-image"/></svg></button>
+  <button class="btn icon" title="音乐"><svg class="i"><use href="#i-music"/></svg></button>
+</div>
+
+<div class="hero">
+  <div class="greet">下午好，Steve</div>
+  <div class="logo">FPSMASTER</div>
+  <div class="edition">Edge</div>
+</div>
+
+<div class="dock">
+  <div class="tile continue">
+    <div class="top">
+      <span class="tag">继续游戏</span>
+      <span class="ic"><svg class="i"><use href="#i-play"/></svg></span>
+    </div>
+    <div>
+      <div class="server">Hypixel</div>
+      <div class="meta"><span>mc.hypixel.net</span><span class="ping"><i></i><i></i><i></i><i></i></span><span>32ms</span></div>
+    </div>
+  </div>
+  <div class="tile">
+    <span class="ic"><svg class="i"><use href="#i-box"/></svg></span>
+    <span class="label">单人游戏</span>
+  </div>
+  <div class="tile">
+    <span class="ic"><svg class="i"><use href="#i-globe"/></svg></span>
+    <span class="label">多人游戏</span>
+  </div>
+  <div class="tile">
+    <span class="ic"><svg class="i"><use href="#i-replay"/></svg></span>
+    <span class="label">回放</span>
+  </div>
+  <div class="tile">
+    <span class="ic"><svg class="i"><use href="#i-sliders"/></svg></span>
+    <span class="label">设置</span>
+  </div>
+  <span class="spacer"></span>
+  <div class="tile quit">
+    <span class="ic"><svg class="i"><use href="#i-power"/></svg></span>
+    <span class="label">退出</span>
+  </div>
+</div>
+
+<div class="footer">
+  <span>FPSMaster Edge 1.0.0 · Minecraft 1.8.9</span>
+  <span>Copyright Mojang AB. Do not distribute!</span>
+</div>
+
+<!-- 添加账户 / 微软登录 -->
+<div class="modal-veil" id="acctDlg" onclick="if(event.target===this)closeAcct()">
+  <div class="dialog glass">
+
+    <!-- 选择登录方式 -->
+    <div class="view on" data-view="choice">
+      <div class="d-title">添加账户</div>
+      <div class="d-sub">选择登录方式，可添加多个账户并随时切换。</div>
+      <div class="login-choice">
+        <div class="login-opt" onclick="msFlow('code')">
+          <div class="ico"><span class="mslogo lg"><i></i><i></i><i></i><i></i></span></div>
+          <div>
+            <div class="n">微软登录</div>
+            <div class="d">正版账户，可进入正版验证服务器</div>
+          </div>
+          <span class="go"><svg class="i"><use href="#i-chev-r"/></svg></span>
+        </div>
+        <div class="login-opt" onclick="showView('offline')">
+          <div class="ico"><svg class="i"><use href="#i-cloud-off"/></svg></div>
+          <div>
+            <div class="n">离线登录</div>
+            <div class="d">自定义用户名，无需联网验证</div>
+          </div>
+          <span class="go"><svg class="i"><use href="#i-chev-r"/></svg></span>
+        </div>
+      </div>
+      <div class="d-actions">
+        <button class="btn ghost" onclick="closeAcct()">取消</button>
+      </div>
+    </div>
+
+    <!-- 离线登录 -->
+    <div class="view" data-view="offline">
+      <div class="d-title">离线登录</div>
+      <div class="d-sub">输入游戏内显示的用户名（3–16 位字母、数字或下划线）。</div>
+      <input class="input" style="margin-top:18px;height:40px" placeholder="用户名" value="Alex_2333">
+      <div class="d-actions">
+        <button class="btn ghost" onclick="showView('choice')">返回</button>
+        <button class="btn primary" onclick="closeAcct()">添加账户</button>
+      </div>
+    </div>
+
+    <!-- 微软: 设备代码 -->
+    <div class="view" data-view="ms-code">
+      <div class="d-title">微软登录</div>
+      <div class="d-sub">在浏览器中打开 <b style="color:var(--text)">microsoft.com/link</b>，输入以下代码完成授权：</div>
+      <div class="code-box">
+        <span class="code">H7PL-QW2R</span>
+        <button class="btn icon" title="复制代码"><svg class="i"><use href="#i-copy"/></svg></button>
+      </div>
+      <div class="waiting">
+        <span class="dots"><i></i><i></i><i></i></span>
+        等待浏览器授权，完成后将自动继续
+      </div>
+      <div class="d-actions">
+        <button class="btn ghost" onclick="showView('choice')">返回</button>
+        <button class="btn primary grow" onclick="msFlow('verify')"><svg class="i"><use href="#i-external"/></svg>打开浏览器授权</button>
+      </div>
+    </div>
+
+    <!-- 微软: 验证中 -->
+    <div class="view" data-view="ms-verify">
+      <div class="d-title">微软登录</div>
+      <div class="state-fig">
+        <div class="spin"></div>
+        <div class="st-t">正在验证账户…</div>
+        <div class="st-d">获取 Minecraft 档案与皮肤信息</div>
+      </div>
+      <div class="d-actions">
+        <button class="btn ghost" onclick="msFlow('error')">取消</button>
+      </div>
+    </div>
+
+    <!-- 微软: 完成 -->
+    <div class="view" data-view="ms-done">
+      <div class="d-title">微软登录</div>
+      <div class="state-fig">
+        <div class="avatar lg"></div>
+        <div class="st-t">欢迎回来，Steve</div>
+        <div class="st-d">微软账户已添加并设为当前账户</div>
+      </div>
+      <div class="d-actions">
+        <button class="btn primary grow" onclick="closeAcct()">完成</button>
+      </div>
+    </div>
+
+    <!-- 微软: 失败 -->
+    <div class="view" data-view="ms-error">
+      <div class="d-title">微软登录</div>
+      <div class="state-fig">
+        <div class="big-ic err"><svg class="i"><use href="#i-alert"/></svg></div>
+        <div class="st-t">登录未完成</div>
+        <div class="st-d">授权超时或已被取消，请重试。<br>如果多次失败，请检查网络或代理设置。</div>
+      </div>
+      <div class="d-actions">
+        <button class="btn ghost" onclick="closeAcct()">取消</button>
+        <button class="btn primary" onclick="msFlow('code')">重试</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 背景选择器 -->
+<div class="modal-veil" id="bgsel" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="bg-selector glass">
+    <div class="head">
+      <button class="btn icon ghost" onclick="document.getElementById('bgsel').classList.remove('open')"><svg class="i"><use href="#i-arrow-l"/></svg></button>
+      <span class="title">背景</span>
+      <span class="spacer"></span>
+      <button class="btn" style="height:30px;font-size:12.5px">选择图片…</button>
+    </div>
+    <div class="bg-cards">
+      <div class="bg-card on" onclick="pick(this)">
+        <div class="preview" style="background:linear-gradient(135deg,#2a2a2a,#111)"></div>
+        <div class="label"><span>默认</span><span class="check"><svg class="i"><use href="#i-check"/></svg></span></div>
+      </div>
+      <div class="bg-card" onclick="pick(this)">
+        <div class="preview" style="background:linear-gradient(135deg,#2f2f2f,#151515)"></div>
+        <div class="label"><span>经典 (纯色)</span><span class="check"><svg class="i"><use href="#i-check"/></svg></span></div>
+      </div>
+      <div class="bg-card" onclick="pick(this)">
+        <div class="preview" style="background:linear-gradient(160deg,#3a3a3a 20%,#1a1a1a 80%)"></div>
+        <div class="label"><span>全景图</span><span class="check"><svg class="i"><use href="#i-check"/></svg></span></div>
+      </div>
+      <div class="bg-card" onclick="pick(this)">
+        <div class="preview" style="background:conic-gradient(from 200deg,#5965f1,#1a1a1a,#5965f1)"></div>
+        <div class="label"><span>Shader<span class="faint" style="margin-left:6px;font-size:11px">性能占用较高</span></span><span class="check"><svg class="i"><use href="#i-check"/></svg></span></div>
+      </div>
+      <div class="bg-card" onclick="pick(this)">
+        <div class="preview" style="background:linear-gradient(135deg,#3a3a3a,#141414)"></div>
+        <div class="label"><span>自定义图片</span><span class="check"><svg class="i"><use href="#i-check"/></svg></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script>
+function pick(el){
+  el.parentElement.querySelectorAll('.bg-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+/* ---- 账户弹层 ---- */
+let msTimer = null;
+function showView(name){
+  document.querySelectorAll('#acctDlg .view').forEach(v =>
+    v.classList.toggle('on', v.dataset.view === name));
+}
+function openAcct(view){
+  document.getElementById('acctDlg').classList.add('open');
+  showView(view);
+}
+function closeAcct(){
+  clearTimeout(msTimer);
+  document.getElementById('acctDlg').classList.remove('open');
+}
+function msFlow(state){
+  clearTimeout(msTimer);
+  showView('ms-' + state);
+  // 原型模拟: 授权 -> 验证 1.6s -> 完成
+  if (state === 'verify') msTimer = setTimeout(() => showView('ms-done'), 1600);
+}
+
+/* 截图/预览钩子: ?open=acct | choice | offline | ms-code | ms-verify | ms-done | ms-error */
+const q = new URLSearchParams(location.search).get('open');
+if (q === 'acct') document.getElementById('acctZone').classList.add('open');
+else if (q) { document.getElementById('acctDlg').classList.add('open'); showView(q); }
+</script>
+</body>
+</html>

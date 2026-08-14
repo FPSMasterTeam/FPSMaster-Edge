@@ -2,11 +2,8 @@ package top.fpsmaster.ui.click;
 
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.ui.common.TextField;
-import top.fpsmaster.utils.math.anim.ColorAnimator;
-import top.fpsmaster.utils.math.anim.Easings;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Icons;
-import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 
 import java.awt.*;
@@ -15,16 +12,15 @@ import java.awt.*;
 // reason:全局搜索
 public class SearchBar {
     private static final int TRANSPARENT = new Color(0, 0, 0, 0).getRGB();
-    private static final float ICON_SIZE = 10f;
-    private static final float CLEAR_SIZE = 10f;
+    private static final float ICON_SIZE = 6.5f;
+    private static final float CLEAR_SIZE = 6f;
 
     private TextField field;
-    private final ColorAnimator bgAnim = new ColorAnimator(ClickGuiTheme.inputBg());
 
     private void ensureField() {
         if (field == null) {
             field = new TextField(
-                    FPSMaster.fontManager.s16,
+                    FPSMaster.fontManager.getFont(12),
                     false,
                     FPSMaster.i18n.get("clickgui.search.placeholder"),
                     TRANSPARENT,
@@ -41,24 +37,21 @@ public class SearchBar {
         field.fontColor = ClickGuiTheme.textFieldText().getRGB();
         field.placeHolder = FPSMaster.i18n.get("clickgui.search.placeholder");
 
-        boolean hovered = Hover.is(x, y, width, height, mouseX, mouseY);
-        bgAnim.animateTo(hovered ? ClickGuiTheme.sideBtnHoverBg() : ClickGuiTheme.inputBg(), 0.15, Easings.QUAD_OUT);
-        bgAnim.update();
-        Rects.rounded(Math.round(x), Math.round(y), Math.round(width), Math.round(height), Math.round(height / 2f), bgAnim.get().getRGB());
+        UiChrome.searchBox(x, y, width, height, isFocused());
 
-        Icons.draw("search", x + 6, y + (height - ICON_SIZE) / 2f, ICON_SIZE, ClickGuiTheme.textSecondary().getRGB());
+        Icons.draw("search", x + 5, y + (height - ICON_SIZE) / 2f, ICON_SIZE, ClickGuiTheme.textDisabled().getRGB());
 
         boolean hasText = !field.getText().isEmpty();
-        float clearZone = hasText ? 22f : 6f;
-        field.drawTextBox(x + 16, y + 1, width - 16 - clearZone, height - 2);
+        float clearZone = hasText ? 13f : 4f;
+        field.drawTextBox(x + 14, y + 0.5f, width - 14 - clearZone, height - 1);
 
         if (hasText) {
-            float clearX = x + width - 18;
+            float clearX = x + width - 11;
             float clearY = y + (height - CLEAR_SIZE) / 2f;
-            boolean clearHover = Hover.is(clearX, clearY, 12, 12, mouseX, mouseY);
+            boolean clearHover = Hover.is(clearX - 2, clearY - 2, 10, 10, mouseX, mouseY);
             Icons.draw("close", clearX, clearY, CLEAR_SIZE,
                     clearHover ? ClickGuiTheme.textPrimary().getRGB() : ClickGuiTheme.textSecondary().getRGB());
-            if (screen.consumePressInBounds(clearX, clearY, 12, 12) != null) {
+            if (screen.consumePressInBounds(clearX - 2, clearY - 2, 10, 10) != null) {
                 field.setText("");
                 setFocused(true);
             }

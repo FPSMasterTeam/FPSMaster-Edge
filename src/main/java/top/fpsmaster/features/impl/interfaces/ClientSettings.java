@@ -56,7 +56,13 @@ public class ClientSettings extends Module {
     }
 
     public static double getUiBaseScale() {
-        return isFollowGameScaleEnabled() ? getVanillaGuiScaleFactor() : 1.0;
+        // uiScale means "backing pixels per logical unit". Follow-game rides the vanilla factor,
+        // which is pixel-based and stays visually constant on Retina because the one-time guiScale
+        // migration doubles the setting alongside displayWidth. Fixed: "1x" is one window point
+        // per unit, so it scales with the backing.
+        return isFollowGameScaleEnabled()
+                ? getVanillaGuiScaleFactor()
+                : top.fpsmaster.utils.system.HiDpi.scale();
     }
 
     public static double getUiScale() {

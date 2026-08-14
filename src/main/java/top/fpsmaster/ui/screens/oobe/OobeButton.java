@@ -1,6 +1,7 @@
 package top.fpsmaster.ui.screens.oobe;
 
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.ui.common.control.UiControl;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.AnimMath;
@@ -30,7 +31,7 @@ public class OobeButton implements UiControl {
         this.text = text;
         this.primary = primary;
         this.onClick = onClick;
-        this.colorAnimator = new ColorAnimator(primary ? new Color(104, 117, 247, 235) : new Color(255, 255, 255, 205));
+        this.colorAnimator = new ColorAnimator(primary ? ClickGuiTheme.accent() : ClickGuiTheme.layer());
     }
 
     public OobeButton setText(String text) {
@@ -60,8 +61,8 @@ public class OobeButton implements UiControl {
         hoverAnim = (float) AnimMath.base(hoverAnim, hovered ? 1.0 : 0.0, 0.22);
         pressAnim = (float) AnimMath.base(pressAnim, 0.0, 0.30);
         Color target = primary
-                ? (hovered ? new Color(118, 131, 252, 242) : new Color(104, 117, 247, enabled ? 228 : 148))
-                : (hovered ? new Color(255, 255, 255, 228) : new Color(255, 255, 255, enabled ? 188 : 145));
+                ? (hovered ? ClickGuiTheme.accentHover() : ClickGuiTheme.accent())
+                : (hovered ? ClickGuiTheme.layerHover() : ClickGuiTheme.layer());
         colorAnimator.base(target);
         float inset = pressAnim * 1.5f;
         float drawX = x + inset;
@@ -69,9 +70,9 @@ public class OobeButton implements UiControl {
         float drawWidth = Math.max(4f, width - inset * 2f);
         float drawHeight = Math.max(4f, height - inset * 2f);
         Color fillColor = colorAnimator.getColor();
-        Rects.rounded(Math.round(drawX), Math.round(drawY), Math.round(drawWidth), Math.round(drawHeight), 12, fillColor.getRGB());
-        int textColor = primary ? Color.WHITE.getRGB() : new Color(42, 52, 78, enabled ? 255 : 160).getRGB();
-        FPSMaster.fontManager.s16.drawCenteredString(text, x + width / 2f, y + height / 2f - 4.5f + pressAnim * 0.5f, textColor);
+        Rects.rounded(drawX, drawY, drawWidth, drawHeight, 5, fillColor.getRGB(), false);
+        int textColor = primary ? Color.WHITE.getRGB() : ClickGuiTheme.textPrimary().getRGB();
+        FPSMaster.fontManager.s14.drawCenteredString(text, x + width / 2f, y + height / 2f - 3.5f + pressAnim * 0.5f, textColor);
     }
 
     @Override

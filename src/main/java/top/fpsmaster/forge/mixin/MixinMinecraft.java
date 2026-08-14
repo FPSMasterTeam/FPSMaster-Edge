@@ -53,6 +53,12 @@ public abstract class MixinMinecraft implements IMinecraft {
     public GameSettings gameSettings;
 
     @Shadow
+    public int displayWidth;
+
+    @Shadow
+    public int displayHeight;
+
+    @Shadow
     public EntityRenderer entityRenderer;
 
     @Shadow
@@ -314,6 +320,58 @@ public abstract class MixinMinecraft implements IMinecraft {
     @Inject(method = "createDisplay", at = @At(value = "RETURN"))
     public void setTitle(CallbackInfo ci) {
         Display.setTitle(getClientTitle());
+        // Retina: the window was just created with a high-res backing (see HiDpi). LWJGL reports
+        // the size in points; switch the display fields to real pixels before startGame sizes the
+        // main framebuffer off them, so even the loading screen renders full-window and sharp.
+        if (top.fpsmaster.utils.system.HiDpi.active()) {
+            this.displayWidth = top.fpsmaster.utils.system.HiDpi.pointsToPixels(Display.getWidth());
+            this.displayHeight = top.fpsmaster.utils.system.HiDpi.pointsToPixels(Display.getHeight());
+        }
+    }
+
+    /**
+     * Windowed resize path: vanilla copies {@code Display.getWidth()/getHeight()} (points) into
+     * {@code displayWidth/Height} (pixels everywhere downstream). Scale at the copy.
+     */
+    @Redirect(method = "checkWindowResize", at = @At(value = "INVOKE",
+            target = "Lorg/lwjgl/opengl/Display;getWidth()I"))
+    private int edge$resizeWidthInPixels() {
+        return top.fpsmaster.utils.system.HiDpi.pointsToPixels(Display.getWidth());
+    }
+
+    @Redirect(method = "checkWindowResize", at = @At(value = "INVOKE",
+            target = "Lorg/lwjgl/opengl/Display;getHeight()I"))
+    private int edge$resizeHeightInPixels() {
+        return top.fpsmaster.utils.system.HiDpi.pointsToPixels(Display.getHeight());
+    }
+
+    /** Fullscreen enter: the desktop DisplayMode is in points on macOS as well. */
+    @Redirect(method = "toggleFullscreen", at = @At(value = "INVOKE",
+            target = "Lorg/lwjgl/opengl/DisplayMode;getWidth()I"))
+    private int edge$fullscreenWidthInPixels(org.lwjgl.opengl.DisplayMode mode) {
+        return top.fpsmaster.utils.system.HiDpi.pointsToPixels(mode.getWidth());
+    }
+
+    @Redirect(method = "toggleFullscreen", at = @At(value = "INVOKE",
+            target = "Lorg/lwjgl/opengl/DisplayMode;getHeight()I"))
+    private int edge$fullscreenHeightInPixels(org.lwjgl.opengl.DisplayMode mode) {
+        return top.fpsmaster.utils.system.HiDpi.pointsToPixels(mode.getHeight());
+    }
+
+    /**
+     * Fullscreen exit: vanilla rebuilds the windowed DisplayMode from {@code displayWidth/Height},
+     * which are pixels now — hand LWJGL points or the restored window doubles in size.
+     */
+    @Redirect(method = "toggleFullscreen", at = @At(value = "INVOKE",
+            target = "Lorg/lwjgl/opengl/Display;setDisplayMode(Lorg/lwjgl/opengl/DisplayMode;)V"))
+    private void edge$restoreWindowInPoints(org.lwjgl.opengl.DisplayMode mode) throws org.lwjgl.LWJGLException {
+        if (top.fpsmaster.utils.system.HiDpi.active()) {
+            Display.setDisplayMode(new org.lwjgl.opengl.DisplayMode(
+                    top.fpsmaster.utils.system.HiDpi.pixelsToPoints(mode.getWidth()),
+                    top.fpsmaster.utils.system.HiDpi.pixelsToPoints(mode.getHeight())));
+        } else {
+            Display.setDisplayMode(mode);
+        }
     }
 
     @Override
