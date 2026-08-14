@@ -1116,3 +1116,5 @@ director.export.res=Resolution
 director.export.res.window=Window
 director.export.estimate=Output %s · about %d frames
 director.export.start=Start export
+director.export.stats=%d / %d frames · %d%% · %s left
+director.export.cancelhint=Press ESC to cancel
