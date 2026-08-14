@@ -31,12 +31,29 @@ public class TargetDisplay extends InterfaceModule {
         addSettings(targetESP, targetHUD, espColor, omit);
     }
 
+    /** Drops the strong EntityPlayer ref so a disconnect cannot pin the old world graph. */
+    public static void clearTarget() {
+        target = null;
+        lastHit = 0L;
+    }
+
+    @Override
+    public void onDisable() {
+        super.onDisable();
+        clearTarget();
+    }
+
     @Subscribe
     public void onRender(EventRender3D e) {
-        if (target != null && target.getHealth() > 0 && target.isEntityAlive() && System.currentTimeMillis() - lastHit < 3000) {
-            if (targetESP.getMode() == 0) {
-                drawCircle(target, 0.55, true);
-            }
+        if (target == null) {
+            return;
+        }
+        if (target.getHealth() <= 0 || !target.isEntityAlive() || System.currentTimeMillis() - lastHit >= 3000) {
+            clearTarget();
+            return;
+        }
+        if (targetESP.getMode() == 0) {
+            drawCircle(target, 0.55, true);
         }
     }
 

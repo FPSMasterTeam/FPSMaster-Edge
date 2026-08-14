@@ -21,6 +21,12 @@ public class EventDispatcher {
                 if (Event.class.isAssignableFrom(parameterType)) {
                     Class<? extends Event> eventType = (Class<? extends Event>) parameterType;
                     List<Handler> listeners = eventListeners.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>());
+                    // Identity + method: Module.onEnable / always-on ctor registration used to stack
+                    // duplicate handlers for the same listener, retaining extra MethodHandleHandler
+                    // instances and double-firing every event.
+                    if (alreadyRegistered(listeners, listener, method)) {
+                        continue;
+                    }
                     listeners.add(new MethodHandleHandler(listener, method));
                 }
             }
@@ -29,7 +35,9 @@ public class EventDispatcher {
 
     public static void unregisterListener(Object listener) {
         for (List<Handler> listeners : eventListeners.values()) {
-            listeners.removeIf(eventListener -> eventListener.getListener().getClass().equals(listener.getClass()));
+            // Identity, not class equality: class-based removal dropped every instance of a type
+            // (or left orphans when the same class had multiple live listeners).
+            listeners.removeIf(handler -> handler.getListener() == listener);
         }
     }
 
@@ -50,7 +58,13 @@ public class EventDispatcher {
             }
         }
     }
+
+    private static boolean alreadyRegistered(List<Handler> listeners, Object listener, Method method) {
+        for (Handler handler : listeners) {
+            if (handler.getListener() == listener && handler.getMethod().equals(method)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
-
-
-

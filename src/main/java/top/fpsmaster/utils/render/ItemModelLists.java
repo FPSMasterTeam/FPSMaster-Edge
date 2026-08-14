@@ -68,6 +68,18 @@ public final class ItemModelLists {
     /** Distinct colours one model may be cached under before it is dropped instead. */
     private static final int MAX_TINTS_PER_MODEL = 8;
 
+    /**
+     * Soft ceiling on live display lists for the whole session.
+     *
+     * <p>Lists are otherwise only freed on a resource reload. A long session with many unique items
+     * (or a tinted model that approaches the per-model colour cap) would otherwise pin hundreds of
+     * GL lists until the player reloads resources. Flushing when the ceiling is hit trades a cold
+     * miss storm for bounded driver memory — the same trade the font LRU already makes.
+     */
+    private static final int MAX_TOTAL_LISTS = 512;
+
+    private static int totalLists;
+
     private ItemModelLists() {
     }
 
@@ -107,6 +119,9 @@ public final class ItemModelLists {
      * item is exactly the sort of fault that hides in a benchmark and shows up in a player's hand.
      */
     public static int beginRecording(IBakedModel model, ItemStack stack) {
+        if (totalLists >= MAX_TOTAL_LISTS) {
+            invalidate();
+        }
         Map<Long, Integer> byColour = LISTS.get(model);
         if (byColour == null) {
             byColour = new HashMap<Long, Integer>(4);
@@ -122,6 +137,7 @@ public final class ItemModelLists {
             return 0;
         }
         byColour.put(Long.valueOf(signature(model, stack)), Integer.valueOf(list));
+        totalLists++;
         GL11.glNewList(list, GL11.GL_COMPILE_AND_EXECUTE);
         recording = true;
         return list;
@@ -147,6 +163,7 @@ public final class ItemModelLists {
         LISTS.clear();
         REJECTED.clear();
         TINTS.clear();
+        totalLists = 0;
         recording = false;
     }
 

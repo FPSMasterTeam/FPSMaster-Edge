@@ -781,9 +781,27 @@ public class Minimap {
         tessellator.draw();
     }
 
+    /**
+     * Last storage size uploaded into {@link #mapTexture}.
+     *
+     * <p>{@code glTexImage2D} reallocates the whole level. Calling it every HUD frame (512² RGB ≈
+     * 0.75MB) orphans driver pages faster than they are reclaimed — at 60 FPS that is multi-GB per
+     * minute and matches "十几 GB / 半小时" reports when the minimap is on. Allocate once (or when
+     * the buffer size changes), then update with {@code glTexSubImage2D}.
+     */
+    private static int mapTextureStorageW = -1;
+    private static int mapTextureStorageH = -1;
+
     public static void bindTextureBuffer(final ByteBuffer image, final int width, final int height, final int par0) {
-        GL11.glBindTexture(3553, par0);
-        GL11.glTexImage2D(3553, 0, 6407, width, height, 0, 6407, 5121, image);
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, par0);
+        if (width != mapTextureStorageW || height != mapTextureStorageH) {
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, width, height, 0,
+                    GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, (ByteBuffer) null);
+            mapTextureStorageW = width;
+            mapTextureStorageH = height;
+        }
+        GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, width, height,
+                GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, image);
     }
 
     public static boolean shouldRenderEntity(final Entity e) {
@@ -821,6 +839,9 @@ public class Minimap {
         Minimap.triedFBO = false;
         Minimap.loadedFBO = false;
         Minimap.mapTexture = new DynamicTexture(InterfaceHandler.mapTextures);
+        // New GL texture id — force the next upload to allocate storage again.
+        mapTextureStorageW = -1;
+        mapTextureStorageH = -1;
     }
 
     public class MapLoader implements Runnable {

@@ -88,6 +88,9 @@ public final class TextRenderer {
 
     private static final int GEOMETRY_CACHE_LIMIT = 512;
 
+    /** Soft ceiling for the scramble cache inside one obfuscation epoch. */
+    private static final int OBFUSCATED_CACHE_LIMIT = 256;
+
     /** Upper bound for the {@link #widths} memo, kept in lockstep with the geometry cache. */
     private static final int WIDTH_CACHE_LIMIT = 1024;
 
@@ -140,7 +143,13 @@ public final class TextRenderer {
      * are worthless the moment the epoch turns, and mixing them in would push live entries out of a
      * bounded LRU to make room for ones that are already stale.
      */
-    private final Map<String, Recorded> obfuscatedCache = new HashMap<String, Recorded>();
+    private final Map<String, Recorded> obfuscatedCache =
+            new LinkedHashMap<String, Recorded>(64, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Recorded> eldest) {
+                    return size() > OBFUSCATED_CACHE_LIMIT;
+                }
+            };
 
     private long obfuscationEpochStarted;
 

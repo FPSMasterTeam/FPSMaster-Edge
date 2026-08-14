@@ -24,7 +24,9 @@ import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.*;
 import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
+import top.fpsmaster.features.impl.interfaces.TargetDisplay;
 import top.fpsmaster.features.impl.optimizes.Performance;
+import top.fpsmaster.features.impl.render.DamageIndicator;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.notification.NotificationManager;
@@ -39,6 +41,7 @@ import static top.fpsmaster.utils.core.Utility.mc;
 
 public class GlobalListener {
     private long lastFlushAt;
+    private boolean hadWorld;
 
     public void init() {
         EventDispatcher.registerListener(this);
@@ -72,7 +75,14 @@ public class GlobalListener {
         // Entity rendering stops entirely after a disconnect, so culling cannot rely on its render
         // hook to notice a null world and release the old WorldClient/pending entity references.
         Performance.ENTITY_CULLING.updateWorld(minecraft.theWorld);
-        if (minecraft.theWorld != null) {
+        boolean hasWorld = minecraft.theWorld != null;
+        if (hadWorld && !hasWorld) {
+            // Static module fields hold strong Entity refs across disconnect otherwise.
+            TargetDisplay.clearTarget();
+            DamageIndicator.clearState();
+        }
+        hadWorld = hasWorld;
+        if (hasWorld) {
             ReplayRecorder.instance().startIfRequested();
         }
         ReplayRecorder.instance().onClientTick();

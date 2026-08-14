@@ -6,6 +6,7 @@ import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
+import top.fpsmaster.utils.render.ItemModelLists;
 import top.fpsmaster.utils.render.TextureResolution;
 import top.fpsmaster.utils.render.culling.EntityCulling;
 
@@ -529,6 +530,14 @@ public class Performance extends Module {
         hideDoubleTallFlowers.addChangeListener(rebuildChunks);
         hideFences.addChangeListener(rebuildChunks);
         hideFenceGates.addChangeListener(rebuildChunks);
+
+        // Display lists are session-lived until a resource reload; turning the cache off (or the
+        // module) must free them immediately or they sit in driver memory for the rest of the run.
+        cacheItemModels.addChangeListener((setting, oldValue, newValue) -> {
+            if (!Boolean.TRUE.equals(newValue)) {
+                ItemModelLists.invalidate();
+            }
+        });
     }
 
 
@@ -555,6 +564,10 @@ public class Performance extends Module {
         super.onDisable();
         using = false;
         pendingWorldRefresh = true;
+        // Drop in-flight occlusion probes so pending Entity refs cannot outlive the feature, and
+        // free any CacheItemModels display lists that would otherwise wait for a resource reload.
+        ENTITY_CULLING.reset();
+        ItemModelLists.invalidate();
     }
 
     /**
