@@ -112,6 +112,8 @@
     "accessor.NetHandlerPlayClientAccessor",
     "accessor.FontRendererAccessor",
     "accessor.GlStateManagerAccessor",
-    "accessor.WorldRendererAccessor"
+    "accessor.WorldRendererAccessor",
+    "GuiScreenMixin_HiDpiMouse",
+    "EntityRendererMixin_HiDpiMouse"
   ]
 }

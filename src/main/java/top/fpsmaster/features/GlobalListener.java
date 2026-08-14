@@ -83,6 +83,7 @@ public class GlobalListener {
         ChunkUpdateBudget.onClientTick();
         CollisionProbe.onClientTick();
         UiShot.onClientTick();
+        FPSMaster.INSTANCE.migrateGuiScaleForHiDpi();
         PendingScreen.tick();
         long now = System.currentTimeMillis();
         if (now - lastFlushAt < 1000L) {
