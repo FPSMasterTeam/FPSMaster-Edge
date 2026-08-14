@@ -88,11 +88,13 @@ public class GlobalListener {
         ReplayRecorder.instance().onClientTick();
         ReplayPlayer.instance().startIfRequested();
         ReplayPlayer.instance().onClientTick();
+        top.fpsmaster.replay.director.DirectorCamera.onClientTick();
         ReplayProbe.onClientTick();
         Performance.onClientTick();
         ChunkUpdateBudget.onClientTick();
         CollisionProbe.onClientTick();
         UiShot.onClientTick();
+        top.fpsmaster.benchmark.DirectorSmoke.onClientTick();
         FPSMaster.INSTANCE.migrateGuiScaleForHiDpi();
         PendingScreen.tick();
         long now = System.currentTimeMillis();

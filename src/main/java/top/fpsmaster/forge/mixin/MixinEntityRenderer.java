@@ -77,6 +77,12 @@ public abstract class MixinEntityRenderer {
 
     @Inject(method = "getFOVModifier", at = @At("HEAD"), cancellable = true)
     private void getFOVModifier(float partialTicks, boolean useFOVSetting, CallbackInfoReturnable<Float> cir) {
+        // Director camera track drives FOV during replay preview/export; wins over everything.
+        float directorFov = top.fpsmaster.replay.director.DirectorCamera.fovOverride();
+        if (useFOVSetting && !Float.isNaN(directorFov)) {
+            cir.setReturnValue(directorFov);
+            return;
+        }
         if (SmoothZoom.using) {
             if (this.debugView) {
                 cir.setReturnValue(90.0F);

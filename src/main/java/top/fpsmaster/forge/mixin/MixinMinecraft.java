@@ -203,6 +203,9 @@ public abstract class MixinMinecraft implements IMinecraft {
     @Inject(method = "runGameLoop", at = @At("HEAD"))
     private void edge$latchFastRender(CallbackInfo ci) {
         FastRender.beginFrame();
+        // Frame boundary for the director exporter: the framebuffer still holds the frame the
+        // previous iteration rendered, so this is capture-then-advance territory.
+        top.fpsmaster.replay.director.DirectorExporter.onFrame();
     }
 
     @Inject(

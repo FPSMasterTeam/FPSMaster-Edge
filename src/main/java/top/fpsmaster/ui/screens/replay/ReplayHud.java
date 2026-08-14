@@ -123,6 +123,8 @@ public final class ReplayHud {
         bx -= 3f + BUTTON_H;
         boolean filesClicked = iconButton(screen, bx, rowY, "folder", false, mouseX, mouseY);
         bx -= 3f + BUTTON_H;
+        boolean directorClicked = iconButton(screen, bx, rowY, "film", false, mouseX, mouseY);
+        bx -= 3f + BUTTON_H;
         boolean viewClicked = iconButton(screen, bx, rowY, "eye", false, mouseX, mouseY);
         String speedText = formatSpeed(player.speed());
         float speedW = Math.max(22f, FPSMaster.fontManager.getFont(11).getStringWidth(speedText) + 8f);
@@ -141,6 +143,8 @@ public final class ReplayHud {
             cycleSpeed();
         } else if (viewClicked) {
             toggleView();
+        } else if (directorClicked) {
+            DirectorPanel.toggle();
         } else if (filesClicked) {
             openBrowser();
         } else if (stopClicked) {
