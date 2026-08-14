@@ -29,6 +29,8 @@ public class ReplayControlScreen extends ScaledGuiScreen {
             return;
         }
         ReplayHud.drawInteractive(this, guiWidth, mouseX, mouseY);
+        DirectorPanel.draw(this, guiWidth, guiHeight, mouseX, mouseY);
+        DirectorPanel.drawResultBanner(this, guiWidth, guiHeight, mouseX, mouseY);
     }
 
     @Override
@@ -39,6 +41,22 @@ public class ReplayControlScreen extends ScaledGuiScreen {
         }
         if (keyCode == Keyboard.KEY_P) {
             ReplayPlayer.instance().togglePause();
+            return;
+        }
+        // K: capture a camera keyframe without reaching for the workbench button.
+        if (keyCode == Keyboard.KEY_K) {
+            ReplayPlayer player = ReplayPlayer.instance();
+            if (player.isActive() && !player.isPossessing()) {
+                top.fpsmaster.replay.director.CameraPose pose =
+                        top.fpsmaster.replay.director.DirectorCamera.capturePose();
+                if (pose != null) {
+                    top.fpsmaster.replay.director.DirectorCamera.track()
+                            .add(player.elapsedMillis(), pose,
+                                    top.fpsmaster.replay.director.DirectorCamera.MERGE_WINDOW_MILLIS);
+                    top.fpsmaster.replay.director.DirectorCamera.markDirty();
+                    top.fpsmaster.replay.director.DirectorCamera.saveIfDirty();
+                }
+            }
             return;
         }
         super.keyTyped(typedChar, keyCode);

@@ -116,6 +116,8 @@ public final class ReplayPlayer {
     private File file;
 
     private long originNanos;
+    /** Timeline driven by {@link #externalAdvanceTo} instead of wall time (director export). */
+    private boolean externalClock;
     private int pausedAtMillis;
     private boolean paused;
     private int durationMillis;
@@ -300,6 +302,7 @@ public final class ReplayPlayer {
             return;
         }
         active = false;
+        externalClock = false;
         if (readerThread != null) {
             readerThread.interrupt();
             try {
@@ -551,11 +554,37 @@ public final class ReplayPlayer {
 
         if (seeking) {
             advanceSeek();
-        } else if (!paused) {
+        } else if (!paused && !externalClock) {
             elapsedMillis = (int) ((System.nanoTime() - originNanos) / 1_000_000L * speed);
             drain();
         }
         updateCamera(mc);
+    }
+
+    /**
+     * Hands the playback clock to an external driver (the director exporter). While set, wall time
+     * no longer advances the timeline; {@link #externalAdvanceTo} does. Turning it off re-anchors
+     * the wall clock at the current position so normal playback resumes without a jump.
+     */
+    public void setExternalClock(boolean external) {
+        if (this.externalClock == external) {
+            return;
+        }
+        this.externalClock = external;
+        if (!external) {
+            originNanos = System.nanoTime() - (long) (elapsedMillis / speed * 1_000_000L);
+        }
+    }
+
+    /** Deterministically advances playback state to an exact timeline millisecond (forward only). */
+    public void externalAdvanceTo(int millis) {
+        if (!active || seeking || !externalClock) {
+            return;
+        }
+        if (millis > elapsedMillis) {
+            elapsedMillis = millis;
+            drain();
+        }
     }
 
     private void drain() {
