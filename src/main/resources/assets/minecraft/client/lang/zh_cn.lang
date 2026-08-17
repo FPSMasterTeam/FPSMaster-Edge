@@ -714,6 +714,7 @@ serveraddressdisplay.roundradius=圆角半径
 hitboxes=碰撞箱
 hitboxes.desc=显示碰撞箱
 hitboxes.color=颜色
+hitboxes.expand=显示实际扩大过的碰撞箱
 
 customfov=自定义视场角
 customfov.desc=修改各个情况下的视场角(FOV)

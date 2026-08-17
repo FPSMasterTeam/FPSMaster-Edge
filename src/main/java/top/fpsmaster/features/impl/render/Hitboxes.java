@@ -8,6 +8,7 @@ import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventRender3D;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.forge.api.IRenderManager;
 import top.fpsmaster.utils.render.Render3DUtils;
@@ -16,10 +17,11 @@ import java.awt.*;
 
 public class Hitboxes extends Module {
     private final ColorSetting color = new ColorSetting("Color", new Color(255, 255, 255, 255));
+    private final BooleanSetting expand = new BooleanSetting("Expand", false);
     public static boolean using = false;
     public Hitboxes(){
         super("HitBoxes", Category.RENDER);
-        addSettings(color);
+        addSettings(color, expand);
     }
 
     @Override
@@ -66,7 +68,8 @@ public class Hitboxes extends Module {
                 double d_1 = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) event.partialTicks;
                 double d_2 = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) event.partialTicks;
                 double x = d_0 - renderManager.renderPosX() - entity.posX, y = d_1 - renderManager.renderPosY() - entity.posY, z = d_2 - renderManager.renderPosZ() - entity.posZ;
-                AxisAlignedBB bb = entity.getEntityBoundingBox().offset(x, y, z);
+                float expansion = expand.getValue() ? entity.getCollisionBorderSize() : 0.0f;
+                AxisAlignedBB bb = entity.getEntityBoundingBox().expand(expansion, expansion, expansion).offset(x, y, z);
                 Render3DUtils.drawBoundingBoxOutline(bb);
             }
         } finally {

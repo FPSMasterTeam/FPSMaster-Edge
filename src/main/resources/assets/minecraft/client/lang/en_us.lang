@@ -714,6 +714,7 @@ serveraddressdisplay.roundradius=Corner Radius
 hitboxes=Hitboxes
 hitboxes.desc=Show hitboxes
 hitboxes.color=Color
+hitboxes.expand=Expand
 
 customfov=Custom FOV
 customfov.desc=Modify FOV for different actions
