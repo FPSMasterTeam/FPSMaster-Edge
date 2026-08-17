@@ -729,6 +729,7 @@ nametags.backgroundcolor=Background Color
 nametags.fontshadow=Font Shadow
 nametags.betterfont=Clean Font
 nametags.background=Show Background
+nametags.hidenpc=Hide NPC
 
 taboverlay=Tab Overlay
 taboverlay.desc=Customize the tab list

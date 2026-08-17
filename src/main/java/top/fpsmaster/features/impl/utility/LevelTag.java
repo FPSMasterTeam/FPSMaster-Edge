@@ -1,5 +1,6 @@
 package top.fpsmaster.features.impl.utility;
 
+import net.minecraft.entity.player.EntityPlayer;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.utils.render.draw.Images;
@@ -22,17 +23,17 @@ import static top.fpsmaster.utils.core.Utility.mc;
 
 public class LevelTag extends Module {
     private static final ResourceLocation MATE_ICON = new ResourceLocation("client/textures/mate.png");
-
     public static final BooleanSetting showSelf = new BooleanSetting("ShowSelf", true);
     public static final BooleanSetting betterFont = new BooleanSetting("BetterFont", false);
     public static final BooleanSetting fontShadow = new BooleanSetting("FontShadow", true);
     public static final BooleanSetting bg = new BooleanSetting("Background", true);
     public static final ColorSetting backgroundColor = new ColorSetting("BackgroundColor", new Color(0, 0, 0, 0), bg::getValue);
+    private static final BooleanSetting hideNPC = new BooleanSetting("HideNPC", true);
     public static boolean using = false;
 
     public LevelTag() {
         super("Nametags", Category.Utility);
-        addSettings(showSelf, backgroundColor, fontShadow, betterFont, bg);
+        addSettings(showSelf, backgroundColor, fontShadow, betterFont, bg, hideNPC);
     }
 
     public static void renderName(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
@@ -194,6 +195,14 @@ public class LevelTag extends Module {
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
             GlStateManager.popMatrix();
         }
+    }
+
+    public static boolean qualify(Entity entityIn) {
+        if (!hideNPC.getValue()) return true;
+        if (!(entityIn instanceof EntityPlayer)) return true;
+        if (mc.getNetHandler() == null) return true;
+        EntityPlayer player = (EntityPlayer) entityIn;
+        return mc.getNetHandler().getPlayerInfo(player.getUniqueID()) != null;
     }
 
     @Override

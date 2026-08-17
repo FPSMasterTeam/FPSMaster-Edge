@@ -729,6 +729,7 @@ nametags.backgroundcolor=背景颜色
 nametags.fontshadow=字体阴影
 nametags.betterfont=更好的字体
 nametags.background=背景
+nametags.hidenpc=隐藏NPC
 
 taboverlay=Tab显示
 taboverlay.desc=自定义Tab界面

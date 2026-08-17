@@ -44,7 +44,7 @@ public abstract class MixinRender {
             return;
         }
         if (LevelTag.using) {
-            LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
+            if (LevelTag.qualify(entityIn)) LevelTag.renderName(entityIn, str, x, y, z, maxDistance);
             ci.cancel();
         }
     }
