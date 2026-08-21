@@ -6,6 +6,7 @@ import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
+import top.fpsmaster.ui.kit.EdgeUi;
 
 import java.io.IOException;
 
@@ -65,7 +66,12 @@ public class ScaledGuiScreen extends GuiScreen {
         try {
             activeScreen = this;
             GL11.glScalef(renderScale, renderScale, 1f);
-            render(inputState.getMouseX(), inputState.getMouseY(), partialTicks);
+            EdgeUi.begin(this);
+            try {
+                render(inputState.getMouseX(), inputState.getMouseY(), partialTicks);
+            } finally {
+                EdgeUi.end();
+            }
             // Reported after render() so subclasses that compute their layout there (MainPanel centres
             // itself every frame) have already done so. The HUD editor reads it on the next frame,
             // which is fine — it runs ahead of this one within a frame anyway.

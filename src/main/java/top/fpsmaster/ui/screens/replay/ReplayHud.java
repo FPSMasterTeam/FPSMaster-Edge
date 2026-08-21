@@ -7,6 +7,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.replay.ReplayPlayer;
 import top.fpsmaster.replay.director.DirectorCamera;
+import top.fpsmaster.ui.kit.EdgeUi;
 import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.ui.click.UiChrome;
 import top.fpsmaster.utils.render.draw.Hover;
@@ -82,10 +83,15 @@ public final class ReplayHud {
         GL11.glPushMatrix();
         try {
             GL11.glScalef(renderScale, renderScale, 1f);
-            // Far outside the panel, so nothing reads as hovered while the cursor is not there.
-            render(player, guiWidth, null, -1000, -1000);
-            if (DirectorPanel.isOpen()) {
-                DirectorPanel.draw(null, guiWidth, guiHeight, -1000, -1000);
+            EdgeUi.beginOverlay(guiWidth, guiHeight);
+            try {
+                // Far outside the panel, so nothing reads as hovered while the cursor is not there.
+                render(player, guiWidth, null, -1000, -1000);
+                if (DirectorPanel.isOpen()) {
+                    DirectorPanel.draw(null, guiWidth, guiHeight, -1000, -1000);
+                }
+            } finally {
+                EdgeUi.end();
             }
         } finally {
             GL11.glPopMatrix();

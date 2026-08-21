@@ -68,6 +68,7 @@ sourceSets.main {
 // Dependencies:
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven("https://jitpack.io")
     maven("https://repo.spongepowered.org/maven/")
@@ -108,6 +109,8 @@ dependencies {
     shadowImpl("org.slf4j:slf4j-api:2.0.6") {
         isTransitive = false
     }
+
+    shadowImpl("top.fpsmaster:ui:0.1.0")
 
     // 音乐能力：Cadence 数据客户端（网易云/QQ 搜索/直链/歌词/歌单/登录）。
     // 由 JitPack 托管 (FPSMasterTeam/Cadence)，坐标即 com.github.<owner>:<repo>:<tag>；

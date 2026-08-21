@@ -27,6 +27,21 @@ public final class Icons {
         Images.drawSmooth(resolve(name, size), x, y, size, size, color);
     }
 
+    public static ResourceLocation location(String name, float drawSize) {
+        return resolve(name, drawSize);
+    }
+
+    public static int pixelBucket(float drawSize) {
+        float devicePixels = drawSize * pixelsPerUnit();
+        int picked = SIZES[SIZES.length - 1];
+        for (int size : SIZES) {
+            if (size >= devicePixels) {
+                return size;
+            }
+        }
+        return picked;
+    }
+
     private static ResourceLocation resolve(String name, float drawSize) {
         float devicePixels = drawSize * pixelsPerUnit();
         int picked = SIZES[SIZES.length - 1];

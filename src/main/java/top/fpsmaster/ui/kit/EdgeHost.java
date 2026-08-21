@@ -1,0 +1,80 @@
+package top.fpsmaster.ui.kit;
+
+import top.fpsmaster.FPSMaster;
+import top.fpsmaster.features.impl.interfaces.ClientSettings;
+import net.minecraft.util.ResourceLocation;
+import top.fpsmaster.utils.render.draw.Icons;
+import top.fpsmaster.utils.render.effects.Blur;
+import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.uikit.canvas.Canvas;
+import top.fpsmaster.uikit.canvas.FontHandle;
+import top.fpsmaster.uikit.canvas.ImageHandle;
+import top.fpsmaster.uikit.host.UiHost;
+import top.fpsmaster.uikit.input.FrameInput;
+import top.fpsmaster.uikit.input.Input;
+
+import java.awt.Color;
+
+final class EdgeHost implements UiHost {
+    private final ScaledGuiScreen screen;
+    private final EdgeCanvas canvas = new EdgeCanvas();
+    private final EdgeInput input;
+    private final float width;
+    private final float height;
+
+    EdgeHost(ScaledGuiScreen screen, FrameInput fallback, float width, float height) {
+        this.screen = screen;
+        this.input = new EdgeInput(screen, fallback);
+        this.width = width;
+        this.height = height;
+    }
+
+    public Canvas canvas() {
+        return canvas;
+    }
+
+    public Input input() {
+        return input;
+    }
+
+    public FontHandle font(int size) {
+        return new EdgeFont(FPSMaster.fontManager.getFont(size), size);
+    }
+
+    public float width() {
+        return width;
+    }
+
+    public float height() {
+        return height;
+    }
+
+    public long nowNanos() {
+        return System.nanoTime();
+    }
+
+    public boolean blurEnabled() {
+        return ClientSettings.blur.getValue();
+    }
+
+    public void blurBehind(float x, float y, float w, float h, float radius) {
+        Blur.area(x, y, w, h, Math.round(radius), Color.WHITE, 3, 3);
+    }
+
+    public ImageHandle image(String id) {
+        return image(id, 11f);
+    }
+
+    public ImageHandle image(String id, float drawSize) {
+        if (id == null || id.isEmpty()) {
+            return null;
+        }
+        ResourceLocation location = Icons.location(id, drawSize);
+        int px = Icons.pixelBucket(drawSize);
+        return new EdgeImage(location, px, px);
+    }
+
+    ScaledGuiScreen screen() {
+        return screen;
+    }
+}
