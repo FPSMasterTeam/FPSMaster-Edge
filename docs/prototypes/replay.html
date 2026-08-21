@@ -31,6 +31,8 @@
   }
   .head .title { font: 700 15.5px/1 var(--font); }
   .head .count { font: 400 12px/1 var(--font); color: var(--text-3); }
+  .head .seg { margin-left: 4px; }
+  .head .seg .opt { padding: 5px 11px; }
 
   /* 录制按钮的两种状态 */
   .rec-btn .dot {
@@ -101,7 +103,8 @@
   .replay:hover .dur { display: none; }
   .replay .ops .btn { width: 30px; height: 30px; padding: 0; }
   .replay .ops .btn svg.i { width: 13px; height: 13px; }
-  .replay .ops .play-btn { width: auto; padding: 0 12px; gap: 6px; font-size: 12px; }
+  .replay .ops .play-btn,
+  .replay .ops .edit-btn { width: auto; padding: 0 12px; gap: 6px; font-size: 12px; }
 
   .empty {
     flex: 1;
@@ -201,13 +204,17 @@
     <div class="head">
       <button class="btn icon ghost" title="返回"><svg class="i"><use href="#i-arrow-l"/></svg></button>
       <span class="title">回放</span>
-      <span class="count">4 个录像 · 共 218 MB</span>
+      <div class="seg" id="tabs">
+        <div class="opt on" data-tab="source">素材</div>
+        <div class="opt" data-tab="project">工程</div>
+      </div>
+      <span class="count" id="count">4 个录像</span>
       <span class="spacer"></span>
       <button class="btn icon" title="打开文件夹"><svg class="i"><use href="#i-folder"/></svg></button>
       <button class="btn primary rec-btn" id="recBtn" onclick="toggleRec(this)"><span class="dot"></span>开始录制</button>
     </div>
 
-    <div class="list scroll">
+    <div class="list scroll" id="listSource">
       <div class="replay on" onclick="sel(this)">
         <div class="ic"><svg class="i"><use href="#i-film"/></svg></div>
         <div class="meta">
@@ -216,8 +223,8 @@
         </div>
         <span class="dur">5:32</span>
         <div class="ops">
-          <button class="btn primary play-btn"><svg class="i"><use href="#i-play"/></svg>播放</button>
-          <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+          <button class="btn primary play-btn" onclick="event.stopPropagation();document.body.classList.add('playing')"><svg class="i"><use href="#i-play"/></svg>播放</button>
+          <a class="btn edit-btn" href="replay-timeline.html?source=hypixel-bedwars-0813" onclick="event.stopPropagation()">剪辑</a>
           <button class="btn icon ghost" title="删除" onclick="event.stopPropagation();document.getElementById('delDlg').classList.add('open')"><svg class="i"><use href="#i-trash"/></svg></button>
         </div>
       </div>
@@ -231,7 +238,7 @@
         <span class="dur">3:18</span>
         <div class="ops">
           <button class="btn primary play-btn"><svg class="i"><use href="#i-play"/></svg>播放</button>
-          <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+          <a class="btn edit-btn" href="replay-timeline.html?source=minemen-duels-final" onclick="event.stopPropagation()">剪辑</a>
           <button class="btn icon ghost" title="删除"><svg class="i"><use href="#i-trash"/></svg></button>
         </div>
       </div>
@@ -245,7 +252,7 @@
         <span class="dur">12:45</span>
         <div class="ops">
           <button class="btn primary play-btn"><svg class="i"><use href="#i-play"/></svg>播放</button>
-          <button class="btn icon ghost" title="重命名"><svg class="i"><use href="#i-pencil"/></svg></button>
+          <a class="btn edit-btn" href="replay-timeline.html?source=uhc-meetup-16" onclick="event.stopPropagation()">剪辑</a>
           <button class="btn icon ghost" title="删除"><svg class="i"><use href="#i-trash"/></svg></button>
         </div>
       </div>
@@ -263,7 +270,9 @@
       </div>
     </div>
 
-    <div class="foot">录像保存于 replays/*.edgereplay · 录制时长与文件大小成正比</div>
+    <div class="list scroll" id="listProject" style="display:none"></div>
+
+    <div class="foot" id="foot">原始回放保存在 replays/*.edgereplay · 剪辑工程只引用它，不改原文件</div>
   </div>
 </div>
 
@@ -274,8 +283,9 @@
     <button class="btn icon" title="暂停" id="pauseBtn" onclick="togglePause(this)"><svg class="i"><use href="#i-pause"/></svg></button>
     <button class="btn speed" title="播放速度" onclick="cycleSpeed(this)">1.0x</button>
     <button class="btn icon" title="切换视角"><svg class="i"><use href="#i-eye"/></svg></button>
-    <button class="btn icon" title="录像列表"><svg class="i"><use href="#i-folder"/></svg></button>
-    <button class="btn icon stop-btn" title="停止回放"><svg class="i"><use href="#i-stop"/></svg></button>
+    <a class="btn" href="replay-timeline.html?source=hypixel-bedwars-0813" title="用这段素材新建剪辑工程">剪辑</a>
+    <button class="btn icon" title="录像列表" onclick="document.body.classList.remove('playing')"><svg class="i"><use href="#i-folder"/></svg></button>
+    <button class="btn icon stop-btn" title="停止回放" onclick="document.body.classList.remove('playing')"><svg class="i"><use href="#i-stop"/></svg></button>
   </div>
   <div class="row2">
     <span class="time">1:26</span>
@@ -305,10 +315,63 @@
 
 <script src="icons.js"></script>
 <script>
+const STORE = "edge.edit.projects";
+function loadProjects() {
+  try { return JSON.parse(localStorage.getItem(STORE) || "[]"); } catch (e) { return []; }
+}
+function saveProjects(list) { localStorage.setItem(STORE, JSON.stringify(list)); }
+function fmtWhen(ts) {
+  const d = new Date(ts);
+  return d.getMonth() + 1 + "月" + d.getDate() + "日 " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+
 function sel(el){
   el.parentElement.querySelectorAll('.replay').forEach(s=>s.classList.remove('on'));
   el.classList.add('on');
 }
+function showTab(tab) {
+  document.querySelectorAll("#tabs .opt").forEach(o => o.classList.toggle("on", o.dataset.tab === tab));
+  document.getElementById("listSource").style.display = tab === "source" ? "flex" : "none";
+  document.getElementById("listProject").style.display = tab === "project" ? "flex" : "none";
+  document.getElementById("recBtn").style.display = tab === "source" ? "" : "none";
+  if (tab === "source") {
+    document.getElementById("count").textContent = "4 个录像";
+    document.getElementById("foot").textContent = "原始回放保存在 replays/*.edgereplay · 剪辑工程只引用它，不改原文件";
+  } else {
+    renderProjects();
+  }
+}
+function renderProjects() {
+  const list = loadProjects();
+  const box = document.getElementById("listProject");
+  document.getElementById("count").textContent = list.length + " 个工程";
+  document.getElementById("foot").textContent = "工程保存在 edits/*.edgeedit · 里面写的是切点、速度、运镜，素材仍是原来的回放";
+  if (!list.length) {
+    box.innerHTML = '<div class="empty"><div>还没有剪辑工程</div><div>在「素材」里打开一段回放，点 剪辑</div></div>';
+    return;
+  }
+  box.innerHTML = list.map((p, i) => {
+    const n = (p.clips && p.clips.length) ? p.clips.length : 0;
+    return '<div class="replay' + (i === 0 ? ' on' : '') + '" onclick="sel(this)">'
+      + '<div class="ic"><svg class="i"><use href="#i-sliders"/></svg></div>'
+      + '<div class="meta"><div class="n">' + p.name + '</div>'
+      + '<div class="d"><span>引用 ' + p.source + '</span>·<span>' + n + ' 段</span>·<span>' + fmtWhen(p.updated) + '</span></div></div>'
+      + '<span class="dur">' + (p.outLabel || "") + '</span>'
+      + '<div class="ops">'
+      + '<a class="btn primary play-btn" href="replay-timeline.html?project=' + encodeURIComponent(p.id) + '" onclick="event.stopPropagation()">打开</a>'
+      + '<button class="btn icon ghost" title="删除" onclick="event.stopPropagation();delProject(\'' + p.id + '\')"><svg class="i"><use href="#i-trash"/></svg></button>'
+      + '</div></div>';
+  }).join("");
+}
+function delProject(id) {
+  saveProjects(loadProjects().filter(p => p.id !== id));
+  renderProjects();
+}
+document.getElementById("tabs").addEventListener("click", e => {
+  const opt = e.target.closest(".opt");
+  if (opt) showTab(opt.dataset.tab);
+});
+if (new URLSearchParams(location.search).get("tab") === "project") showTab("project");
 let recTimer = null, recSec = 0;
 function toggleRec(btn){
   if (btn.classList.toggle('recording')) {

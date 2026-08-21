@@ -35,6 +35,7 @@ public final class CameraKeyframe {
     public double z;
     public float yaw;
     public float pitch;
+    public float roll;
     public float fov;
     public Transition transition = Transition.SMOOTH;
     public Easing easing = Easing.EASE_IN_OUT;
@@ -49,10 +50,11 @@ public final class CameraKeyframe {
         this.z = pose.z;
         this.yaw = pose.yaw;
         this.pitch = pose.pitch;
+        this.roll = pose.roll;
         this.fov = pose.fov;
     }
 
     public CameraPose pose() {
-        return new CameraPose(x, y, z, yaw, pitch, fov);
+        return new CameraPose(x, y, z, yaw, pitch, fov, roll);
     }
 }

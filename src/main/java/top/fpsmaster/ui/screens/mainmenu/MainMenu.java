@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiOptions;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiSelectWorld;
 import net.minecraft.client.multiplayer.GuiConnecting;
 import net.minecraft.client.multiplayer.ServerData;
@@ -13,7 +14,9 @@ import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.exception.AccountException;
 import top.fpsmaster.modules.account.AccountManager;
+import top.fpsmaster.modules.account.MicrosoftAuth;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.ui.click.UiChrome;
@@ -40,6 +43,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -47,6 +51,7 @@ import java.util.Base64;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Edge main menu, after docs/prototypes/main-menu.html: account capsule top-left, round action
@@ -74,13 +79,22 @@ public class MainMenu extends ScaledGuiScreen {
     private static final float QUIT_W = 42f;
 
     private enum Dialog {
-        NONE, ADD_OFFLINE
+        NONE, ADD_OFFLINE, MS_LOGIN
     }
 
     private boolean accountPopOpen;
     private Dialog dialog = Dialog.NONE;
     private TextField usernameField;
     private boolean usernameInvalid;
+    private final AtomicBoolean msLoginCancel = new AtomicBoolean(false);
+    private final AtomicInteger msLoginGeneration = new AtomicInteger();
+    private volatile boolean msLoginBusy;
+    private volatile String msUserCode = "";
+    private volatile String msVerifyUrl = "";
+    private volatile String msStatus = "";
+    private volatile String msError = "";
+    private volatile boolean msCopied;
+    private long msCopiedUntil;
 
     /** Last server in the list, pinged once per menu session for the continue card. */
     private static ServerData continueServer;
@@ -157,8 +171,10 @@ public class MainMenu extends ScaledGuiScreen {
             Rects.fill(0, 0, guiWidth, guiHeight, new Color(10, 10, 10, (int) (255 * (1f - intro))));
         }
 
-        if (dialog != Dialog.NONE) {
+        if (dialog == Dialog.ADD_OFFLINE) {
             drawAddAccountDialog(mouseX, mouseY);
+        } else if (dialog == Dialog.MS_LOGIN) {
+            drawMicrosoftLoginDialog(mouseX, mouseY);
         }
     }
 
@@ -385,7 +401,7 @@ public class MainMenu extends ScaledGuiScreen {
             float popH = drawAccountPop(chipX, chipY + chipH + 4f, mouseX, mouseY);
             // Click-away dismiss: anything outside the chip+popover column closes the popover
             // (and is consumed, so the first click never also activates what's beneath it).
-            float zoneW = Math.max(chipW, 124f) + 4f;
+            float zoneW = Math.max(chipW, 148f) + 4f;
             if (consumePressOutside(chipX - 2f, chipY - 2f, zoneW, chipH + 6f + popH + 4f) != null) {
                 accountPopOpen = false;
             }
@@ -396,8 +412,7 @@ public class MainMenu extends ScaledGuiScreen {
     }
 
     private String accountTypeLabel(AccountManager accounts) {
-        boolean current = accounts.isCurrentLauncherAccount();
-        if (current && accounts.isLauncherAccountOnline()) {
+        if (accounts.isCurrentOnline()) {
             return FPSMaster.i18n.get("mainmenu.account.ms");
         }
         return FPSMaster.i18n.get("mainmenu.account.offline");
@@ -418,10 +433,10 @@ public class MainMenu extends ScaledGuiScreen {
         AccountManager.Account launcher = accounts.launcherAccount();
         List<AccountManager.Account> offline = accounts.getOfflineAccounts();
 
-        float w = 124f;
+        float w = 148f;
         float rowH = 22f;
         int rows = (launcher != null ? 1 : 0) + offline.size();
-        float h = 3f + rows * rowH + 4.5f + rowH + 3f;
+        float h = 3f + rows * rowH + 4.5f + rowH * 2f + 3f;
         UiChrome.panel(x, y, w, h);
 
         float rowY = y + 3f;
@@ -434,33 +449,25 @@ public class MainMenu extends ScaledGuiScreen {
             rowY += rowH;
         }
         for (AccountManager.Account account : offline) {
-            if (launcher != null && account.name.equalsIgnoreCase(launcher.name)) {
+            if (launcher != null && account.name.equalsIgnoreCase(launcher.name) && !account.isMicrosoft()) {
                 continue;
             }
             drawAccountRow(x + 3f, rowY, w - 6f, rowH, account.name,
-                    FPSMaster.i18n.get("mainmenu.account.offline"),
+                    account.isMicrosoft()
+                            ? FPSMaster.i18n.get("mainmenu.account.ms")
+                            : FPSMaster.i18n.get("mainmenu.account.offline"),
                     account.name.equals(accounts.currentName()), account, mouseX, mouseY);
             rowY += rowH;
         }
 
         UiChrome.hairlineH(x + 7f, rowY + 2f, w - 14f);
         rowY += 4.5f;
-
-        boolean addHover = Hover.is(x + 3f, rowY, w - 6f, rowH, mouseX, mouseY);
-        if (addHover) {
-            Rects.rounded(x + 3f, rowY, w - 6f, rowH, CARD_ROW_RADIUS, ClickGuiTheme.layerHover().getRGB(), false);
+        if (drawAddAccountAction(x, rowY, w, rowH, FPSMaster.i18n.get("mainmenu.account.ms.add"), mouseX, mouseY)) {
+            accountPopOpen = false;
+            startMicrosoftLogin();
         }
-        // dashed plus box
-        float boxX = x + 8f;
-        float boxY = rowY + 4f;
-        Rects.rounded(boxX - 0.5f, boxY - 0.5f, 15f, 15f, 5, ClickGuiTheme.strokeStrong().getRGB(), false);
-        Rects.rounded(boxX, boxY, 14f, 14f, 4, ClickGuiTheme.glass().getRGB(), false);
-        Icons.draw("plus", boxX + 3.5f, boxY + 3.5f, 7f,
-                (addHover ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB());
-        FPSMaster.fontManager.getFont(13).drawString(FPSMaster.i18n.get("mainmenu.account.add"),
-                x + 27f, rowY + 7f,
-                (addHover ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB());
-        if (consumePressInBounds(x + 3f, rowY, w - 6f, rowH, 0) != null) {
+        rowY += rowH;
+        if (drawAddAccountAction(x, rowY, w, rowH, FPSMaster.i18n.get("mainmenu.account.offline.add"), mouseX, mouseY)) {
             dialog = Dialog.ADD_OFFLINE;
             usernameField.setText("");
             usernameField.setFocused(true);
@@ -468,6 +475,22 @@ public class MainMenu extends ScaledGuiScreen {
             accountPopOpen = false;
         }
         return h;
+    }
+
+    private boolean drawAddAccountAction(float x, float rowY, float w, float rowH, String label, int mouseX, int mouseY) {
+        boolean addHover = Hover.is(x + 3f, rowY, w - 6f, rowH, mouseX, mouseY);
+        if (addHover) {
+            Rects.rounded(x + 3f, rowY, w - 6f, rowH, CARD_ROW_RADIUS, ClickGuiTheme.layerHover().getRGB(), false);
+        }
+        float boxX = x + 8f;
+        float boxY = rowY + 4f;
+        Rects.rounded(boxX - 0.5f, boxY - 0.5f, 15f, 15f, 5, ClickGuiTheme.strokeStrong().getRGB(), false);
+        Rects.rounded(boxX, boxY, 14f, 14f, 4, ClickGuiTheme.glass().getRGB(), false);
+        Icons.draw("plus", boxX + 3.5f, boxY + 3.5f, 7f,
+                (addHover ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB());
+        FPSMaster.fontManager.getFont(13).drawString(label, x + 27f, rowY + 7f,
+                (addHover ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB());
+        return consumePressInBounds(x + 3f, rowY, w - 6f, rowH, 0) != null;
     }
 
     private static final int CARD_ROW_RADIUS = 5;
@@ -585,12 +608,207 @@ public class MainMenu extends ScaledGuiScreen {
     }
 
     private void closeDialog() {
+        if (dialog == Dialog.MS_LOGIN) {
+            msLoginCancel.set(true);
+            msLoginGeneration.incrementAndGet();
+        }
         dialog = Dialog.NONE;
         usernameField.setFocused(false);
     }
 
+    private void startMicrosoftLogin() {
+        dialog = Dialog.MS_LOGIN;
+        msLoginCancel.set(false);
+        msLoginBusy = true;
+        msUserCode = "";
+        msVerifyUrl = "";
+        msStatus = FPSMaster.i18n.get("mainmenu.account.ms.starting");
+        msError = "";
+        msCopied = false;
+        final int generation = msLoginGeneration.incrementAndGet();
+        FPSMaster.async.runnable(new Runnable() {
+            @Override
+            public void run() {
+                runMicrosoftLogin(generation);
+            }
+        });
+    }
+
+    private void runMicrosoftLogin(int generation) {
+        try {
+            MicrosoftAuth.DeviceLogin start = MicrosoftAuth.startDeviceLogin();
+            if (msLoginCancel.get() || generation != msLoginGeneration.get()) {
+                return;
+            }
+            msUserCode = start.userCode;
+            msVerifyUrl = start.browserUrl();
+            msStatus = FPSMaster.i18n.get("mainmenu.account.ms.waiting");
+            msLoginBusy = false;
+            openLink(msVerifyUrl);
+            long deadline = System.currentTimeMillis() + Math.max(30, start.expiresIn) * 1000L;
+            int interval = Math.max(1, start.interval);
+            while (!msLoginCancel.get() && generation == msLoginGeneration.get()
+                    && System.currentTimeMillis() < deadline) {
+                MicrosoftAuth.PollResult poll = MicrosoftAuth.pollDeviceLogin(start.deviceCode);
+                if (msLoginCancel.get() || generation != msLoginGeneration.get()) {
+                    return;
+                }
+                if (poll.account != null) {
+                    final MicrosoftAuth.MinecraftProfile profile = poll.account;
+                    Minecraft.getMinecraft().addScheduledTask(new Runnable() {
+                        @Override
+                        public void run() {
+                            AccountManager.get().addAndUseMicrosoft(profile);
+                            dialog = Dialog.NONE;
+                        }
+                    });
+                    return;
+                }
+                if ("denied".equals(poll.status)) {
+                    msError = FPSMaster.i18n.get("mainmenu.account.ms.denied");
+                    msStatus = "";
+                    return;
+                }
+                if ("expired".equals(poll.status)) {
+                    msError = FPSMaster.i18n.get("mainmenu.account.ms.expired");
+                    msStatus = "";
+                    return;
+                }
+                if (poll.interval > 0) {
+                    interval = poll.interval;
+                }
+                sleepInterruptibly(interval * 1000L);
+            }
+            if (!msLoginCancel.get() && (msError == null || msError.isEmpty())) {
+                msError = FPSMaster.i18n.get("mainmenu.account.ms.expired");
+                msStatus = "";
+            }
+        } catch (IOException | AccountException exception) {
+            if (msLoginCancel.get()) {
+                return;
+            }
+            msError = localizeMicrosoftError(exception.getMessage());
+            msStatus = "";
+            ClientLogger.warn("Microsoft login failed: " + exception.getMessage());
+        } finally {
+            msLoginBusy = false;
+        }
+    }
+
+    private String localizeMicrosoftError(String message) {
+        if (message == null || message.isEmpty()) {
+            return FPSMaster.i18n.get("mainmenu.account.ms.failed").replace("%s", "unknown");
+        }
+        if ("NO_JAVA_LICENSE".equals(message)) {
+            return FPSMaster.i18n.get("mainmenu.account.ms.nolicense");
+        }
+        if ("NO_JAVA_PROFILE".equals(message)) {
+            return FPSMaster.i18n.get("mainmenu.account.ms.noprofile");
+        }
+        return FPSMaster.i18n.get("mainmenu.account.ms.failed").replace("%s", message);
+    }
+
+    private void sleepInterruptibly(long millis) {
+        long waited = 0L;
+        while (waited < millis && !msLoginCancel.get()) {
+            try {
+                Thread.sleep(200L);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            waited += 200L;
+        }
+    }
+
+    private void drawMicrosoftLoginDialog(int mouseX, int mouseY) {
+        UiChrome.veil(guiWidth, guiHeight, 0.9f);
+        float w = 220f;
+        float h = 132f;
+        float x = (guiWidth - w) / 2f;
+        float y = (guiHeight - h) / 2f;
+        UiChrome.panel(x, y, w, h);
+
+        UiChrome.boldString(FPSMaster.fontManager.s16, FPSMaster.i18n.get("mainmenu.account.ms.title"),
+                x + 13f, y + 12f, ClickGuiTheme.textPrimary().getRGB());
+        FPSMaster.fontManager.getFont(12).drawString(FPSMaster.i18n.get("mainmenu.account.ms.desc"),
+                x + 13f, y + 24f, ClickGuiTheme.textSecondary().getRGB());
+
+        String code = msUserCode == null || msUserCode.isEmpty()
+                ? (msLoginBusy ? "····" : "—")
+                : msUserCode;
+        float codeY = y + 42f;
+        boolean codeHover = Hover.is(x + 13f, codeY, w - 26f, 22f, mouseX, mouseY);
+        Rects.rounded(x + 13f, codeY, w - 26f, 22f, 5,
+                (codeHover ? ClickGuiTheme.layerHover() : ClickGuiTheme.glass()).getRGB(), false);
+        FPSMaster.fontManager.s16.drawCenteredString(code, x + w / 2f, codeY + 7f,
+                ClickGuiTheme.textPrimary().getRGB());
+        if (!msUserCode.isEmpty() && consumePressInBounds(x + 13f, codeY, w - 26f, 22f, 0) != null) {
+            GuiScreen.setClipboardString(msUserCode);
+            msCopied = true;
+            msCopiedUntil = System.currentTimeMillis() + 1500L;
+        }
+
+        String status;
+        if (msError != null && !msError.isEmpty()) {
+            status = msError;
+        } else if (msCopied && System.currentTimeMillis() < msCopiedUntil) {
+            status = FPSMaster.i18n.get("mainmenu.account.ms.copied");
+        } else {
+            status = msStatus;
+        }
+        if (status != null && !status.isEmpty()) {
+            int color = (msError != null && !msError.isEmpty())
+                    ? ClickGuiTheme.danger().getRGB()
+                    : ClickGuiTheme.textSecondary().getRGB();
+            FPSMaster.fontManager.getFont(11).drawString(status, x + 13f, codeY + 26f, color);
+        }
+
+        float btnY = y + h - 28f;
+        float cancelW = 40f;
+        float actionW = 72f;
+        if (UiChrome.buttonClicked(this, x + w - 13f - cancelW, btnY, cancelW, UiChrome.BTN_H, null,
+                FPSMaster.i18n.get("common.cancel"), UiChrome.Style.GHOST, mouseX, mouseY)) {
+            closeDialog();
+        }
+        if (msError != null && !msError.isEmpty()) {
+            if (UiChrome.buttonClicked(this, x + w - 13f - cancelW - 6f - actionW, btnY, actionW, UiChrome.BTN_H, null,
+                    FPSMaster.i18n.get("mainmenu.account.ms.retry"), UiChrome.Style.PRIMARY, mouseX, mouseY)) {
+                startMicrosoftLogin();
+            }
+        } else if (msVerifyUrl != null && !msVerifyUrl.isEmpty()) {
+            if (UiChrome.buttonClicked(this, x + w - 13f - cancelW - 6f - actionW, btnY, actionW, UiChrome.BTN_H, null,
+                    FPSMaster.i18n.get("mainmenu.account.ms.open"), UiChrome.Style.PRIMARY, mouseX, mouseY)) {
+                openLink(msVerifyUrl);
+            }
+        }
+
+        if (consumePressOutside(x, y, w, h) != null) {
+            closeDialog();
+        }
+    }
+
+    private void openLink(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return;
+        }
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(new URI(url.trim()));
+            }
+        } catch (Exception exception) {
+            ClientLogger.warn("Failed to open Microsoft login URL: " + exception.getMessage());
+        }
+    }
+
     @Override
     public void keyTyped(char typedChar, int keyCode) throws IOException {
+        if (dialog == Dialog.MS_LOGIN) {
+            if (keyCode == 1) {
+                closeDialog();
+            }
+            return;
+        }
         if (dialog == Dialog.ADD_OFFLINE) {
             if (keyCode == 1) {
                 closeDialog();

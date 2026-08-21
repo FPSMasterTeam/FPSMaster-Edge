@@ -165,6 +165,19 @@ public final class ReplayPlayer {
         return elapsedMillis;
     }
 
+    /**
+     * Playback clock sampled on a render frame. {@link #elapsedMillis()} only advances on the
+     * client tick, which is why a camera that reads it looks like 20 fps. This follows the same
+     * wall-clock formula between ticks so the director can interpolate every frame.
+     */
+    public int visualElapsedMillis() {
+        if (!active || paused || seeking || externalClock) {
+            return elapsedMillis;
+        }
+        int visual = (int) ((System.nanoTime() - originNanos) / 1_000_000L * speed);
+        return visual < 0 ? 0 : visual;
+    }
+
     public int durationMillis() {
         return durationMillis;
     }
@@ -546,6 +559,7 @@ public final class ReplayPlayer {
         if (mc.theWorld != lastWorld || mc.thePlayer != lastCameraPlayer) {
             reestablish(mc);
         }
+        ReplayDirectorIsolation.tick(mc);
         boolean pauseDown = mc.currentScreen == null && Keyboard.isKeyDown(Keyboard.KEY_P);
         if (pauseDown && !pauseWasDown) {
             togglePause();

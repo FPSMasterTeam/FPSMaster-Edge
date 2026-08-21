@@ -45,12 +45,7 @@ public final class DirectorStore {
             }
             // Defensive: gson skips field initializers (Unsafe allocation), so lists missing
             // from older or hand-edited files come back null, and nulls inside would NPE later.
-            if (track.keyframes == null) {
-                track.keyframes = new java.util.ArrayList<CameraKeyframe>();
-            }
-            if (track.segments == null) {
-                track.segments = new java.util.ArrayList<TimelineSegment>();
-            }
+            track.ensureLists();
             track.keyframes.removeIf(frame -> frame == null);
             track.segments.removeIf(segment -> segment == null);
             track.sortSegments();
@@ -62,6 +57,7 @@ public final class DirectorStore {
                     frame.easing = CameraKeyframe.Easing.EASE_IN_OUT;
                 }
             }
+            track.migratePackedKeyframes();
             track.sort();
             return track;
         } catch (IOException | RuntimeException exception) {

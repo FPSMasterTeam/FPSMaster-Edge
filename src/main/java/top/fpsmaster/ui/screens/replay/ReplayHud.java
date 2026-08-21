@@ -6,6 +6,7 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.replay.ReplayPlayer;
+import top.fpsmaster.replay.director.DirectorCamera;
 import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.ui.click.UiChrome;
 import top.fpsmaster.utils.render.draw.Hover;
@@ -15,19 +16,18 @@ import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.utils.render.gui.UiScale;
 
 /**
- * The replay controls, along the top of the screen and always on it — after the .hud block of
- * docs/prototypes/replay.html: clip title row with the transport buttons, then the timeline row,
- * then a hint line.
+ * The replay controls along the top of the screen.
  *
- * <p>Two things share this. The overlay draws it every frame so the timeline is readable while
+ * <p>While just watching a recording this is the transport row plus a seek bar. Once the edit
+ * timeline is open the seek bar is dropped — that job belongs to {@link DirectorPanel} — and this
+ * collapses to a small tooltip of pause / speed / view / export / files / stop.
+ *
+ * <p>Two things share the layout. The overlay draws it every frame so it stays readable while
  * flying, and {@link ReplayControlScreen} draws the same layout when the cursor is free so the same
- * controls can be clicked. One layout function rather than two, because a control that is drawn in
- * one place and hit-tested from another is a control that will eventually disagree with itself.
+ * controls can be clicked.
  *
- * <p>Laid out in the client's own scale rather than Minecraft's. The overlay is normally drawn in
- * whatever the game's GUI Scale setting says, which would make the timeline change size — and with
- * it every drag target on it — when that setting moves. Here the transform is applied by hand so
- * both paths land in the same coordinates whichever way they were reached.
+ * <p>Laid out in the client's own scale rather than Minecraft's, so GUI Scale does not move the
+ * hit targets.
  */
 public final class ReplayHud {
 
@@ -51,6 +51,11 @@ public final class ReplayHud {
     private static int cachedDurationSecond = -1;
 
     private ReplayHud() {
+    }
+
+    public static boolean contains(int mouseX, int mouseY) {
+        float h = DirectorPanel.isOpen() ? 22f : 47f;
+        return Hover.is(panelX, PANEL_TOP, panelWidth, h, mouseX, mouseY);
     }
 
     /** Overlay path: draw it, do not react to anything. The cursor belongs to the camera here. */
@@ -79,6 +84,9 @@ public final class ReplayHud {
             GL11.glScalef(renderScale, renderScale, 1f);
             // Far outside the panel, so nothing reads as hovered while the cursor is not there.
             render(player, guiWidth, null, -1000, -1000);
+            if (DirectorPanel.isOpen()) {
+                DirectorPanel.draw(null, guiWidth, guiHeight, -1000, -1000);
+            }
         } finally {
             GL11.glPopMatrix();
             UiScale.end();
@@ -92,6 +100,10 @@ public final class ReplayHud {
 
     private static void render(ReplayPlayer player, float guiWidth, ScaledGuiScreen screen,
                                int mouseX, int mouseY) {
+        if (DirectorPanel.isOpen()) {
+            renderCompactToolbar(player, guiWidth, screen, mouseX, mouseY);
+            return;
+        }
         panelWidth = Math.min(PANEL_MAX_WIDTH, guiWidth - 24f);
         panelX = (guiWidth - panelWidth) / 2f;
         float panelHeight = 47f;
@@ -144,6 +156,9 @@ public final class ReplayHud {
         } else if (viewClicked) {
             toggleView();
         } else if (directorClicked) {
+            if (DirectorCamera.project() == null && player.isActive() && player.file() != null) {
+                DirectorCamera.beginForReplay(player.file(), duration(player));
+            }
             DirectorPanel.toggle();
         } else if (filesClicked) {
             openBrowser();
@@ -157,6 +172,65 @@ public final class ReplayHud {
         String hint = FPSMaster.i18n.get(screen == null ? "replay.hud.hint.fly" : "replay.hud.hint");
         FPSMaster.fontManager.getFont(10).drawCenteredString(hint, panelX + panelWidth / 2f,
                 PANEL_TOP + panelHeight - 8f, ClickGuiTheme.textDisabled().getRGB());
+    }
+
+    /** Editing: a small top tooltip of transport buttons. Seek lives on the docked timeline. */
+    private static void renderCompactToolbar(ReplayPlayer player, float guiWidth, ScaledGuiScreen screen,
+                                            int mouseX, int mouseY) {
+        String clip = "";
+        if (player.file() != null) {
+            clip = player.file().getName();
+            if (clip.endsWith(".edgereplay")) {
+                clip = clip.substring(0, clip.length() - ".edgereplay".length());
+            }
+        }
+        String speedText = formatSpeed(player.speed());
+        float speedW = Math.max(22f, FPSMaster.fontManager.getFont(11).getStringWidth(speedText) + 8f);
+        float nameW = Math.min(86f, FPSMaster.fontManager.getFont(12).getStringWidth(clip));
+        float buttonsW = BUTTON_H * 5f + speedW + 3f * 5f;
+        panelWidth = 10f + nameW + 8f + buttonsW + 8f;
+        panelX = (guiWidth - panelWidth) / 2f;
+        float panelHeight = 22f;
+        UiChrome.panel(panelX, PANEL_TOP, panelWidth, panelHeight);
+
+        float rowY = PANEL_TOP + 3.5f;
+        if (nameW > 0f) {
+            FPSMaster.fontManager.getFont(12).drawString(
+                    FPSMaster.fontManager.getFont(12).trimStringToWidth(clip, nameW),
+                    panelX + 6f, rowY + 4f, ClickGuiTheme.textPrimary().getRGB());
+        }
+
+        float bx = panelX + panelWidth - 6f;
+        bx -= BUTTON_H;
+        boolean stopClicked = iconButton(screen, bx, rowY, "stop", true, mouseX, mouseY);
+        bx -= 3f + BUTTON_H;
+        boolean filesClicked = iconButton(screen, bx, rowY, "folder", false, mouseX, mouseY);
+        bx -= 3f + BUTTON_H;
+        boolean directorClicked = iconButton(screen, bx, rowY, "film", false, mouseX, mouseY);
+        bx -= 3f + BUTTON_H;
+        boolean viewClicked = iconButton(screen, bx, rowY, "eye", false, mouseX, mouseY);
+        bx -= 3f + speedW;
+        boolean speedHover = screen != null && Hover.is(bx, rowY, speedW, BUTTON_H, mouseX, mouseY);
+        UiChrome.button(bx, rowY, speedW, BUTTON_H, speedHover);
+        FPSMaster.fontManager.getFont(11).drawCenteredString(speedText, bx + speedW / 2f, rowY + 5f,
+                ClickGuiTheme.textPrimary().getRGB());
+        boolean speedClicked = screen != null && screen.consumePressInBounds(bx, rowY, speedW, BUTTON_H, 0) != null;
+        bx -= 3f + BUTTON_H;
+        boolean pauseClicked = iconButton(screen, bx, rowY, player.isPaused() ? "play" : "pause", false, mouseX, mouseY);
+
+        if (pauseClicked) {
+            togglePause();
+        } else if (speedClicked) {
+            cycleSpeed();
+        } else if (viewClicked) {
+            toggleView();
+        } else if (directorClicked) {
+            DirectorPanel.toggle();
+        } else if (filesClicked) {
+            openBrowser();
+        } else if (stopClicked) {
+            ReplayPlayer.instance().stop();
+        }
     }
 
     private static boolean iconButton(ScaledGuiScreen screen, float x, float y, String icon,
@@ -273,6 +347,7 @@ public final class ReplayHud {
     }
 
     private static void openBrowser() {
-        Minecraft.getMinecraft().displayGuiScreen(new ReplayScreen(null));
+        Minecraft.getMinecraft().displayGuiScreen(
+                new ReplayScreen(null, DirectorCamera.project() != null));
     }
 }

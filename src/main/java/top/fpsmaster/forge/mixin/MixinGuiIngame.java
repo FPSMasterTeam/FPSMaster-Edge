@@ -15,6 +15,7 @@ import top.fpsmaster.event.events.EventMotionBlur;
 import top.fpsmaster.event.events.EventRender2D;
 import top.fpsmaster.features.impl.interfaces.Scoreboard;
 import top.fpsmaster.features.impl.render.Crosshair;
+import top.fpsmaster.replay.ReplayDirectorIsolation;
 
 @Mixin(GuiIngame.class)
 public class MixinGuiIngame {
@@ -36,8 +37,12 @@ public class MixinGuiIngame {
     // there (no double dispatch). In the Forge-free build vanilla GuiIngame is the active HUD, so this is
     // where EventRender2D / EventMotionBlur / HUD benchmark timing must originate.
 
-    @Inject(method = "renderGameOverlay", at = @At("HEAD"))
+    @Inject(method = "renderGameOverlay", at = @At("HEAD"), cancellable = true)
     private void fpsmaster$beginHud(float partialTicks, CallbackInfo ci) {
+        if (ReplayDirectorIsolation.consumeVanillaHud(partialTicks)) {
+            ci.cancel();
+            return;
+        }
         if (BenchmarkMode.ACTIVE) {
             BenchProfiler.begin(BenchProfiler.SECTION_HUD);
         }

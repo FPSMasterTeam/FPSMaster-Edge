@@ -115,7 +115,7 @@ public final class DirectorExporter {
         replayDuration = Math.max(player.durationMillis(), player.elapsedMillis());
         outputDuration = exportSpanMillis(track, replayDuration);
         if (outputDuration <= 0) {
-            return fail("director.export.error.empty");
+            return fail("director.export.error.noedit");
         }
         String binary = locateFfmpeg();
         if (binary == null) {
@@ -192,6 +192,9 @@ public final class DirectorExporter {
         if (mc.currentScreen != null) {
             mc.displayGuiScreen(null);
         }
+        if (player.isPossessing()) {
+            player.release();
+        }
         if (player.isPaused()) {
             player.togglePause();
         }
@@ -205,8 +208,12 @@ public final class DirectorExporter {
         return true;
     }
 
-    /** Output length of the current edit: the cut list when present, else the keyframe span. */
+    /** Output length of the current edit: project EDL, sidecar cut list, or keyframe span. */
     public static long exportSpanMillis(CameraTrack track, int duration) {
+        long fromProject = DirectorCamera.editOutputDuration(duration);
+        if (DirectorCamera.project() != null && !DirectorCamera.project().clips.isEmpty()) {
+            return fromProject;
+        }
         if (!track.segments.isEmpty()) {
             return track.hasKeptContent(duration) ? track.outputDurationMillis(duration) : 0L;
         }
@@ -215,11 +222,7 @@ public final class DirectorExporter {
 
     /** Maps a moment of the output movie to replay time under the current edit. */
     private static int outputToSource(long outputMillis) {
-        CameraTrack track = DirectorCamera.track();
-        if (!track.segments.isEmpty()) {
-            return track.mapOutputToSource(outputMillis, replayDuration);
-        }
-        return track.startMillis() + (int) outputMillis;
+        return DirectorCamera.mapOutputToSource(outputMillis, replayDuration);
     }
 
     public static void cancel() {

@@ -223,6 +223,9 @@ public abstract class MixinMinecraft implements IMinecraft {
 
     @Inject(method = "runTick", at = @At("RETURN"))
     public void chatVis(CallbackInfo ci) {
+        if (top.fpsmaster.replay.ReplayDirectorIsolation.isDirectorView()) {
+            return;
+        }
         if (this.gameSettings.keyBindTogglePerspective.isPressed()) {
             ++this.gameSettings.thirdPersonView;
             if (this.gameSettings.thirdPersonView > 2) {
@@ -314,7 +317,8 @@ public abstract class MixinMinecraft implements IMinecraft {
 
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;dispatchKeypresses()V", shift = At.Shift.AFTER))
     public void keyEvent(CallbackInfo ci) {
-        if (Keyboard.getEventKeyState() && currentScreen == null){
+        if (Keyboard.getEventKeyState() && currentScreen == null
+                && !top.fpsmaster.replay.ReplayDirectorIsolation.isDirectorView()){
             EventKey key = new EventKey(Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey());
             EventDispatcher.dispatchEvent(key);
         }

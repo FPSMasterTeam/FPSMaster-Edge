@@ -159,6 +159,10 @@ public class ScaledGuiScreen extends GuiScreen {
     protected void mouseScrolled(int mouseX, int mouseY, int wheelDelta) {
     }
 
+    public int consumeWheel() {
+        return inputState.consumeWheelDelta();
+    }
+
     private void refreshScaleAndMetrics() {
         updateBaseMetrics();
     }

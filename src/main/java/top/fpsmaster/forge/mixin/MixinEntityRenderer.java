@@ -56,8 +56,19 @@ public abstract class MixinEntityRenderer {
         EventDispatcher.dispatchEvent(new EventRender3D(partialTicks));
     }
 
+    @Inject(method = "setupCameraTransform", at = @At("HEAD"))
+    private void edge$directorCameraFrame(float partialTicks, int pass, CallbackInfo ci) {
+        top.fpsmaster.replay.director.DirectorCamera.onRenderFrame(partialTicks);
+    }
+
     @Redirect(method = "setupCameraTransform", at = @At(value = "FIELD", target = "Lnet/minecraft/client/settings/GameSettings;viewBobbing:Z"))
     public boolean bobbing(GameSettings instance) {
+        // Replay free-cam roll is applied in orientCamera. Vanilla view-bobbing then adds its own
+        // Z rotation from distanceWalked, which fights Q/E dutch-angle and flickers the shot.
+        top.fpsmaster.replay.ReplayPlayer replay = top.fpsmaster.replay.ReplayPlayer.instance();
+        if (replay.isActive() && !replay.isPossessing()) {
+            return false;
+        }
         return mc.gameSettings.viewBobbing && !MinimizedBobbing.using;
     }
 
@@ -305,7 +316,7 @@ public abstract class MixinEntityRenderer {
                 yaw = FreeLook.getCameraPrevYaw() + (FreeLook.getCameraYaw() - FreeLook.getCameraPrevYaw()) * partialTicks + 180.0F;
                 pitch = FreeLook.getCameraPrevPitch() + (FreeLook.getCameraPitch() - FreeLook.getCameraPrevPitch()) * partialTicks;
             }
-            f1 = 0.0F;
+            f1 = top.fpsmaster.replay.director.DirectorCamera.roll(partialTicks);
             if (entity instanceof EntityAnimal) {
                 EntityAnimal entityanimal = (EntityAnimal) entity;
                 yaw = entityanimal.prevRotationYawHead + (entityanimal.rotationYawHead - entityanimal.prevRotationYawHead) * partialTicks + 180.0F;

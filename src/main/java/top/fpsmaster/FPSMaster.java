@@ -3,6 +3,7 @@ package top.fpsmaster;
 import top.fpsmaster.exception.ExceptionHandler;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.GlobalListener;
+import top.fpsmaster.replay.director.DirectorWorldOverlay;
 import top.fpsmaster.features.command.CommandManager;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.manager.ModuleManager;
@@ -110,6 +111,7 @@ public class FPSMaster {
     private void initializeModules() {
         moduleManager.init();
         submitter.init();
+        DirectorWorldOverlay.init();
     }
 
 

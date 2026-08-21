@@ -8,12 +8,10 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * The camera track of a director timeline: sorted keyframes plus interpolation between them.
+ * Camera animation: each {@link CameraChannel} has its own keyframe list and easing, like
+ * After Effects. A missing channel holds the fallback pose (the live camera while flying).
  *
- * <p>Position travels along either a straight line or a centripetal-flavoured Catmull-Rom spline
- * through the neighbouring keyframes; time along each segment is shaped by the segment's easing
- * curve. Yaw interpolates along the shortest arc so a pan across the ±180° seam does not whip the
- * whole way around.
+ * <p>Legacy {@link #keyframes} (one pose per time) is still loaded and migrated into channels.
  */
 public final class CameraTrack {
 
@@ -21,7 +19,20 @@ public final class CameraTrack {
     private static final BezierEasing EASE_IN = BezierEasing.of(0.42, 0.0, 1.0, 1.0);
     private static final BezierEasing EASE_OUT = BezierEasing.of(0.0, 0.0, 0.58, 1.0);
     private static final BezierEasing EASE_IN_OUT = BezierEasing.of(0.42, 0.0, 0.58, 1.0);
+    private static final Comparator<PropKeyframe> BY_TIME = new Comparator<PropKeyframe>() {
+        @Override
+        public int compare(PropKeyframe a, PropKeyframe b) {
+            return Integer.compare(a.timeMillis, b.timeMillis);
+        }
+    };
 
+    public List<PropKeyframe> position = new ArrayList<PropKeyframe>();
+    public List<PropKeyframe> yaw = new ArrayList<PropKeyframe>();
+    public List<PropKeyframe> pitch = new ArrayList<PropKeyframe>();
+    public List<PropKeyframe> roll = new ArrayList<PropKeyframe>();
+    public List<PropKeyframe> fov = new ArrayList<PropKeyframe>();
+
+    /** @deprecated migrated into the per-channel lists on load. */
     public List<CameraKeyframe> keyframes = new ArrayList<CameraKeyframe>();
 
     /**
@@ -30,101 +41,316 @@ public final class CameraTrack {
      */
     public List<TimelineSegment> segments = new ArrayList<TimelineSegment>();
 
+    public List<PropKeyframe> channel(CameraChannel channel) {
+        ensureLists();
+        switch (channel) {
+            case POSITION:
+                return position;
+            case YAW:
+                return yaw;
+            case PITCH:
+                return pitch;
+            case ROLL:
+                return roll;
+            case FOV:
+                return fov;
+            default:
+                return position;
+        }
+    }
+
+    public void ensureLists() {
+        if (position == null) {
+            position = new ArrayList<PropKeyframe>();
+        }
+        if (yaw == null) {
+            yaw = new ArrayList<PropKeyframe>();
+        }
+        if (pitch == null) {
+            pitch = new ArrayList<PropKeyframe>();
+        }
+        if (roll == null) {
+            roll = new ArrayList<PropKeyframe>();
+        }
+        if (fov == null) {
+            fov = new ArrayList<PropKeyframe>();
+        }
+        if (keyframes == null) {
+            keyframes = new ArrayList<CameraKeyframe>();
+        }
+        if (segments == null) {
+            segments = new ArrayList<TimelineSegment>();
+        }
+    }
+
+    /** Turns a packed pose list into independent channels. Idempotent. */
+    public void migratePackedKeyframes() {
+        ensureLists();
+        if (keyframes.isEmpty()) {
+            return;
+        }
+        if (!position.isEmpty() || !yaw.isEmpty() || !pitch.isEmpty() || !roll.isEmpty() || !fov.isEmpty()) {
+            return;
+        }
+        for (CameraKeyframe frame : keyframes) {
+            if (frame == null) {
+                continue;
+            }
+            PropKeyframe pos = new PropKeyframe(frame.timeMillis, (float) frame.x, (float) frame.y, (float) frame.z);
+            pos.easing = frame.easing == null ? CameraKeyframe.Easing.EASE_IN_OUT : frame.easing;
+            pos.path = frame.transition == null ? CameraKeyframe.Transition.SMOOTH : frame.transition;
+            position.add(pos);
+            yaw.add(scalar(frame.timeMillis, frame.yaw, pos.easing));
+            pitch.add(scalar(frame.timeMillis, frame.pitch, pos.easing));
+            roll.add(scalar(frame.timeMillis, frame.roll, pos.easing));
+            fov.add(scalar(frame.timeMillis, frame.fov <= 0f ? 70f : frame.fov, pos.easing));
+        }
+        sort();
+    }
+
+    private static PropKeyframe scalar(int time, float value, CameraKeyframe.Easing easing) {
+        PropKeyframe key = new PropKeyframe(time, value);
+        key.easing = easing == null ? CameraKeyframe.Easing.EASE_IN_OUT : easing;
+        return key;
+    }
+
     public boolean isEmpty() {
-        return keyframes.isEmpty();
+        ensureLists();
+        return position.isEmpty() && yaw.isEmpty() && pitch.isEmpty() && roll.isEmpty() && fov.isEmpty();
+    }
+
+    public boolean drivesLook() {
+        ensureLists();
+        return !yaw.isEmpty() || !pitch.isEmpty();
+    }
+
+    public boolean drivesPosition() {
+        ensureLists();
+        return !position.isEmpty();
     }
 
     public int startMillis() {
-        return keyframes.isEmpty() ? 0 : keyframes.get(0).timeMillis;
+        int start = Integer.MAX_VALUE;
+        for (CameraChannel channel : CameraChannel.values()) {
+            List<PropKeyframe> list = channel(channel);
+            if (!list.isEmpty()) {
+                start = Math.min(start, list.get(0).timeMillis);
+            }
+        }
+        return start == Integer.MAX_VALUE ? 0 : start;
     }
 
     public int endMillis() {
-        return keyframes.isEmpty() ? 0 : keyframes.get(keyframes.size() - 1).timeMillis;
+        int end = 0;
+        for (CameraChannel channel : CameraChannel.values()) {
+            List<PropKeyframe> list = channel(channel);
+            if (!list.isEmpty()) {
+                end = Math.max(end, list.get(list.size() - 1).timeMillis);
+            }
+        }
+        return end;
     }
 
     public void sort() {
-        Collections.sort(keyframes, new Comparator<CameraKeyframe>() {
-            @Override
-            public int compare(CameraKeyframe a, CameraKeyframe b) {
-                return Integer.compare(a.timeMillis, b.timeMillis);
-            }
-        });
+        ensureLists();
+        for (CameraChannel channel : CameraChannel.values()) {
+            Collections.sort(channel(channel), BY_TIME);
+        }
+        if (keyframes != null) {
+            Collections.sort(keyframes, new Comparator<CameraKeyframe>() {
+                @Override
+                public int compare(CameraKeyframe a, CameraKeyframe b) {
+                    return Integer.compare(a.timeMillis, b.timeMillis);
+                }
+            });
+        }
     }
 
-    /** Adds (or replaces, when within {@code mergeWindowMillis}) a keyframe and keeps order. */
-    public CameraKeyframe add(int timeMillis, CameraPose pose, int mergeWindowMillis) {
-        for (CameraKeyframe existing : keyframes) {
+    public PropKeyframe add(CameraChannel channel, int timeMillis, CameraPose pose, int mergeWindowMillis) {
+        if (pose == null) {
+            return null;
+        }
+        float[] values;
+        if (channel == CameraChannel.POSITION) {
+            values = new float[]{(float) pose.x, (float) pose.y, (float) pose.z};
+        } else if (channel == CameraChannel.YAW) {
+            values = new float[]{pose.yaw};
+        } else if (channel == CameraChannel.PITCH) {
+            values = new float[]{pose.pitch};
+        } else if (channel == CameraChannel.ROLL) {
+            values = new float[]{pose.roll};
+        } else {
+            values = new float[]{pose.fov <= 0f ? 70f : pose.fov};
+        }
+        return addValues(channel, timeMillis, values, mergeWindowMillis);
+    }
+
+    public PropKeyframe addValues(CameraChannel channel, int timeMillis, float[] values, int mergeWindowMillis) {
+        ensureLists();
+        List<PropKeyframe> list = channel(channel);
+        for (PropKeyframe existing : list) {
             if (Math.abs(existing.timeMillis - timeMillis) <= mergeWindowMillis) {
-                existing.x = pose.x;
-                existing.y = pose.y;
-                existing.z = pose.z;
-                existing.yaw = pose.yaw;
-                existing.pitch = pose.pitch;
-                existing.fov = pose.fov;
+                existing.a = values[0];
+                if (channel.components > 1) {
+                    existing.b = values[1];
+                    existing.c = values[2];
+                }
                 return existing;
             }
         }
-        CameraKeyframe frame = new CameraKeyframe(timeMillis, pose);
-        keyframes.add(frame);
-        sort();
-        return frame;
+        PropKeyframe key = channel.components > 1
+                ? new PropKeyframe(timeMillis, values[0], values[1], values[2])
+                : new PropKeyframe(timeMillis, values[0]);
+        if (channel == CameraChannel.POSITION) {
+            key.path = CameraKeyframe.Transition.SMOOTH;
+        }
+        list.add(key);
+        Collections.sort(list, BY_TIME);
+        return key;
     }
 
-    public void remove(CameraKeyframe frame) {
-        keyframes.remove(frame);
+    /** Keys every channel at {@code timeMillis} from {@code pose}. */
+    public void addPose(int timeMillis, CameraPose pose, int mergeWindowMillis) {
+        if (pose == null) {
+            return;
+        }
+        for (CameraChannel channel : CameraChannel.values()) {
+            add(channel, timeMillis, pose, mergeWindowMillis);
+        }
+    }
+
+    /** @deprecated use {@link #addPose}. Kept so older call sites compile during the switch. */
+    public CameraKeyframe add(int timeMillis, CameraPose pose, int mergeWindowMillis) {
+        addPose(timeMillis, pose, mergeWindowMillis);
+        CameraKeyframe packed = new CameraKeyframe(timeMillis, pose);
+        return packed;
+    }
+
+    public void remove(CameraChannel channel, PropKeyframe key) {
+        if (key == null) {
+            return;
+        }
+        channel(channel).remove(key);
+    }
+
+    public PropKeyframe nearest(CameraChannel channel, int timeMillis, int window) {
+        PropKeyframe best = null;
+        int bestDist = window + 1;
+        for (PropKeyframe key : channel(channel)) {
+            int dist = Math.abs(key.timeMillis - timeMillis);
+            if (dist < bestDist) {
+                best = key;
+                bestDist = dist;
+            }
+        }
+        return best;
     }
 
     /**
-     * The camera pose at {@code timeMillis}. Before the first keyframe the first pose holds;
-     * after the last, the last. Null only when the track is empty.
+     * Pose at {@code timeMillis}. Channels without keys take {@code hold}. Null only when every
+     * channel is empty <em>and</em> hold is null.
      */
-    public CameraPose sample(int timeMillis) {
-        if (keyframes.isEmpty()) {
-            return null;
+    public CameraPose sample(int timeMillis, CameraPose hold) {
+        ensureLists();
+        migratePackedKeyframes();
+        if (isEmpty()) {
+            return hold;
         }
-        CameraKeyframe first = keyframes.get(0);
-        if (timeMillis <= first.timeMillis) {
-            return first.pose();
-        }
-        CameraKeyframe last = keyframes.get(keyframes.size() - 1);
-        if (timeMillis >= last.timeMillis) {
-            return last.pose();
-        }
-        int index = 0;
-        while (index < keyframes.size() - 1 && keyframes.get(index + 1).timeMillis <= timeMillis) {
-            index++;
-        }
-        CameraKeyframe from = keyframes.get(index);
-        CameraKeyframe to = keyframes.get(index + 1);
-        if (from.transition == CameraKeyframe.Transition.CUT) {
-            return from.pose();
-        }
-        float span = to.timeMillis - from.timeMillis;
-        float linearT = span <= 0f ? 1f : (timeMillis - from.timeMillis) / span;
-        float t = ease(from.easing, linearT);
+        float hx = hold == null ? 0f : (float) hold.x;
+        float hy = hold == null ? 0f : (float) hold.y;
+        float hz = hold == null ? 0f : (float) hold.z;
+        float hyaw = hold == null ? 0f : hold.yaw;
+        float hpitch = hold == null ? 0f : hold.pitch;
+        float hroll = hold == null ? 0f : hold.roll;
+        float hfov = hold == null || hold.fov <= 0f ? 70f : hold.fov;
 
-        double px;
-        double py;
-        double pz;
-        if (from.transition == CameraKeyframe.Transition.SMOOTH) {
-            CameraKeyframe before = index > 0 ? keyframes.get(index - 1) : from;
-            CameraKeyframe after = index + 2 < keyframes.size() ? keyframes.get(index + 2) : to;
-            px = catmullRom(before.x, from.x, to.x, after.x, t);
-            py = catmullRom(before.y, from.y, to.y, after.y, t);
-            pz = catmullRom(before.z, from.z, to.z, after.z, t);
-        } else {
-            px = from.x + (to.x - from.x) * t;
-            py = from.y + (to.y - from.y) * t;
-            pz = from.z + (to.z - from.z) * t;
-        }
-
-        float yaw = from.yaw + shortestArc(to.yaw - from.yaw) * t;
-        float pitch = from.pitch + (to.pitch - from.pitch) * t;
-        float fov = from.fov + (to.fov - from.fov) * t;
-        return new CameraPose(px, py, pz, yaw, pitch, fov);
+        float[] pos = interpolateVec3(position, timeMillis, hx, hy, hz);
+        float yawV = interpolateScalar(yaw, timeMillis, hyaw, true);
+        float pitchV = interpolateScalar(pitch, timeMillis, hpitch, false);
+        float rollV = interpolateScalar(roll, timeMillis, hroll, true);
+        float fovV = interpolateScalar(fov, timeMillis, hfov, false);
+        return new CameraPose(pos[0], pos[1], pos[2], yawV, pitchV, fovV, rollV);
     }
 
-    private static float ease(CameraKeyframe.Easing easing, float t) {
+    public CameraPose sample(int timeMillis) {
+        return sample(timeMillis, null);
+    }
+
+    private static float[] interpolateVec3(List<PropKeyframe> keys, int time,
+                                           float hx, float hy, float hz) {
+        if (keys == null || keys.isEmpty()) {
+            return new float[]{hx, hy, hz};
+        }
+        PropKeyframe first = keys.get(0);
+        if (time <= first.timeMillis) {
+            return new float[]{first.a, first.b, first.c};
+        }
+        PropKeyframe last = keys.get(keys.size() - 1);
+        if (time >= last.timeMillis) {
+            return new float[]{last.a, last.b, last.c};
+        }
+        int index = 0;
+        while (index < keys.size() - 1 && keys.get(index + 1).timeMillis <= time) {
+            index++;
+        }
+        PropKeyframe from = keys.get(index);
+        PropKeyframe to = keys.get(index + 1);
+        if (from.path == CameraKeyframe.Transition.CUT) {
+            return new float[]{from.a, from.b, from.c};
+        }
+        float t = easedT(from, to, time);
+        if (from.path == CameraKeyframe.Transition.SMOOTH) {
+            PropKeyframe before = index > 0 ? keys.get(index - 1) : from;
+            PropKeyframe after = index + 2 < keys.size() ? keys.get(index + 2) : to;
+            return new float[]{
+                    (float) catmullRom(before.a, from.a, to.a, after.a, t),
+                    (float) catmullRom(before.b, from.b, to.b, after.b, t),
+                    (float) catmullRom(before.c, from.c, to.c, after.c, t)
+            };
+        }
+        return new float[]{
+                from.a + (to.a - from.a) * t,
+                from.b + (to.b - from.b) * t,
+                from.c + (to.c - from.c) * t
+        };
+    }
+
+    private static float interpolateScalar(List<PropKeyframe> keys, int time, float hold, boolean angular) {
+        if (keys == null || keys.isEmpty()) {
+            return hold;
+        }
+        PropKeyframe first = keys.get(0);
+        if (time <= first.timeMillis) {
+            return first.a;
+        }
+        PropKeyframe last = keys.get(keys.size() - 1);
+        if (time >= last.timeMillis) {
+            return last.a;
+        }
+        int index = 0;
+        while (index < keys.size() - 1 && keys.get(index + 1).timeMillis <= time) {
+            index++;
+        }
+        PropKeyframe from = keys.get(index);
+        PropKeyframe to = keys.get(index + 1);
+        if (from.path == CameraKeyframe.Transition.CUT) {
+            return from.a;
+        }
+        float t = easedT(from, to, time);
+        float delta = angular ? shortestArc(to.a - from.a) : (to.a - from.a);
+        return from.a + delta * t;
+    }
+
+    private static float easedT(PropKeyframe from, PropKeyframe to, int time) {
+        float span = to.timeMillis - from.timeMillis;
+        float linear = span <= 0f ? 1f : (time - from.timeMillis) / span;
+        return ease(from.easing, linear);
+    }
+
+    static float ease(CameraKeyframe.Easing easing, float t) {
+        if (easing == null) {
+            return t;
+        }
         switch (easing) {
             case EASE:
                 return (float) EASE.ease(t);
@@ -148,8 +374,7 @@ public final class CameraTrack {
                 + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3);
     }
 
-    /** Wraps a yaw delta into [-180, 180] so interpolation takes the short way round. */
-    private static float shortestArc(float deltaYaw) {
+    static float shortestArc(float deltaYaw) {
         float wrapped = deltaYaw % 360f;
         if (wrapped >= 180f) {
             wrapped -= 360f;
@@ -164,7 +389,6 @@ public final class CameraTrack {
     // Cut list / time remapping
     // ------------------------------------------------------------------
 
-    /** The effective segment list: the stored cuts, or one whole-replay segment when there are none. */
     public List<TimelineSegment> effectiveSegments(int replayDuration) {
         if (!segments.isEmpty()) {
             return segments;
@@ -174,7 +398,6 @@ public final class CameraTrack {
         return whole;
     }
 
-    /** Ensures the cut list is materialized so edits have something to slice. */
     private void materializeSegments(int replayDuration) {
         if (segments.isEmpty()) {
             segments.add(new TimelineSegment(0, Math.max(1, replayDuration)));
@@ -190,7 +413,6 @@ public final class CameraTrack {
         });
     }
 
-    /** Splits the segment containing {@code millis} in two; both halves keep its speed/state. */
     public void splitAt(int millis, int replayDuration) {
         materializeSegments(replayDuration);
         for (TimelineSegment segment : new ArrayList<TimelineSegment>(segments)) {
@@ -206,7 +428,6 @@ public final class CameraTrack {
         }
     }
 
-    /** Drops everything before {@code millis} — the editor's set-in-point. */
     public void trimStart(int millis, int replayDuration) {
         materializeSegments(replayDuration);
         splitAt(millis, replayDuration);
@@ -217,7 +438,6 @@ public final class CameraTrack {
         }
     }
 
-    /** Drops everything after {@code millis} — the editor's set-out-point. */
     public void trimEnd(int millis, int replayDuration) {
         materializeSegments(replayDuration);
         splitAt(millis, replayDuration);
@@ -237,7 +457,6 @@ public final class CameraTrack {
         return null;
     }
 
-    /** Merges adjacent segments with identical state back together (undo for a stray split). */
     public void mergeAdjacent() {
         sortSegments();
         for (int i = segments.size() - 2; i >= 0; i--) {
@@ -248,14 +467,12 @@ public final class CameraTrack {
                 segments.remove(i + 1);
             }
         }
-        // A single whole-range default segment is the same as no cut list at all.
         if (segments.size() == 1 && segments.get(0).startMillis == 0
                 && !segments.get(0).excluded && segments.get(0).speed == 1f) {
             segments.clear();
         }
     }
 
-    /** Output length of the whole edit in millis: kept segments, each stretched by speed. */
     public long outputDurationMillis(int replayDuration) {
         long total = 0;
         for (TimelineSegment segment : effectiveSegments(replayDuration)) {
@@ -264,10 +481,6 @@ public final class CameraTrack {
         return total;
     }
 
-    /**
-     * Maps a moment of the output movie back to replay time. Monotonic, so an exporter walking
-     * output time forward also walks replay time forward (jumping across cuts).
-     */
     public int mapOutputToSource(long outputMillis, int replayDuration) {
         long acc = 0;
         List<TimelineSegment> kept = effectiveSegments(replayDuration);
@@ -282,7 +495,6 @@ public final class CameraTrack {
             }
             acc += length;
         }
-        // Past the end: the last kept moment.
         for (int i = kept.size() - 1; i >= 0; i--) {
             if (!kept.get(i).excluded) {
                 return kept.get(i).endMillis;
@@ -291,7 +503,6 @@ public final class CameraTrack {
         return replayDuration;
     }
 
-    /** The first kept moment at or after {@code millis}, or -1 when nothing kept remains. */
     public int nextKeptMillis(int millis, int replayDuration) {
         for (TimelineSegment segment : effectiveSegments(replayDuration)) {
             if (segment.excluded) {

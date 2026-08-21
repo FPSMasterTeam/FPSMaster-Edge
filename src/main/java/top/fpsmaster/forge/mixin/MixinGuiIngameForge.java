@@ -14,11 +14,16 @@ import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventMotionBlur;
 import top.fpsmaster.event.events.EventRender2D;
 import top.fpsmaster.features.impl.interfaces.CustomTitles;
+import top.fpsmaster.replay.ReplayDirectorIsolation;
 
 @Mixin(GuiIngameForge.class)
 public class MixinGuiIngameForge {
-    @Inject(method = "renderGameOverlay", at = @At("HEAD"))
+    @Inject(method = "renderGameOverlay", at = @At("HEAD"), cancellable = true)
     private void fpsmasterBeginHud(float partialTicks, CallbackInfo ci) {
+        if (ReplayDirectorIsolation.consumeVanillaHud(partialTicks)) {
+            ci.cancel();
+            return;
+        }
         if (BenchmarkMode.ACTIVE) {
             BenchProfiler.begin(BenchProfiler.SECTION_HUD);
         }

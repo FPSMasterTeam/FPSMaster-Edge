@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge 原型 — 剪辑时间线</title>
+<link rel="stylesheet" href="edge-ui.css">
+<style>
+  html, body { height: 100%; }
+  body.app {
+    --tl-h: 124px;
+    display: grid;
+    grid-template-rows: 42px minmax(0, 1fr) var(--tl-h);
+    background: #080808;
+  }
+  body.resizing { cursor: ns-resize; }
+  body.resizing * { cursor: ns-resize !important; user-select: none !important; }
+  body.app > .mc-world {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    grid-row: 1; grid-column: 1; width: 0; height: 0; overflow: visible;
+  }
+  .top, .view, .tl { position: relative; z-index: 1; }
+
+  .top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--stroke);
+    background: rgba(14,14,14,.92);
+  }
+  .top .brand { font: 700 14px/1 var(--font); }
+  .top .sub { color: var(--text-2); font-size: 12.5px; }
+  .top .btn { height: 28px; padding: 0 11px; font-size: 12px; }
+  .top .btn.icon { width: 28px; padding: 0; }
+  .top .name {
+    height: 28px; min-width: 120px; max-width: 220px;
+    padding: 0 8px;
+    border: 1px solid transparent; border-radius: 8px;
+    background: transparent; color: var(--text);
+    font: 700 13.5px/28px var(--font);
+    outline: none;
+  }
+  .top .name:hover, .top .name:focus { border-color: var(--stroke); background: rgba(0,0,0,.25); }
+  .toast {
+    position: fixed; right: 16px; bottom: 16px; z-index: 40;
+    padding: 10px 14px; border-radius: 10px;
+    background: rgba(18,18,20,.94); border: 1px solid var(--stroke-strong);
+    font: 500 12.5px/1.4 var(--font); display: none;
+  }
+  .toast.on { display: block; }
+
+  .view { min-height: 0; position: relative; background: #0a0a0c; }
+  #vp { display: block; width: 100%; height: 100%; }
+  .hud {
+    position: absolute; left: 16px; top: 14px;
+    pointer-events: none;
+    font: 600 20px/1.1 ui-monospace, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 8px rgba(0,0,0,.6);
+  }
+  .hud span { display: block; margin-top: 6px; font: 500 12px/1 var(--font); color: var(--text-2); text-shadow: none; }
+
+  .tl {
+    display: flex; flex-direction: column;
+    background: #101012;
+    min-height: 0;
+  }
+  .split {
+    height: 6px;
+    flex: none;
+    cursor: ns-resize;
+    position: relative;
+    z-index: 6;
+    background: #101012;
+    border-top: 1px solid var(--stroke-strong);
+  }
+  .split::after {
+    content: "";
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 32px; height: 3px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.2);
+    transform: translate(-50%, -50%);
+  }
+  .split:hover::after, body.resizing .split::after { background: var(--accent-text); }
+  .tools {
+    display: flex; align-items: center; gap: 5px;
+    height: 32px; padding: 0 10px;
+    border-bottom: 1px solid var(--stroke);
+    flex: none;
+  }
+  .tools .btn { height: 24px; padding: 0 9px; font-size: 12px; }
+  .tools .btn.icon { width: 24px; padding: 0; }
+  .tools .btn.on { background: var(--accent); border-color: transparent; color: #fff; }
+  .tools .clock {
+    margin-left: 8px;
+    font: 500 12px/1 ui-monospace, Menlo, monospace;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .tools .hint { margin-left: auto; font-size: 11.5px; color: var(--text-3); }
+
+  .body {
+    position: relative;
+    flex: 1; min-height: 0;
+    overflow: hidden;
+    user-select: none;
+    cursor: default;
+  }
+  body.razor .body { cursor: cell; }
+  #ruler { display: block; width: 100%; height: 18px; }
+  .lane { position: relative; height: calc(100% - 18px); }
+
+  .clip {
+    position: absolute;
+    top: 4px; bottom: 5px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: grab;
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+  body.razor .clip { cursor: cell; }
+  .clip.sel { box-shadow: inset 0 0 0 2px #fff; }
+  .clip.c0 { background: #5b67f2; }
+  .clip.c1 { background: #2bb59a; }
+  .clip.c2 { background: #d59a3a; }
+  .clip .n {
+    position: absolute; left: 10px; top: 50%; right: 40px;
+    transform: translateY(-50%);
+    font: 650 12px/1.2 var(--font);
+    pointer-events: none;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .clip.has-remap .n {
+    top: 5px; transform: none;
+  }
+  .clip .badge {
+    position: absolute; right: 8px; top: 50%;
+    transform: translateY(-50%);
+    font: 650 10px/1 ui-monospace, Menlo, monospace;
+    opacity: .9;
+    pointer-events: none;
+  }
+  .clip.has-remap .badge { top: 6px; transform: none; }
+  .clip .remap {
+    position: absolute; left: 8px; right: 8px; top: 20px; bottom: 4px;
+    cursor: crosshair;
+  }
+  .clip .remap canvas { display: block; width: 100%; height: 100%; }
+  .clip .handle {
+    position: absolute; top: 0; bottom: 0; width: 10px;
+    cursor: ew-resize; z-index: 2;
+  }
+  .clip .handle.l { left: 0; }
+  .clip .handle.r { right: 0; }
+  .clip .handle::after {
+    content: ""; position: absolute; top: 22%; bottom: 22%; width: 2px;
+    border-radius: 1px; background: #fff; opacity: .55;
+  }
+  .clip .handle.l::after { left: 4px; }
+  .clip .handle.r::after { right: 4px; }
+
+  .playhead {
+    position: absolute; top: 0; bottom: 0; width: 0;
+    z-index: 5; pointer-events: none;
+  }
+  .playhead .line {
+    position: absolute; top: 0; bottom: 0; left: 0;
+    width: 1.5px; background: #fff;
+  }
+  .playhead .cap {
+    position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #fff;
+  }
+
+  .menu {
+    position: fixed; z-index: 40; display: none;
+    min-width: 168px; padding: 6px;
+    border-radius: 12px;
+    background: rgba(22,22,24,.96);
+    border: 1px solid var(--stroke-strong);
+    box-shadow: 0 16px 40px rgba(0,0,0,.45);
+  }
+  .menu.open { display: block; }
+  .menu .lab {
+    padding: 6px 10px 4px;
+    font: 650 10px/1 var(--font);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .menu .item {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 30px; padding: 0 10px; border-radius: 8px;
+    font: 500 13px/1 var(--font);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .menu .item:hover { background: var(--layer-hover); }
+  .menu .item.on { color: var(--accent-text); }
+  .menu .item .ck { color: var(--accent-text); font-size: 12px; }
+  .menu .sep { height: 1px; margin: 5px 8px; background: var(--stroke); }
+
+  .narrow {
+    display: none; position: fixed; inset: 0; z-index: 20;
+    background: #0b0b0d; align-items: center; justify-content: center;
+    padding: 32px; text-align: center; flex-direction: column;
+  }
+  .narrow p { color: var(--text-2); margin-top: 8px; }
+  @media (max-width: 720px) { .narrow { display: flex; } }
+</style>
+</head>
+<body class="app">
+<div class="mc-world"></div>
+
+<header class="top">
+  <a class="btn icon ghost" href="replay.html?tab=project" title="返回工程列表"><svg class="i"><use href="#i-arrow-l"/></svg></a>
+  <input class="name" id="projName" value="未命名工程" spellcheck="false">
+  <span class="sub" id="srcLabel">素材 · hypixel-bedwars-0813</span>
+  <span style="flex:1"></span>
+  <button class="btn primary" id="btnSave">保存工程</button>
+</header>
+
+<section class="view">
+  <canvas id="vp"></canvas>
+  <div class="hud" id="hud">0:00.0<span>第一杀</span></div>
+</section>
+
+<section class="tl" id="tl">
+  <div class="split" id="split" title="拖动调整高度 · 双击复位"></div>
+  <div class="tools">
+    <button class="btn icon" id="btnPlay" title="空格"><svg class="i" id="playIcon"><use href="#i-play"/></svg></button>
+    <button class="btn icon on" id="toolV" title="选择">V</button>
+    <button class="btn icon" id="toolC" title="刀片，点片段切开">C</button>
+    <button class="btn" id="btnCut">切割</button>
+    <button class="btn" id="btnDel">删除</button>
+    <span class="clock" id="clock">0:00.0 / 0:00.0</span>
+    <span class="hint">右键变速 · 拖顶边调高度</span>
+  </div>
+  <div class="body" id="body">
+    <canvas id="ruler"></canvas>
+    <div class="lane" id="lane"></div>
+    <div class="playhead" id="ph"><i class="cap"></i><i class="line"></i></div>
+  </div>
+</section>
+
+<div class="menu" id="menu"></div>
+<div class="toast" id="toast"></div>
+
+<div class="narrow">
+  <h2 style="font:750 20px/1.2 var(--font)">需要更宽的屏幕</h2>
+  <p>请在桌面宽度下打开。</p>
+</div>
+
+<script src="icons.js"></script>
+<script>
+(function () {
+  const SOURCE = 45000;
+  const MIN = 300;
+  const SMIN = 0.25, SMAX = 4;
+  const SPEEDS = [0.25, 0.5, 1, 2, 4];
+  const COLORS = ["c0", "c1", "c2"];
+  const PATH = [
+    { t: 0, x: 2.2, z: 2.4 }, { t: 4000, x: 8.4, z: 8.1 },
+    { t: 7200, x: 10.6, z: 9.2 }, { t: 8200, x: 11.4, z: 9.4 },
+    { t: 16000, x: 14.2, z: 4.4 }, { t: 21000, x: 12.1, z: 6.2 },
+    { t: 22000, x: 11.8, z: 6.8 }, { t: 30000, x: 6.4, z: 12.4 },
+    { t: 35400, x: 5.2, z: 10.1 }, { t: 45000, x: 8, z: 8 }
+  ];
+  const FOE = [
+    { t: 0, x: 16, z: 15 }, { t: 5000, x: 12.4, z: 10.6 },
+    { t: 7200, x: 11.4, z: 9.8 }, { t: 15000, x: 10.2, z: 3.2 },
+    { t: 21000, x: 12.8, z: 5.4 }, { t: 29000, x: 4.2, z: 11.8 },
+    { t: 35400, x: 4.6, z: 9.6 }, { t: 45000, x: 9, z: 14 }
+  ];
+
+  const TL_MIN = 96;
+  const TL_DEFAULT = 124;
+  const $ = (s) => document.querySelector(s);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function tlMax() { return Math.round(window.innerHeight * 0.52); }
+  function tlH() {
+    const v = parseFloat(getComputedStyle(document.body).getPropertyValue("--tl-h"));
+    return Number.isFinite(v) ? v : TL_DEFAULT;
+  }
+  function setTlH(h) {
+    document.body.style.setProperty("--tl-h", clamp(h, TL_MIN, tlMax()) + "px");
+  }
+  const log2 = Math.log2;
+
+  const STORE = "edge.edit.projects";
+  const DEFAULT_CLIPS = [
+    { id: 1, name: "第一杀", in: 4000, out: 8200, color: 0, speed: 1, remap: null },
+    { id: 2, name: "第二杀", in: 16000, out: 22000, color: 1, speed: 1, remap: null },
+    { id: 3, name: "死亡", in: 30000, out: 36000, color: 2, speed: 1, remap: null }
+  ];
+  function loadProjects() {
+    try { return JSON.parse(localStorage.getItem(STORE) || "[]"); } catch (e) { return []; }
+  }
+  function saveProjects(list) { localStorage.setItem(STORE, JSON.stringify(list)); }
+
+  const params = new URLSearchParams(location.search);
+  let projectId = params.get("project") || "";
+  let sourceName = params.get("source") || "hypixel-bedwars-0813";
+  let clips = DEFAULT_CLIPS.map((c) => Object.assign({}, c));
+  let nid = 4;
+
+  (function bootProject() {
+    if (projectId) {
+      const p = loadProjects().find((x) => x.id === projectId);
+      if (p) {
+        sourceName = p.source || sourceName;
+        $("#projName").value = p.name;
+        if (p.clips && p.clips.length) {
+          clips = p.clips;
+          nid = clips.reduce((m, c) => Math.max(m, c.id || 0), 0) + 1;
+        }
+      }
+    } else {
+      projectId = "p" + Date.now().toString(36);
+      $("#projName").value = sourceName + " 剪辑";
+    }
+    $("#srcLabel").textContent = "素材 · " + sourceName;
+  })();
+  let tool = "select";
+  let playing = false;
+  let t = 0;
+  let view0 = 0;
+  let ppm = 0.02;
+  let selected = clips[0] ? clips[0].id : 1;
+  let drag = null;
+  let menuId = 0;
+  let tlDrag = null;
+
+  function srcLen(c) { return Math.max(1, c.out - c.in); }
+  function keys(c) {
+    if (c.remap && c.remap.length >= 2) return c.remap;
+    const s = c.speed || 1;
+    return [{ p: 0, s: s }, { p: 1, s: s }];
+  }
+  function segOut(L, s0, s1) {
+    s0 = Math.max(0.05, s0); s1 = Math.max(0.05, s1);
+    if (Math.abs(s1 - s0) < 1e-4) return L / s0;
+    return L * Math.log(s1 / s0) / (s1 - s0);
+  }
+  function dur(c) {
+    const L = srcLen(c), k = keys(c);
+    let o = 0;
+    for (let i = 0; i < k.length - 1; i++) o += segOut((k[i + 1].p - k[i].p) * L, k[i].s, k[i + 1].s);
+    return Math.max(MIN, o);
+  }
+  function total() { return clips.reduce((a, c) => a + dur(c), 0); }
+  function startOf(id) {
+    let a = 0;
+    for (const c of clips) { if (c.id === id) return a; a += dur(c); }
+    return 0;
+  }
+  function srcAtLocal(c, local) {
+    const L = srcLen(c), k = keys(c);
+    let acc = 0;
+    for (let i = 0; i < k.length - 1; i++) {
+      const sl = (k[i + 1].p - k[i].p) * L;
+      const ol = segOut(sl, k[i].s, k[i + 1].s);
+      if (local <= acc + ol || i === k.length - 2) {
+        const lo = clamp(local - acc, 0, ol);
+        const s0 = k[i].s, s1 = k[i + 1].s;
+        let u;
+        if (Math.abs(s1 - s0) < 1e-4) u = sl <= 0 ? 1 : (lo * s0) / sl;
+        else u = (Math.exp((s1 - s0) * lo / sl) * s0 - s0) / (s1 - s0);
+        u = clamp(u, 0, 1);
+        return c.in + (k[i].p + u * (k[i + 1].p - k[i].p)) * L;
+      }
+      acc += ol;
+    }
+    return c.out;
+  }
+  function speedAtLocal(c, local) {
+    const L = srcLen(c), k = keys(c);
+    let acc = 0;
+    for (let i = 0; i < k.length - 1; i++) {
+      const sl = (k[i + 1].p - k[i].p) * L;
+      const ol = segOut(sl, k[i].s, k[i + 1].s);
+      if (local <= acc + ol || i === k.length - 2) {
+        const u = ol <= 0 ? 1 : clamp((local - acc) / ol, 0, 1);
+        return k[i].s + (k[i + 1].s - k[i].s) * u;
+      }
+      acc += ol;
+    }
+    return c.speed || 1;
+  }
+  function at(ms) {
+    let a = 0;
+    for (const c of clips) {
+      const d = dur(c);
+      if (ms < a + d || c === clips[clips.length - 1]) {
+        const local = clamp(ms - a, 0, d);
+        return { c, src: srcAtLocal(c, local), a, d, local, spd: speedAtLocal(c, local) };
+      }
+      a += d;
+    }
+    return { c: clips[0], src: 0, a: 0, d: 0, local: 0, spd: 1 };
+  }
+  function spdLabel(s) {
+    const r = Math.round(s * 100) / 100;
+    return (r === Math.round(r) ? Math.round(r) : r) + "x";
+  }
+  function fmt(ms) {
+    ms = Math.max(0, ms);
+    return Math.floor(ms / 60000) + ":" + String(Math.floor(ms / 1000) % 60).padStart(2, "0")
+      + "." + Math.floor(ms / 100) % 10;
+  }
+  function xOf(ms) { return (ms - view0) * ppm; }
+  function tAt(cx) {
+    return view0 + (cx - $("#lane").getBoundingClientRect().left) / ppm;
+  }
+  function yToSpd(y, h) {
+    const u = 1 - clamp(y / Math.max(1, h), 0, 1);
+    return clamp(Math.pow(2, u * 4 - 2), SMIN, SMAX);
+  }
+  function spdToY(s, h) {
+    const u = (log2(clamp(s, SMIN, SMAX)) + 2) / 4;
+    return (1 - u) * h;
+  }
+
+  function fit() {
+    const w = $("#lane").clientWidth;
+    const d = Math.max(total(), 1000);
+    ppm = clamp((w - 24) / d, 0.006, 0.25);
+    view0 = -8 / ppm;
+    draw();
+  }
+
+  function draw() {
+    const lane = $("#lane");
+    lane.innerHTML = "";
+    let a = 0;
+    clips.forEach((c) => {
+      const el = document.createElement("div");
+      el.className = "clip " + COLORS[c.color]
+        + (selected === c.id ? " sel" : "")
+        + (c.remap ? " has-remap" : "");
+      el.dataset.id = c.id;
+      el.style.left = xOf(a) + "px";
+      el.style.width = Math.max(16, dur(c) * ppm) + "px";
+      const badge = c.remap ? "曲线" : spdLabel(c.speed || 1);
+      el.innerHTML = '<div class="handle l" data-e="l"></div><div class="handle r" data-e="r"></div>'
+        + '<div class="n">' + c.name + '</div><div class="badge">' + badge + '</div>'
+        + (c.remap ? '<div class="remap"><canvas></canvas></div>' : "");
+      lane.appendChild(el);
+      if (c.remap) paintRemap(el.querySelector(".remap"), c);
+      a += dur(c);
+    });
+    ruler();
+    head();
+  }
+
+  function paintRemap(box, c) {
+    if (!box) return;
+    const cv = box.tagName === "CANVAS" ? box : box.querySelector("canvas");
+    if (!cv) return;
+    const dpr = devicePixelRatio || 1;
+    const w = box.clientWidth, h = box.clientHeight;
+    if (w < 4 || h < 4) return;
+    cv.style.width = w + "px";
+    cv.style.height = h + "px";
+    cv.width = w * dpr; cv.height = h * dpr;
+    const ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const y1 = spdToY(1, h);
+    ctx.strokeStyle = "rgba(255,255,255,.2)";
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(w, y1); ctx.stroke();
+    ctx.setLineDash([]);
+    const k = keys(c);
+    ctx.strokeStyle = "rgba(255,255,255,.9)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    k.forEach((pt, i) => {
+      const x = pt.p * w, y = spdToY(pt.s, h);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    k.forEach((pt) => {
+      const x = pt.p * w, y = spdToY(pt.s, h);
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+
+  function hitKf(c, cv, cx, cy) {
+    const r = cv.getBoundingClientRect();
+    const x = cx - r.left, y = cy - r.top;
+    const k = c.remap;
+    let best = -1, d = 10;
+    k.forEach((pt, i) => {
+      const dx = x - pt.p * r.width, dy = y - spdToY(pt.s, r.height);
+      const dd = Math.hypot(dx, dy);
+      if (dd < d) { d = dd; best = i; }
+    });
+    return best;
+  }
+
+  function ruler() {
+    const c = $("#ruler"), box = c.parentElement;
+    const dpr = devicePixelRatio || 1;
+    const w = box.clientWidth, h = 18;
+    c.width = w * dpr; c.height = h * dpr;
+    c.style.width = w + "px"; c.style.height = h + "px";
+    const ctx = c.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const steps = [0.5, 1, 2, 5, 10, 15, 30];
+    let step = 30;
+    for (const s of steps) if (s * 1000 * ppm >= 70) { step = s; break; }
+    const sm = step * 1000;
+    const t0 = Math.floor(view0 / sm) * sm;
+    ctx.fillStyle = "#6e6e76";
+    ctx.font = "500 10px Inter, sans-serif";
+    for (let x = t0; x < view0 + w / ppm; x += sm) {
+      if (x < 0) continue;
+      const px = xOf(x) + 0.5;
+      ctx.strokeStyle = "rgba(255,255,255,.08)";
+      ctx.beginPath(); ctx.moveTo(px, 18); ctx.lineTo(px, 7); ctx.stroke();
+      ctx.fillText(fmt(x), px + 4, 12);
+    }
+  }
+
+  function head() {
+    const tot = total();
+    t = clamp(t, 0, tot);
+    $("#ph").style.left = xOf(t) + "px";
+    const m = at(t);
+    const extra = m.c ? m.c.name + "  " + spdLabel(m.spd) : "";
+    $("#hud").innerHTML = fmt(t) + "<span>" + extra + "</span>";
+    $("#clock").textContent = fmt(t) + " / " + fmt(tot);
+    $("#playIcon").innerHTML = playing ? '<use href="#i-pause"/>' : '<use href="#i-play"/>';
+    $("#btnDel").disabled = clips.length <= 1 || !selected;
+  }
+
+  function sample(path, src) {
+    if (src <= path[0].t) return path[0];
+    const last = path[path.length - 1];
+    if (src >= last.t) return last;
+    let i = 0;
+    while (path[i + 1].t < src) i++;
+    const a = path[i], b = path[i + 1], u = (src - a.t) / (b.t - a.t);
+    return { x: a.x + (b.x - a.x) * u, z: a.z + (b.z - a.z) * u };
+  }
+
+  function scene() {
+    const canvas = $("#vp"), stage = canvas.parentElement;
+    const dpr = devicePixelRatio || 1;
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      canvas.style.width = w + "px"; canvas.style.height = h + "px";
+    }
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#0b0c10";
+    ctx.fillRect(0, 0, w, h);
+    const src = at(t).src;
+    const p = sample(PATH, src), f = sample(FOE, src);
+    const sc = Math.min(w, h) / 28;
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(sc, sc);
+    ctx.translate(-10, -10);
+    ctx.fillStyle = "#243040";
+    round(ctx, 0, 0, 20, 20, 0.6); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.05)";
+    ctx.lineWidth = 0.06;
+    for (let i = 0; i <= 20; i++) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 20); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(20, i); ctx.stroke();
+    }
+    const wool = ["#c94c6a", "#3d8fd4", "#d4c44a", "#3aa36a"];
+    [[8,2],[9,2],[10,2],[11,2],[9,3],[10,3],[2,8],[2,9],[2,10],[3,9],
+     [8,16],[9,16],[10,16],[9,15],[16,8],[16,9],[16,10],[15,9],[9,9],[10,9],[9,10],[10,10]
+    ].forEach((b, i) => {
+      ctx.fillStyle = wool[i % 4];
+      ctx.fillRect(b[0] + 0.08, b[1] + 0.08, 0.84, 0.84);
+    });
+    function pawn(e, col) {
+      ctx.fillStyle = col;
+      round(ctx, e.x - 0.45, e.z - 0.45, 0.9, 0.9, 0.18); ctx.fill();
+    }
+    pawn(f, "#e2657a");
+    pawn(p, "#8ea0ff");
+    ctx.restore();
+  }
+  function round(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function spdAtP(k, p) {
+    if (p <= k[0].p) return k[0].s;
+    if (p >= k[k.length - 1].p) return k[k.length - 1].s;
+    let i = 0;
+    while (k[i + 1].p < p) i++;
+    const u = (p - k[i].p) / (k[i + 1].p - k[i].p);
+    return k[i].s + (k[i + 1].s - k[i].s) * u;
+  }
+
+  function cutAt(ms, id) {
+    const c = clips.find((x) => x.id === id);
+    if (!c) return;
+    const local = ms - startOf(id);
+    if (local < 200 || local > dur(c) - 200) return;
+    const src = srcAtLocal(c, local);
+    const pCut = clamp((src - c.in) / srcLen(c), 0.02, 0.98);
+    const tail = { id: nid++, name: c.name, in: src, out: c.out, color: c.color, speed: c.speed, remap: null };
+    if (c.remap) {
+      const k = c.remap, sCut = spdAtP(k, pCut);
+      const left = k.filter((x) => x.p <= pCut + 1e-4).map((x) => ({ p: x.p / pCut, s: x.s }));
+      if (!left.length || left[left.length - 1].p < 0.999) left.push({ p: 1, s: sCut });
+      left[0].p = 0; left[left.length - 1].p = 1;
+      const right = k.filter((x) => x.p >= pCut - 1e-4).map((x) => ({ p: (x.p - pCut) / (1 - pCut), s: x.s }));
+      if (!right.length || right[0].p > 0.001) right.unshift({ p: 0, s: sCut });
+      right[0].p = 0; right[right.length - 1].p = 1;
+      c.remap = left;
+      tail.remap = right;
+    }
+    c.out = src;
+    clips.splice(clips.indexOf(c) + 1, 0, tail);
+    selected = c.id;
+    draw();
+  }
+
+  function setSpeed(id, s) {
+    const c = clips.find((x) => x.id === id);
+    if (!c) return;
+    c.speed = s;
+    c.remap = null;
+    draw();
+  }
+  function toggleRemap(id) {
+    const c = clips.find((x) => x.id === id);
+    if (!c) return;
+    if (c.remap) {
+      c.speed = c.remap[0].s;
+      c.remap = null;
+    } else {
+      const s = c.speed || 1;
+      c.remap = [{ p: 0, s: s }, { p: 0.5, s: s }, { p: 1, s: s }];
+    }
+    draw();
+  }
+
+  function openMenu(id, x, y) {
+    const c = clips.find((n) => n.id === id);
+    if (!c) return;
+    menuId = id;
+    selected = id;
+    const menu = $("#menu");
+    let html = '<div class="lab">速度</div>';
+    SPEEDS.forEach((s) => {
+      const on = !c.remap && c.speed === s;
+      html += '<div class="item' + (on ? " on" : "") + '" data-s="' + s + '">'
+        + spdLabel(s) + (s > 1 ? "  加速" : s < 1 ? "  慢放" : "")
+        + (on ? '<span class="ck">✓</span>' : "") + "</div>";
+    });
+    html += '<div class="sep"></div>';
+    html += '<div class="item' + (c.remap ? " on" : "") + '" data-remap="1">时间重映射'
+      + (c.remap ? '<span class="ck">✓</span>' : "") + "</div>";
+    menu.innerHTML = html;
+    menu.classList.add("open");
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    let left = x, top = y;
+    if (left + mw > innerWidth - 8) left = innerWidth - mw - 8;
+    if (top + mh > innerHeight - 8) top = y - mh;
+    menu.style.left = Math.max(8, left) + "px";
+    menu.style.top = Math.max(8, top) + "px";
+    draw();
+  }
+  function closeMenu() { $("#menu").classList.remove("open"); }
+
+  $("#menu").addEventListener("mousedown", (e) => e.stopPropagation());
+  $("#menu").addEventListener("click", (e) => {
+    const item = e.target.closest(".item");
+    if (!item) return;
+    if (item.dataset.remap) toggleRemap(menuId);
+    else if (item.dataset.s) setSpeed(menuId, parseFloat(item.dataset.s));
+    closeMenu();
+  });
+
+  $("#body").addEventListener("contextmenu", (e) => {
+    const clip = e.target.closest(".clip");
+    if (!clip) return;
+    e.preventDefault();
+    openMenu(+clip.dataset.id, e.clientX, e.clientY);
+  });
+
+  $("#body").addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    closeMenu();
+    const handle = e.target.closest(".handle");
+    const remap = e.target.closest(".remap");
+    const clip = e.target.closest(".clip");
+    if (clip && tool === "razor") { cutAt(tAt(e.clientX), +clip.dataset.id); return; }
+    if (handle) {
+      selected = +handle.parentElement.dataset.id;
+      drag = { k: "trim", id: selected, edge: handle.dataset.e };
+      draw();
+      return;
+    }
+    if (remap && clip) {
+      const id = +clip.dataset.id;
+      const c = clips.find((x) => x.id === id);
+      selected = id;
+      const cv = remap.querySelector("canvas") || remap;
+      const i = hitKf(c, cv, e.clientX, e.clientY);
+      if (i >= 0) {
+        drag = { k: "kf", id, i };
+      } else {
+        const r = cv.getBoundingClientRect();
+        const p = clamp((e.clientX - r.left) / r.width, 0.05, 0.95);
+        const s = yToSpd(e.clientY - r.top, r.height);
+        if (!c.remap.some((pt) => Math.abs(pt.p - p) < 0.04)) {
+          c.remap.push({ p, s });
+          c.remap.sort((a, b) => a.p - b.p);
+        }
+        drag = { k: "kf", id, i: c.remap.findIndex((pt) => Math.abs(pt.p - p) < 0.04) };
+      }
+      draw();
+      return;
+    }
+    if (clip) {
+      selected = +clip.dataset.id;
+      drag = { k: "move", id: selected };
+      draw();
+      return;
+    }
+    drag = { k: "scrub" };
+    playing = false;
+    t = clamp(tAt(e.clientX), 0, total());
+    head();
+  });
+
+  $("#body").addEventListener("dblclick", (e) => {
+    const remap = e.target.closest(".remap");
+    const clip = e.target.closest(".clip");
+    if (!remap || !clip) return;
+    const c = clips.find((x) => x.id === +clip.dataset.id);
+    if (!c || !c.remap || c.remap.length <= 2) return;
+    const cv = remap.querySelector("canvas") || remap;
+    const i = hitKf(c, cv, e.clientX, e.clientY);
+    if (i > 0 && i < c.remap.length - 1) {
+      c.remap.splice(i, 1);
+      draw();
+    }
+  });
+
+  $("#split").addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    closeMenu();
+    tlDrag = { y: e.clientY, h: tlH() };
+    document.body.classList.add("resizing");
+  });
+  $("#split").addEventListener("dblclick", () => {
+    setTlH(TL_DEFAULT);
+    draw();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (tlDrag) {
+      setTlH(tlDrag.h + (tlDrag.y - e.clientY));
+      draw();
+      return;
+    }
+    if (!drag) return;
+    if (drag.k === "scrub") {
+      t = clamp(tAt(e.clientX), 0, total());
+      head();
+      return;
+    }
+    const c = clips.find((x) => x.id === drag.id);
+    if (!c) return;
+    if (drag.k === "kf" && c.remap) {
+      const el = document.querySelector('.clip[data-id="' + c.id + '"] .remap canvas')
+        || document.querySelector('.clip[data-id="' + c.id + '"] .remap');
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const pt = c.remap[drag.i];
+      pt.s = yToSpd(e.clientY - r.top, r.height);
+      if (drag.i > 0 && drag.i < c.remap.length - 1) {
+        const lo = c.remap[drag.i - 1].p + 0.03;
+        const hi = c.remap[drag.i + 1].p - 0.03;
+        pt.p = clamp((e.clientX - r.left) / r.width, lo, hi);
+      }
+      draw();
+      return;
+    }
+    if (drag.k === "trim") {
+      const start = startOf(c.id);
+      const ms = tAt(e.clientX);
+      const spd = c.remap ? speedAtLocal(c, dur(c) * 0.5) : (c.speed || 1);
+      if (drag.edge === "l") {
+        c.in = clamp(c.out - Math.max(MIN, (start + dur(c) - ms) * spd), 0, c.out - MIN);
+      } else {
+        c.out = clamp(c.in + Math.max(MIN, (ms - start) * spd), c.in + MIN, SOURCE);
+      }
+      draw();
+    }
+    if (drag.k === "move") {
+      let acc = 0, ins = clips.length - 1;
+      const ms = tAt(e.clientX);
+      for (let i = 0; i < clips.length; i++) {
+        const d = dur(clips[i]);
+        if (ms < acc + d / 2) { ins = i; break; }
+        acc += d; ins = i + 1;
+      }
+      const from = clips.findIndex((x) => x.id === drag.id);
+      if (ins > from) ins--;
+      drag.ins = clamp(ins, 0, clips.length - 1);
+    }
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (tlDrag) {
+      tlDrag = null;
+      document.body.classList.remove("resizing");
+      fit();
+      return;
+    }
+    if (drag && drag.k === "move" && drag.ins != null) {
+      const from = clips.findIndex((c) => c.id === drag.id);
+      if (from !== drag.ins) {
+        const [c] = clips.splice(from, 1);
+        clips.splice(drag.ins, 0, c);
+      }
+    }
+    drag = null;
+    draw();
+  });
+  window.addEventListener("mousedown", (e) => {
+    if (!e.target.closest("#menu")) closeMenu();
+  });
+
+  $("#body").addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const src = tAt(e.clientX);
+    ppm = clamp(ppm * (e.deltaY > 0 ? 0.9 : 1.12), 0.006, 0.25);
+    view0 = src - (e.clientX - $("#lane").getBoundingClientRect().left) / ppm;
+    draw();
+  }, { passive: false });
+
+  function setTool(x) {
+    tool = x;
+    document.body.classList.toggle("razor", x === "razor");
+    $("#toolV").classList.toggle("on", x === "select");
+    $("#toolC").classList.toggle("on", x === "razor");
+  }
+
+  $("#toolV").onclick = () => setTool("select");
+  $("#toolC").onclick = () => setTool("razor");
+  $("#btnCut").onclick = () => { const m = at(t); if (m.c) cutAt(t, m.c.id); };
+  function toast(msg) {
+    const el = $("#toast");
+    el.textContent = msg;
+    el.classList.add("on");
+    setTimeout(() => el.classList.remove("on"), 1800);
+  }
+  function saveProject() {
+    const list = loadProjects();
+    const rec = {
+      id: projectId,
+      name: $("#projName").value.trim() || "未命名工程",
+      source: sourceName,
+      clips: clips,
+      outLabel: fmt(total()),
+      updated: Date.now()
+    };
+    const i = list.findIndex((p) => p.id === projectId);
+    if (i >= 0) list[i] = rec; else list.unshift(rec);
+    saveProjects(list);
+    toast("已保存 · 引用素材 " + sourceName);
+  }
+  $("#btnSave").onclick = saveProject;
+  $("#btnPlay").onclick = () => { playing = !playing; head(); };
+  $("#btnDel").onclick = () => {
+    if (clips.length <= 1 || !selected) return;
+    clips = clips.filter((c) => c.id !== selected);
+    selected = clips[0].id;
+    t = Math.min(t, total());
+    draw();
+  };
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) { e.preventDefault(); saveProject(); return; }
+    if (e.target.tagName === "INPUT") return;
+    if (e.code === "Space") { e.preventDefault(); playing = !playing; head(); }
+    else if (e.key === "v" || e.key === "V") setTool("select");
+    else if (e.key === "c" || e.key === "C") setTool("razor");
+    else if (e.key === "s" || e.key === "S") { const m = at(t); if (m.c) cutAt(t, m.c.id); }
+    else if (e.key === "Delete" || e.key === "Backspace") $("#btnDel").click();
+    else if (e.key === "Escape") closeMenu();
+    else if (e.key === "ArrowLeft") { playing = false; t = clamp(t - (e.shiftKey ? 1000 : 200), 0, total()); head(); }
+    else if (e.key === "ArrowRight") { playing = false; t = clamp(t + (e.shiftKey ? 1000 : 200), 0, total()); head(); }
+    else if (e.key === "Home") { t = 0; playing = false; head(); }
+    else if (e.key === "End") { t = total(); playing = false; head(); }
+  });
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (playing) {
+      t += dt * 1000;
+      if (t >= total()) { t = total(); playing = false; }
+      const x = xOf(t), w = $("#lane").clientWidth;
+      if (x > w * 0.88) { view0 = t - w * 0.3 / ppm; draw(); }
+      else head();
+    }
+    scene();
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener("resize", () => { setTlH(tlH()); fit(); });
+  requestAnimationFrame(() => { fit(); requestAnimationFrame(loop); });
+})();
+</script>
+</body>
+</html>
