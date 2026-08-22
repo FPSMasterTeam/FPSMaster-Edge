@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.features.impl.interfaces.LyricsDisplay;
 import top.fpsmaster.modules.music.MusicManager;
 import top.fpsmaster.modules.music.MusicTextures;
 import top.fpsmaster.music.Lyric;
@@ -169,7 +170,17 @@ public class MusicScreen extends ScaledGuiScreen {
                     loginStatus = Boolean.TRUE.equals(result) ? "登录成功" : "Cookie 登录失败");
         }
 
+        @Override
+        public void paintCover(UiFrame ui, float x, float y, float size) {
+            Track track = music.getCurrent();
+            if (track == null) return;
+            ResourceLocation texture = MusicTextures.cover(track.getCoverUrl());
+            if (texture != null) Images.draw(texture, x, y, size, size);
+        }
+
         @Override public boolean hasLyrics() { return true; }
+        @Override public boolean lyricsHudEnabled() { return FPSMaster.moduleManager.getModule(LyricsDisplay.class).isEnabled(); }
+        @Override public void setLyricsHudEnabled(boolean enabled) { FPSMaster.moduleManager.getModule(LyricsDisplay.class).set(enabled); }
         @Override public int currentLyricIndex() { return music.currentLyricLine(); }
 
         @Override

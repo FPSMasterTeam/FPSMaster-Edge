@@ -88,9 +88,6 @@ public class MusicManager {
     private volatile String status = "";
     private int volume = 70;
 
-    private final MusicOverlay overlay = new MusicOverlay(this);
-    private volatile boolean showLyricsInGame = false;
-
     // 系统媒体传输控件（Windows SMTC）：平台不可用时自动降级为 no-op。
     private final top.fpsmaster.modules.music.smtc.SmtcMusicBridge smtcBridge;
 
@@ -240,21 +237,6 @@ public class MusicManager {
 
     public void setStatus(String s) {
         this.status = s == null ? "" : s;
-    }
-
-    /** 是否在游戏内叠加显示当前歌词。 */
-    public boolean isShowLyricsInGame() {
-        return showLyricsInGame;
-    }
-
-    public void setShowLyricsInGame(boolean b) {
-        if (b == showLyricsInGame) return;
-        showLyricsInGame = b;
-        if (b) {
-            EventDispatcher.registerListener(overlay);
-        } else {
-            EventDispatcher.unregisterListener(overlay);
-        }
     }
 
     public int getVolume() {

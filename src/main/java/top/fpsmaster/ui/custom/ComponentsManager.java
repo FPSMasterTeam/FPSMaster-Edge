@@ -42,6 +42,7 @@ public class ComponentsManager {
         addComponentSafely("ClockDisplayComponent", ClockDisplayComponent::new);
         addComponentSafely("ServerAddressDisplayComponent", ServerAddressDisplayComponent::new);
         addComponentSafely("ItemCountDisplayComponent", ItemCountDisplayComponent::new);
+        addComponentSafely("LyricsDisplayComponent", LyricsDisplayComponent::new);
     }
 
     private void addComponentSafely(String name, Supplier<Component> supplier) {
@@ -164,5 +165,4 @@ public class ComponentsManager {
         GL11.glPopMatrix();
     }
 }
-
 

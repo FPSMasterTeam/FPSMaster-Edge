@@ -44,6 +44,10 @@ public final class EdgeUi {
         return current;
     }
 
+    public static boolean hasFrame() {
+        return current != null;
+    }
+
     public static void keyTyped(char typedChar, int keyCode) {
         if (!Character.isISOControl(typedChar)) {
             fallback.type(String.valueOf(typedChar));
