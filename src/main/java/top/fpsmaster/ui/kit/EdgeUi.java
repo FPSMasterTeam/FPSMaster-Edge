@@ -3,6 +3,7 @@ package top.fpsmaster.ui.kit;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.prism.input.FrameInput;
+import top.fpsmaster.prism.input.Keys;
 import top.fpsmaster.prism.theme.Theme;
 import top.fpsmaster.prism.widget.UiFrame;
 
@@ -41,5 +42,35 @@ public final class EdgeUi {
             throw new IllegalStateException("EdgeUi.begin() not called for this frame");
         }
         return current;
+    }
+
+    public static void keyTyped(char typedChar, int keyCode) {
+        if (!Character.isISOControl(typedChar)) {
+            fallback.type(String.valueOf(typedChar));
+        }
+        fallback.pressRawKey(keyCode);
+        switch (keyCode) {
+            case org.lwjgl.input.Keyboard.KEY_BACK:
+                fallback.pressKey(Keys.BACKSPACE);
+                break;
+            case org.lwjgl.input.Keyboard.KEY_RETURN:
+            case org.lwjgl.input.Keyboard.KEY_NUMPADENTER:
+                fallback.pressKey(Keys.ENTER);
+                break;
+            case org.lwjgl.input.Keyboard.KEY_ESCAPE:
+                fallback.pressKey(Keys.ESCAPE);
+                break;
+            case org.lwjgl.input.Keyboard.KEY_LEFT:
+                fallback.pressKey(Keys.LEFT);
+                break;
+            case org.lwjgl.input.Keyboard.KEY_RIGHT:
+                fallback.pressKey(Keys.RIGHT);
+                break;
+            case org.lwjgl.input.Keyboard.KEY_DELETE:
+                fallback.pressKey(Keys.DELETE);
+                break;
+            default:
+                break;
+        }
     }
 }

@@ -13,7 +13,6 @@ import top.fpsmaster.features.impl.render.*;
 import top.fpsmaster.features.impl.utility.*;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.MainPanel;
-import top.fpsmaster.ui.click.modules.ModuleRenderer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,12 +61,10 @@ public class ModuleManager {
 
     public void addModule(Module module) {
         modules.add(module);
-        mainPanel.mods.add(new ModuleRenderer(module));
     }
 
     public void removeModule(Module module) {
         modules.remove(module);
-        mainPanel.mods.removeIf(m -> m.mod == module);
     }
 
     public void init() {
@@ -154,12 +151,7 @@ public class ModuleManager {
                 ((InterfaceModule) m).registerCommonSettings();
             }
         }
-
-        for (Module m : FPSMaster.moduleManager.modules) {
-            mainPanel.mods.add(new ModuleRenderer(m));
-        }
     }
 }
-
 
 

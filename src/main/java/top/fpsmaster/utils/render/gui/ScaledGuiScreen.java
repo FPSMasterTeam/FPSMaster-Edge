@@ -128,6 +128,11 @@ public class ScaledGuiScreen extends GuiScreen {
     }
 
     @Override
+    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        EdgeUi.keyTyped(typedChar, keyCode);
+    }
+
+    @Override
     public void handleMouseInput() throws IOException {
         refreshScaleAndMetrics();
 

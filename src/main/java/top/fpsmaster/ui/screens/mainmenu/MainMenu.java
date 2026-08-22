@@ -19,21 +19,18 @@ import top.fpsmaster.modules.account.AccountManager;
 import top.fpsmaster.modules.account.MicrosoftAuth;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.ClickGuiTheme;
-import top.fpsmaster.ui.click.UiChrome;
-import top.fpsmaster.ui.common.TextField;
 import top.fpsmaster.ui.kit.EdgeUi;
 import top.fpsmaster.ui.mc.GuiMultiplayer;
 import top.fpsmaster.ui.screens.music.MusicScreen;
 import top.fpsmaster.ui.screens.replay.ReplayScreen;
 import top.fpsmaster.prism.screen.MenuBridge;
+import top.fpsmaster.prism.screen.SharedAccountOverlay;
 import top.fpsmaster.prism.screen.SharedMainMenu;
 import top.fpsmaster.prism.widget.UiFrame;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.Animator;
 import top.fpsmaster.utils.math.anim.BezierEasing;
 
-import top.fpsmaster.utils.render.draw.Hover;
-import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.Backgrounds;
@@ -52,6 +49,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,15 +73,7 @@ public class MainMenu extends ScaledGuiScreen {
     private static final Animator introAnimation = new Animator();
     private final AnimClock animClock = new AnimClock();
     private final MenuBridge menuBridge = new EdgeMenuBridge();
-
-    private enum Dialog {
-        NONE, ADD_OFFLINE, MS_LOGIN
-    }
-
-    private boolean accountPopOpen;
-    private Dialog dialog = Dialog.NONE;
-    private TextField usernameField;
-    private boolean usernameInvalid;
+    private final SharedAccountOverlay accountOverlay = new SharedAccountOverlay();
     private final AtomicBoolean msLoginCancel = new AtomicBoolean(false);
     private final AtomicInteger msLoginGeneration = new AtomicInteger();
     private volatile boolean msLoginBusy;
@@ -91,8 +81,6 @@ public class MainMenu extends ScaledGuiScreen {
     private volatile String msVerifyUrl = "";
     private volatile String msStatus = "";
     private volatile String msError = "";
-    private volatile boolean msCopied;
-    private long msCopiedUntil;
 
     /** Last server in the list, pinged once per menu session for the continue card. */
     private static ServerData continueServer;
@@ -103,11 +91,6 @@ public class MainMenu extends ScaledGuiScreen {
         super.initGui();
         Backgrounds.initGui();
         animClock.reset();
-        if (usernameField == null) {
-            usernameField = new TextField(FPSMaster.fontManager.s14, false,
-                    FPSMaster.i18n.get("mainmenu.account.username"), 0,
-                    ClickGuiTheme.textPrimary().getRGB(), 16);
-        }
         if (firstBoot == 0) {
             firstBoot = checkJavaVersion();
         }
@@ -152,7 +135,7 @@ public class MainMenu extends ScaledGuiScreen {
 
         preloadPlayerSkinTexture();
         SharedMainMenu.draw(EdgeUi.frame(), menuBridge);
-        drawAccountPopover(mouseX, mouseY);
+        accountOverlay.draw(EdgeUi.frame(), menuBridge);
 
         if (firstBoot != 2) {
             FPSMaster.fontManager.s14.drawCenteredString(
@@ -163,32 +146,6 @@ public class MainMenu extends ScaledGuiScreen {
         // Intro: world simply fades in from black; no lingering overlay art.
         if (intro < 1f) {
             Rects.fill(0, 0, guiWidth, guiHeight, new Color(10, 10, 10, (int) (255 * (1f - intro))));
-        }
-
-        if (dialog == Dialog.ADD_OFFLINE) {
-            drawAddAccountDialog(mouseX, mouseY);
-        } else if (dialog == Dialog.MS_LOGIN) {
-            drawMicrosoftLoginDialog(mouseX, mouseY);
-        }
-    }
-
-    // ------------------------------------------------------------------
-    // Account popover (Edge-only overlay on the shared chip)
-    // ------------------------------------------------------------------
-
-    private void drawAccountPopover(int mouseX, int mouseY) {
-        if (!accountPopOpen) {
-            return;
-        }
-        UiFrame ui = EdgeUi.frame();
-        float chipX = SharedMainMenu.CHIP_X;
-        float chipY = SharedMainMenu.CHIP_Y;
-        float chipH = SharedMainMenu.CHIP_H;
-        float chipW = SharedMainMenu.chipWidth(ui, menuBridge);
-        float popH = drawAccountPop(chipX, chipY + chipH + 4f, mouseX, mouseY);
-        float zoneW = Math.max(chipW, 148f) + 4f;
-        if (consumePressOutside(chipX - 2f, chipY - 2f, zoneW, chipH + 6f + popH + 4f) != null) {
-            accountPopOpen = false;
         }
     }
 
@@ -209,203 +166,13 @@ public class MainMenu extends ScaledGuiScreen {
         }
     }
 
-    private float drawAccountPop(float x, float y, int mouseX, int mouseY) {
-        AccountManager accounts = AccountManager.get();
-        AccountManager.Account launcher = accounts.launcherAccount();
-        List<AccountManager.Account> offline = accounts.getOfflineAccounts();
-
-        float w = 148f;
-        float rowH = 22f;
-        int rows = (launcher != null ? 1 : 0) + offline.size();
-        float h = 3f + rows * rowH + 4.5f + rowH * 2f + 3f;
-        UiChrome.panel(x, y, w, h);
-
-        float rowY = y + 3f;
-        if (launcher != null) {
-            drawAccountRow(x + 3f, rowY, w - 6f, rowH, launcher.name,
-                    accounts.isLauncherAccountOnline()
-                            ? FPSMaster.i18n.get("mainmenu.account.ms")
-                            : FPSMaster.i18n.get("mainmenu.account.offline"),
-                    accounts.isCurrentLauncherAccount(), null, mouseX, mouseY);
-            rowY += rowH;
-        }
-        for (AccountManager.Account account : offline) {
-            if (launcher != null && account.name.equalsIgnoreCase(launcher.name) && !account.isMicrosoft()) {
-                continue;
-            }
-            drawAccountRow(x + 3f, rowY, w - 6f, rowH, account.name,
-                    account.isMicrosoft()
-                            ? FPSMaster.i18n.get("mainmenu.account.ms")
-                            : FPSMaster.i18n.get("mainmenu.account.offline"),
-                    account.name.equals(accounts.currentName()), account, mouseX, mouseY);
-            rowY += rowH;
-        }
-
-        UiChrome.hairlineH(x + 7f, rowY + 2f, w - 14f);
-        rowY += 4.5f;
-        if (drawAddAccountAction(x, rowY, w, rowH, FPSMaster.i18n.get("mainmenu.account.ms.add"), mouseX, mouseY)) {
-            accountPopOpen = false;
-            startMicrosoftLogin();
-        }
-        rowY += rowH;
-        if (drawAddAccountAction(x, rowY, w, rowH, FPSMaster.i18n.get("mainmenu.account.offline.add"), mouseX, mouseY)) {
-            dialog = Dialog.ADD_OFFLINE;
-            usernameField.setText("");
-            usernameField.setFocused(true);
-            usernameInvalid = false;
-            accountPopOpen = false;
-        }
-        return h;
-    }
-
-    private boolean drawAddAccountAction(float x, float rowY, float w, float rowH, String label, int mouseX, int mouseY) {
-        boolean addHover = Hover.is(x + 3f, rowY, w - 6f, rowH, mouseX, mouseY);
-        if (addHover) {
-            Rects.rounded(x + 3f, rowY, w - 6f, rowH, CARD_ROW_RADIUS, ClickGuiTheme.layerHover().getRGB(), false);
-        }
-        float boxX = x + 8f;
-        float boxY = rowY + 4f;
-        Rects.rounded(boxX - 0.5f, boxY - 0.5f, 15f, 15f, 5, ClickGuiTheme.strokeStrong().getRGB(), false);
-        Rects.rounded(boxX, boxY, 14f, 14f, 4, ClickGuiTheme.glass().getRGB(), false);
-        Icons.draw("plus", boxX + 3.5f, boxY + 3.5f, 7f,
-                (addHover ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB());
-        FPSMaster.fontManager.getFont(13).drawString(label, x + 27f, rowY + 7f,
-                (addHover ? ClickGuiTheme.textPrimary() : ClickGuiTheme.textSecondary()).getRGB());
-        return consumePressInBounds(x + 3f, rowY, w - 6f, rowH, 0) != null;
-    }
-
-    private static final int CARD_ROW_RADIUS = 5;
-
-    private void drawAccountRow(float x, float y, float w, float h, String name, String type,
-                                boolean current, AccountManager.Account removable, int mouseX, int mouseY) {
-        boolean hover = Hover.is(x, y, w, h, mouseX, mouseY);
-        if (hover) {
-            Rects.rounded(x, y, w, h, CARD_ROW_RADIUS, ClickGuiTheme.layerHover().getRGB(), false);
-        }
-        drawAvatarPlaceholder(x + 5f, y + 4f, 14f, name);
-        FPSMaster.fontManager.getFont(13).drawString(name, x + 24f, y + 3f,
-                ClickGuiTheme.textPrimary().getRGB());
-        FPSMaster.fontManager.getFont(10).drawString(type, x + 24f, y + 12f,
-                ClickGuiTheme.textDisabled().getRGB());
-
-        float rightX = x + w - 16f;
-        boolean removeHover = false;
-        if (hover && removable != null) {
-            removeHover = Hover.is(rightX, y + 5f, 12f, 12f, mouseX, mouseY);
-            if (removeHover) {
-                Rects.rounded(rightX - 1f, y + 4f, 14f, 14f, 4, ClickGuiTheme.dangerSoft().getRGB(), false);
-            }
-            Icons.draw("delete", rightX + 0.5f, y + 6.5f, 9f,
-                    (removeHover ? ClickGuiTheme.danger() : ClickGuiTheme.textDisabled()).getRGB());
-        } else if (current) {
-            Icons.draw("check", rightX, y + 7f, 8f, ClickGuiTheme.accentText().getRGB());
-        }
-
-        if (removable != null && removeHover
-                && consumePressInBounds(rightX, y + 5f, 12f, 12f, 0) != null) {
-            AccountManager.get().remove(removable);
-            return;
-        }
-        if (consumePressInBounds(x, y, w, h, 0) != null) {
-            if (removable != null) {
-                AccountManager.get().use(removable);
-            } else {
-                AccountManager.get().useLauncherAccount();
-            }
-            accountPopOpen = false;
-        }
-    }
-
-    /** Skin head for the active account; deterministic tinted square for everyone else. */
-    private void drawAvatarPlaceholder(float x, float y, float size, String name) {
-        if (name.equals(AccountManager.get().currentName())) {
-            drawAvatar(x, y, size);
-            return;
-        }
-        int hue = Math.abs(name.hashCode()) % 360;
-        Color color = Color.getHSBColor(hue / 360f, 0.45f, 0.75f);
-        Rects.rounded(x, y, size, size, 4, color.getRGB(), false);
-        FPSMaster.fontManager.getFont(11).drawCenteredString(
-                name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase(),
-                x + size / 2f, y + size / 2f - 2.5f, 0xFFFFFFFF);
-    }
-
-    // ------------------------------------------------------------------
-    // Add-account dialog (offline)
-    // ------------------------------------------------------------------
-
-    private void drawAddAccountDialog(int mouseX, int mouseY) {
-        UiChrome.veil(guiWidth, guiHeight, 0.9f);
-        float w = 190f;
-        float h = 108f;
-        float x = (guiWidth - w) / 2f;
-        float y = (guiHeight - h) / 2f;
-        UiChrome.panel(x, y, w, h);
-
-        UiChrome.boldString(FPSMaster.fontManager.s16, FPSMaster.i18n.get("mainmenu.account.offline.title"),
-                x + 13f, y + 12f, ClickGuiTheme.textPrimary().getRGB());
-        FPSMaster.fontManager.getFont(12).drawString(FPSMaster.i18n.get("mainmenu.account.offline.desc"),
-                x + 13f, y + 24f, ClickGuiTheme.textSecondary().getRGB());
-
-        float fieldY = y + 40f;
-        UiChrome.inputBox(x + 13f, fieldY, w - 26f, 20f, true);
-        usernameField.backGroundColor = 0;
-        usernameField.fontColor = ClickGuiTheme.textPrimary().getRGB();
-        usernameField.drawTextBox(x + 19f, fieldY + 1f, w - 38f, 18f);
-        if (usernameInvalid) {
-            FPSMaster.fontManager.getFont(11).drawString(FPSMaster.i18n.get("mainmenu.account.invalid"),
-                    x + 13f, fieldY + 24f, ClickGuiTheme.danger().getRGB());
-        }
-
-        float btnY = y + h - 28f;
-        float addW = 62f;
-        float cancelW = 40f;
-        if (UiChrome.buttonClicked(this, x + w - 13f - addW, btnY, addW, UiChrome.BTN_H, null,
-                FPSMaster.i18n.get("mainmenu.account.add"), UiChrome.Style.PRIMARY, mouseX, mouseY)) {
-            submitOfflineAccount();
-        }
-        if (UiChrome.buttonClicked(this, x + w - 13f - addW - 6f - cancelW, btnY, cancelW, UiChrome.BTN_H, null,
-                FPSMaster.i18n.get("common.cancel"), UiChrome.Style.GHOST, mouseX, mouseY)) {
-            closeDialog();
-        }
-
-        ScaledGuiScreen.PointerEvent press = consumePressInBounds(x + 13f, fieldY, w - 26f, 20f, 0);
-        if (press != null) {
-            usernameField.setFocused(true);
-            usernameField.mouseClicked(press.x, press.y, 0);
-        }
-        if (consumePressOutside(x, y, w, h) != null) {
-            closeDialog();
-        }
-    }
-
-    private void submitOfflineAccount() {
-        String name = usernameField.getText().trim();
-        if (AccountManager.get().addAndUse(name)) {
-            closeDialog();
-        } else {
-            usernameInvalid = true;
-        }
-    }
-
-    private void closeDialog() {
-        if (dialog == Dialog.MS_LOGIN) {
-            msLoginCancel.set(true);
-            msLoginGeneration.incrementAndGet();
-        }
-        dialog = Dialog.NONE;
-        usernameField.setFocused(false);
-    }
-
     private void startMicrosoftLogin() {
-        dialog = Dialog.MS_LOGIN;
         msLoginCancel.set(false);
         msLoginBusy = true;
         msUserCode = "";
         msVerifyUrl = "";
         msStatus = FPSMaster.i18n.get("mainmenu.account.ms.starting");
         msError = "";
-        msCopied = false;
         final int generation = msLoginGeneration.incrementAndGet();
         FPSMaster.async.runnable(new Runnable() {
             @Override
@@ -413,6 +180,12 @@ public class MainMenu extends ScaledGuiScreen {
                 runMicrosoftLogin(generation);
             }
         });
+    }
+
+    private void cancelMicrosoftLogin() {
+        msLoginCancel.set(true);
+        msLoginGeneration.incrementAndGet();
+        msLoginBusy = false;
     }
 
     private void runMicrosoftLogin(int generation) {
@@ -440,7 +213,7 @@ public class MainMenu extends ScaledGuiScreen {
                         @Override
                         public void run() {
                             AccountManager.get().addAndUseMicrosoft(profile);
-                            dialog = Dialog.NONE;
+                            accountOverlay.closeDialog();
                         }
                     });
                     return;
@@ -502,73 +275,6 @@ public class MainMenu extends ScaledGuiScreen {
         }
     }
 
-    private void drawMicrosoftLoginDialog(int mouseX, int mouseY) {
-        UiChrome.veil(guiWidth, guiHeight, 0.9f);
-        float w = 220f;
-        float h = 132f;
-        float x = (guiWidth - w) / 2f;
-        float y = (guiHeight - h) / 2f;
-        UiChrome.panel(x, y, w, h);
-
-        UiChrome.boldString(FPSMaster.fontManager.s16, FPSMaster.i18n.get("mainmenu.account.ms.title"),
-                x + 13f, y + 12f, ClickGuiTheme.textPrimary().getRGB());
-        FPSMaster.fontManager.getFont(12).drawString(FPSMaster.i18n.get("mainmenu.account.ms.desc"),
-                x + 13f, y + 24f, ClickGuiTheme.textSecondary().getRGB());
-
-        String code = msUserCode == null || msUserCode.isEmpty()
-                ? (msLoginBusy ? "····" : "—")
-                : msUserCode;
-        float codeY = y + 42f;
-        boolean codeHover = Hover.is(x + 13f, codeY, w - 26f, 22f, mouseX, mouseY);
-        Rects.rounded(x + 13f, codeY, w - 26f, 22f, 5,
-                (codeHover ? ClickGuiTheme.layerHover() : ClickGuiTheme.glass()).getRGB(), false);
-        FPSMaster.fontManager.s16.drawCenteredString(code, x + w / 2f, codeY + 7f,
-                ClickGuiTheme.textPrimary().getRGB());
-        if (!msUserCode.isEmpty() && consumePressInBounds(x + 13f, codeY, w - 26f, 22f, 0) != null) {
-            GuiScreen.setClipboardString(msUserCode);
-            msCopied = true;
-            msCopiedUntil = System.currentTimeMillis() + 1500L;
-        }
-
-        String status;
-        if (msError != null && !msError.isEmpty()) {
-            status = msError;
-        } else if (msCopied && System.currentTimeMillis() < msCopiedUntil) {
-            status = FPSMaster.i18n.get("mainmenu.account.ms.copied");
-        } else {
-            status = msStatus;
-        }
-        if (status != null && !status.isEmpty()) {
-            int color = (msError != null && !msError.isEmpty())
-                    ? ClickGuiTheme.danger().getRGB()
-                    : ClickGuiTheme.textSecondary().getRGB();
-            FPSMaster.fontManager.getFont(11).drawString(status, x + 13f, codeY + 26f, color);
-        }
-
-        float btnY = y + h - 28f;
-        float cancelW = 40f;
-        float actionW = 72f;
-        if (UiChrome.buttonClicked(this, x + w - 13f - cancelW, btnY, cancelW, UiChrome.BTN_H, null,
-                FPSMaster.i18n.get("common.cancel"), UiChrome.Style.GHOST, mouseX, mouseY)) {
-            closeDialog();
-        }
-        if (msError != null && !msError.isEmpty()) {
-            if (UiChrome.buttonClicked(this, x + w - 13f - cancelW - 6f - actionW, btnY, actionW, UiChrome.BTN_H, null,
-                    FPSMaster.i18n.get("mainmenu.account.ms.retry"), UiChrome.Style.PRIMARY, mouseX, mouseY)) {
-                startMicrosoftLogin();
-            }
-        } else if (msVerifyUrl != null && !msVerifyUrl.isEmpty()) {
-            if (UiChrome.buttonClicked(this, x + w - 13f - cancelW - 6f - actionW, btnY, actionW, UiChrome.BTN_H, null,
-                    FPSMaster.i18n.get("mainmenu.account.ms.open"), UiChrome.Style.PRIMARY, mouseX, mouseY)) {
-                openLink(msVerifyUrl);
-            }
-        }
-
-        if (consumePressOutside(x, y, w, h) != null) {
-            closeDialog();
-        }
-    }
-
     private void openLink(String url) {
         if (url == null || url.trim().isEmpty()) {
             return;
@@ -584,27 +290,9 @@ public class MainMenu extends ScaledGuiScreen {
 
     @Override
     public void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (dialog == Dialog.MS_LOGIN) {
-            if (keyCode == 1) {
-                closeDialog();
-            }
-            return;
-        }
-        if (dialog == Dialog.ADD_OFFLINE) {
-            if (keyCode == 1) {
-                closeDialog();
-                return;
-            }
-            if (keyCode == 28) {
-                submitOfflineAccount();
-                return;
-            }
-            usernameField.textboxKeyTyped(typedChar, keyCode);
-            usernameInvalid = false;
-            return;
-        }
-        if (keyCode == 1 && accountPopOpen) {
-            accountPopOpen = false;
+        if (keyCode == 1 && (accountOverlay.popOpen() || accountOverlay.blocking())) {
+            cancelMicrosoftLogin();
+            accountOverlay.close();
             return;
         }
         super.keyTyped(typedChar, keyCode);
@@ -808,16 +496,77 @@ public class MainMenu extends ScaledGuiScreen {
         }
 
         public boolean interactive() {
-            return dialog == Dialog.NONE;
+            return !accountOverlay.blocking();
         }
 
         public boolean accountOpen() {
-            return accountPopOpen;
+            return accountOverlay.popOpen();
         }
 
         public void account() {
-            accountPopOpen = !accountPopOpen;
+            accountOverlay.togglePop();
         }
+
+        public List<AccountRow> accounts() {
+            AccountManager manager = AccountManager.get();
+            List<AccountRow> rows = new ArrayList<AccountRow>();
+            AccountManager.Account launcher = manager.launcherAccount();
+            if (launcher != null) {
+                rows.add(new AccountRow("launcher", launcher.name,
+                        manager.isLauncherAccountOnline() ? i18n("mainmenu.account.ms") : i18n("mainmenu.account.offline"),
+                        manager.isCurrentLauncherAccount(), false, manager.isLauncherAccountOnline()));
+            }
+            for (AccountManager.Account account : manager.getOfflineAccounts()) {
+                if (launcher != null && account.name.equalsIgnoreCase(launcher.name) && !account.isMicrosoft()) continue;
+                rows.add(new AccountRow(accountId(account), account.name,
+                        i18n(account.isMicrosoft() ? "mainmenu.account.ms" : "mainmenu.account.offline"),
+                        account.name.equalsIgnoreCase(manager.currentName()), true, account.isMicrosoft()));
+            }
+            return rows;
+        }
+
+        public void selectAccount(String id) {
+            if ("launcher".equals(id)) AccountManager.get().useLauncherAccount();
+            else {
+                AccountManager.Account account = findAccount(id);
+                if (account != null) AccountManager.get().use(account);
+            }
+        }
+
+        public void removeAccount(String id) {
+            AccountManager.Account account = findAccount(id);
+            if (account != null) AccountManager.get().remove(account);
+        }
+
+        public boolean addOffline(String name) {
+            return AccountManager.get().addAndUse(name);
+        }
+
+        public void startMicrosoftLogin() {
+            MainMenu.this.startMicrosoftLogin();
+        }
+
+        public void openMicrosoftUrl() {
+            openLink(msVerifyUrl);
+        }
+
+        public void copyMicrosoftCode() {
+            if (msUserCode != null && !msUserCode.isEmpty()) GuiScreen.setClipboardString(msUserCode);
+        }
+
+        public void retryMicrosoftLogin() {
+            MainMenu.this.startMicrosoftLogin();
+        }
+
+        public void cancelMicrosoftLogin() {
+            MainMenu.this.cancelMicrosoftLogin();
+        }
+
+        public String microsoftCode() { return msUserCode == null ? "" : msUserCode; }
+        public String microsoftStatus() { return msStatus == null ? "" : msStatus; }
+        public String microsoftError() { return msError == null ? "" : msError; }
+        public boolean microsoftBusy() { return msLoginBusy; }
+        public boolean microsoftHasUrl() { return msVerifyUrl != null && !msVerifyUrl.isEmpty(); }
 
         public void drawAvatar(UiFrame ui, float x, float y, float size) {
             MainMenu.this.drawAvatar(x, y, size);
@@ -840,11 +589,11 @@ public class MainMenu extends ScaledGuiScreen {
         }
 
         public void music() {
-            mc.displayGuiScreen(new MusicScreen());
+            mc.displayGuiScreen(new MusicScreen(MainMenu.this));
         }
 
         public void backgrounds() {
-            mc.displayGuiScreen(new BackgroundSelector());
+            mc.displayGuiScreen(new BackgroundSelector(MainMenu.this));
         }
 
         public void quit() {
@@ -859,6 +608,18 @@ public class MainMenu extends ScaledGuiScreen {
 
         public void devtools() {
             mc.displayGuiScreen(new DevToolsScreen(MainMenu.this));
+        }
+
+        private String accountId(AccountManager.Account account) {
+            return (account.isMicrosoft() ? "ms:" : "offline:")
+                    + (account.uuid == null || account.uuid.isEmpty() ? account.name : account.uuid);
+        }
+
+        private AccountManager.Account findAccount(String id) {
+            for (AccountManager.Account account : AccountManager.get().getOfflineAccounts()) {
+                if (accountId(account).equals(id)) return account;
+            }
+            return null;
         }
     }
 }

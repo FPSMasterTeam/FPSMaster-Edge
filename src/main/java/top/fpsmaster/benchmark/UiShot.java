@@ -104,14 +104,7 @@ public final class UiShot {
             mc.displayGuiScreen(FPSMaster.moduleManager.mainPanel);
             String module = System.getProperty("edge.uishot.module");
             if (module != null) {
-                for (top.fpsmaster.ui.click.modules.ModuleRenderer renderer : FPSMaster.moduleManager.mainPanel.mods) {
-                    if (renderer.mod.name.equalsIgnoreCase(module)) {
-                        renderer.expandForShot();
-                        FPSMaster.moduleManager.mainPanel.curType = renderer.mod.category;
-                        FPSMaster.moduleManager.mainPanel.searchForShot(
-                                FPSMaster.i18n.get(renderer.mod.name.toLowerCase(java.util.Locale.getDefault())));
-                    }
-                }
+                FPSMaster.moduleManager.mainPanel.showModuleForShot(module);
             }
         } else if ("language".equals(screen)) {
             // Vanilla's own font on a screen that never moves, and whose entries span both

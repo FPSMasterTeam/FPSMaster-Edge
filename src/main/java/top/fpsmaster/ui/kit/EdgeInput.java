@@ -94,6 +94,10 @@ final class EdgeInput implements Input {
         return fallback.consumeKey(keyCode);
     }
 
+    public int consumeRawKey() {
+        return fallback.consumeRawKey();
+    }
+
     public String typedChars() {
         return fallback.typedChars();
     }
