@@ -7,6 +7,7 @@ import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.notification.NotificationManager;
+import top.fpsmaster.prism.overlay.NotificationCenter;
 
 import java.util.LinkedList;
 import java.util.Locale;
@@ -71,6 +72,7 @@ public class Module {
                                     FPSMaster.i18n.get("notification.module.enable.desc"),
                                     FPSMaster.i18n.get(this.name.toLowerCase(Locale.getDefault()))
                             ),
+                            NotificationCenter.Type.SUCCESS,
                             2f
                     );
                 }
@@ -84,6 +86,7 @@ public class Module {
                                     FPSMaster.i18n.get("notification.module.disable.desc"),
                                     FPSMaster.i18n.get(this.name.toLowerCase(Locale.getDefault()))
                             ),
+                            NotificationCenter.Type.INFO,
                             2f
                     );
                 }
@@ -102,6 +105,5 @@ public class Module {
     }
 
 }
-
 
 
