@@ -23,6 +23,7 @@ import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.prism.screen.ClickGuiBridge;
 import top.fpsmaster.prism.screen.SharedClickGui;
 import top.fpsmaster.ui.kit.EdgeUi;
+import top.fpsmaster.ui.hud.HudEditorScreen;
 import top.fpsmaster.ui.screens.music.MusicScreen;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 
@@ -224,6 +225,7 @@ public class MainPanel extends ScaledGuiScreen {
         @Override public void toggleTheme() { ClientSettings.theme.setValue(lightTheme() ? 0 : 1); }
         @Override public void openMusic() { mc.displayGuiScreen(new MusicScreen(MainPanel.this)); }
         @Override public void openProfiles() { mc.displayGuiScreen(new ConfigProfilesScreen(MainPanel.this)); }
+        @Override public void openHudEditor() { mc.displayGuiScreen(new HudEditorScreen()); }
     }
 
     private ClickGuiBridge.ModInfo toInfo(Module module) {

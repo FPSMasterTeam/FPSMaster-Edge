@@ -30,6 +30,7 @@ import top.fpsmaster.features.impl.render.DamageIndicator;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.ui.PendingScreen;
 import top.fpsmaster.ui.notification.NotificationManager;
+import top.fpsmaster.ui.hud.HudEditorScreen;
 import top.fpsmaster.ui.screens.replay.ReplayHud;
 import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.render.ChunkUpdateBudget;
@@ -119,14 +120,15 @@ public class GlobalListener {
         // (FPS, keystrokes, CPS, ...) would show the viewer's own numbers over someone else's game.
         // Only the replay bar and notifications belong on screen during playback.
         boolean replaying = ReplayPlayer.instance().isActive();
+        boolean editingHud = mc.currentScreen instanceof HudEditorScreen;
 
         // Size everything first: the blur mask and the anchor math below both read width/height, and
         // components only assign those while drawing.
-        if (!replaying) {
+        if (!replaying && !editingHud) {
             FPSMaster.componentsManager.measureAll();
         }
 
-        if (!replaying && ClientSettings.blur.getValue()) {
+        if (!replaying && !editingHud && ClientSettings.blur.getValue()) {
             StencilUtil.initStencilToWrite();
             try {
                 EventDispatcher.dispatchEvent(new EventShader());
@@ -142,7 +144,7 @@ public class GlobalListener {
             }
         }
 
-        if (!replaying) {
+        if (!replaying && !editingHud) {
             FPSMaster.componentsManager.draw((int) mouseX, (int) mouseY);
         }
         if (started != 0L) {
@@ -172,5 +174,4 @@ public class GlobalListener {
     }
 
 }
-
 
