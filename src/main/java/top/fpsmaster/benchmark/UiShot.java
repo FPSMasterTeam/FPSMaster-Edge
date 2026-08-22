@@ -26,8 +26,8 @@ import java.util.List;
  *                                       each is written as &lt;name&gt;-&lt;screen&gt;.png
  * </pre>
  *
- * Known screens: mainmenu, clickgui, music, replay, multiplayer, oobe, configprofiles,
- * bgselector, language.
+ * Known screens: mainmenu, clickgui, music, cosmetics, hudeditor, replay, multiplayer, oobe,
+ * configprofiles, bgselector, language.
  */
 public final class UiShot {
 
@@ -117,6 +117,10 @@ public final class UiShot {
             mc.displayGuiScreen(new top.fpsmaster.ui.mc.GuiMultiplayer());
         } else if ("music".equals(screen)) {
             mc.displayGuiScreen(new top.fpsmaster.ui.screens.music.MusicScreen());
+        } else if ("cosmetics".equals(screen)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.screens.cosmetics.CosmeticsScreen(null));
+        } else if ("hudeditor".equals(screen)) {
+            mc.displayGuiScreen(new top.fpsmaster.ui.hud.HudEditorScreen());
         } else if ("oobe".equals(screen)) {
             mc.displayGuiScreen(new top.fpsmaster.ui.screens.oobe.OobeScreen());
         } else if ("configprofiles".equals(screen)) {

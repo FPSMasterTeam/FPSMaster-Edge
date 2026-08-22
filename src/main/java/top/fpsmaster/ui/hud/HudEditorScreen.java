@@ -1,5 +1,6 @@
 package top.fpsmaster.ui.hud;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Keyboard;
 import top.fpsmaster.FPSMaster;
@@ -55,7 +56,7 @@ public final class HudEditorScreen extends ScaledGuiScreen {
             float[] hud = GuiScale.getFixedBounds();
             Viewport viewport = viewport(hud[0], hud[1]);
             List<Item> result = new ArrayList<Item>();
-            ScaledResolution resolution = new ScaledResolution(mc);
+            ScaledResolution resolution = new ScaledResolution(Minecraft.getMinecraft());
             for (Component component : FPSMaster.componentsManager.components) {
                 if (!component.shouldDisplay() || component.width <= 0f || component.height <= 0f) continue;
                 float[] pos = component.getRealPosition(resolution);
@@ -102,8 +103,9 @@ public final class HudEditorScreen extends ScaledGuiScreen {
         }
 
         public void close() {
-            mc.displayGuiScreen(null);
-            mc.setIngameFocus();
+            Minecraft minecraft = Minecraft.getMinecraft();
+            minecraft.displayGuiScreen(null);
+            minecraft.setIngameFocus();
         }
 
         private Component find(String id) {
