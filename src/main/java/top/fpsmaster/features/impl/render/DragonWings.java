@@ -52,6 +52,11 @@ public class DragonWings extends Module {
         return new float[]{color1.getRed() / 255F, color1.getGreen() / 255F, color1.getBlue() / 255F};
     }
 
+    public void renderPreview(float x, float y, float size, float yaw) {
+        if (renderWings == null) renderWings = new RenderWings();
+        renderWings.renderPreview(x, y, size, yaw);
+    }
+
     /**
      * @author: https://github.com/Canelex/DragonWingsMod
      **/
@@ -119,10 +124,27 @@ public class DragonWings extends Module {
                 GL11.glTranslated(0D, 0.125D / scale, 0D);
             }
 
+            renderGeometry();
+            GL11.glPopMatrix();
+        }
+
+        private void renderPreview(float x, float y, float size, float yaw) {
+            double moduleScale = Math.max(0.01D, ((DragonWings) wingsModule).scale.getValue().doubleValue() / 100D);
+            GL11.glPushMatrix();
+            GL11.glTranslatef(x, y, 50F);
+            GL11.glScalef(-size, size, size);
+            GL11.glRotatef(180F, 0F, 0F, 1F);
+            GL11.glRotatef(yaw, 0F, 1F, 0F);
+            GL11.glScaled(moduleScale, moduleScale, moduleScale);
+            GL11.glTranslated(0D, -1.25D / moduleScale, 0.2D / moduleScale);
+            renderGeometry();
+            GL11.glPopMatrix();
+        }
+
+        private void renderGeometry() {
             float[] colors = ((DragonWings) wingsModule).getColors();
             GL11.glColor3f(colors[0], colors[1], colors[2]);
             mc.getTextureManager().bindTexture(location);
-
             for (int j = 0; j < 2; ++j) {
                 GL11.glEnable(GL11.GL_CULL_FACE);
                 float f11 = (System.currentTimeMillis() % 1000) / 1000F * (float) Math.PI * 2.0F;
@@ -132,15 +154,11 @@ public class DragonWings extends Module {
                 this.wingTip.rotateAngleZ = -((float) (Math.sin(f11 + 2.0F) + 0.5D)) * 0.75F;
                 this.wing.render(0.0625F);
                 GL11.glScalef(-1.0F, 1.0F, 1.0F);
-
-                if (j == 0) {
-                    GL11.glCullFace(1028);
-                }
+                if (j == 0) GL11.glCullFace(1028);
             }
             GL11.glCullFace(1029);
             GL11.glDisable(GL11.GL_CULL_FACE);
-            GL11.glColor3f(255F, 255F, 255F);
-            GL11.glPopMatrix();
+            GL11.glColor3f(1F, 1F, 1F);
         }
 
         private float interpolate(float yaw1, float yaw2, float percent) {
@@ -154,6 +172,3 @@ public class DragonWings extends Module {
         }
     }
 }
-
-
-

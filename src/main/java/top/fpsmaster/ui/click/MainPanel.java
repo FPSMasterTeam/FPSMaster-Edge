@@ -25,6 +25,7 @@ import top.fpsmaster.prism.screen.SharedClickGui;
 import top.fpsmaster.ui.kit.EdgeUi;
 import top.fpsmaster.ui.hud.HudEditorScreen;
 import top.fpsmaster.ui.screens.music.MusicScreen;
+import top.fpsmaster.ui.screens.cosmetics.CosmeticsScreen;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 
 import java.io.IOException;
@@ -225,6 +226,7 @@ public class MainPanel extends ScaledGuiScreen {
         @Override public void toggleTheme() { ClientSettings.theme.setValue(lightTheme() ? 0 : 1); }
         @Override public void openMusic() { mc.displayGuiScreen(new MusicScreen(MainPanel.this)); }
         @Override public void openProfiles() { mc.displayGuiScreen(new ConfigProfilesScreen(MainPanel.this)); }
+        @Override public void openCosmetics() { mc.displayGuiScreen(new CosmeticsScreen(MainPanel.this)); }
         @Override public void openHudEditor() { mc.displayGuiScreen(new HudEditorScreen()); }
     }
 
