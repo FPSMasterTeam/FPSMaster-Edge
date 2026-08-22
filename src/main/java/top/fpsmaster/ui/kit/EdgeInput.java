@@ -1,9 +1,9 @@
 package top.fpsmaster.ui.kit;
 
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
-import top.fpsmaster.uikit.input.FrameInput;
-import top.fpsmaster.uikit.input.Input;
-import top.fpsmaster.uikit.input.PointerEvent;
+import top.fpsmaster.prism.input.FrameInput;
+import top.fpsmaster.prism.input.Input;
+import top.fpsmaster.prism.input.PointerEvent;
 
 final class EdgeInput implements Input {
     private final ScaledGuiScreen screen;

@@ -10,13 +10,10 @@ import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.render.ItemPhysics;
 import top.fpsmaster.features.manager.Module;
-import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.*;
 import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.modules.config.migration.ConfigMigration;
-import top.fpsmaster.modules.config.migration.ConfigMigrationRegistry;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.modules.shortcut.Shortcut;
 import top.fpsmaster.modules.statistics.TelemetryIdentityStatistics;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
@@ -463,25 +460,9 @@ public class ConfigManager {
         }
     }
 
+    // ponytail: SCHEMA_VERSION=1 and MIGRATIONS is empty; keep method for future, return empty until a migration exists
     private List<ConfigMigration> resolveMigrationPath(int fromVersion, int targetVersion) {
-        if (fromVersion == targetVersion) {
-            return Collections.emptyList();
-        }
-        if (fromVersion > targetVersion) {
-            return Collections.emptyList();
-        }
-
-        List<ConfigMigration> path = new ArrayList<>();
-        int version = fromVersion;
-        while (version < targetVersion) {
-            ConfigMigration migration = ConfigMigrationRegistry.findMigration(version);
-            if (migration == null || migration.getToVersion() <= version || migration.getToVersion() > targetVersion) {
-                return Collections.emptyList();
-            }
-            path.add(migration);
-            version = migration.getToVersion();
-        }
-        return version == targetVersion ? path : Collections.emptyList();
+        return Collections.emptyList();
     }
 
     public void resetProfileToDefaults(String name) throws FileException {

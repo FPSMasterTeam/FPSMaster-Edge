@@ -1,7 +1,7 @@
 package top.fpsmaster.ui.kit;
 
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.uikit.canvas.FontHandle;
+import top.fpsmaster.prism.canvas.FontHandle;
 
 final class EdgeFont implements FontHandle {
     final UFontRenderer renderer;

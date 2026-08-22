@@ -110,7 +110,7 @@ dependencies {
         isTransitive = false
     }
 
-    shadowImpl("top.fpsmaster:ui:0.1.0")
+    shadowImpl("top.fpsmaster:prism:0.1.0")
 
     // 音乐能力：Cadence 数据客户端（网易云/QQ 搜索/直链/歌词/歌单/登录）。
     // 由 JitPack 托管 (FPSMasterTeam/Cadence)，坐标即 com.github.<owner>:<repo>:<tag>；
@@ -156,7 +156,6 @@ tasks.withType(Jar::class) {
         this["ForceLoadAsMod"] = "true"
 
         // If you don't want mixins, remove these lines
-        this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
         this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
         this["FMLAT"] = accessTransformerName
     }
@@ -211,11 +210,6 @@ tasks.shadowJar {
 
     // If you want to include other dependencies and shadow them, you can relocate them in here
     fun relocate(name: String) = relocate(name, "$baseGroup.deps.$name")
-}
-
-tasks.register<Copy>("copyDependencies") {
-    from(configurations.runtimeClasspath.get())
-    into("libs")
 }
 
 

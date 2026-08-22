@@ -7,9 +7,9 @@ import top.fpsmaster.ui.kit.EdgeUi;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
-import top.fpsmaster.uikit.theme.Metrics;
-import top.fpsmaster.uikit.widget.Chrome;
-import top.fpsmaster.uikit.widget.UiFrame;
+import top.fpsmaster.prism.theme.Metrics;
+import top.fpsmaster.prism.widget.Chrome;
+import top.fpsmaster.prism.widget.UiFrame;
 
 import java.awt.Color;
 

@@ -1,7 +1,7 @@
 package top.fpsmaster.ui.kit;
 
 import net.minecraft.util.ResourceLocation;
-import top.fpsmaster.uikit.canvas.ImageHandle;
+import top.fpsmaster.prism.canvas.ImageHandle;
 
 final class EdgeImage implements ImageHandle {
     final ResourceLocation location;

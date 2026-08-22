@@ -2,9 +2,9 @@ package top.fpsmaster.ui.kit;
 
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
-import top.fpsmaster.uikit.input.FrameInput;
-import top.fpsmaster.uikit.theme.Theme;
-import top.fpsmaster.uikit.widget.UiFrame;
+import top.fpsmaster.prism.input.FrameInput;
+import top.fpsmaster.prism.theme.Theme;
+import top.fpsmaster.prism.widget.UiFrame;
 
 /**
  * Binds a {@link UiFrame} to the current Edge paint pass.
@@ -38,7 +38,7 @@ public final class EdgeUi {
 
     public static UiFrame frame() {
         if (current == null) {
-            beginOverlay(400f, 300f);
+            throw new IllegalStateException("EdgeUi.begin() not called for this frame");
         }
         return current;
     }

@@ -1,36 +1,23 @@
 package top.fpsmaster.modules.client.thread;
 
-import top.fpsmaster.modules.logger.ClientLogger;
-
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClientThreadPool {
-    private static final int DEFAULT_QUEUE_CAPACITY = 256;
-
-    private final ThreadPoolExecutor executorService;
+    private final ExecutorService executorService;
 
     public ClientThreadPool(int threadCount) {
-        int normalizedThreadCount = Math.max(1, threadCount);
-        AtomicInteger threadIndex = new AtomicInteger(1);
-        executorService = new ThreadPoolExecutor(
-                normalizedThreadCount,
-                normalizedThreadCount,
-                30L,
-                TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(DEFAULT_QUEUE_CAPACITY),
-                runnable -> {
-                    Thread thread = new Thread(runnable, "FPSMaster-Async-" + threadIndex.getAndIncrement());
-                    thread.setDaemon(true);
-                    return thread;
-                },
-                (runnable, executor) -> ClientLogger.warn("Async task rejected because the queue is full")
-        );
-        executorService.allowCoreThreadTimeOut(true);
+        int n = Math.max(1, threadCount);
+        AtomicInteger idx = new AtomicInteger(1);
+        executorService = Executors.newFixedThreadPool(n, r -> {
+            Thread t = new Thread(r, "FPSMaster-Async-" + idx.getAndIncrement());
+            t.setDaemon(true);
+            return t;
+        });
     }
 
     public <T> Future<T> execute(Callable<T> task) {

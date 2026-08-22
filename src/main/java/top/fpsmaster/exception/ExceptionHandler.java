@@ -31,48 +31,20 @@ public class ExceptionHandler {
         handle(e, "An error occurred");
     }
 
-    /**
-     * Handles a specific type of exception related to account operations.
-     * 
-     * @param e The exception to handle
-     * @param message Additional context message
-     */
     public static void handleAccountException(Exception e, String message) {
-        ClientLogger.error("Account error: " + message + ": " + e.getMessage());
-        logExceptionDetails(e, "Account");
+        handle(e, "Account error: " + message);
     }
 
-    /**
-     * Handles a specific type of exception related to file operations.
-     * 
-     * @param e The exception to handle
-     * @param message Additional context message
-     */
     public static void handleFileException(Exception e, String message) {
-        ClientLogger.error("File operation error: " + message + ": " + e.getMessage());
-        logExceptionDetails(e, "File");
+        handle(e, "File operation error: " + message);
     }
 
-    /**
-     * Handles a specific type of exception related to network operations.
-     * 
-     * @param e The exception to handle
-     * @param message Additional context message
-     */
     public static void handleNetworkException(Exception e, String message) {
-        ClientLogger.error("Network error: " + message + ": " + e.getMessage());
-        logExceptionDetails(e, "Network");
+        handle(e, "Network error: " + message);
     }
 
-    /**
-     * Handles a specific type of exception related to module operations.
-     * 
-     * @param e The exception to handle
-     * @param message Additional context message
-     */
     public static void handleModuleException(Exception e, String message) {
-        ClientLogger.error("Module error: " + message + ": " + e.getMessage());
-        logExceptionDetails(e, "Module");
+        handle(e, "Module error: " + message);
     }
 
     /**

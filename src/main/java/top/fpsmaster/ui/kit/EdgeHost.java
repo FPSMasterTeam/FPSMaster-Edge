@@ -6,12 +6,12 @@ import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.effects.Blur;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
-import top.fpsmaster.uikit.canvas.Canvas;
-import top.fpsmaster.uikit.canvas.FontHandle;
-import top.fpsmaster.uikit.canvas.ImageHandle;
-import top.fpsmaster.uikit.host.UiHost;
-import top.fpsmaster.uikit.input.FrameInput;
-import top.fpsmaster.uikit.input.Input;
+import top.fpsmaster.prism.canvas.Canvas;
+import top.fpsmaster.prism.canvas.FontHandle;
+import top.fpsmaster.prism.canvas.ImageHandle;
+import top.fpsmaster.prism.host.UiHost;
+import top.fpsmaster.prism.input.FrameInput;
+import top.fpsmaster.prism.input.Input;
 
 import java.awt.Color;
 

@@ -6,10 +6,10 @@ import top.fpsmaster.utils.render.draw.Circles;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.Scissor;
-import top.fpsmaster.uikit.canvas.Canvas;
-import top.fpsmaster.uikit.canvas.FontHandle;
-import top.fpsmaster.uikit.canvas.ImageHandle;
-import top.fpsmaster.uikit.theme.Argb;
+import top.fpsmaster.prism.canvas.Canvas;
+import top.fpsmaster.prism.canvas.FontHandle;
+import top.fpsmaster.prism.canvas.ImageHandle;
+import top.fpsmaster.prism.theme.Argb;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
