@@ -14,6 +14,8 @@ public class Setting<T> {
     public String name;
     public T value;
     public VisibleCondition visible;
+    public String groupId;
+    public boolean groupCollapsedByDefault;
     private final T defaultValue;
 
     private final List<ChangeListener<T>> changeListeners = new CopyOnWriteArrayList<>();
@@ -31,6 +33,16 @@ public class Setting<T> {
 
     public boolean getVisible() {
         return visible == null || visible.isVisible();
+    }
+
+    public Setting<T> inGroup(String id) {
+        return inGroup(id, false);
+    }
+
+    public Setting<T> inGroup(String id, boolean collapsedByDefault) {
+        groupId = id;
+        groupCollapsedByDefault = collapsedByDefault;
+        return this;
     }
 
     @FunctionalInterface
@@ -110,6 +122,5 @@ public class Setting<T> {
         return source;
     }
 }
-
 
 

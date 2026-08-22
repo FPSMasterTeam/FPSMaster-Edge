@@ -1184,3 +1184,6 @@ edit.fov.tip=拖动或滚轮调整 FOV（30°–110°）· 点菱形打点
 colorsetting.saturation=饱和度
 colorsetting.brightness=亮度
 colorsetting.speed=速度
+clickgui.group.background=背景
+clickgui.group.font=字体
+clickgui.group.style=布局与样式

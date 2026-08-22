@@ -231,9 +231,11 @@ public class MainPanel extends ScaledGuiScreen {
     private ClickGuiBridge.ModInfo toInfo(Module module) {
         List<ClickGuiBridge.SettingInfo> settings = new ArrayList<ClickGuiBridge.SettingInfo>();
         for (Setting<?> setting : module.settings) {
-            if (setting.getVisible()) {
-                ClickGuiBridge.SettingInfo info = toInfo(module, setting);
-                if (info != null) settings.add(info);
+            ClickGuiBridge.SettingInfo info = toInfo(module, setting);
+            if (info != null) {
+                ClickGuiBridge.GroupInfo group = setting.groupId == null ? null
+                        : new ClickGuiBridge.GroupInfo(setting.groupId, "", setting.groupCollapsedByDefault);
+                settings.add(info.presentation(setting.getVisible(), group));
             }
         }
         return new ClickGuiBridge.ModInfo(module.name, moduleLabel(module), module.isEnabled(),

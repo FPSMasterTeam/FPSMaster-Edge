@@ -1184,3 +1184,6 @@ edit.fov.tip=Drag or scroll to set FOV (30°–110°) · diamond to key
 colorsetting.saturation=Saturation
 colorsetting.brightness=Brightness
 colorsetting.speed=Speed
+clickgui.group.background=Background
+clickgui.group.font=Typography
+clickgui.group.style=Layout & Style

@@ -73,13 +73,21 @@ public class InterfaceModule extends Module {
      */
     public void registerCommonSettings() {
         if (has(Trait.BACKGROUND)) {
-            addSettings(bg, backgroundColor, rounded, roundRadius);
-        }
-        if (has(Trait.TEXT)) {
-            addSettings(betterFont, fontShadow);
+            bg.inGroup("background");
+            backgroundColor.inGroup("background");
+            addSettings(bg, backgroundColor);
+            rounded.inGroup("style");
+            roundRadius.inGroup("style");
+            addSettings(rounded, roundRadius);
         }
         if (has(Trait.SPACING)) {
+            spacing.inGroup("style");
             addSettings(spacing);
+        }
+        if (has(Trait.TEXT)) {
+            betterFont.inGroup("font");
+            fontShadow.inGroup("font");
+            addSettings(betterFont, fontShadow);
         }
     }
 }
