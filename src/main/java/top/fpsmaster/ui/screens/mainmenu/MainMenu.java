@@ -573,41 +573,43 @@ public class MainMenu extends ScaledGuiScreen {
         }
 
         public void singleplayer() {
-            mc.displayGuiScreen(new GuiSelectWorld(MainMenu.this));
+            Minecraft.getMinecraft().displayGuiScreen(new GuiSelectWorld(MainMenu.this));
         }
 
         public void multiplayer() {
-            mc.displayGuiScreen(new GuiMultiplayer());
+            Minecraft.getMinecraft().displayGuiScreen(new GuiMultiplayer());
         }
 
         public void settings() {
-            mc.displayGuiScreen(new GuiOptions(MainMenu.this, mc.gameSettings));
+            Minecraft minecraft = Minecraft.getMinecraft();
+            minecraft.displayGuiScreen(new GuiOptions(MainMenu.this, minecraft.gameSettings));
         }
 
         public void replays() {
-            mc.displayGuiScreen(new ReplayScreen(MainMenu.this));
+            Minecraft.getMinecraft().displayGuiScreen(new ReplayScreen(MainMenu.this));
         }
 
         public void music() {
-            mc.displayGuiScreen(new MusicScreen(MainMenu.this));
+            Minecraft.getMinecraft().displayGuiScreen(new MusicScreen(MainMenu.this));
         }
 
         public void backgrounds() {
-            mc.displayGuiScreen(new BackgroundSelector(MainMenu.this));
+            Minecraft.getMinecraft().displayGuiScreen(new BackgroundSelector(MainMenu.this));
         }
 
         public void quit() {
-            mc.shutdown();
+            Minecraft.getMinecraft().shutdown();
         }
 
         public void continueConnect() {
             if (continueServer != null) {
-                mc.displayGuiScreen(new GuiConnecting(MainMenu.this, mc, continueServer));
+                Minecraft minecraft = Minecraft.getMinecraft();
+                minecraft.displayGuiScreen(new GuiConnecting(MainMenu.this, minecraft, continueServer));
             }
         }
 
         public void devtools() {
-            mc.displayGuiScreen(new DevToolsScreen(MainMenu.this));
+            Minecraft.getMinecraft().displayGuiScreen(new DevToolsScreen(MainMenu.this));
         }
 
         private String accountId(AccountManager.Account account) {

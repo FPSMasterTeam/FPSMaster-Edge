@@ -11,7 +11,7 @@ class ToolkitDependencyTest {
     @Test
     void edgeDependsOnSharedChromeAndTheme() {
         assertEquals("top.fpsmaster.prism.widget.Chrome", Chrome.class.getName());
-        assertEquals(0xFF2EAEDE, Theme.DARK.accent());
+        assertEquals(0xFF5965F1, Theme.DARK.accent());
         assertNotNull(Chrome.ButtonStyle.PRIMARY);
     }
 }
