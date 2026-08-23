@@ -10,6 +10,8 @@ import top.fpsmaster.prism.canvas.Canvas;
 import top.fpsmaster.prism.canvas.FontHandle;
 import top.fpsmaster.prism.canvas.ImageHandle;
 import top.fpsmaster.prism.theme.Argb;
+import top.fpsmaster.utils.imaging.AWTUtils;
+import top.fpsmaster.utils.render.gui.UiScale;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -27,6 +29,16 @@ final class EdgeCanvas implements Canvas {
     }
 
     public void fillRoundRect(float x, float y, float w, float h, float radius, int argb) {
+        if (radius >= Math.min(w, h) * 0.5f - 0.01f) {
+            net.minecraft.util.ResourceLocation mask = AWTUtils.generateRoundImage(
+                    Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), Math.max(1, Math.round(radius)),
+                    UiScale.isActive() ? UiScale.getPixelScale() : 1.0f
+            );
+            if (mask != null) {
+                Images.drawSmooth(mask, x, y, w, h, tint(argb));
+                return;
+            }
+        }
         Rects.rounded(x, y, w, h, Math.max(1, Math.round(radius)), tint(argb), false);
     }
 

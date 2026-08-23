@@ -334,9 +334,9 @@ public class MainPanel extends ScaledGuiScreen {
                 || (ClientSettings.language.getValue() != 1 && module.name.toLowerCase(Locale.getDefault()).contains(query));
     }
 
-    private static String keyName(int keyCode) {
+    private String keyName(int keyCode) {
         String name = keyCode == 0 ? null : Keyboard.getKeyName(keyCode);
-        return name == null || name.isEmpty() ? "None" : name;
+        return name == null || name.isEmpty() ? FPSMaster.i18n.get("clickgui.bind.none") : name;
     }
 
     private static int normalizeKey(int keyCode) {

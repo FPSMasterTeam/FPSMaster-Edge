@@ -70,11 +70,11 @@ final class EdgeHost implements UiHost {
             return null;
         }
         if ("brand".equals(id)) {
-            return new EdgeImage(new ResourceLocation("fpsmaster", "textures/icon.png"), 64, 64);
+            return new EdgeImage(new ResourceLocation("textures/fpsmaster-icon.png"), 64, 64);
         }
         int px = Icons.pixelBucket(drawSize);
         ResourceLocation location = id.startsWith("modules/")
-                ? new ResourceLocation("fpsmaster", "textures/gui/icons/" + px + "/" + id + ".png")
+                ? new ResourceLocation("textures/gui/icons/" + px + "/" + id + ".png")
                 : Icons.location(id, drawSize);
         return new EdgeImage(location, px, px);
     }

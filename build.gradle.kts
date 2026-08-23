@@ -182,6 +182,15 @@ tasks.processResources {
             .map { zipTree(it) }
     }) {
         include("assets/fpsmaster/textures/gui/icons/**")
+        eachFile {
+            path = path.replace("assets/fpsmaster/", "assets/minecraft/")
+        }
+        includeEmptyDirs = false
+    }
+
+    from("src/main/resources/assets/fpsmaster/textures/icon.png") {
+        into("assets/minecraft/textures")
+        rename { "fpsmaster-icon.png" }
     }
 }
 
