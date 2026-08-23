@@ -62,6 +62,7 @@ public class ConfigManager {
         client.addProperty("classicBackgroundBrightness", configure.classicBackgroundBrightness);
         client.addProperty("classicBackgroundAlpha", configure.classicBackgroundAlpha);
         client.addProperty("classicBackgroundMode", configure.classicBackgroundMode);
+        client.addProperty("musicVolume", configure.musicVolume);
         json.add("client", client);
 
         JsonArray components = new JsonArray();
@@ -228,6 +229,9 @@ public class ConfigManager {
                 }
                 if (client.has("classicBackgroundHue")) {
                     configure.classicBackgroundHue = client.get("classicBackgroundHue").getAsFloat();
+                }
+                if (client.has("musicVolume")) {
+                    configure.musicVolume = client.get("musicVolume").getAsInt();
                 }
                 if (client.has("classicBackgroundSaturation")) {
                     configure.classicBackgroundSaturation = client.get("classicBackgroundSaturation").getAsFloat();

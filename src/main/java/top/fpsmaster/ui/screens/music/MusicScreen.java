@@ -7,6 +7,7 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.LyricsDisplay;
 import top.fpsmaster.modules.music.MusicManager;
 import top.fpsmaster.modules.music.MusicTextures;
+import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.music.Lyric;
 import top.fpsmaster.music.LyricLine;
 import top.fpsmaster.music.MusicSource;
@@ -41,6 +42,7 @@ public class MusicScreen extends ScaledGuiScreen {
 
     public MusicScreen(GuiScreen parent) {
         this.parent = parent;
+        music.setVolume(FPSMaster.configManager.configure.musicVolume);
     }
 
     @Override
@@ -61,6 +63,7 @@ public class MusicScreen extends ScaledGuiScreen {
     @Override
     public void onGuiClosed() {
         music.stopQrLogin();
+        FPSMaster.configManager.saveConfigQuietly(ConfigProfileUtils.getActiveProfileName());
         super.onGuiClosed();
     }
 
@@ -78,7 +81,11 @@ public class MusicScreen extends ScaledGuiScreen {
         @Override public long durationMs() { long duration = music.engine().getDurationMs(); Track track = music.getCurrent(); return duration > 0 || track == null ? duration : track.getDurationMs(); }
         @Override public float progress() { long duration = durationMs(); return duration <= 0 ? 0f : Math.min(1f, positionMs() / (float) duration); }
         @Override public float volume() { return music.getVolume() / 100f; }
-        @Override public void setVolume(float value) { music.setVolume(Math.round(value * 100f)); }
+        @Override public void setVolume(float value) {
+            int volume = Math.round(value * 100f);
+            music.setVolume(volume);
+            FPSMaster.configManager.configure.musicVolume = volume;
+        }
         @Override public void seek(float value) { music.seekFraction(value); }
         @Override public void togglePause() { music.togglePause(); }
         @Override public void next() { music.next(); }
@@ -181,6 +188,16 @@ public class MusicScreen extends ScaledGuiScreen {
         @Override public boolean hasLyrics() { return true; }
         @Override public boolean lyricsHudEnabled() { return FPSMaster.moduleManager.getModule(LyricsDisplay.class).isEnabled(); }
         @Override public void setLyricsHudEnabled(boolean enabled) { FPSMaster.moduleManager.getModule(LyricsDisplay.class).set(enabled); }
+        @Override public float lyricFontSize() { return LyricsDisplay.fontSize.getValue().floatValue(); }
+        @Override public void setLyricFontSize(float size) { LyricsDisplay.fontSize.setValue(size); }
+        @Override public int lyricLines() { return LyricsDisplay.lines.getValue().intValue(); }
+        @Override public void setLyricLines(int lines) { LyricsDisplay.lines.setValue(lines); }
+        @Override public boolean lyricTranslation() { return LyricsDisplay.translation.getValue(); }
+        @Override public void setLyricTranslation(boolean enabled) { LyricsDisplay.translation.setValue(enabled); }
+        @Override public boolean lyricScroll() { return LyricsDisplay.scroll.getValue(); }
+        @Override public void setLyricScroll(boolean enabled) { LyricsDisplay.scroll.setValue(enabled); }
+        @Override public boolean lyricBackground() { return LyricsDisplay.background.getValue(); }
+        @Override public void setLyricBackground(boolean enabled) { LyricsDisplay.background.setValue(enabled); }
         @Override public int currentLyricIndex() { return music.currentLyricLine(); }
 
         @Override

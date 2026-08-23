@@ -11,9 +11,9 @@ public class Configure {
     public float classicBackgroundBrightness = 0f;
     public float classicBackgroundAlpha = 1f;
     public String classicBackgroundMode = "STATIC";
+    public int musicVolume = 70;
     /** One-time vanilla guiScale doubling when the Retina backing first activates. */
     public boolean hidpiGuiScaleMigrated = false;
 }
-
 
 
