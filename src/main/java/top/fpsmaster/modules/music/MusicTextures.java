@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -270,11 +271,13 @@ public final class MusicTextures {
 
     /** 纯网络 IO，不碰 AWT——调用方拿到字节后自行决定在哪解码。 */
     private static byte[] downloadBytes(String url) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setInstanceFollowRedirects(true);
+        URLConnection conn = new URL(url).openConnection();
         conn.setConnectTimeout(10_000);
         conn.setReadTimeout(15_000);
         conn.setRequestProperty("User-Agent", UA);
+        if (conn instanceof HttpURLConnection) {
+            ((HttpURLConnection) conn).setInstanceFollowRedirects(true);
+        }
         try (InputStream in = conn.getInputStream()) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             byte[] buf = new byte[8192];
@@ -284,7 +287,9 @@ public final class MusicTextures {
             }
             return bos.size() == 0 ? null : bos.toByteArray();
         } finally {
-            conn.disconnect();
+            if (conn instanceof HttpURLConnection) {
+                ((HttpURLConnection) conn).disconnect();
+            }
         }
     }
 

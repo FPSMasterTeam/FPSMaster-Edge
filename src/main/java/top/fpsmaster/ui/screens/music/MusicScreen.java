@@ -271,10 +271,33 @@ public class MusicScreen extends ScaledGuiScreen {
             String name = file.getName();
             int dot = name.lastIndexOf('.');
             if (dot > 0) name = name.substring(0, dot);
+            File cover = localCover(file);
             result.add(new Track(MusicSource.NETEASE, file.toURI().toString(), null, name,
-                    "本地音乐", "", 0L, null, false));
+                    "本地音乐", "", 0L, cover == null ? null : cover.toURI().toString(), false));
         }
         return result;
+    }
+
+    private static File localCover(File audio) {
+        File directory = audio.getParentFile();
+        File[] files = directory == null ? null : directory.listFiles();
+        if (files == null) return null;
+        String audioName = audio.getName();
+        int dot = audioName.lastIndexOf('.');
+        String base = (dot > 0 ? audioName.substring(0, dot) : audioName).toLowerCase(java.util.Locale.ROOT);
+        String[] names = {base, "cover", "folder"};
+        String[] extensions = {"png", "jpg", "jpeg"};
+        for (String name : names) {
+            for (String extension : extensions) {
+                String expected = name + "." + extension;
+                for (File file : files) {
+                    if (file.isFile() && file.getName().toLowerCase(java.util.Locale.ROOT).equals(expected)) {
+                        return file;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static boolean isLocalAudio(String name) {
