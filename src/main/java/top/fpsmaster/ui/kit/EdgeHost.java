@@ -69,8 +69,10 @@ final class EdgeHost implements UiHost {
         if (id == null || id.isEmpty()) {
             return null;
         }
-        ResourceLocation location = Icons.location(id, drawSize);
         int px = Icons.pixelBucket(drawSize);
+        ResourceLocation location = id.startsWith("modules/")
+                ? new ResourceLocation("fpsmaster", "textures/gui/icons/" + px + "/" + id + ".png")
+                : Icons.location(id, drawSize);
         return new EdgeImage(location, px, px);
     }
 
