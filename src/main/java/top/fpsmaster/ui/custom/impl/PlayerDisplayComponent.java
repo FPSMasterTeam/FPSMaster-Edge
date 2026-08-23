@@ -62,8 +62,26 @@ public class PlayerDisplayComponent extends Component {
 
         height = (18 * i);
     }
-}
 
+    @Override
+    public void measurePreview() {
+        width = getStringWidth(16, "Player 20 hp") + 12;
+        height = 36f;
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        String[] names = {"Player", "Teammate"};
+        String[] health = {"20 hp", "16 hp"};
+        for (int index = 0; index < names.length; index++) {
+            float rowY = y + index * 18 * scale;
+            drawRect(x, rowY, width, 14f, mod.backgroundColor.getColor());
+            drawString(16, names[index], x + 2 * scale, rowY + 2 * scale, -1);
+            drawString(16, health[index], x + (8 + getStringWidth(16, names[index])) * scale,
+                    rowY + 2 * scale, index == 0 ? 0xFF32FF37 : 0xFFFFFF37);
+        }
+    }
+}
 
 
 

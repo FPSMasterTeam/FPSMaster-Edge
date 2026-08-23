@@ -69,6 +69,24 @@ public class PotionDisplayComponent extends Component {
         height = index * (mod.spacing.getValue().intValue() + POTION_HEIGHT);
     }
 
+    @Override
+    public void measurePreview() {
+        width = Math.max(getStringWidth(18, "Speed lv.2"), getStringWidth(16, "1:23")) + 46;
+        height = POTION_HEIGHT * 2 + mod.spacing.getValue().intValue();
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        String[] titles = {"Speed lv.2", "Strength lv.1"};
+        String[] durations = {"1:23", "0:42"};
+        for (int index = 0; index < titles.length; index++) {
+            float rowY = y + index * (POTION_HEIGHT + mod.spacing.getValue().intValue()) * scale;
+            drawRect(x, rowY, width, 32f, mod.backgroundColor.getColor());
+            drawString(18, titles[index], x + 10 * scale, rowY + 5 * scale, -1);
+            drawString(16, durations[index], x + 10 * scale, rowY + 18 * scale, 0xFFCCCCCC);
+        }
+    }
+
     private void drawAnimatedPotion(PotionEffect effect, String title, String duration, float x, float y, float width, float rowWidth, float visible) {
         float scaledWidth = rowWidth * scale;
         float scaledHeight = 32f * scale;
@@ -179,6 +197,5 @@ public class PotionDisplayComponent extends Component {
         return p.getStatusIconIndex();
     }
 }
-
 
 

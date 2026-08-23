@@ -77,6 +77,16 @@ public class Component {
     public void measure() {
     }
 
+    /** Computes editor geometry using representative data when live data is absent. */
+    public void measurePreview() {
+        measure();
+    }
+
+    /** Draws the editor representation without mutating player or world state. */
+    public void drawPreview(float x, float y) {
+        draw(x, y);
+    }
+
     /** Receives the rectangles that make up a component's background. */
     public interface ShapeSink {
         /**

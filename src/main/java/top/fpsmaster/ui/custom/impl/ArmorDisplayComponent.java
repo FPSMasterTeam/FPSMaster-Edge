@@ -3,6 +3,7 @@ package top.fpsmaster.ui.custom.impl;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.item.ItemStack;
+import net.minecraft.init.Items;
 import top.fpsmaster.features.impl.interfaces.ArmorDisplay;
 import top.fpsmaster.ui.custom.Component;
 
@@ -59,7 +60,19 @@ public class ArmorDisplayComponent extends Component {
     @Override
     public void draw(float x, float y) {
         super.draw(x, y);
-        List<ItemStack> armorInventory = Arrays.asList(mc.thePlayer.inventory.armorInventory);
+        drawItems(x, y, Arrays.asList(mc.thePlayer.inventory.armorInventory));
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        drawItems(x, y, Arrays.asList(
+                new ItemStack(Items.diamond_helmet),
+                new ItemStack(Items.diamond_chestplate),
+                new ItemStack(Items.diamond_leggings),
+                new ItemStack(Items.diamond_boots)));
+    }
+
+    private void drawItems(float x, float y, List<ItemStack> armorInventory) {
         boolean horizontal = ArmorDisplay.mode.getValue() == 0;
 
         for (int i = 0; i < armorInventory.size(); i++) {
@@ -116,6 +129,5 @@ public class ArmorDisplayComponent extends Component {
 
     }
 }
-
 
 

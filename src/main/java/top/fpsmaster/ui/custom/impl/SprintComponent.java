@@ -30,7 +30,17 @@ public class SprintComponent extends Component{
         this.width = getStringWidth(16, text);
         this.height = 12;
     }
-}
 
+    @Override
+    public void measurePreview() {
+        width = getStringWidth(16, "[Sprinting (Toggled)]");
+        height = 12f;
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        drawString(16, "[Sprinting (Toggled)]", x, y, -1);
+    }
+}
 
 

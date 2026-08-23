@@ -4,6 +4,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.init.Items;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.interfaces.InventoryDisplay;
 import top.fpsmaster.ui.custom.Component;
@@ -69,7 +70,33 @@ public class InventoryDisplayComponent extends Component {
         width = 164f;
         height = 64f;
     }
-}
 
+    @Override
+    public void measurePreview() {
+        width = 164f;
+        height = 64f;
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        drawRect(x - 2, y, 164f, 64f, mod.backgroundColor.getColor());
+        ItemStack[] items = {
+                new ItemStack(Items.diamond_sword),
+                new ItemStack(Items.golden_apple),
+                new ItemStack(Items.ender_pearl),
+                new ItemStack(Items.bow),
+                new ItemStack(Items.arrow)
+        };
+        GlStateManager.pushMatrix();
+        GL11.glTranslated(x, y, 0);
+        GL11.glScaled(scale, scale, 1);
+        for (int index = 0; index < items.length; index++) {
+            RenderHelper.enableGUIStandardItemLighting();
+            mc.getRenderItem().renderItemAndEffectIntoGUI(items[index], index * 18, 0);
+            RenderHelper.disableStandardItemLighting();
+        }
+        GlStateManager.popMatrix();
+    }
+}
 
 

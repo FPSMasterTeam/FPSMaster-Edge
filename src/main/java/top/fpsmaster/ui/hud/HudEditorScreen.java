@@ -25,7 +25,9 @@ public final class HudEditorScreen extends ScaledGuiScreen {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        FPSMaster.componentsManager.measureAll();
+        for (Component component : FPSMaster.componentsManager.components) {
+            if (component.shouldDisplay()) component.measurePreview();
+        }
         editor.draw(EdgeUi.frame(), bridge);
     }
 
@@ -75,7 +77,7 @@ public final class HudEditorScreen extends ScaledGuiScreen {
             Viewport viewport = viewport(hud[0], hud[1]);
             float oldScale = component.scale;
             component.scale = scale * viewport.scale;
-            component.draw(x, y);
+            component.drawPreview(x, y);
             component.scale = oldScale;
         }
 

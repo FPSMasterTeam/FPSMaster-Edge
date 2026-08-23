@@ -76,8 +76,23 @@ public class ScoreboardComponent extends Component {
             offsetY += lineHeight * scale;
         }
     }
-}
 
+    @Override
+    public void measurePreview() {
+        width = Math.max(getStringWidth(FONT_SIZE, "FPSMaster"), getStringWidth(FONT_SIZE, "Player  12")) + 6;
+        height = 4 * (Minecraft.getMinecraft().fontRendererObj.FONT_HEIGHT + 1) + 4;
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        String[] lines = {"FPSMaster", "Player  12", "Kills  3", "Ping  32"};
+        float lineHeight = Minecraft.getMinecraft().fontRendererObj.FONT_HEIGHT + 1;
+        drawRect(x, y, width, height, mod.backgroundColor.getColor());
+        for (int index = 0; index < lines.length; index++) {
+            drawString(FONT_SIZE, lines[index], x + 3 * scale, y + (2 + index * lineHeight) * scale, -1);
+        }
+    }
+}
 
 
 

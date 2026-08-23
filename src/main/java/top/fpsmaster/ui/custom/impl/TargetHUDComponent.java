@@ -101,6 +101,22 @@ public class TargetHUDComponent extends Component {
             }
         }
     }
-}
 
+    @Override
+    public void measurePreview() {
+        width = TargetDisplay.targetHUD.getMode() == 0 ? 112f : 132f;
+        height = TargetDisplay.targetHUD.getMode() == 0 ? 30f : 40f;
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        drawRect(x, y, width, height, new Color(0, 0, 0, 120));
+        float barY = y + (height - 7f) * scale;
+        Rects.roundedImage(Math.round(x + 4 * scale), Math.round(barY),
+                Math.round((width - 8f) * 0.8f * scale), Math.max(2, Math.round(3 * scale)), 2,
+                new Color(50, 255, 55, 220));
+        drawString(18, "Target", x + 8 * scale, y + 6 * scale, -1);
+        drawString(16, "16 / 20 hp", x + 8 * scale, y + 17 * scale, -1);
+    }
+}
 

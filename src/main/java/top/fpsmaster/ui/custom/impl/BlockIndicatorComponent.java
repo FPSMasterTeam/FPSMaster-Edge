@@ -59,6 +59,19 @@ public class BlockIndicatorComponent extends Component {
     }
 
     @Override
+    public void measurePreview() {
+        lastBlock = previewBlock();
+        updateSize(Minecraft.getMinecraft(), buildDetails(lastBlock));
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        TargetBlock preview = previewBlock();
+        lastBlock = preview;
+        renderIndicator(Minecraft.getMinecraft(), preview, x, y, 1f, true);
+    }
+
+    @Override
     public float[] getRealPosition(net.minecraft.client.gui.ScaledResolution sr) {
         if (position != Position.CT) {
             return super.getRealPosition(sr);
@@ -240,6 +253,11 @@ public class BlockIndicatorComponent extends Component {
 
     private BlockIndicator getModule() {
         return (BlockIndicator) mod;
+    }
+
+    private TargetBlock previewBlock() {
+        return new TargetBlock("Stone", "minecraft:stone", 0, new BlockPos(0, 64, 0),
+                new ItemStack(Blocks.stone));
     }
 
     private static final class TargetBlock {

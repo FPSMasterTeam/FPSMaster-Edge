@@ -27,4 +27,15 @@ public class ToggleSneakComponent extends Component {
         this.width = getStringWidth(16, text);
         this.height = 12;
     }
+
+    @Override
+    public void measurePreview() {
+        width = getStringWidth(16, "[Sneaking (Toggled)]");
+        height = 12f;
+    }
+
+    @Override
+    public void drawPreview(float x, float y) {
+        drawString(16, "[Sneaking (Toggled)]", x, y, -1);
+    }
 }
