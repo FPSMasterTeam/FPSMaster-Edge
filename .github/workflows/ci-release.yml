@@ -147,6 +147,21 @@ jobs:
         if: steps.decision.outputs.should_build == 'true'
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Check out Prism UI
+        if: steps.decision.outputs.should_build == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: FPSMasterTeam/fpsmaster-prism
+          ref: f9fb880384a8a39855dfa889b3db1ff694ba6446
+          path: fpsmaster-prism
+
+      - name: Install Prism UI
+        if: steps.decision.outputs.should_build == 'true'
+        working-directory: fpsmaster-prism
+        run: |
+          chmod +x ./gradlew
+          ./gradlew publishToMavenLocal
+
       - name: Inject SMTC native libraries
         if: steps.decision.outputs.should_build == 'true'
         uses: actions/download-artifact@v4
