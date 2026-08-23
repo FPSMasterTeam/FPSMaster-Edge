@@ -175,6 +175,14 @@ tasks.processResources {
     }
 
     rename("(.+_at.cfg)", "META-INF/$1")
+
+    from({
+        shadowImpl
+            .filter { it.name.startsWith("prism-") }
+            .map { zipTree(it) }
+    }) {
+        include("assets/fpsmaster/textures/gui/icons/**")
+    }
 }
 
 gitProperties {
@@ -1001,4 +1009,3 @@ tasks.register("runAotClientNotch") {
     description = "Alias of runAotClient (notch client + runtime deobf)."
     dependsOn("runAotClient")
 }
-
