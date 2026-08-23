@@ -63,6 +63,7 @@ public class ConfigManager {
         client.addProperty("classicBackgroundAlpha", configure.classicBackgroundAlpha);
         client.addProperty("classicBackgroundMode", configure.classicBackgroundMode);
         client.addProperty("musicVolume", configure.musicVolume);
+        client.addProperty("musicPlaybackMode", configure.musicPlaybackMode);
         json.add("client", client);
 
         JsonArray components = new JsonArray();
@@ -232,6 +233,9 @@ public class ConfigManager {
                 }
                 if (client.has("musicVolume")) {
                     configure.musicVolume = client.get("musicVolume").getAsInt();
+                }
+                if (client.has("musicPlaybackMode")) {
+                    configure.musicPlaybackMode = client.get("musicPlaybackMode").getAsString();
                 }
                 if (client.has("classicBackgroundSaturation")) {
                     configure.classicBackgroundSaturation = client.get("classicBackgroundSaturation").getAsFloat();

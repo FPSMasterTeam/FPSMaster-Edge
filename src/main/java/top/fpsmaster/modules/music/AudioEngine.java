@@ -114,6 +114,32 @@ public class AudioEngine {
         t.start();
     }
 
+    public void playFile(final File file, long knownDurationMs, final Runnable onEnded) {
+        stop();
+        synchronized (lock) {
+            stopped = false;
+            paused = false;
+            positionMs = 0;
+            durationMs = knownDurationMs;
+            pendingSeekMs = -1;
+        }
+        final Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    playLoop(file, onEnded);
+                } catch (Throwable e) {
+                    ClientLogger.error("Local music playback failed: " + e.getMessage());
+                }
+            }
+        }, "FPSMaster-Music-Local");
+        t.setDaemon(true);
+        synchronized (lock) {
+            playThread = t;
+        }
+        t.start();
+    }
+
     private void playLoop(File file, Runnable onEnded) throws Exception {
         long startMs = 0;
         boolean endedNaturally = false;
@@ -126,6 +152,9 @@ public class AudioEngine {
             try {
                 fileIn = AudioSystem.getAudioInputStream(new BufferedInputStream(new FileInputStream(file)));
                 AudioFormat base = fileIn.getFormat();
+                if (durationMs <= 0 && fileIn.getFrameLength() > 0 && base.getFrameRate() > 0) {
+                    durationMs = (long) (fileIn.getFrameLength() * 1000.0 / base.getFrameRate());
+                }
                 AudioFormat decoded = new AudioFormat(
                         AudioFormat.Encoding.PCM_SIGNED,
                         base.getSampleRate(), 16, base.getChannels(),
@@ -211,6 +240,7 @@ public class AudioEngine {
         }
 
         if (endedNaturally && !stopped && onEnded != null) {
+            stopped = true;
             Minecraft mc = Minecraft.getMinecraft();
             if (mc != null) {
                 mc.addScheduledTask(onEnded);

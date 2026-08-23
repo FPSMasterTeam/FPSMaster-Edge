@@ -22,6 +22,9 @@ import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 
 import java.io.IOException;
+import java.io.File;
+import java.awt.FileDialog;
+import java.awt.Frame;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +35,7 @@ public class MusicScreen extends ScaledGuiScreen {
     private final SharedMusic gui = new SharedMusic();
     private final MusicBridge bridge = new EdgeMusicBridge();
     private volatile List<Track> tracks = new ArrayList<Track>();
+    private volatile List<Track> localTracks = new ArrayList<Track>();
     private volatile List<MusicManager.PlaylistItem> playlists = new ArrayList<MusicManager.PlaylistItem>();
     private volatile String listTitle = "";
     private volatile String loginStatus = "";
@@ -43,6 +47,12 @@ public class MusicScreen extends ScaledGuiScreen {
     public MusicScreen(GuiScreen parent) {
         this.parent = parent;
         music.setVolume(FPSMaster.configManager.configure.musicVolume);
+        try {
+            music.setPlaybackMode(MusicBridge.PlaybackMode.valueOf(
+                    FPSMaster.configManager.configure.musicPlaybackMode));
+        } catch (IllegalArgumentException ignored) {
+            music.setPlaybackMode(MusicBridge.PlaybackMode.SEQUENTIAL);
+        }
     }
 
     @Override
@@ -90,6 +100,11 @@ public class MusicScreen extends ScaledGuiScreen {
         @Override public void togglePause() { music.togglePause(); }
         @Override public void next() { music.next(); }
         @Override public void prev() { music.prev(); }
+        @Override public PlaybackMode playbackMode() { return music.getPlaybackMode(); }
+        @Override public void setPlaybackMode(PlaybackMode mode) {
+            music.setPlaybackMode(mode);
+            FPSMaster.configManager.configure.musicPlaybackMode = mode.name();
+        }
 
         @Override
         public void play(int index) {
@@ -104,6 +119,37 @@ public class MusicScreen extends ScaledGuiScreen {
                 rows.add(new TrackRow(track.getName(), track.getArtists(), format(track.getDurationMs()), track.getVip()));
             }
             return rows;
+        }
+
+        @Override public List<TrackRow> localTracks() {
+            List<TrackRow> rows = new ArrayList<TrackRow>();
+            for (Track track : localTracks) {
+                rows.add(new TrackRow(track.getName(), track.getArtists(), format(track.getDurationMs()), false));
+            }
+            return rows;
+        }
+
+        @Override public void importLocalMusic() {
+            Thread picker = new Thread(new Runnable() {
+                @Override public void run() {
+                    FileDialog dialog = new FileDialog((Frame) null, "选择本地音乐", FileDialog.LOAD);
+                    dialog.setMultipleMode(true);
+                    dialog.setFilenameFilter((dir, name) -> isLocalAudio(name));
+                    dialog.setVisible(true);
+                    final File[] files = dialog.getFiles();
+                    dialog.dispose();
+                    if (files.length == 0) return;
+                    mc.addScheduledTask(new Runnable() {
+                        @Override public void run() { localTracks = toLocalTracks(files); }
+                    });
+                }
+            }, "FPSMaster-Music-Picker");
+            picker.setDaemon(true);
+            picker.start();
+        }
+
+        @Override public void playLocal(int index) {
+            music.playList(localTracks, index);
         }
 
         @Override public String listTitle() { return listTitle; }
@@ -185,7 +231,10 @@ public class MusicScreen extends ScaledGuiScreen {
             if (texture != null) Images.draw(texture, x, y, size, size);
         }
 
-        @Override public boolean hasLyrics() { return true; }
+        @Override public boolean hasLyrics() {
+            Track track = music.getCurrent();
+            return track != null && !track.getId().startsWith("file:");
+        }
         @Override public boolean lyricsHudEnabled() { return FPSMaster.moduleManager.getModule(LyricsDisplay.class).isEnabled(); }
         @Override public void setLyricsHudEnabled(boolean enabled) { FPSMaster.moduleManager.getModule(LyricsDisplay.class).set(enabled); }
         @Override public float lyricFontSize() { return LyricsDisplay.fontSize.getValue().floatValue(); }
@@ -213,5 +262,24 @@ public class MusicScreen extends ScaledGuiScreen {
     private static String format(long millis) {
         long seconds = Math.max(0L, millis) / 1000L;
         return String.format("%d:%02d", seconds / 60L, seconds % 60L);
+    }
+
+    private static List<Track> toLocalTracks(File[] files) {
+        List<Track> result = new ArrayList<Track>();
+        for (File file : files) {
+            if (!file.isFile() || !isLocalAudio(file.getName())) continue;
+            String name = file.getName();
+            int dot = name.lastIndexOf('.');
+            if (dot > 0) name = name.substring(0, dot);
+            result.add(new Track(MusicSource.NETEASE, file.toURI().toString(), null, name,
+                    "本地音乐", "", 0L, null, false));
+        }
+        return result;
+    }
+
+    private static boolean isLocalAudio(String name) {
+        String lower = name.toLowerCase(java.util.Locale.ROOT);
+        return lower.endsWith(".mp3") || lower.endsWith(".wav")
+                || lower.endsWith(".aiff") || lower.endsWith(".aif");
     }
 }

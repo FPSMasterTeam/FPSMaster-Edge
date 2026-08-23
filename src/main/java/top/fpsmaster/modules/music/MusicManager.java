@@ -19,10 +19,12 @@ import top.fpsmaster.music.QrLoginState;
 import top.fpsmaster.music.SongUrl;
 import top.fpsmaster.music.Track;
 import top.fpsmaster.music.store.MusicCredentialStore;
+import top.fpsmaster.prism.screen.MusicBridge;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 音乐功能总控：桥接 Cadence（top.fpsmaster.music）数据库与 Edge 的 UI / 播放引擎。
@@ -87,6 +89,7 @@ public class MusicManager {
     private volatile Lyric currentLyric = null;
     private volatile String status = "";
     private int volume = 70;
+    private MusicBridge.PlaybackMode playbackMode = MusicBridge.PlaybackMode.SEQUENTIAL;
 
     // 系统媒体传输控件（Windows SMTC）：平台不可用时自动降级为 no-op。
     private final top.fpsmaster.modules.music.smtc.SmtcMusicBridge smtcBridge;
@@ -250,6 +253,12 @@ public class MusicManager {
         engine.setVolume(v / 100f);
     }
 
+    public MusicBridge.PlaybackMode getPlaybackMode() { return playbackMode; }
+
+    public void setPlaybackMode(MusicBridge.PlaybackMode mode) {
+        playbackMode = mode == null ? MusicBridge.PlaybackMode.SEQUENTIAL : mode;
+    }
+
     // ---- 搜索 / 发现 / 歌单 ----
 
     public void search(final String keyword, Cb<List<Track>> cb) {
@@ -343,6 +352,14 @@ public class MusicManager {
         currentLyric = null;
         status = "加载中…";
         final MusicSource src = track.getSource();
+        if (track.getId().startsWith("file:")) {
+            status = "";
+            engine.setVolume(volume / 100f);
+            engine.playFile(new java.io.File(java.net.URI.create(track.getId())), track.getDurationMs(), new Runnable() {
+                @Override public void run() { onEnded(); }
+            });
+            return;
+        }
         // 请求 STANDARD（mp3）以保证 mp3spi 可解码
         FPSMaster.async.execute(new Callable<Object>() {
             @Override
@@ -360,7 +377,7 @@ public class MusicManager {
                                 engine.play(url.getUrl(), referer, track.getDurationMs(), new Runnable() {
                                     @Override
                                     public void run() {
-                                        next();
+                                        onEnded();
                                     }
                                 });
                             } else {
@@ -404,6 +421,10 @@ public class MusicManager {
     }
 
     public void togglePause() {
+        if (!engine.isActive() && current != null) {
+            playInternal(current);
+            return;
+        }
         engine.togglePause();
     }
 
@@ -417,6 +438,21 @@ public class MusicManager {
         if (queue.isEmpty()) return;
         index = (index - 1 + queue.size()) % queue.size();
         playInternal(queue.get(index));
+    }
+
+    private void onEnded() {
+        if (queue.isEmpty() || index < 0) return;
+        if (playbackMode == MusicBridge.PlaybackMode.REPEAT_ONE) {
+            playInternal(queue.get(index));
+        } else if (playbackMode == MusicBridge.PlaybackMode.SHUFFLE) {
+            int next = queue.size() == 1 ? index : ThreadLocalRandom.current().nextInt(queue.size() - 1);
+            if (next >= index) next++;
+            index = next;
+            playInternal(queue.get(index));
+        } else if (index + 1 < queue.size()) {
+            index++;
+            playInternal(queue.get(index));
+        }
     }
 
     public void seekFraction(float f) {
