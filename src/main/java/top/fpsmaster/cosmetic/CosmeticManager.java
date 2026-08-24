@@ -16,6 +16,7 @@ import top.fpsmaster.modules.client.api.model.OwnedItemView;
 import top.fpsmaster.modules.logger.ClientLogger;
 
 import javax.imageio.ImageIO;
+import java.awt.Desktop;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -68,12 +69,10 @@ public final class CosmeticManager {
     }
 
     public void reloadCustom() {
-        Path directory = Minecraft.getMinecraft().mcDataDir.toPath()
-                .resolve("config").resolve("fpsmaster").resolve("cosmetics");
+        Path directory = customDirectory();
         try {
             Files.createDirectories(directory);
-            Path example = directory.resolve("example.json.disabled");
-            if (!Files.exists(example)) Files.write(example, CUSTOM_EXAMPLE.getBytes(StandardCharsets.UTF_8));
+            installExamples(directory);
             List<CosmeticOption> options = new ArrayList<>();
             try (java.nio.file.DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
                 for (Path file : files) {
@@ -85,10 +84,25 @@ public final class CosmeticManager {
                 }
             }
             options.sort(Comparator.comparing(CosmeticOption::getCategory).thenComparing(CosmeticOption::getName));
+            synchronized (textures) {
+                for (CosmeticOption option : customOptions) textures.remove(option.id);
+            }
             customOptions = Collections.unmodifiableList(options);
             validateSelections();
         } catch (Exception exception) {
             ClientLogger.warn("Failed to load custom cosmetics: " + exception.getMessage());
+        }
+    }
+
+    public void openCustomDirectory() {
+        reloadCustom();
+        try {
+            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                throw new UnsupportedOperationException("Desktop folder opening is unavailable");
+            }
+            Desktop.getDesktop().open(customDirectory().toFile());
+        } catch (Exception exception) {
+            ClientLogger.warn("Failed to open custom cosmetics folder: " + exception.getMessage());
         }
     }
 
@@ -479,6 +493,32 @@ public final class CosmeticManager {
         );
     }
 
+    private Path customDirectory() {
+        return Minecraft.getMinecraft().mcDataDir.toPath()
+                .resolve("config").resolve("fpsmaster").resolve("cosmetics");
+    }
+
+    private void installExamples(Path directory) throws Exception {
+        Path examples = directory.resolve("examples");
+        Files.createDirectories(examples);
+        copyIfMissing(directory.resolve("example-cape.json.disabled"),
+                "/assets/fpsmaster/cosmetics/examples/example-cape.json.disabled");
+        copyIfMissing(directory.resolve("example-wings.json.disabled"),
+                "/assets/fpsmaster/cosmetics/examples/example-wings.json.disabled");
+        copyIfMissing(examples.resolve("example-cape.png"),
+                "/assets/fpsmaster/cosmetics/examples/example-cape.png");
+        copyIfMissing(examples.resolve("example-wings.png"),
+                "/assets/fpsmaster/cosmetics/examples/example-wings.png");
+    }
+
+    private void copyIfMissing(Path target, String resource) throws Exception {
+        if (Files.exists(target)) return;
+        try (InputStream input = CosmeticManager.class.getResourceAsStream(resource)) {
+            if (input == null) throw new IllegalStateException("Missing bundled cosmetic example " + resource);
+            Files.copy(input, target);
+        }
+    }
+
     private String string(JsonObject object, String key) {
         if (!object.has(key) || !object.get(key).isJsonPrimitive()) throw new IllegalArgumentException("missing " + key);
         return object.get(key).getAsString();
@@ -550,13 +590,4 @@ public final class CosmeticManager {
         }
     }
 
-    private static final String CUSTOM_EXAMPLE = "{\n" +
-            "  \"schemaVersion\": 1,\n" +
-            "  \"id\": \"my-wings\",\n" +
-            "  \"name\": \"My Wings\",\n" +
-            "  \"description\": \"Local custom cosmetic\",\n" +
-            "  \"type\": \"wings\",\n" +
-            "  \"texture\": \"textures/my-wings.png\",\n" +
-            "  \"wing\": { \"scale\": 0.8, \"allowResize\": true }\n" +
-            "}\n";
 }

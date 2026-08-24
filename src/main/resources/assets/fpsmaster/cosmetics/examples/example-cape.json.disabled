@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "example-cape",
+  "name": "Example Cape",
+  "description": "Rename this file to .json to enable it",
+  "type": "cape",
+  "texture": "examples/example-cape.png"
+}

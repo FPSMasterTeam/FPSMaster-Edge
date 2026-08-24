@@ -214,6 +214,7 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
         public boolean signedIn() { return AuthService.getInstance().isLoggedIn(); }
         public boolean purchasePending() { return purchasing; }
         public String statusMessage() { return status; }
+        public void openCustomFolder() { cosmetics.openCustomDirectory(); }
         public void purchaseItem(String id) {
             if (purchasing) return;
             final long itemId;

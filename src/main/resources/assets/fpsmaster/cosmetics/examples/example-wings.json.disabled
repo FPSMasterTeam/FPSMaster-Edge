@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "example-wings",
+  "name": "Example Wings",
+  "description": "Rename this file to .json to enable it",
+  "type": "wings",
+  "texture": "examples/example-wings.png",
+  "wing": {
+    "scale": 0.8,
+    "allowResize": true
+  }
+}
