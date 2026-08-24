@@ -51,7 +51,7 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
         if (preview[2] <= 0f) return;
         int centerX = Math.round(preview[0] + preview[2] * 0.5f);
         int feetY = Math.round(preview[1] + preview[3] - 24f);
-        int size = Math.max(22, Math.round(preview[3] * 0.31f));
+        int size = Math.max(22, Math.round(preview[3] * 0.42f));
         float yaw = preview[4];
         bridge.cosmetics.setPreviewing(true);
         bridge.cosmetics.wingsRenderer().renderPreview(centerX, feetY, size, yaw);
@@ -238,8 +238,6 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
         }
         public boolean capeEnabled() { return cosmetics.capeAnimationEnabled(); }
         public void setCapeEnabled(boolean enabled) { cosmetics.setCapeAnimationEnabled(enabled); }
-        public boolean wingsEnabled() { return cosmetics.wingsEnabled(); }
-        public void setWingsEnabled(boolean enabled) { cosmetics.setWingsEnabled(enabled); }
         public float wingScale() { return cosmetics.wingScale(); }
         public void setWingScale(float scale) { cosmetics.setWingScale(scale); }
         public boolean wingScaleAdjustable() { return cosmetics.wingScaleAdjustable(); }

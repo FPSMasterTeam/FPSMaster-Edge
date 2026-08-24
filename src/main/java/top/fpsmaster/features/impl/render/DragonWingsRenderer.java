@@ -64,10 +64,9 @@ public final class DragonWingsRenderer extends ModelBase {
         GL11.glPushMatrix();
         GL11.glTranslatef(x, y, 50f);
         GL11.glScalef(-size, size, size);
-        GL11.glRotatef(180f, 0f, 0f, 1f);
         GL11.glRotatef(yaw, 0f, 1f, 0f);
         GL11.glScaled(scale, scale, scale);
-        GL11.glTranslated(0d, -1.25d / scale, 0.2d / scale);
+        GL11.glTranslated(0d, -1.45d / scale, 0.2d / scale);
         renderGeometry(texture);
         GL11.glPopMatrix();
     }
