@@ -64,6 +64,13 @@ public class ConfigManager {
         client.addProperty("classicBackgroundMode", configure.classicBackgroundMode);
         client.addProperty("musicVolume", configure.musicVolume);
         client.addProperty("musicPlaybackMode", configure.musicPlaybackMode);
+        if (configure.cosmeticCapeId != null) {
+            client.addProperty("cosmeticCapeId", configure.cosmeticCapeId);
+        }
+        client.addProperty("cosmeticWingsId", configure.cosmeticWingsId);
+        client.addProperty("cosmeticWingsEnabled", configure.cosmeticWingsEnabled);
+        client.addProperty("cosmeticCapeAnimationEnabled", configure.cosmeticCapeAnimationEnabled);
+        client.addProperty("cosmeticWingScale", configure.cosmeticWingScale);
         json.add("client", client);
 
         JsonArray components = new JsonArray();
@@ -236,6 +243,19 @@ public class ConfigManager {
                 }
                 if (client.has("musicPlaybackMode")) {
                     configure.musicPlaybackMode = client.get("musicPlaybackMode").getAsString();
+                }
+                if (client.has("cosmeticCapeId") && !client.get("cosmeticCapeId").isJsonNull()) {
+                    configure.cosmeticCapeId = client.get("cosmeticCapeId").getAsString();
+                }
+                if (client.has("cosmeticWingsId") && !client.get("cosmeticWingsId").isJsonNull()) {
+                    configure.cosmeticWingsId = client.get("cosmeticWingsId").getAsString();
+                }
+                configure.cosmeticWingsEnabled = client.has("cosmeticWingsEnabled")
+                        && client.get("cosmeticWingsEnabled").getAsBoolean();
+                configure.cosmeticCapeAnimationEnabled = client.has("cosmeticCapeAnimationEnabled")
+                        && client.get("cosmeticCapeAnimationEnabled").getAsBoolean();
+                if (client.has("cosmeticWingScale")) {
+                    configure.cosmeticWingScale = Math.max(0f, Math.min(1f, client.get("cosmeticWingScale").getAsFloat()));
                 }
                 if (client.has("classicBackgroundSaturation")) {
                     configure.classicBackgroundSaturation = client.get("classicBackgroundSaturation").getAsFloat();

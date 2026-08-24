@@ -84,7 +84,6 @@ public class ModuleManager {
         modules.add(new Performance());
         modules.add(new MotionBlur());
         modules.add(new SmoothZoom());
-        modules.add(new WavyCape());
         modules.add(new FullBright());
         modules.add(new ItemPhysics());
         modules.add(new MinimizedBobbing());
@@ -108,7 +107,6 @@ public class ModuleManager {
         modules.add(new HitColor());
         modules.add(new BlockOverlay());
         modules.add(new CleanView());
-        modules.add(new DragonWings());
         modules.add(new FireModifier());
         modules.add(new FreeLook());
         modules.add(new AutoGG());
@@ -154,4 +152,3 @@ public class ModuleManager {
         }
     }
 }
-

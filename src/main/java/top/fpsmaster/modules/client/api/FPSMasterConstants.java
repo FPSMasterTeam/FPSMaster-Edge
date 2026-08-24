@@ -29,6 +29,9 @@ public final class FPSMasterConstants {
         public static final String REFRESH_TOKEN = API_BASE_URL + API_VERSION + "/auth/refresh";
         public static final String USER_INFO = API_BASE_URL + API_VERSION + "/user/info";
         public static final String USER_STATS = API_BASE_URL + API_VERSION + "/user/stats";
+        public static final String OWNED_ITEMS = API_BASE_URL + API_VERSION + "/me/items";
+        public static final String CATALOG_ITEMS = API_BASE_URL + API_VERSION + "/catalog/items";
+        public static final String PURCHASES = API_BASE_URL + API_VERSION + "/me/purchases";
     }
 
     public static final class ResponseFields {

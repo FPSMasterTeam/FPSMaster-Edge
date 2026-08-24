@@ -13,7 +13,11 @@ public class Configure {
     public String classicBackgroundMode = "STATIC";
     public int musicVolume = 70;
     public String musicPlaybackMode = "SEQUENTIAL";
+    public String cosmeticCapeId;
+    public String cosmeticWingsId = "builtin:dragon-wings";
+    public boolean cosmeticWingsEnabled = false;
+    public boolean cosmeticCapeAnimationEnabled = false;
+    public float cosmeticWingScale = 1f;
     /** One-time vanilla guiScale doubling when the Retina backing first activates. */
     public boolean hidpiGuiScaleMigrated = false;
 }
-

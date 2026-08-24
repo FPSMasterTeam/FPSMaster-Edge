@@ -9,6 +9,7 @@ import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.manager.ModuleManager;
 import top.fpsmaster.font.FontManager;
 import top.fpsmaster.modules.client.api.AuthService;
+import top.fpsmaster.cosmetic.CosmeticManager;
 import top.fpsmaster.modules.client.thread.ClientThreadPool;
 import top.fpsmaster.modules.client.telemetry.EdgeTelemetryReporter;
 import top.fpsmaster.modules.config.ConfigManager;
@@ -172,6 +173,7 @@ public class FPSMaster {
             initializeModules();
             initializeComponents();
             initializeConfigures();
+            CosmeticManager.getInstance().initialize();
             initializeCommands();
             initializeLang();
             checkOptifine();
@@ -201,6 +203,5 @@ public class FPSMaster {
         }
     }
 }
-
 
 

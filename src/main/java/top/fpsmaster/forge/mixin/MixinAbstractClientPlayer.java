@@ -14,6 +14,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.events.EventCapeLoading;
 import top.fpsmaster.features.impl.utility.CustomFOV;
+import top.fpsmaster.cosmetic.CosmeticManager;
+import net.minecraft.client.Minecraft;
 
 @Mixin(AbstractClientPlayer.class)
 public abstract class MixinAbstractClientPlayer extends MixinEntityPlayer {
@@ -64,6 +66,11 @@ public abstract class MixinAbstractClientPlayer extends MixinEntityPlayer {
 
     @Inject(method = "getLocationCape", at = @At("HEAD"), cancellable = true)
     public void getLocationCape(CallbackInfoReturnable<ResourceLocation> cir) {
+        ResourceLocation selected = CosmeticManager.getInstance().capeTexture();
+        if ((Object) this == Minecraft.getMinecraft().thePlayer && selected != null) {
+            cir.setReturnValue(selected);
+            return;
+        }
         EventCapeLoading event = new EventCapeLoading(playerInfo.getGameProfile().getName(), (AbstractClientPlayer) (Object) this);
         EventDispatcher.dispatchEvent(event);
         if (event.cape != null) {
@@ -71,6 +78,5 @@ public abstract class MixinAbstractClientPlayer extends MixinEntityPlayer {
         }
     }
 }
-
 
 

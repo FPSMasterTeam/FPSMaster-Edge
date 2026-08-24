@@ -18,8 +18,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import top.fpsmaster.FPSMaster;
-import top.fpsmaster.features.impl.optimizes.WavyCape;
+import top.fpsmaster.cosmetic.CosmeticManager;
 import top.fpsmaster.utils.render.types.Matrix4f;
 import top.fpsmaster.utils.render.types.PoseStack;
 import top.fpsmaster.utils.render.types.Vector4f;
@@ -43,25 +42,27 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
     @Inject(method = "doRenderLayer", at = @At("HEAD"), cancellable = true)
     public void onRenderCape(AbstractClientPlayer player, float limbSwing, float limbSwingAmount, float partialTicks,
                              float ageInTicks, float netHeadYaw, float headPitch, float scale, CallbackInfo ci) {
-        if (!FPSMaster.moduleManager.getModule(WavyCape.class).isEnabled()) return;
-        if (shouldSkipRender(player)) return;
+        CosmeticManager cosmetics = CosmeticManager.getInstance();
+        boolean previewing = cosmetics.isPreviewing() && cosmetics.capeTexture() != null;
+        if (!cosmetics.capeAnimationEnabled() && !previewing) return;
+        if (shouldSkipRender(player, previewing)) return;
 
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         playerRenderer.bindTexture(player.getLocationCape());
-        renderWavyCape(player, partialTicks);
+        renderWavyCape(player, partialTicks, cosmetics.capeAnimationEnabled());
         ci.cancel();
     }
 
     @Unique
-    private boolean shouldSkipRender(AbstractClientPlayer player) {
+    private boolean shouldSkipRender(AbstractClientPlayer player, boolean previewing) {
         return player.isInvisible() ||
                 !player.hasPlayerInfo() ||
-                !player.isWearing(EnumPlayerModelParts.CAPE) ||
+                (!previewing && !player.isWearing(EnumPlayerModelParts.CAPE)) ||
                 player.getLocationCape() == null;
     }
 
     @Unique
-    private void renderWavyCape(AbstractClientPlayer player, float partialTicks) {
+    private void renderWavyCape(AbstractClientPlayer player, float partialTicks, boolean animated) {
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer buffer = tessellator.getWorldRenderer();
         PoseStack poseStack = new PoseStack();
@@ -74,7 +75,7 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
 
         for (int segment = 0; segment < SEGMENTS; segment++) {
             poseStack.pushPose();
-            applySegmentTransform(poseStack, player, partialTicks, segment);
+            applySegmentTransform(poseStack, player, partialTicks, segment, animated);
 
             Matrix4f currentMatrix = poseStack.last().pose;
             float yOffsetTop = (segment - 1) * segmentLength;
@@ -96,8 +97,14 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
     }
 
     @Unique
-    private void applySegmentTransform(PoseStack poseStack, AbstractClientPlayer player, float partialTicks, int segment) {
+    private void applySegmentTransform(PoseStack poseStack, AbstractClientPlayer player, float partialTicks, int segment,
+                                       boolean animated) {
         poseStack.translate(0.0, 0.0, 0.175);
+
+        if (!animated) {
+            poseStack.mulPose(createQuaternion(0.0F, 1.0F, 0.0F, 180.0F));
+            return;
+        }
 
         // 计算玩家运动差值
         double motionX = interpolate(partialTicks, player.prevChasingPosX, player.chasingPosX) -
@@ -292,5 +299,3 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
         return q;
     }
 }
-
-

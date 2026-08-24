@@ -62,6 +62,7 @@ public class FPSMasterApiClient {
                             LoginResponse loginData = apiResponse.getData();
                             AuthService.getInstance().saveTokens(loginData.getToken(), null);
                             setCurrentUserFromView(loginData.getCurrentUserView());
+                            top.fpsmaster.cosmetic.CosmeticManager.getInstance().refreshOwned();
                             ClientLogger.info("Login successful for user: " + username);
                         } else {
                             ClientLogger.warn("Login failed: " + apiResponse.getMessage());
@@ -107,6 +108,7 @@ public class FPSMasterApiClient {
 
                 AuthService.getInstance().clearTokens();
                 this.currentUser = null;
+                top.fpsmaster.cosmetic.CosmeticManager.getInstance().refreshOwned();
                 ClientLogger.info("Logged out successfully");
 
                 return ApiResponse.fromJson(parseResponse(response));
@@ -114,6 +116,7 @@ public class FPSMasterApiClient {
                 ClientLogger.error("Logout error: " + e.getMessage());
                 AuthService.getInstance().clearTokens();
                 this.currentUser = null;
+                top.fpsmaster.cosmetic.CosmeticManager.getInstance().refreshOwned();
                 return ApiResponse.error(-1, "Logout error", e.getMessage());
             }
         });
@@ -168,6 +171,59 @@ public class FPSMasterApiClient {
             ClientLogger.error("Failed to get current user: " + e.getMessage());
             return null;
         }
+    }
+
+    public CompletableFuture<ApiResponse<OwnedItemView[]>> getOwnedItems() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                HttpRequest.HttpResponseResult response = HttpRequest.get(
+                        FPSMasterConstants.Endpoints.OWNED_ITEMS,
+                        getAuthHeaders()
+                );
+                return ApiResponse.fromJson(parseResponse(response), OwnedItemView[].class);
+            } catch (IOException e) {
+                ClientLogger.error("Get owned items failed: " + e.getMessage());
+                return ApiResponse.error(-1, "Network error", e.getMessage());
+            } catch (ApiException e) {
+                ClientLogger.error("Get owned items failed: " + e.getMessage());
+                return ApiResponse.error(e.getCode(), e.getErrorMessage(), e.getMessage());
+            }
+        });
+    }
+
+    public CompletableFuture<ApiResponse<CosmeticItem[]>> getCatalogItems() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                HttpRequest.HttpResponseResult response = HttpRequest.get(
+                        FPSMasterConstants.Endpoints.CATALOG_ITEMS,
+                        getDefaultHeaders()
+                );
+                return ApiResponse.fromJson(parseResponse(response), CosmeticItem[].class);
+            } catch (IOException e) {
+                return ApiResponse.error(-1, "Network error", e.getMessage());
+            } catch (ApiException e) {
+                return ApiResponse.error(e.getCode(), e.getErrorMessage(), e.getMessage());
+            }
+        });
+    }
+
+    public CompletableFuture<ApiResponse<JsonObject>> purchaseItem(long itemId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                JsonObject payload = new JsonObject();
+                payload.addProperty("itemId", itemId);
+                HttpRequest.HttpResponseResult response = HttpRequest.postJson(
+                        FPSMasterConstants.Endpoints.PURCHASES,
+                        payload,
+                        getAuthHeaders()
+                );
+                return ApiResponse.fromJson(parseResponse(response), JsonObject.class);
+            } catch (IOException e) {
+                return ApiResponse.error(-1, "Network error", e.getMessage());
+            } catch (ApiException e) {
+                return ApiResponse.error(e.getCode(), e.getErrorMessage(), e.getMessage());
+            }
+        });
     }
 
     // ================== Token Management ================== //
