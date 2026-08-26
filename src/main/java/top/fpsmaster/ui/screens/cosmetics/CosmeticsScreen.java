@@ -12,6 +12,7 @@ import org.lwjgl.input.Keyboard;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.cosmetic.CosmeticManager;
+import top.fpsmaster.cosmetic.RemoteCosmeticService;
 import top.fpsmaster.modules.client.api.AuthService;
 import top.fpsmaster.modules.client.api.FPSMasterApiClient;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
@@ -106,6 +107,7 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
     public void onGuiClosed() {
         bridge.cosmetics.setPreviewing(false);
         bridge.cosmetics.clearPreview();
+        RemoteCosmeticService.getInstance().flush();
         try {
             FPSMaster.configManager.saveConfig(ConfigProfileUtils.getActiveProfileName());
         } catch (FileException e) {
@@ -196,6 +198,9 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
             List<CosmeticsBridge.Item> result = new ArrayList<>();
             for (CosmeticManager.CosmeticOption option : cosmetics.allOptions()) {
                 boolean builtin = CosmeticManager.BUILTIN_WINGS_ID.equals(option.getId());
+                // The last four carry the item's scale policy: the shared screen reads the slider
+                // range off the equipped back item, which is what keeps a fixed-size cosmetic
+                // (every non-wings category, elytra included) locked at its authored size.
                 result.add(new CosmeticsBridge.Item(
                         option.getId(),
                         builtin ? FPSMaster.i18n.get("cosmetics.wings.builtin") : option.getName(),
@@ -204,7 +209,11 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
                         option.getPrice(),
                         cosmetics.isOwned(option.getId()),
                         cosmetics.isEquipped(option.getId()),
-                        builtin
+                        builtin,
+                        option.getDefaultScale(),
+                        option.isScaleAdjustable(),
+                        option.getMinScale(),
+                        option.getMaxScale()
                 ));
             }
             return result;
@@ -237,6 +246,7 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
                 }
             });
         }
+        public String syncStatus() { return RemoteCosmeticService.getInstance().syncStatusKey(); }
         public boolean capeEnabled() { return cosmetics.capeAnimationEnabled(); }
         public void setCapeEnabled(boolean enabled) { cosmetics.setCapeAnimationEnabled(enabled); }
         public float wingScale() { return cosmetics.wingScale(); }

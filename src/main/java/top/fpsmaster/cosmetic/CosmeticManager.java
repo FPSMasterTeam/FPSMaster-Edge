@@ -7,11 +7,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 import top.fpsmaster.FPSMaster;
-import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.features.impl.render.DragonWingsRenderer;
+import top.fpsmaster.features.impl.render.ElytraRenderer;
 import top.fpsmaster.modules.client.api.AuthService;
 import top.fpsmaster.modules.client.api.FPSMasterApiClient;
+import top.fpsmaster.modules.client.api.FPSMasterConstants;
 import top.fpsmaster.modules.client.api.model.CosmeticItem;
+import top.fpsmaster.modules.client.api.model.CosmeticLoadoutView;
 import top.fpsmaster.modules.client.api.model.OwnedItemView;
 import top.fpsmaster.modules.logger.ClientLogger;
 
@@ -36,17 +38,35 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class CosmeticManager {
     public static final String BUILTIN_WINGS_ID = "builtin:dragon-wings";
     private static final int MAX_BYTES = 16 * 1024 * 1024;
+    /** Contract bounds. An individual item narrows or locks its own range inside these. */
+    public static final float SCALE_FLOOR = 0.10f;
+    public static final float SCALE_CEILING = 3.00f;
     private static final CosmeticOption BUILTIN_WINGS =
-            new CosmeticOption(BUILTIN_WINGS_ID, "", "", "wings", null, "0", 1f, true, false);
+            new CosmeticOption(BUILTIN_WINGS_ID, "", "", "wings", null, "0", 1f, true, 0.5f, 1.5f, false);
     private static final CosmeticManager INSTANCE = new CosmeticManager();
 
+    /** Back cosmetics this client can actually draw. Anything else is neither offered nor equipped. */
+    private static boolean isBackCategory(String category) {
+        return "wings".equals(category) || "elytra".equals(category);
+    }
+
+    private static boolean isRenderableCategory(String category) {
+        return "cape".equals(category) || isBackCategory(category);
+    }
+
     private final DragonWingsRenderer wingsRenderer = new DragonWingsRenderer();
+    private final ElytraRenderer elytraRenderer = new ElytraRenderer();
     private final Map<String, ResourceLocation> textures = new HashMap<>();
     private final Set<String> loading = new HashSet<>();
+    /** Other players' items, resolved on demand. Deliberately outside {@link #allOptions()}: someone
+     *  else's cosmetic is something to draw, never something in this account's wardrobe. */
+    private final Map<String, CosmeticOption> remoteOptions = new ConcurrentHashMap<>();
     private volatile List<CosmeticOption> catalogOptions = Collections.emptyList();
     private volatile List<CosmeticOption> ownedOptions = Collections.emptyList();
     private volatile List<CosmeticOption> customOptions = Collections.emptyList();
@@ -63,9 +83,10 @@ public final class CosmeticManager {
     }
 
     public void initialize() {
-        EventDispatcher.registerListener(wingsRenderer);
         reloadCustom();
         refreshOwned();
+        RemoteCosmeticService.getInstance().pullOwnLoadout();
+        MinecraftLinkService.getInstance().linkIfNeeded();
     }
 
     public void reloadCustom() {
@@ -119,7 +140,7 @@ public final class CosmeticManager {
                 for (CosmeticItem item : items) {
                     if (item == null || !item.isAvailable()) continue;
                     String category = item.getCategory().toLowerCase(java.util.Locale.ROOT);
-                    if (!("cape".equals(category) || "wings".equals(category)) || item.getAssetKey().isEmpty()) continue;
+                    if (!isRenderableCategory(category) || item.getAssetKey().isEmpty()) continue;
                     options.add(option(item, category));
                 }
             }
@@ -144,7 +165,7 @@ public final class CosmeticManager {
                     CosmeticItem item = view == null ? null : view.getItem();
                     if (item == null) continue;
                     String category = item.getCategory().toLowerCase(java.util.Locale.ROOT);
-                    if (!("cape".equals(category) || "wings".equals(category)) || item.getAssetKey().isEmpty()) continue;
+                    if (!isRenderableCategory(category) || item.getAssetKey().isEmpty()) continue;
                     options.add(option(item, category));
                 }
             }
@@ -189,7 +210,8 @@ public final class CosmeticManager {
             previewCapeId = id;
         } else {
             previewWingsId = id;
-            previewWingScale = isEquipped(id) ? FPSMaster.configManager.configure.cosmeticWingScale : option.defaultScale;
+            previewWingScale = option.clampScale(
+                    isEquipped(id) ? FPSMaster.configManager.configure.cosmeticWingScale : option.defaultScale);
         }
         loadTexture(option);
     }
@@ -205,9 +227,11 @@ public final class CosmeticManager {
             FPSMaster.configManager.configure.cosmeticWingsId = id;
             FPSMaster.configManager.configure.cosmeticWingsEnabled = true;
             previewWingsId = id;
-            FPSMaster.configManager.configure.cosmeticWingScale = previewing ? previewWingScale : option.defaultScale;
+            FPSMaster.configManager.configure.cosmeticWingScale =
+                    option.clampScale(previewing ? previewWingScale : option.defaultScale);
         }
         loadTexture(option);
+        RemoteCosmeticService.getInstance().publishNow();
     }
 
     public void grantPurchasedAndEquip(String id) {
@@ -236,8 +260,8 @@ public final class CosmeticManager {
     public List<CosmeticOption> wingOptions() {
         List<CosmeticOption> result = new ArrayList<>();
         result.add(BUILTIN_WINGS);
-        for (CosmeticOption option : customOptions) if ("wings".equals(option.category)) result.add(option);
-        for (CosmeticOption option : ownedOptions) if ("wings".equals(option.category) && !result.contains(option)) result.add(option);
+        for (CosmeticOption option : customOptions) if (isBackCategory(option.category)) result.add(option);
+        for (CosmeticOption option : ownedOptions) if (isBackCategory(option.category) && !result.contains(option)) result.add(option);
         return result;
     }
 
@@ -277,6 +301,7 @@ public final class CosmeticManager {
     public void setWingsEnabled(boolean enabled) {
         FPSMaster.configManager.configure.cosmeticWingsEnabled = enabled;
         if (enabled) loadTexture(selectedWings());
+        RemoteCosmeticService.getInstance().publishNow();
     }
 
     public boolean capeAnimationEnabled() {
@@ -285,6 +310,7 @@ public final class CosmeticManager {
 
     public void setCapeAnimationEnabled(boolean enabled) {
         FPSMaster.configManager.configure.cosmeticCapeAnimationEnabled = enabled;
+        RemoteCosmeticService.getInstance().publishNow();
     }
 
     public float wingScale() {
@@ -297,17 +323,24 @@ public final class CosmeticManager {
     public void setWingScale(float scale) {
         CosmeticOption option = effectiveWings();
         if (!option.scaleAdjustable) return;
-        float value = Math.max(0f, Math.min(1f, scale));
+        float value = option.clampScale(scale);
         if (previewing && previewWingsId != null) {
             previewWingScale = value;
             if (isEquipped(option.id)) FPSMaster.configManager.configure.cosmeticWingScale = value;
         } else {
             FPSMaster.configManager.configure.cosmeticWingScale = value;
         }
+        // Dragging a slider is one intent, not one intent per frame.
+        RemoteCosmeticService.getInstance().publishDebounced();
     }
 
     public boolean wingScaleAdjustable() {
         return effectiveWings().scaleAdjustable;
+    }
+
+    /** The persisted scale, ignoring any preview - this is what gets published to the account. */
+    public float storedWingScale() {
+        return selectedWings().clampScale(FPSMaster.configManager.configure.cosmeticWingScale);
     }
 
     public boolean rendersDragonWings() {
@@ -354,7 +387,7 @@ public final class CosmeticManager {
     private CosmeticOption findAll(String id) {
         if (id == null) return null;
         for (CosmeticOption option : allOptions()) if (id.equals(option.id)) return option;
-        return null;
+        return remoteOptions.get(id);
     }
 
     private ResourceLocation selectedTexture(CosmeticOption option) {
@@ -404,7 +437,7 @@ public final class CosmeticManager {
     }
 
     private String resolveAssetUrl(String assetKey) {
-        return assetKey.startsWith("/") ? "https://api.fpsmaster.top" + assetKey : assetKey;
+        return FPSMasterConstants.resolve(assetKey);
     }
 
     private BufferedImage download(String url) throws Exception {
@@ -441,6 +474,7 @@ public final class CosmeticManager {
     private void validateDimensions(BufferedImage image, String category) {
         int width = image.getWidth();
         int height = image.getHeight();
+        // Wings use the 30n studio atlas; capes and elytra both use a 64x32-proportioned sheet.
         boolean valid = "wings".equals(category)
                 ? width == height && width % 30 == 0
                 : width % 64 == 0 && height % 32 == 0 && width / 64 == height / 32;
@@ -455,10 +489,121 @@ public final class CosmeticManager {
     }
 
     private CosmeticOption option(CosmeticItem item, String category) {
+        float scale = clamp(item.getScale());
+        boolean resizable = item.isAllowResize();
         return new CosmeticOption(
                 String.valueOf(item.getId()), item.getName(), item.getDescription(), category,
-                item.getAssetKey(), item.getPrice(), 1f, true, false
+                item.getAssetKey(), item.getPrice(), scale, resizable,
+                resizable ? clamp(item.getMinScale()) : scale,
+                resizable ? clamp(item.getMaxScale()) : scale,
+                false
         );
+    }
+
+    /**
+     * Adds another player's item to the render-only registry and returns the id to key it by.
+     * The texture is fetched once per item, however many players wear it.
+     */
+    public String registerRemoteOption(CosmeticItem item) {
+        String category = item.getCategory().toLowerCase(java.util.Locale.ROOT);
+        if (!isRenderableCategory(category) || item.getAssetKey().isEmpty()) {
+            return null;
+        }
+        String id = String.valueOf(item.getId());
+        CosmeticOption option = remoteOptions.get(id);
+        if (option == null) {
+            option = option(item, category);
+            remoteOptions.put(id, option);
+        }
+        loadTexture(option);
+        return id;
+    }
+
+    /**
+     * Adopts the loadout stored on the account. Anything this client cannot resolve to a known option
+     * is left alone rather than blanked, so a catalog that has not finished loading never wipes a
+     * selection the player made.
+     */
+    public void applyAccountLoadout(CosmeticLoadoutView view) {
+        if (view == null) {
+            return;
+        }
+        String capeId = view.getCapeItemId();
+        if (capeId != null && findAll(capeId) != null) {
+            FPSMaster.configManager.configure.cosmeticCapeId = capeId;
+        }
+        String backId = view.getBackItemId();
+        if (backId != null && findAll(backId) != null) {
+            FPSMaster.configManager.configure.cosmeticWingsId = backId;
+            FPSMaster.configManager.configure.cosmeticWingsEnabled = true;
+        } else if (view.isBuiltinWingsEnabled()) {
+            FPSMaster.configManager.configure.cosmeticWingsId = BUILTIN_WINGS_ID;
+            FPSMaster.configManager.configure.cosmeticWingsEnabled = true;
+        }
+        FPSMaster.configManager.configure.cosmeticCapeAnimationEnabled = view.isCapeAnimationEnabled();
+        FPSMaster.configManager.configure.cosmeticWingScale = selectedWings().clampScale(view.getWingScale());
+        CosmeticOption cape = selectedCape();
+        if (cape != null) loadTexture(cape);
+        loadTexture(selectedWings());
+    }
+
+    // ================== Per-player resolution ================== //
+
+    /** What to draw on a player's back this frame. */
+    public static final class BackPiece {
+        /** Null means the built-in dragon wings atlas. */
+        public final ResourceLocation texture;
+        public final boolean elytra;
+        public final float scale;
+
+        BackPiece(ResourceLocation texture, boolean elytra, float scale) {
+            this.texture = texture;
+            this.elytra = elytra;
+            this.scale = scale;
+        }
+    }
+
+    public BackPiece backPieceFor(UUID uuid, boolean local) {
+        if (local) {
+            if (!rendersDragonWings()) return null;
+            CosmeticOption option = effectiveWings();
+            ResourceLocation texture = BUILTIN_WINGS_ID.equals(option.id) ? null : selectedTexture(option);
+            // A catalog wing whose texture has not arrived yet must not fall back to the built-in
+            // atlas, which would briefly show the wrong cosmetic.
+            if (texture == null && !BUILTIN_WINGS_ID.equals(option.id)) return null;
+            return new BackPiece(texture, option.isElytra(), Math.max(0.01f, wingScale()));
+        }
+        RemoteCosmeticService.RemoteLoadout loadout = RemoteCosmeticService.getInstance().loadoutFor(uuid);
+        if (loadout == null) return null;
+        if (loadout.backItemId == null) {
+            return loadout.builtinWingsEnabled
+                    ? new BackPiece(null, false, Math.max(0.01f, loadout.wingScale)) : null;
+        }
+        CosmeticOption option = remoteOptions.get(loadout.backItemId);
+        ResourceLocation texture = option == null ? textureFor(loadout.backItemId) : selectedTexture(option);
+        if (texture == null) return null;
+        float scale = option != null ? option.clampScale(loadout.wingScale) : loadout.wingScale;
+        return new BackPiece(texture, "elytra".equals(loadout.backCategory), Math.max(0.01f, scale));
+    }
+
+    public ResourceLocation capeTextureFor(UUID uuid, boolean local) {
+        if (local) {
+            return capeTexture();
+        }
+        RemoteCosmeticService.RemoteLoadout loadout = RemoteCosmeticService.getInstance().loadoutFor(uuid);
+        return loadout == null || loadout.capeItemId == null ? null : textureFor(loadout.capeItemId);
+    }
+
+    public boolean capeAnimationFor(UUID uuid, boolean local) {
+        if (local) {
+            return capeAnimationEnabled();
+        }
+        RemoteCosmeticService.RemoteLoadout loadout = RemoteCosmeticService.getInstance().loadoutFor(uuid);
+        return loadout != null && loadout.capeAnimationEnabled;
+    }
+
+    public ElytraRenderer elytraRenderer() {
+        return elytraRenderer;
     }
 
     private CosmeticOption parseCustom(Path file) throws Exception {
@@ -474,8 +619,8 @@ public final class CosmeticManager {
         String name = string(root, "name");
         if (name.trim().isEmpty() || name.length() > 64) throw new IllegalArgumentException("name must contain 1-64 characters");
         String category = string(root, "type").toLowerCase(java.util.Locale.ROOT);
-        if (!("cape".equals(category) || "wings".equals(category))) {
-            throw new IllegalArgumentException("type must be cape or wings");
+        if (!isRenderableCategory(category)) {
+            throw new IllegalArgumentException("type must be cape, wings or elytra");
         }
         Path texture = Paths.get(string(root, "texture"));
         if (!texture.isAbsolute()) texture = file.getParent().resolve(texture);
@@ -486,10 +631,14 @@ public final class CosmeticManager {
         }
         JsonObject wing = root.has("wing") && root.get("wing").isJsonObject()
                 ? root.getAsJsonObject("wing") : new JsonObject();
+        float scale = clamp(decimal(wing, "scale", 1f));
+        boolean resizable = bool(wing, "allowResize", true);
         return new CosmeticOption(
                 "custom:" + rawId, name, optionalString(root, "description"), category,
-                texture.toString(), "0", clamp(decimal(wing, "scale", 1f)),
-                bool(wing, "allowResize", true), true
+                texture.toString(), "0", scale, resizable,
+                resizable ? clamp(decimal(wing, "minScale", 0.5f)) : scale,
+                resizable ? clamp(decimal(wing, "maxScale", 1.5f)) : scale,
+                true
         );
     }
 
@@ -541,7 +690,7 @@ public final class CosmeticManager {
     }
 
     private float clamp(float value) {
-        return Math.max(0f, Math.min(1f, value));
+        return Math.max(SCALE_FLOOR, Math.min(SCALE_CEILING, value));
     }
 
     public static final class CosmeticOption {
@@ -553,11 +702,13 @@ public final class CosmeticManager {
         private final String price;
         private final float defaultScale;
         private final boolean scaleAdjustable;
+        private final float minScale;
+        private final float maxScale;
         private final boolean local;
 
         private CosmeticOption(String id, String name, String description, String category,
                                String assetKey, String price, float defaultScale,
-                               boolean scaleAdjustable, boolean local) {
+                               boolean scaleAdjustable, float minScale, float maxScale, boolean local) {
             this.id = id;
             this.name = name;
             this.description = description;
@@ -566,7 +717,35 @@ public final class CosmeticManager {
             this.price = price;
             this.defaultScale = defaultScale;
             this.scaleAdjustable = scaleAdjustable;
+            // A locked item collapses its range onto its authored size, so clamping alone enforces the
+            // policy and no caller has to remember to check the flag first.
+            this.minScale = scaleAdjustable ? Math.min(minScale, maxScale) : defaultScale;
+            this.maxScale = scaleAdjustable ? Math.max(minScale, maxScale) : defaultScale;
             this.local = local;
+        }
+
+        public float clampScale(float scale) {
+            return Math.max(minScale, Math.min(maxScale, scale));
+        }
+
+        public boolean isElytra() {
+            return "elytra".equals(category);
+        }
+
+        public float getDefaultScale() {
+            return defaultScale;
+        }
+
+        public boolean isScaleAdjustable() {
+            return scaleAdjustable;
+        }
+
+        public float getMinScale() {
+            return minScale;
+        }
+
+        public float getMaxScale() {
+            return maxScale;
         }
 
         public String getId() {

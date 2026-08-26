@@ -187,6 +187,9 @@ public class FPSMaster {
         // Before anything else: an unfinished stream is an unreadable file.
         top.fpsmaster.replay.ReplayRecorder.instance().stop();
         PlayTimeStatistics.flush();
+        // A debounced scale change is still pending if the game is closed straight after dragging
+        // the slider; give it a bounded moment rather than losing it.
+        top.fpsmaster.cosmetic.RemoteCosmeticService.getInstance().flushBlocking(1500L);
         // Release SMTC native session before tearing down async/audio
         try {
             top.fpsmaster.modules.music.MusicManager.get().shutdownSmtc();

@@ -226,6 +226,131 @@ public class FPSMasterApiClient {
         });
     }
 
+    // ================== Cosmetic Loadout ================== //
+
+    public CompletableFuture<ApiResponse<CosmeticLoadoutView>> getCosmeticLoadout() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                HttpRequest.HttpResponseResult response = HttpRequest.get(
+                        FPSMasterConstants.Endpoints.COSMETIC_LOADOUT,
+                        getAuthHeaders()
+                );
+                return ApiResponse.fromJson(parseResponse(response), CosmeticLoadoutView.class);
+            } catch (IOException e) {
+                return ApiResponse.error(-1, "Network error", e.getMessage());
+            } catch (ApiException e) {
+                return ApiResponse.error(e.getCode(), e.getErrorMessage(), e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * @param capeItemId null clears the cape slot; {@code backItemId} and {@code builtinWingsEnabled}
+     *                   are mutually exclusive, which the backend also enforces
+     * @param wingScale  a real scale such as 1.20, never a 0..1 slider position
+     */
+    public CompletableFuture<ApiResponse<CosmeticLoadoutView>> putCosmeticLoadout(
+            String capeItemId, String backItemId, boolean builtinWingsEnabled,
+            float wingScale, boolean capeAnimationEnabled) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                JsonObject payload = new JsonObject();
+                if (capeItemId == null) {
+                    payload.add("capeItemId", com.google.gson.JsonNull.INSTANCE);
+                } else {
+                    payload.addProperty("capeItemId", capeItemId);
+                }
+                if (backItemId == null) {
+                    payload.add("backItemId", com.google.gson.JsonNull.INSTANCE);
+                } else {
+                    payload.addProperty("backItemId", backItemId);
+                }
+                payload.addProperty("builtinWingsEnabled", builtinWingsEnabled);
+                payload.addProperty("wingScale", wingScale);
+                payload.addProperty("capeAnimationEnabled", capeAnimationEnabled);
+                HttpRequest.HttpResponseResult response = HttpRequest.putJson(
+                        FPSMasterConstants.Endpoints.COSMETIC_LOADOUT,
+                        payload,
+                        getAuthHeaders()
+                );
+                return ApiResponse.fromJson(parseResponse(response), CosmeticLoadoutView.class);
+            } catch (IOException e) {
+                return ApiResponse.error(-1, "Network error", e.getMessage());
+            } catch (ApiException e) {
+                return ApiResponse.error(e.getCode(), e.getErrorMessage(), e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Batch-resolves other players' loadouts. Players who are unknown or have not linked a Minecraft
+     * account are absent from the response rather than present with a null loadout.
+     *
+     * @param minecraftUuids canonical dashed lowercase, at most 200; anything else is rejected 400
+     */
+    public CompletableFuture<ApiResponse<ResolvedLoadoutView[]>> resolveLoadouts(java.util.Collection<String> minecraftUuids) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                com.google.gson.JsonArray uuids = new com.google.gson.JsonArray();
+                for (String uuid : minecraftUuids) {
+                    uuids.add(new com.google.gson.JsonPrimitive(uuid));
+                }
+                JsonObject payload = new JsonObject();
+                payload.add("minecraftUuids", uuids);
+                HttpRequest.HttpResponseResult response = HttpRequest.postJson(
+                        FPSMasterConstants.Endpoints.RESOLVE_LOADOUTS,
+                        payload,
+                        getAuthHeaders()
+                );
+                return ApiResponse.fromJson(parseResponse(response), ResolvedLoadoutView[].class);
+            } catch (IOException e) {
+                return ApiResponse.error(-1, "Network error", e.getMessage());
+            } catch (ApiException e) {
+                return ApiResponse.error(e.getCode(), e.getErrorMessage(), e.getMessage());
+            }
+        });
+    }
+
+    // ================== Minecraft account link ================== //
+
+    public CompletableFuture<ApiResponse<MinecraftLinkChallenge>> requestMinecraftLinkChallenge() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                HttpRequest.HttpResponseResult response = HttpRequest.postJson(
+                        FPSMasterConstants.Endpoints.MINECRAFT_LINK_CHALLENGE,
+                        new JsonObject(),
+                        getAuthHeaders()
+                );
+                return ApiResponse.fromJson(parseResponse(response), MinecraftLinkChallenge.class);
+            } catch (IOException e) {
+                return ApiResponse.error(-1, "Network error", e.getMessage());
+            } catch (ApiException e) {
+                return ApiResponse.error(e.getCode(), e.getErrorMessage(), e.getMessage());
+            }
+        });
+    }
+
+    /** Only the challenge id and the public username travel here — never a Minecraft access token. */
+    public CompletableFuture<ApiResponse<JsonObject>> confirmMinecraftLink(String challengeId, String username) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                JsonObject payload = new JsonObject();
+                payload.addProperty("challengeId", challengeId);
+                payload.addProperty("username", username);
+                HttpRequest.HttpResponseResult response = HttpRequest.postJson(
+                        FPSMasterConstants.Endpoints.MINECRAFT_LINK_CONFIRM,
+                        payload,
+                        getAuthHeaders()
+                );
+                return ApiResponse.fromJson(parseResponse(response), JsonObject.class);
+            } catch (IOException e) {
+                return ApiResponse.error(-1, "Network error", e.getMessage());
+            } catch (ApiException e) {
+                return ApiResponse.error(e.getCode(), e.getErrorMessage(), e.getMessage());
+            }
+        });
+    }
+
     // ================== Token Management ================== //
 
     public boolean isLoggedIn() {

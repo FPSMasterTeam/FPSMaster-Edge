@@ -1,5 +1,6 @@
 package top.fpsmaster.forge.mixin;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
@@ -43,13 +44,15 @@ public abstract class MixinLayerCape implements LayerRenderer<AbstractClientPlay
     public void onRenderCape(AbstractClientPlayer player, float limbSwing, float limbSwingAmount, float partialTicks,
                              float ageInTicks, float netHeadYaw, float headPitch, float scale, CallbackInfo ci) {
         CosmeticManager cosmetics = CosmeticManager.getInstance();
-        boolean previewing = cosmetics.isPreviewing() && cosmetics.capeTexture() != null;
-        if (!cosmetics.capeAnimationEnabled() && !previewing) return;
+        boolean local = player == Minecraft.getMinecraft().thePlayer;
+        boolean previewing = local && cosmetics.isPreviewing() && cosmetics.capeTexture() != null;
+        boolean animated = cosmetics.capeAnimationFor(player.getUniqueID(), local);
+        if (!animated && !previewing) return;
         if (shouldSkipRender(player, previewing)) return;
 
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         playerRenderer.bindTexture(player.getLocationCape());
-        renderWavyCape(player, partialTicks, cosmetics.capeAnimationEnabled());
+        renderWavyCape(player, partialTicks, animated);
         ci.cancel();
     }
 

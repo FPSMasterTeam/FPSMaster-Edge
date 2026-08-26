@@ -57,6 +57,7 @@
     "LayerArmorBaseMixin_Probe",
     "LayerArmorBaseMixin_TextureCache",
     "MixinLayerCape",
+    "MixinRenderPlayer",
     "MixinLayerHeldItem",
     "LayerHeldItemMixin_Probe",
     "MixinMainMenu",
