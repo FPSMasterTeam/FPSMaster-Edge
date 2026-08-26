@@ -67,9 +67,26 @@ public abstract class TextComponent extends Component {
         return label;
     }
 
+    /**
+     * Representative line for the HUD editor. Components that show nothing until something happens
+     * in the world would otherwise measure to zero there, leaving the player nothing to drag.
+     */
+    protected String previewText() {
+        return text();
+    }
+
+    @Override
+    public void measurePreview() {
+        applyMeasurement(previewText());
+    }
+
     @Override
     public void measure() {
-        measured = text();
+        applyMeasurement(text());
+    }
+
+    private void applyMeasurement(String line) {
+        measured = line;
         if (measured == null) {
             // Zero the size rather than leaving last frame's: a stale width would have the blur mask
             // stamp a panel this component is no longer drawing.

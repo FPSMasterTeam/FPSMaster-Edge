@@ -5,6 +5,7 @@ import lombok.Getter;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.cosmetic.CosmeticManager;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.impl.optimizes.OldAnimations;
 import top.fpsmaster.features.impl.optimizes.Performance;
@@ -255,7 +256,10 @@ public class ConfigManager {
                 configure.cosmeticCapeAnimationEnabled = client.has("cosmeticCapeAnimationEnabled")
                         && client.get("cosmeticCapeAnimationEnabled").getAsBoolean();
                 if (client.has("cosmeticWingScale")) {
-                    configure.cosmeticWingScale = Math.max(0f, Math.min(1f, client.get("cosmeticWingScale").getAsFloat()));
+                    // A real scale, not a 0..1 slider position: clamping to 1 here used to cap every
+                    // wing at its authored size no matter what the item's policy allowed.
+                    configure.cosmeticWingScale = Math.max(CosmeticManager.SCALE_FLOOR,
+                            Math.min(CosmeticManager.SCALE_CEILING, client.get("cosmeticWingScale").getAsFloat()));
                 }
                 if (client.has("classicBackgroundSaturation")) {
                     configure.classicBackgroundSaturation = client.get("classicBackgroundSaturation").getAsFloat();

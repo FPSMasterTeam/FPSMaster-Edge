@@ -66,12 +66,17 @@ public abstract class MixinAbstractClientPlayer extends MixinEntityPlayer {
 
     @Inject(method = "getLocationCape", at = @At("HEAD"), cancellable = true)
     public void getLocationCape(CallbackInfoReturnable<ResourceLocation> cir) {
-        ResourceLocation selected = CosmeticManager.getInstance().capeTexture();
-        if ((Object) this == Minecraft.getMinecraft().thePlayer && selected != null) {
+        AbstractClientPlayer self = (AbstractClientPlayer) (Object) this;
+        boolean local = self == Minecraft.getMinecraft().thePlayer;
+        ResourceLocation selected = CosmeticManager.getInstance().capeTextureFor(self.getUniqueID(), local);
+        if (selected != null) {
             cir.setReturnValue(selected);
             return;
         }
-        EventCapeLoading event = new EventCapeLoading(playerInfo.getGameProfile().getName(), (AbstractClientPlayer) (Object) this);
+        if (playerInfo == null) {
+            return;
+        }
+        EventCapeLoading event = new EventCapeLoading(playerInfo.getGameProfile().getName(), self);
         EventDispatcher.dispatchEvent(event);
         if (event.cape != null) {
             cir.setReturnValue(event.cape);

@@ -43,6 +43,8 @@ public class ComponentsManager {
         addComponentSafely("ServerAddressDisplayComponent", ServerAddressDisplayComponent::new);
         addComponentSafely("ItemCountDisplayComponent", ItemCountDisplayComponent::new);
         addComponentSafely("LyricsDisplayComponent", LyricsDisplayComponent::new);
+        addComponentSafely("TNTTimerHUDComponent", TNTTimerHUDComponent::new);
+        addComponentSafely("DamageIndicatorHUDComponent", DamageIndicatorHUDComponent::new);
     }
 
     private void addComponentSafely(String name, Supplier<Component> supplier) {

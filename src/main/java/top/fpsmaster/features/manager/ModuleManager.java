@@ -44,6 +44,20 @@ public class ModuleManager {
         return getModule(mod);
     }
 
+    public Module findByName(String name) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        String needle = name.replace("-", "").replace("_", "").toLowerCase(java.util.Locale.ROOT);
+        for (Module module : modules) {
+            String id = module.name.replace("-", "").replace("_", "").toLowerCase(java.util.Locale.ROOT);
+            if (id.equals(needle)) {
+                return module;
+            }
+        }
+        return null;
+    }
+
     @Subscribe
     public void onKey(EventKey e) {
         if (e.key == ClientSettings.keyBind.getValue()) {
@@ -132,11 +146,13 @@ public class ModuleManager {
         modules.add(new CoordsDisplay());
         modules.add(new PerformanceHud());
         modules.add(new ModsList());
-//        modules.add(new MiniMap());
+        modules.add(new MiniMap());
         modules.add(new DirectionDisplay());
         modules.add(new DamageIndicator());
         modules.add(new TabOverlay());
         modules.add(new ItemCountDisplay());
+        modules.add(new TNTTimerHUD());
+        modules.add(new DamageIndicatorHUD());
         modules.add(new LyricsDisplay());
         modules.add(new SoundModifier());
         modules.add(new ParticlesModifier());

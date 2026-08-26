@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.Session;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.modules.client.api.FPSMasterConstants;
 import top.fpsmaster.modules.config.Configure;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.statistics.TelemetryIdentityStatistics;
@@ -26,9 +27,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class EdgeTelemetryReporter {
     private static final long HEARTBEAT_INTERVAL_MS = 90_000L;
     private static final long PRESENCE_INTERVAL_MS = 180_000L;
-    private static final String TELEMETRY_URL = "https://api.fpsmaster.top/api/v1/telemetry/heartbeat";
-    private static final String PRESENCE_URL = "https://api.fpsmaster.top/api/v1/telemetry/presence";
-    private static final String OFFLINE_URL = "https://api.fpsmaster.top/api/v1/telemetry/offline";
+    private static final String TELEMETRY_URL = FPSMasterConstants.Endpoints.TELEMETRY_HEARTBEAT;
+    private static final String PRESENCE_URL = FPSMasterConstants.Endpoints.TELEMETRY_PRESENCE;
+    private static final String OFFLINE_URL = FPSMasterConstants.Endpoints.TELEMETRY_OFFLINE;
     private static final String CLIENT_NAME = "FPSMaster-Edge";
     private static final int MAX_SAMPLED_PLAYERS = 8;
     // Fixed salt so identity hashes are stable across sessions (enables unique-user counting)

@@ -3,12 +3,9 @@ package top.fpsmaster.features.impl.render;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelRenderer;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.cosmetic.CosmeticManager;
-import top.fpsmaster.event.Subscribe;
-import top.fpsmaster.event.events.EventRender3D;
 
 public final class DragonWingsRenderer extends ModelBase {
     private static final ResourceLocation BUILTIN_TEXTURE = new ResourceLocation("client/wings/wings.png");
@@ -36,22 +33,12 @@ public final class DragonWingsRenderer extends ModelBase {
         wing.addChild(wingTip);
     }
 
-    @Subscribe
-    public void onRenderPlayer(EventRender3D event) {
-        CosmeticManager cosmetics = CosmeticManager.getInstance();
-        EntityPlayer player = mc.thePlayer;
-        if (!cosmetics.rendersDragonWings() || player == null || player.isInvisible() || mc.gameSettings.thirdPersonView == 0) {
-            return;
-        }
-        double scale = Math.max(0.01d, cosmetics.wingScale());
-        double yaw = interpolate(player.prevRenderYawOffset, player.renderYawOffset, event.partialTicks);
-        GL11.glPushMatrix();
-        GL11.glScaled(-scale, -scale, scale);
-        GL11.glRotated(180d + yaw, 0d, 1d, 0d);
-        GL11.glTranslated(0d, -1.25d / scale, 0.2d / scale);
-        if (player.isSneaking()) GL11.glTranslated(0d, 0.125d / scale, 0d);
-        renderGeometry(cosmetics.wingTexture());
-        GL11.glPopMatrix();
+    /**
+     * Draws the wings for whichever player the surrounding layer is rendering. Positioning and
+     * scale belong to the caller, which owns the player's transform.
+     */
+    public void renderLayer(ResourceLocation texture) {
+        renderGeometry(texture);
     }
 
     public void renderPreview(float x, float y, float size, float yaw) {
@@ -88,10 +75,5 @@ public final class DragonWingsRenderer extends ModelBase {
         GL11.glCullFace(GL11.GL_BACK);
         GL11.glDisable(GL11.GL_CULL_FACE);
         GL11.glColor4f(1f, 1f, 1f, 1f);
-    }
-
-    private float interpolate(float previous, float current, float partialTicks) {
-        float value = (previous + (current - previous) * partialTicks) % 360f;
-        return value < 0f ? value + 360f : value;
     }
 }

@@ -11,6 +11,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -93,6 +94,18 @@ public final class HttpRequest extends Utility {
 
     public static HttpResponseResult postJson(String url, JsonObject json, Map<String, String> headers) throws IOException {
         return post(url, json.toString(), "application/json", headers);
+    }
+
+    // ================== PUT Requests ================== //
+    public static HttpResponseResult putJson(String url, JsonObject json, Map<String, String> headers) throws IOException {
+        HttpPut request = new HttpPut(url);
+        if (headers != null) {
+            headers.forEach(request::setHeader);
+        }
+        StringEntity entity = new StringEntity(json.toString(), StandardCharsets.UTF_8);
+        entity.setContentType("application/json");
+        request.setEntity(entity);
+        return executeRequest(request, null);
     }
 
     public static HttpResponseResult postForm(String url, Map<String, String> params) throws IOException {

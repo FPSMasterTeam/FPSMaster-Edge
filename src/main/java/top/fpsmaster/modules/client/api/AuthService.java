@@ -3,6 +3,7 @@ package top.fpsmaster.modules.client.api;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import top.fpsmaster.cosmetic.RemoteCosmeticService;
 import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.io.BufferedReader;
@@ -135,6 +136,8 @@ public class AuthService {
         this.refreshToken = null;
         this.tokenExpiresAt = 0;
         saveToFile();
+        // Cosmetics resolved for this account stop being ours to show the moment the account goes.
+        RemoteCosmeticService.getInstance().onLogout();
     }
 
     private void saveToFile() {
