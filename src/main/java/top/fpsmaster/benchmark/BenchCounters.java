@@ -112,6 +112,22 @@ public final class BenchCounters {
     public static long texturesAllocated;
     public static long texturesReleased;
 
+    /**
+     * Framebuffers, GL programs, embedded browsers and client worker threads — the four resource
+     * classes the soak gate reads alongside textures and display lists.
+     *
+     * <p>Edge embeds no browser; the pair is here so an Edge report and Nova's runtime probe carry
+     * the same field set and can be diffed directly. It stays at zero on this client.
+     */
+    public static long framebuffersAllocated;
+    public static long framebuffersReleased;
+    public static long shaderProgramsAllocated;
+    public static long shaderProgramsReleased;
+    public static long browsersOpened;
+    public static long browsersClosed;
+    public static long workerThreadsStarted;
+    public static long workerThreadsStopped;
+
     public static long animatedSpritesTotal;
     public static long animatedSpritesUpdated;
 
@@ -150,6 +166,10 @@ public final class BenchCounters {
             "cullCandidates", "cullDormantFrames", "cullProbesIssued", "cullProbesHarvested", "cullProbesOccluded",
             "displayListsAllocated", "displayListsReleased",
             "texturesAllocated", "texturesReleased",
+            "framebuffersAllocated", "framebuffersReleased",
+            "shaderProgramsAllocated", "shaderProgramsReleased",
+            "browsersOpened", "browsersClosed",
+            "workerThreadsStarted", "workerThreadsStopped",
             "animatedSpritesTotal", "animatedSpritesUpdated",
             "armorLayerRenders", "armorPiecesRendered", "armorGlintModelRenders", "heldItemLayerRenders",
             "armorTextureCacheHits",
@@ -178,6 +198,10 @@ public final class BenchCounters {
                 cullCandidates, cullDormantFrames, cullProbesIssued, cullProbesHarvested, cullProbesOccluded,
                 displayListsAllocated, displayListsReleased,
                 texturesAllocated, texturesReleased,
+                framebuffersAllocated, framebuffersReleased,
+                shaderProgramsAllocated, shaderProgramsReleased,
+                browsersOpened, browsersClosed,
+                workerThreadsStarted, workerThreadsStopped,
                 animatedSpritesTotal, animatedSpritesUpdated,
                 armorLayerRenders, armorPiecesRendered, armorGlintModelRenders, heldItemLayerRenders,
                 armorTextureCacheHits,
@@ -200,5 +224,28 @@ public final class BenchCounters {
             delta[i] = after[i] - before[i];
         }
         return delta;
+    }
+
+    /**
+     * Wraps a worker body so the thread is counted from the moment it actually runs until it exits.
+     *
+     * <p>Counting at construction would report threads that were never started, and a thread that
+     * outlives the run is exactly what the soak gate is looking for.
+     */
+    public static Runnable trackWorker(final Runnable body) {
+        if (!BenchmarkMode.ACTIVE) {
+            return body;
+        }
+        return new Runnable() {
+            @Override
+            public void run() {
+                workerThreadsStarted++;
+                try {
+                    body.run();
+                } finally {
+                    workerThreadsStopped++;
+                }
+            }
+        };
     }
 }

@@ -3,29 +3,18 @@ package top.fpsmaster.utils.render.shader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.shader.Framebuffer;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 
-import static top.fpsmaster.utils.core.Utility.mc;
 import static top.fpsmaster.utils.render.shader.GradientUtils.interpolateColorC;
 
 public class RoundedUtil {
     private static final ShaderUtil roundedShader = new ShaderUtil("roundedRect");
     private static final ShaderUtil roundedGradientShader = new ShaderUtil("roundedRectGradient");
-    public static Framebuffer bloomFramebuffer = new Framebuffer(1, 1, false);
 
     public static void drawRound(float x, float y, float width, float height, float radius, Color color) {
         drawRound(x, y, width, height, radius, false, color);
-    }
-
-    public static Framebuffer createFrameBuffer(Framebuffer framebuffer) {
-        if (framebuffer == null || framebuffer.framebufferWidth != mc.displayWidth || framebuffer.framebufferHeight != mc.displayHeight) {
-            if (framebuffer != null) framebuffer.deleteFramebuffer();
-            return new Framebuffer(mc.displayWidth, mc.displayHeight, true);
-        }
-        return framebuffer;
     }
 
     public static void drawRoundScale(float x, float y, float width, float height, float radius, Color color, float scale) {

@@ -193,6 +193,14 @@ public class FPSMaster {
         } catch (Throwable t) {
             ClientLogger.warn("SMTC shutdown skipped: " + t.getMessage());
         }
+        // The playback thread holds a javax.sound line and a temp file, and stop() joins it. It has
+        // to happen before async.close(), which is where the rest of the client's workers go.
+        try {
+            top.fpsmaster.modules.music.MusicManager.get().engine().stop();
+        } catch (Throwable t) {
+            ClientLogger.warn("Audio engine stop skipped: " + t.getMessage());
+        }
+        releaseGraphics();
         telemetryReporter.shutdown();
         async.close();
         try {
@@ -200,6 +208,29 @@ public class FPSMaster {
             configManager.saveConfig(ConfigProfileUtils.getActiveProfileName());
         } catch (FileException e) {
             ExceptionHandler.handleFileException(e, "Failed to save default config during shutdown");
+        }
+    }
+
+    /**
+     * Frees the GL objects the client allocated for itself. Vanilla's texture manager and
+     * framebuffer never learn about these, so process exit was the only thing releasing them.
+     */
+    private void releaseGraphics() {
+        try {
+            top.fpsmaster.utils.render.shader.KawaseBlur.release();
+            top.fpsmaster.features.impl.render.MotionBlur.deleteBlurBuffers();
+            top.fpsmaster.minimap.Minimap.releaseFrameBuffers();
+            top.fpsmaster.utils.render.gui.Backgrounds.clearCaches();
+            CosmeticManager.getInstance().releaseTextures();
+        } catch (Throwable t) {
+            ClientLogger.warn("GL shutdown incomplete: " + t.getMessage());
+        }
+        // Separate: this one also stops the music decode/download pools, which is worth doing even
+        // if the GL teardown above failed.
+        try {
+            top.fpsmaster.modules.music.MusicTextures.shutdown();
+        } catch (Throwable t) {
+            ClientLogger.warn("Music texture shutdown incomplete: " + t.getMessage());
         }
     }
 }

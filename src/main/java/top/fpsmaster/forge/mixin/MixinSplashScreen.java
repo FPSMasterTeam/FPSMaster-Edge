@@ -27,26 +27,30 @@ public class MixinSplashScreen {
         ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft());
         int i = scaledresolution.getScaleFactor();
         Framebuffer framebuffer = new Framebuffer(scaledresolution.getScaledWidth() * i, scaledresolution.getScaledHeight() * i, true);
-        framebuffer.bindFramebuffer(false);
-        GlStateManager.matrixMode(5889);
-        GlStateManager.loadIdentity();
-        GlStateManager.ortho(0.0, scaledresolution.getScaledWidth(), scaledresolution.getScaledHeight(), 0.0, 1000.0, 3000.0);
-        GlStateManager.matrixMode(5888);
-        GlStateManager.loadIdentity();
-        GlStateManager.translate(0.0F, 0.0F, -2000.0F);
-        GlStateManager.disableLighting();
-        GlStateManager.disableFog();
-        GlStateManager.disableDepth();
+        try {
+            framebuffer.bindFramebuffer(false);
+            GlStateManager.matrixMode(5889);
+            GlStateManager.loadIdentity();
+            GlStateManager.ortho(0.0, scaledresolution.getScaledWidth(), scaledresolution.getScaledHeight(), 0.0, 1000.0, 3000.0);
+            GlStateManager.matrixMode(5888);
+            GlStateManager.loadIdentity();
+            GlStateManager.translate(0.0F, 0.0F, -2000.0F);
+            GlStateManager.disableLighting();
+            GlStateManager.disableFog();
+            GlStateManager.disableDepth();
 
-        Rects.fill(0, 0, scaledresolution.getScaledWidth(), scaledresolution.getScaledHeight(), new Color(20,20,20));
+            Rects.fill(0, 0, scaledresolution.getScaledWidth(), scaledresolution.getScaledHeight(), new Color(20,20,20));
 
-        GlStateManager.disableLighting();
-        GlStateManager.disableFog();
-        framebuffer.unbindFramebuffer();
-        framebuffer.framebufferRender(scaledresolution.getScaledWidth() * i, scaledresolution.getScaledHeight() * i);
-        GlStateManager.enableAlpha();
-        GlStateManager.alphaFunc(516, 0.1F);
-        arch$updateDisplay();
+            GlStateManager.disableLighting();
+            GlStateManager.disableFog();
+            framebuffer.unbindFramebuffer();
+            framebuffer.framebufferRender(scaledresolution.getScaledWidth() * i, scaledresolution.getScaledHeight() * i);
+            GlStateManager.enableAlpha();
+            GlStateManager.alphaFunc(516, 0.1F);
+            arch$updateDisplay();
+        } finally {
+            framebuffer.deleteFramebuffer();
+        }
     }
 
     @Unique

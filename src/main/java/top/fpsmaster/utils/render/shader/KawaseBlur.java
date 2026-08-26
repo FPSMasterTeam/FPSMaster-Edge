@@ -72,6 +72,18 @@ public class KawaseBlur {
         kawaseUp.unload();
     }
 
+    /**
+     * Drops the whole half-size chain. The list is rebuilt on the next {@link #renderBlur}, so this
+     * is safe at any point; it exists for shutdown, where nothing else would ever free these.
+     */
+    public static void release() {
+        for (Framebuffer fb : framebufferList) {
+            fb.deleteFramebuffer();
+        }
+        framebufferList.clear();
+        currentIterations = 0;
+    }
+
     private static void renderFBO(Framebuffer framebuffer, int framebufferTexture, ShaderUtil shader, float offset) {
         framebuffer.framebufferClear();
         framebuffer.bindFramebuffer(true);

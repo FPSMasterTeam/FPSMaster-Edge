@@ -68,6 +68,8 @@
     "MixinRenderItem",
     "GLAllocationMixin_ResourceTracking",
     "TextureUtilMixin_ResourceTracking",
+    "FramebufferMixin_ResourceTracking",
+    "ShaderLinkHelperMixin_ResourceTracking",
     "TextureUtilMixin_FastUpload",
     "MixinRenderLivingBase",
     "RendererLivingEntityMixin_SectionTiming",

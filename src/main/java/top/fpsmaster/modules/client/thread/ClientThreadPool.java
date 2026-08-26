@@ -14,7 +14,8 @@ public class ClientThreadPool {
         int n = Math.max(1, threadCount);
         AtomicInteger idx = new AtomicInteger(1);
         executorService = Executors.newFixedThreadPool(n, r -> {
-            Thread t = new Thread(r, "FPSMaster-Async-" + idx.getAndIncrement());
+            Thread t = new Thread(top.fpsmaster.benchmark.BenchCounters.trackWorker(r),
+                    "FPSMaster-Async-" + idx.getAndIncrement());
             t.setDaemon(true);
             return t;
         });

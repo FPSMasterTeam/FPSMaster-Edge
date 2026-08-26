@@ -183,6 +183,22 @@ public final class MusicTextures {
     }
 
     /**
+     * 释放全部封面/二维码纹理并停掉两个解码/下载线程池。
+     *
+     * <p>LRU 只在超出容量时淘汰，容量以内的纹理一直活到进程退出；关闭客户端时没有任何一方
+     * 释放它们，两个线程池也没人 shutdown。
+     */
+    public static synchronized void shutdown() {
+        for (ResourceLocation location : READY.values()) {
+            deleteTexture(location);
+        }
+        READY.clear();
+        LOADING.clear();
+        IMG_EXEC.shutdownNow();
+        NET_EXEC.shutdownNow();
+    }
+
+    /**
      * 下载图片的原始字节，结果通过回调返回；下载失败传 {@code null}。
      *
      * <p>供 SMTC 这类只要字节、不要 GL 纹理的调用方使用。这条路径完全不碰 AWT：原先它是

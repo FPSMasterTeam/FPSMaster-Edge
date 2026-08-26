@@ -279,7 +279,8 @@ public final class ReplayPlayer {
         active = true;
         originNanos = System.nanoTime();
 
-        readerThread = new Thread(new Reader(header), "Edge-ReplayReader");
+        readerThread = new Thread(top.fpsmaster.benchmark.BenchCounters.trackWorker(new Reader(header)),
+                "Edge-ReplayReader");
         readerThread.setDaemon(true);
         readerThread.start();
         ClientLogger.info("replay", "playing " + replay.getName() + " recorded by " + header.recorderName);

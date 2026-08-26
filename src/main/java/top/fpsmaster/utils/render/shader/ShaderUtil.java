@@ -47,6 +47,11 @@ public class ShaderUtil extends Utility {
             throw new IllegalStateException("Shader failed to link!");
         }
         this.programID = program;
+        if (top.fpsmaster.benchmark.BenchmarkMode.ACTIVE) {
+            // Client programs never pass through ShaderLinkHelper, so the counter would otherwise
+            // report only vanilla's shader passes.
+            top.fpsmaster.benchmark.BenchCounters.shaderProgramsAllocated++;
+        }
     }
 
     public ShaderUtil(String fragmentShaderLoc) {
