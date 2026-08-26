@@ -74,6 +74,12 @@
       "Performance.FontOptimize",
       "BlockOverlay",
       "Performance.EntityCulling"
+    ],
+    "cycle": [
+      "cosmetics",
+      "music",
+      "background",
+      "replay"
     ]
   }
 }

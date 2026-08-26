@@ -157,6 +157,12 @@ public class BackgroundSelector extends ScaledGuiScreen {
     }
 
     private void loadCustom(File file, long modified) {
+        // Every reload mints a new dynamic location, so the previous preview has to be deleted or
+        // editing the background file grows the texture manager one full-size upload at a time.
+        if (customPreviewTexture != null) {
+            mc.getTextureManager().deleteTexture(customPreviewTexture);
+            customPreviewTexture = null;
+        }
         try {
             BufferedImage image = ImageIO.read(file);
             if (image == null) throw new IOException("Unsupported image");
@@ -165,7 +171,6 @@ public class BackgroundSelector extends ScaledGuiScreen {
             customPreviewTexture = mc.getTextureManager().getDynamicTextureLocation(
                     "fpsmaster_custom_bg_preview", new DynamicTexture(image));
         } catch (IOException e) {
-            customPreviewTexture = null;
             ClientLogger.warn("Failed to load custom background preview: " + e.getMessage());
         }
         customPreviewLastModified = modified;

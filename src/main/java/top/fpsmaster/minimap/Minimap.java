@@ -662,6 +662,25 @@ public class Minimap {
         Minimap.triedFBO = true;
     }
 
+    /**
+     * Frees both render targets and lets {@link #loadFrameBuffer} build them again on demand.
+     *
+     * <p>The reload paths already delete before recreating; this covers shutdown, which had no
+     * owner at all for two 512x512 targets.
+     */
+    public static void releaseFrameBuffers() {
+        if (Minimap.scalingFrameBuffer != null) {
+            Minimap.scalingFrameBuffer.deleteFramebuffer();
+            Minimap.scalingFrameBuffer = null;
+        }
+        if (Minimap.rotationFrameBuffer != null) {
+            Minimap.rotationFrameBuffer.deleteFramebuffer();
+            Minimap.rotationFrameBuffer = null;
+        }
+        Minimap.loadedFBO = false;
+        Minimap.triedFBO = false;
+    }
+
     public void renderFrameToFBO(final int bufferSize, final int viewW, final float sizeFix, final float partial, final boolean retryIfError) {
         Minimap.updatePause = true;
         final int chunkAmount = getLoadSide();

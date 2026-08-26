@@ -177,7 +177,8 @@ public class MotionBlur extends Module {
         deleteBlurBuffers();
     }
 
-    private static void deleteBlurBuffers() {
+    /** Also reachable from shutdown: the buffers outlive the module when it is left enabled. */
+    public static void deleteBlurBuffers() {
         if (blurBufferMain != null) {
             blurBufferMain.deleteFramebuffer();
             blurBufferMain = null;

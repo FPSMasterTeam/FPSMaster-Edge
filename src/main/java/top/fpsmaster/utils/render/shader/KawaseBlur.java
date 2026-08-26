@@ -9,16 +9,27 @@ import java.util.List;
 
 public class KawaseBlur {
     private static final Minecraft mc = Minecraft.getMinecraft();
-    private static final ShaderUtil kawaseDown = new ShaderUtil("blurDown");
-    private static final ShaderUtil kawaseUp = new ShaderUtil("blurUp");
-    private static final Framebuffer framebuffer = new Framebuffer(1, 1, false);
+    // Created on first blur rather than at class-init: the shader constructor links a GL program,
+    // so eager fields would make the shutdown release path allocate in a session that never blurred.
+    private static ShaderUtil kawaseDown;
+    private static ShaderUtil kawaseUp;
+    private static Framebuffer framebuffer;
     private static final List<Framebuffer> framebufferList = new ArrayList<>();
     private static int currentIterations = 0;
 
     /** Upper bound on the half-size FBO chain, so a pathological setting cannot exhaust GPU memory. */
     private static final int MAX_ITERATIONS = 8;
 
+    /** Render thread only, like every other entry point here, so no locking. */
+    private static void ensureShaders() {
+        if (kawaseDown == null) {
+            kawaseDown = new ShaderUtil("blurDown");
+            kawaseUp = new ShaderUtil("blurUp");
+        }
+    }
+
     public static void setupUniforms(float offset) {
+        ensureShaders();
         kawaseDown.setUniformf("offset", offset, offset);
         kawaseUp.setUniformf("offset", offset, offset);
     }
@@ -28,6 +39,9 @@ public class KawaseBlur {
             fb.deleteFramebuffer();
         }
         framebufferList.clear();
+        if (framebuffer == null) {
+            framebuffer = new Framebuffer(1, 1, false);
+        }
         framebufferList.add(framebuffer);
         int i = 1;
         while (i <= iterations) {
@@ -41,9 +55,11 @@ public class KawaseBlur {
         if (iterations <= 0) {
             return;
         }
+        ensureShaders();
         iterations = Math.min(iterations, MAX_ITERATIONS);
         // Rebuild on a size change too, so a resized window cannot leave the half-size chain stale.
         if (currentIterations != iterations
+                || framebufferList.isEmpty()
                 || (framebufferList.size() > 1
                     && (framebufferList.get(1).framebufferWidth != mc.displayWidth
                         || framebufferList.get(1).framebufferHeight != mc.displayHeight))) {
@@ -70,6 +86,23 @@ public class KawaseBlur {
         kawaseUp.setUniformi("inTexture", 0);
         ShaderUtil.drawQuads();
         kawaseUp.unload();
+    }
+
+    /**
+     * Drops the whole half-size chain. The list is rebuilt on the next {@link #renderBlur}, so this
+     * is safe at any point; it exists for shutdown, where nothing else would ever free these.
+     */
+    public static void release() {
+        for (Framebuffer fb : framebufferList) {
+            fb.deleteFramebuffer();
+        }
+        framebufferList.clear();
+        if (framebuffer != null) {
+            // Already deleted above when the chain had been built; deleteFramebuffer is idempotent.
+            framebuffer.deleteFramebuffer();
+            framebuffer = null;
+        }
+        currentIterations = 0;
     }
 
     private static void renderFBO(Framebuffer framebuffer, int framebufferTexture, ShaderUtil shader, float offset) {

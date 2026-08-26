@@ -181,10 +181,11 @@ public final class ReplayRecorder {
         recording = true;
 
         Minecraft mc = Minecraft.getMinecraft();
-        writerThread = new Thread(new Writer(file, startMillis, mc.getSession().getUsername(),
-                mc.thePlayer == null ? mc.getSession().getProfile().getId()
-                        : mc.thePlayer.getGameProfile().getId(),
-                mc.thePlayer == null ? 0 : mc.thePlayer.dimension), "Edge-ReplayWriter");
+        writerThread = new Thread(top.fpsmaster.benchmark.BenchCounters.trackWorker(
+                new Writer(file, startMillis, mc.getSession().getUsername(),
+                        mc.thePlayer == null ? mc.getSession().getProfile().getId()
+                                : mc.thePlayer.getGameProfile().getId(),
+                        mc.thePlayer == null ? 0 : mc.thePlayer.dimension)), "Edge-ReplayWriter");
         writerThread.setDaemon(true);
         writerThread.start();
 

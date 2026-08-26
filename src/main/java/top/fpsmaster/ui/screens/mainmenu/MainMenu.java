@@ -323,7 +323,7 @@ public class MainMenu extends ScaledGuiScreen {
             return;
         }
         loadedSkinPlayerId = normalizedPlayerId;
-        playerSkinTexture = null;
+        releasePlayerSkinTexture();
         playerSkinLoadFailed = false;
         try {
             FPSMaster.async.runnable(() -> loadPlayerSkinTexture(normalizedPlayerId));
@@ -376,6 +376,7 @@ public class MainMenu extends ScaledGuiScreen {
             if (minecraft == null || minecraft.getTextureManager() == null || !playerId.equals(loadedSkinPlayerId)) {
                 return;
             }
+            releasePlayerSkinTexture();
             playerSkinTexture = minecraft.getTextureManager()
                     .getDynamicTextureLocation("fpsmaster_player_skin_" + playerId, new DynamicTexture(textureImage));
             playerSkinLoadFailed = false;
@@ -384,6 +385,22 @@ public class MainMenu extends ScaledGuiScreen {
             fallbackToDefaultSkin(playerId);
         } finally {
             SKIN_LOADING.set(false);
+        }
+    }
+
+    /**
+     * Client thread only. Each load registers a fresh {@code dynamic/fpsmaster_player_skin_*}, so
+     * switching accounts without this leaves the previous head upload in the texture manager.
+     */
+    private static void releasePlayerSkinTexture() {
+        ResourceLocation previous = playerSkinTexture;
+        playerSkinTexture = null;
+        if (previous == null) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft != null && minecraft.getTextureManager() != null) {
+            minecraft.getTextureManager().deleteTexture(previous);
         }
     }
 

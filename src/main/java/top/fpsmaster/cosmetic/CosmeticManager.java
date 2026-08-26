@@ -105,8 +105,10 @@ public final class CosmeticManager {
                 }
             }
             options.sort(Comparator.comparing(CosmeticOption::getCategory).thenComparing(CosmeticOption::getName));
+            // The reloaded file may hold a different image under the same id, so the entry has to go
+            // — and with it the GL texture, which dropping the map entry alone would strand.
             synchronized (textures) {
-                for (CosmeticOption option : customOptions) textures.remove(option.id);
+                for (CosmeticOption option : customOptions) deleteTexture(textures.remove(option.id));
             }
             customOptions = Collections.unmodifiableList(options);
             validateSelections();
@@ -404,6 +406,23 @@ public final class CosmeticManager {
             FPSMaster.configManager.configure.cosmeticCapeId = null;
         }
         FPSMaster.configManager.configure.cosmeticWingsId = selectedWings().id;
+    }
+
+    /** Drops every uploaded cosmetic. The next render re-uploads whatever is still selected. */
+    public void releaseTextures() {
+        synchronized (textures) {
+            for (ResourceLocation location : textures.values()) deleteTexture(location);
+            textures.clear();
+            loading.clear();
+        }
+    }
+
+    private static void deleteTexture(ResourceLocation location) {
+        if (location == null) return;
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft != null && minecraft.getTextureManager() != null) {
+            minecraft.getTextureManager().deleteTexture(location);
+        }
     }
 
     private void loadTexture(CosmeticOption option) {

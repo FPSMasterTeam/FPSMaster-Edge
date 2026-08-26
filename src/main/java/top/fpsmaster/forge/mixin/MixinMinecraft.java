@@ -132,32 +132,38 @@ public abstract class MixinMinecraft implements IMinecraft {
     public void drawSplashScreen(TextureManager textureManagerInstance) {
         ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
         int i = sr.getScaleFactor();
+        // One framebuffer per splash frame, and this runs once per resource-load step: without the
+        // finally the whole load sequence leaves a framebuffer and its colour texture per step.
         Framebuffer framebuffer = new Framebuffer(sr.getScaledWidth() * i, sr.getScaledHeight() * i, true);
-        framebuffer.bindFramebuffer(false);
-        GlStateManager.matrixMode(5889);
-        GlStateManager.loadIdentity();
-        GlStateManager.ortho(0.0D, sr.getScaledWidth(), sr.getScaledHeight(), 0.0D, 1000.0D, 3000.0D);
-        GlStateManager.matrixMode(5888);
-        GlStateManager.loadIdentity();
-        GlStateManager.translate(0.0F, 0.0F, -2000.0F);
-        GlStateManager.disableLighting();
-        GlStateManager.disableFog();
-        GlStateManager.resetColor();
+        try {
+            framebuffer.bindFramebuffer(false);
+            GlStateManager.matrixMode(5889);
+            GlStateManager.loadIdentity();
+            GlStateManager.ortho(0.0D, sr.getScaledWidth(), sr.getScaledHeight(), 0.0D, 1000.0D, 3000.0D);
+            GlStateManager.matrixMode(5888);
+            GlStateManager.loadIdentity();
+            GlStateManager.translate(0.0F, 0.0F, -2000.0F);
+            GlStateManager.disableLighting();
+            GlStateManager.disableFog();
+            GlStateManager.resetColor();
 
-        Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), new Color(20, 20, 20).getRGB());
+            Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), new Color(20, 20, 20).getRGB());
 
-        Images.drawSmooth(new ResourceLocation("client/gui/logo.png"), sr.getScaledWidth() / 2f - 84f / 2f, sr.getScaledHeight() / 2f - 30, 84f, 65f, -1);
+            Images.drawSmooth(new ResourceLocation("client/gui/logo.png"), sr.getScaledWidth() / 2f - 84f / 2f, sr.getScaledHeight() / 2f - 30, 84f, 65f, -1);
 
 //        float width = 400;
 //        float height = 250;
 //        Images.draw(new ResourceLocation("client/textures/ui/splash.png"), sr.getScaledWidth() / 2f - width / 2, sr.getScaledHeight() / 2f - height / 2, width, height, -1);
-        GlStateManager.disableLighting();
-        GlStateManager.disableFog();
-        framebuffer.unbindFramebuffer();
-        framebuffer.framebufferRender(sr.getScaledWidth() * i, sr.getScaledHeight() * i);
-        GlStateManager.enableAlpha();
-        GlStateManager.alphaFunc(516, 0.1F);
-        updateDisplay();
+            GlStateManager.disableLighting();
+            GlStateManager.disableFog();
+            framebuffer.unbindFramebuffer();
+            framebuffer.framebufferRender(sr.getScaledWidth() * i, sr.getScaledHeight() * i);
+            GlStateManager.enableAlpha();
+            GlStateManager.alphaFunc(516, 0.1F);
+            updateDisplay();
+        } finally {
+            framebuffer.deleteFramebuffer();
+        }
     }
 
     @Inject(method = "shutdown", at = @At("HEAD"))

@@ -123,6 +123,9 @@ public class Backgrounds {
         long modified = file.lastModified();
         if (!customTextureLoaded || customBgLastModified != modified) {
             TextureManager textureManager = Minecraft.getMinecraft().getTextureManager();
+            // loadTexture overwrites the map entry and abandons whatever GL texture was there, so a
+            // background the user keeps editing leaks one upload per edit.
+            textureManager.deleteTexture(CUSTOM_BG_LOCATION);
             ThreadDownloadImageData textureArt = new ThreadDownloadImageData(file, null, null, null);
             textureManager.loadTexture(CUSTOM_BG_LOCATION, textureArt);
             customTextureLoaded = true;
@@ -275,6 +278,11 @@ public class Backgrounds {
         titlePanoramaPaths = createPanoramaPaths(DEFAULT_PANORAMA_STYLE);
         panoramaTimer = 0;
         panoramaTimerLastUpdate = System.currentTimeMillis();
+        // getDynamicTextureLocation mints a fresh "dynamic/background_N" every time initGui runs,
+        // so dropping the reference without deleting strands the old viewport texture.
+        if (backgroundTexture != null) {
+            mc.getTextureManager().deleteTexture(backgroundTexture);
+        }
         viewportTexture = null;
         backgroundTexture = null;
         if (panoramaFbo != null) {
