@@ -1,6 +1,7 @@
 package top.fpsmaster.ui.kit;
 
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.utils.render.gui.Scissor;
 import top.fpsmaster.prism.input.FrameInput;
 import top.fpsmaster.prism.input.Input;
 import top.fpsmaster.prism.input.PointerEvent;
@@ -8,10 +9,12 @@ import top.fpsmaster.prism.input.PointerEvent;
 final class EdgeInput implements Input {
     private final ScaledGuiScreen screen;
     private final FrameInput fallback;
+    private final EdgeCanvas canvas;
 
-    EdgeInput(ScaledGuiScreen screen, FrameInput fallback) {
+    EdgeInput(ScaledGuiScreen screen, FrameInput fallback, EdgeCanvas canvas) {
         this.screen = screen;
         this.fallback = fallback;
+        this.canvas = canvas;
     }
 
     public int mouseX() {
@@ -27,10 +30,14 @@ final class EdgeInput implements Input {
     }
 
     public PointerEvent consumePressInBounds(float x, float y, float w, float h, int button) {
-        if (screen == null) {
-            return fallback.consumePressInBounds(x, y, w, h, button);
+        float[] hit = clippedHit(x, y, w, h);
+        if (!Scissor.hasArea(hit)) {
+            return null;
         }
-        ScaledGuiScreen.PointerEvent event = screen.consumePressInBounds(x, y, w, h, button);
+        if (screen == null) {
+            return fallback.consumePressInBounds(hit[0], hit[1], hit[2], hit[3], button);
+        }
+        ScaledGuiScreen.PointerEvent event = screen.consumePressInBounds(hit[0], hit[1], hit[2], hit[3], button);
         return event == null ? null : new PointerEvent(event.x, event.y, event.button);
     }
 
@@ -54,14 +61,24 @@ final class EdgeInput implements Input {
     }
 
     public int consumeWheelDelta(float x, float y, float w, float h) {
-        return screen != null ? screen.consumeWheelDelta(x, y, w, h) : fallback.consumeWheelDelta(x, y, w, h);
+        float[] hit = clippedHit(x, y, w, h);
+        if (!Scissor.hasArea(hit)) {
+            return 0;
+        }
+        return screen != null
+                ? screen.consumeWheelDelta(hit[0], hit[1], hit[2], hit[3])
+                : fallback.consumeWheelDelta(hit[0], hit[1], hit[2], hit[3]);
     }
 
     public void markHovered(Object id, float x, float y, float w, float h) {
+        float[] hit = clippedHit(x, y, w, h);
+        if (!Scissor.hasArea(hit)) {
+            return;
+        }
         if (screen != null) {
-            screen.isHovered(id, x, y, w, h);
+            screen.isHovered(id, hit[0], hit[1], hit[2], hit[3]);
         } else {
-            fallback.markHovered(id, x, y, w, h);
+            fallback.markHovered(id, hit[0], hit[1], hit[2], hit[3]);
         }
     }
 
@@ -70,8 +87,13 @@ final class EdgeInput implements Input {
     }
 
     public boolean beginDrag(Object owner, int button, float x, float y, float w, float h) {
-        return screen != null ? screen.beginDrag(owner, button, x, y, w, h)
-                : fallback.beginDrag(owner, button, x, y, w, h);
+        float[] hit = clippedHit(x, y, w, h);
+        if (!Scissor.hasArea(hit)) {
+            return screen != null ? screen.isDragging(owner) : fallback.isDragging(owner);
+        }
+        return screen != null
+                ? screen.beginDrag(owner, button, hit[0], hit[1], hit[2], hit[3])
+                : fallback.beginDrag(owner, button, hit[0], hit[1], hit[2], hit[3]);
     }
 
     public boolean isDragging(Object owner) {
@@ -108,5 +130,10 @@ final class EdgeInput implements Input {
 
     public void setClipboard(String text) {
         fallback.setClipboard(text);
+    }
+
+    /** Intersect the widget with the active canvas clip so off-screen rows cannot steal clicks. */
+    private float[] clippedHit(float x, float y, float w, float h) {
+        return Scissor.constrainHit(canvas.currentClip(), x, y, w, h);
     }
 }

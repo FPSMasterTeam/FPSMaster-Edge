@@ -28,6 +28,28 @@ public class Scissor {
         };
     }
 
+    /**
+     * Shrink a widget hit box to the current clip. {@code clip == null} keeps the
+     * original rectangle (no scissor is active). Empty width/height means the
+     * widget is fully outside the clip and must not consume the pointer.
+     */
+    public static float[] constrainHit(float[] clip, float x, float y, float w, float h) {
+        if (clip == null) {
+            return new float[] {x, y, w, h};
+        }
+        return intersect(clip[0], clip[1], clip[2], clip[3], x, y, w, h);
+    }
+
+    public static boolean hasArea(float[] rect) {
+        return rect != null && rect[2] > 0f && rect[3] > 0f;
+    }
+
+    public static boolean contains(float[] rect, float px, float py) {
+        return hasArea(rect)
+                && px >= rect[0] && px <= rect[0] + rect[2]
+                && py >= rect[1] && py <= rect[1] + rect[3];
+    }
+
     public static void apply(float x, float y, float width, float height) {
         float scale = UiScale.isActive() ? UiScale.getLayoutScale() : 1.0f;
         applyScaled(x, y, width, height, scale);

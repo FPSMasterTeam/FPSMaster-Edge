@@ -24,7 +24,7 @@ final class EdgeHost implements UiHost {
 
     EdgeHost(ScaledGuiScreen screen, FrameInput fallback, float width, float height) {
         this.screen = screen;
-        this.input = new EdgeInput(screen, fallback);
+        this.input = new EdgeInput(screen, fallback, canvas);
         this.width = width;
         this.height = height;
     }

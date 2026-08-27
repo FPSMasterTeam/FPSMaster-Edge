@@ -118,6 +118,18 @@ final class EdgeCanvas implements Canvas {
         applyClip(clips.peek());
     }
 
+    /**
+     * Current composed clip, or {@code null} when scissor is off. Used by
+     * {@link EdgeInput} so hit-tests match what {@link #pushClip} actually draws.
+     */
+    float[] currentClip() {
+        float[] clip = clips.peek();
+        if (clip == null) {
+            return null;
+        }
+        return new float[] {clip[0], clip[1], clip[2], clip[3]};
+    }
+
     private static void applyClip(float[] clip) {
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         if (clip[2] <= 0f || clip[3] <= 0f) {
