@@ -923,6 +923,7 @@ clientsettings.fixedscale.2x=2x
 clientsettings.fixedscale.2.5x=2.5x
 clientsettings.fixedscale.3x=3x
 clientsettings.blur=界面组件模糊
+clientsettings.interfaceanimations=界面动画
 clientsettings.theme=界面主题
 clientsettings.theme.dark=暗色
 clientsettings.theme.light=亮色

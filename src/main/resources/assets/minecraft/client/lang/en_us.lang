@@ -922,6 +922,7 @@ clientsettings.fixedscale.2x=2x
 clientsettings.fixedscale.2.5x=2.5x
 clientsettings.fixedscale.3x=3x
 clientsettings.blur=Blur UI Elements
+clientsettings.interfaceanimations=Interface Animations
 clientsettings.theme=UI Theme
 clientsettings.theme.dark=Dark
 clientsettings.theme.light=Light

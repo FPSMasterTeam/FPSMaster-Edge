@@ -37,6 +37,7 @@ public class ClientSettings extends Module {
     public static BooleanSetting clientCommand = new BooleanSetting("Command", true);
     public static BindSetting zoomBind = new BindSetting("ZoomBind", Keyboard.KEY_LCONTROL);
     public static final TextSetting prefix = new TextSetting("prefix", ".", () -> clientCommand.getValue());
+    public static BooleanSetting interfaceAnimations = new BooleanSetting("InterfaceAnimations", true);
     
     public static boolean isFollowGameScaleEnabled() {
         return followGameScale.getValue();
@@ -99,7 +100,7 @@ public class ClientSettings extends Module {
 
     public ClientSettings() {
         super("ClientSettings", Category.Utility);
-        addSettings(language, keyBind, followGameScale, fixedScale, blur, theme, zoomBind, clientCommand, prefix);
+        addSettings(language, keyBind, followGameScale, fixedScale, blur, theme, zoomBind, clientCommand, prefix, interfaceAnimations);
         // Always-on: language / blur guards must fire whether or not the module "enabled" flag is
         // true in a profile. onEnable/onDisable are no-ops so ConfigManager.set(true) cannot stack
         // a second registration on top of this one.

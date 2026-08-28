@@ -57,6 +57,10 @@ final class EdgeHost implements UiHost {
         return ClientSettings.blur.getValue();
     }
 
+    public boolean animationsEnabled() {
+        return ClientSettings.interfaceAnimations.getValue();
+    }
+
     public void blurBehind(float x, float y, float w, float h, float radius) {
         Blur.area(x, y, w, h, Math.round(radius), Color.WHITE, 3, 3);
     }
