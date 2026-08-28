@@ -57,6 +57,15 @@ final class EdgeInput implements Input {
         return screen != null ? screen.consumeWheelDelta(x, y, w, h) : fallback.consumeWheelDelta(x, y, w, h);
     }
 
+    /** 模态用的：不看鼠标在哪，这一帧的滚轮谁都别想拿到。 */
+    public void discardWheel() {
+        if (screen != null) {
+            screen.consumeWheelDelta();
+        } else {
+            fallback.discardWheel();
+        }
+    }
+
     public void markHovered(Object id, float x, float y, float w, float h) {
         if (screen != null) {
             screen.isHovered(id, x, y, w, h);

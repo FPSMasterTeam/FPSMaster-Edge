@@ -152,7 +152,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: FPSMasterTeam/fpsmaster-prism
-          ref: cfb9f1a349dbb8fca0793014ade842c2fdf1ef3c
+          ref: 1a3b61b2d75b9be6bed583ad08b52fb0016e8b83
           path: fpsmaster-prism
 
       - name: Install Prism UI

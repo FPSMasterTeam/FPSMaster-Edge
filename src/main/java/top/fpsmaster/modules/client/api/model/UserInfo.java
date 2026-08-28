@@ -6,6 +6,8 @@ public class UserInfo {
     private String email;
     private String displayName;
     private String avatar;
+    /** 钱包余额，和商品 price 同口径的十进制字符串。null＝后端没给。 */
+    private String walletBalance;
     private Integer level;
     private Long exp;
     private Boolean premium;
@@ -53,6 +55,14 @@ public class UserInfo {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getWalletBalance() {
+        return walletBalance;
+    }
+
+    public void setWalletBalance(String walletBalance) {
+        this.walletBalance = walletBalance;
     }
 
     public Integer getLevel() {
