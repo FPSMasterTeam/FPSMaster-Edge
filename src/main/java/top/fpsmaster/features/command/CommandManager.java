@@ -211,38 +211,9 @@ public class CommandManager {
         if (found instanceof BooleanSetting) {
             ((BooleanSetting) found).setValue(parseBoolean(raw));
         } else if (found instanceof NumberSetting) {
-            NumberSetting number = (NumberSetting) found;
-            double parsed;
-            try {
-                parsed = Double.parseDouble(raw);
-            } catch (NumberFormatException ignored) {
-                throw new CommandException("数字无效: " + raw);
-            }
-            if (parsed < number.min.doubleValue() || parsed > number.max.doubleValue()) {
-                throw new CommandException("数字越界: " + raw + " 允许 "
-                        + number.min + ".." + number.max);
-            }
-            number.setValue(parsed);
+            applyNumber((NumberSetting) found, raw);
         } else if (found instanceof ModeSetting) {
-            ModeSetting mode = (ModeSetting) found;
-            int index = -1;
-            for (int i = 0; i < mode.getModesSize(); i++) {
-                if (mode.getMode(i + 1).equalsIgnoreCase(raw)) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index < 0) {
-                try {
-                    index = Integer.parseInt(raw);
-                } catch (NumberFormatException ignored) {
-                    throw new CommandException("非法选项: " + raw);
-                }
-                if (index < 0 || index >= mode.getModesSize()) {
-                    throw new CommandException("非法选项: " + raw);
-                }
-            }
-            mode.setValue(index);
+            applyMode((ModeSetting) found, raw);
         } else if (found instanceof TextSetting) {
             ((TextSetting) found).setValue(raw);
         } else if (found instanceof BindSetting) {
@@ -256,6 +227,41 @@ public class CommandManager {
         }
         save();
         Utility.sendClientNotify(module.name + "." + found.name + " = " + raw);
+    }
+
+    static void applyNumber(NumberSetting number, String raw) throws CommandException {
+        double parsed;
+        try {
+            parsed = Double.parseDouble(raw);
+        } catch (NumberFormatException ignored) {
+            throw new CommandException("数字无效: " + raw);
+        }
+        if (parsed < number.min.doubleValue() || parsed > number.max.doubleValue()) {
+            throw new CommandException("数字越界: " + raw + " 允许 "
+                    + number.min + ".." + number.max);
+        }
+        number.setValue(parsed);
+    }
+
+    static void applyMode(ModeSetting mode, String raw) throws CommandException {
+        int index = -1;
+        for (int i = 0; i < mode.getModesSize(); i++) {
+            if (mode.getMode(i + 1).equalsIgnoreCase(raw)) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) {
+            try {
+                index = Integer.parseInt(raw);
+            } catch (NumberFormatException ignored) {
+                throw new CommandException("非法选项: " + raw);
+            }
+            if (index < 0 || index >= mode.getModesSize()) {
+                throw new CommandException("非法选项: " + raw);
+            }
+        }
+        mode.setValue(index);
     }
 
     private static boolean parseBoolean(String raw) throws CommandException {
@@ -311,7 +317,7 @@ public class CommandManager {
         }
         if ("login".equals(action)) {
             require(args.length >= 3, "auth login <user> <pass>");
-            new FPSMasterApiClient().login(args[1], args[2], response -> {
+            FPSMasterApiClient.getInstance().login(args[1], args[2], response -> {
                 if (response != null && response.isSuccess() && response.getData() != null
                         && response.getData().getToken() != null) {
                     auth.saveTokens(response.getData().getToken(), null);
