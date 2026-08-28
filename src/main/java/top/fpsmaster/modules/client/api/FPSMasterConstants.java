@@ -59,7 +59,9 @@ public final class FPSMasterConstants {
         public static final String REGISTER = API_BASE_URL + API_VERSION + "/auth/register";
         public static final String LOGOUT = API_BASE_URL + API_VERSION + "/auth/logout";
         public static final String REFRESH_TOKEN = API_BASE_URL + API_VERSION + "/auth/refresh";
-        public static final String USER_INFO = API_BASE_URL + API_VERSION + "/user/info";
+        // 后端没有 /user/info 这个资源（见 MeResource.kt 的 @Path("/api/v1/me")），
+        // 以前那个路径恒 404，导致用户缓存永远填不上、每次都重试。
+        public static final String USER_INFO = API_BASE_URL + API_VERSION + "/me";
         public static final String USER_STATS = API_BASE_URL + API_VERSION + "/user/stats";
         public static final String OWNED_ITEMS = API_BASE_URL + API_VERSION + "/me/items";
         public static final String CATALOG_ITEMS = API_BASE_URL + API_VERSION + "/catalog/items";

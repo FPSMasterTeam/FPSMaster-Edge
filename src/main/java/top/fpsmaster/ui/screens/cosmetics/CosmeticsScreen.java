@@ -221,6 +221,11 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
         public void previewItem(String id) { cosmetics.preview(id); }
         public void equipItem(String id) { cosmetics.equip(id); }
         public boolean signedIn() { return AuthService.getInstance().isLoggedIn(); }
+        public void openSignIn() {
+            // 从饰品界面进登录界面，登录完退回来的就是饰品界面本身，购买按钮当场就活了。
+            Minecraft.getMinecraft().displayGuiScreen(
+                    new top.fpsmaster.ui.screens.signin.SignInScreen(CosmeticsScreen.this));
+        }
         public boolean purchasePending() { return purchasing; }
         public String statusMessage() { return status; }
         public void openCustomFolder() { cosmetics.openCustomDirectory(); }

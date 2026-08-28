@@ -102,6 +102,10 @@ final class EdgeInput implements Input {
         return fallback.typedChars();
     }
 
+    public String consumeTypedChars() {
+        return fallback.consumeTypedChars();
+    }
+
     public String clipboard() {
         return fallback.clipboard();
     }
