@@ -1,6 +1,7 @@
 package top.fpsmaster.features.command;
 
 
+import net.minecraft.client.Minecraft;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
@@ -226,7 +227,22 @@ public class CommandManager {
             throw new CommandException("该选项不能用命令设置: " + found.name);
         }
         save();
-        Utility.sendClientNotify(module.name + "." + found.name + " = " + raw);
+        // 回显必须是真正存进去的值：NumberSetting.setValue 会吸附到 inc 的整数倍再
+        // clamp（inc=5 时 .set X fov 71 存的是 70），ModeSetting 允许按下标输入。
+        Utility.sendClientNotify(module.name + "." + found.name + " = " + describe(found, raw));
+    }
+
+    private static String describe(Setting<?> setting, String raw) {
+        if (setting instanceof NumberSetting) {
+            double stored = ((NumberSetting) setting).getValue().doubleValue();
+            return stored == Math.rint(stored)
+                    ? String.valueOf((long) stored)
+                    : String.valueOf(stored);
+        }
+        if (setting instanceof ModeSetting) {
+            return ((ModeSetting) setting).getModeName();
+        }
+        return raw;
     }
 
     static void applyNumber(NumberSetting number, String raw) throws CommandException {
@@ -318,13 +334,17 @@ public class CommandManager {
         if ("login".equals(action)) {
             require(args.length >= 3, "auth login <user> <pass>");
             FPSMasterApiClient.getInstance().login(args[1], args[2], response -> {
-                if (response != null && response.isSuccess() && response.getData() != null
-                        && response.getData().getToken() != null) {
-                    auth.saveTokens(response.getData().getToken(), null);
-                    Utility.sendClientNotify("登录成功");
-                } else {
-                    Utility.sendClientNotify("§c登录失败");
-                }
+                // 回调跑在 ForkJoinPool.commonPool 上；printChatMessage 会写
+                // GuiNewChat 的 ArrayList，和渲染线程的 drawChat 抢同一个表。
+                // 仓库约定是回主线程再发（见 CosmeticManager / MusicManager）。
+                final boolean ok = response != null && response.isSuccess()
+                        && response.getData() != null && response.getData().getToken() != null;
+                Minecraft.getMinecraft().addScheduledTask(new Runnable() {
+                    public void run() {
+                        // login() 内部已经存过 token，这里只报结果。
+                        Utility.sendClientNotify(ok ? "登录成功" : "§c登录失败");
+                    }
+                });
             });
             return;
         }
