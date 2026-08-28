@@ -17,7 +17,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 final class EdgeCanvas implements Canvas {
-    private int clipDepth;
+    private final Deque<float[]> clips = new ArrayDeque<float[]>();
     private final Deque<Float> alpha = new ArrayDeque<Float>();
 
     EdgeCanvas() {
@@ -98,18 +98,33 @@ final class EdgeCanvas implements Canvas {
     }
 
     public void pushClip(float x, float y, float w, float h) {
-        clipDepth++;
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        Scissor.apply(x, y, w, h);
+        float[] parent = clips.peek();
+        float[] next = parent == null
+                ? new float[] {x, y, w, h}
+                : Scissor.intersect(parent[0], parent[1], parent[2], parent[3], x, y, w, h);
+        clips.push(next);
+        applyClip(next);
     }
 
     public void popClip() {
-        if (clipDepth > 0) {
-            clipDepth--;
+        if (clips.isEmpty()) {
+            return;
         }
-        if (clipDepth == 0) {
+        clips.pop();
+        if (clips.isEmpty()) {
             GL11.glDisable(GL11.GL_SCISSOR_TEST);
+            return;
         }
+        applyClip(clips.peek());
+    }
+
+    private static void applyClip(float[] clip) {
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        if (clip[2] <= 0f || clip[3] <= 0f) {
+            GL11.glScissor(0, 0, 0, 0);
+            return;
+        }
+        Scissor.apply(clip[0], clip[1], clip[2], clip[3]);
     }
 
     public void pushAlpha(float a) {
