@@ -10,11 +10,10 @@ public class BetterScreen extends InterfaceModule {
     public static BooleanSetting useBG = new BooleanSetting("Background", true);
     public static BooleanSetting blur = new BooleanSetting("Blur", true);
     public static BooleanSetting backgroundAnimation = new BooleanSetting("BackgroundAnimation", true);
-    public static BooleanSetting noFlickering = new BooleanSetting("noFlickering", true);
 
     public BetterScreen() {
         super("BetterScreen", Category.Interface);
-        addSettings(useBG, blur, backgroundAnimation, noFlickering);
+        addSettings(useBG, blur, backgroundAnimation);
     }
 
     @Override

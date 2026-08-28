@@ -893,7 +893,6 @@ betterscreen.desc=让原版的部分界面看起来更好
 betterscreen.blur=模糊
 betterscreen.background=开启背景
 betterscreen.backgroundanimation=背景动画
-betterscreen.noflickering=防止闪烁
 betterscreen.backgroundcolor=背景颜色
 betterscreen.round=背景圆角
 betterscreen.roundradius=圆角半径

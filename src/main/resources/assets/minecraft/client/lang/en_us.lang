@@ -892,7 +892,6 @@ betterscreen.desc=Improves vanilla UI visuals
 betterscreen.blur=Blur
 betterscreen.background=Enable Background
 betterscreen.backgroundanimation=Background Animation
-betterscreen.noflickering=No Flickering
 betterscreen.backgroundcolor=Background Color
 betterscreen.round=Rounded Corners
 betterscreen.roundradius=Corner Radius
