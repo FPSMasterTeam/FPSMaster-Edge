@@ -289,11 +289,18 @@ public final class ReplayPlayer {
     /**
      * Builds the world the recording will be poured into.
      *
+     * <p>A live singleplayer or multiplayer session is torn down first.
+     * {@code loadWorld(WorldClient)} does not disconnect: it leaves the old
+     * {@code NetworkManager} open, so spectator movement is still sent to the
+     * real server.
+     *
      * <p>This is what {@code handleJoinGame} does, minus its one Forge call: that resolves the
      * dimension through the connection's Netty channel, and playback has no channel.
      */
     private void openWorld(ReplayFile.Header header) {
         Minecraft mc = Minecraft.getMinecraft();
+        leaveCurrentSession(mc);
+
         NetworkManager connection = new SilentConnection();
         netHandler = new NetHandlerPlayClient(mc, null, connection, recorderProfile);
         connection.setNetHandler(netHandler);
@@ -309,6 +316,29 @@ public final class ReplayPlayer {
         mc.thePlayer.setEntityId(CAMERA_ENTITY_ID);
         mc.playerController.setGameType(WorldSettings.GameType.SPECTATOR);
         mc.displayGuiScreen(null);
+    }
+
+    /**
+     * Leaves the current singleplayer world or multiplayer server the way the in-game Disconnect
+     * button does, without flashing a menu in between.
+     *
+     * <p>{@code Minecraft.loadWorld} only closes the connection and shuts down the integrated
+     * server when the argument is {@code null}. Loading a replay world on top of a live one keeps
+     * the old handler and the live player entity, so flight in the replay is still sent upstream.
+     */
+    private static void leaveCurrentSession(Minecraft mc) {
+        if (mc.theWorld == null && mc.thePlayer == null && mc.getNetHandler() == null) {
+            return;
+        }
+        ClientLogger.info("replay", "leaving current world/server before playback");
+        if (mc.theWorld != null) {
+            try {
+                mc.theWorld.sendQuittingDisconnectingPacket();
+            } catch (Exception failure) {
+                ClientLogger.warn("replay -> failed to send quit packet: " + failure.getMessage(), failure);
+            }
+        }
+        mc.loadWorld(null);
     }
 
     public synchronized void stop() {
