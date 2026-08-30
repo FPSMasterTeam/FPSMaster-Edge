@@ -63,8 +63,14 @@ public final class FolderOpen {
         if (folder == null) {
             return null;
         }
-        File target = folder.isFile() ? folder.getParentFile() : folder;
-        return target;
+        if (folder.isDirectory()) {
+            return folder;
+        }
+        File parent = folder.getParentFile();
+        if (parent != null && (folder.isFile() || folder.getName().indexOf('.') >= 0)) {
+            return parent;
+        }
+        return folder;
     }
 
     static String[] windowsExplorerArgs(File folder) {
