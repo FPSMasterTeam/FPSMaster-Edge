@@ -17,6 +17,8 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
+import top.fpsmaster.modules.client.api.PromotedServersService;
+import top.fpsmaster.modules.client.api.model.PromotedServerView;
 import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.ui.click.UiChrome;
 import top.fpsmaster.ui.click.component.ScrollContainer;
@@ -32,7 +34,13 @@ import top.fpsmaster.utils.render.gui.Scissor;
 
 import java.awt.*;
 import java.io.File;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class GuiMultiplayer extends ScaledGuiScreen {
     private ServerData selectedServer;
@@ -45,6 +53,10 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     String action = "";
     private TextField searchField;
     private String lastQuery = "";
+
+    /** Synthetic {@link ServerData} per promoted-only address, reused across rebuilds so each is pinged once. */
+    private final Map<String, ServerData> promotedServerData = new HashMap<>();
+    private long promotedRevisionSeen = -1L;
 
     private void joinSelected() {
         if (selectedServer != null) {
@@ -100,16 +112,13 @@ public class GuiMultiplayer extends ScaledGuiScreen {
             }
         }
         loadServerList();
+        PromotedServersService promotedService = PromotedServersService.getInstance();
+        promotedService.refreshIfStale();
+        promotedRevisionSeen = promotedService.revision();
+        rebuildServerEntries();
         // Prototype opens with the first server already selected so the detail column is
         // never an empty pane when there is anything to show.
-        selectedServer = servers.isEmpty() ? null : servers.get(0);
-
-        serverListInternet.clear();
-        for (ServerData server : servers) {
-            this.serverListInternet.add(new ServerListEntry(this, server));
-        }
-        serverListDisplay.clear();
-        serverListDisplay.addAll(serverListInternet);
+        selectedServer = serverListInternet.isEmpty() ? null : serverListInternet.get(0).getServerData();
         if (searchField == null) {
             searchField = new TextField(
                     FPSMaster.fontManager.getFont(12),
@@ -136,6 +145,11 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                     saveServerList();
                     break;
                 case "remove":
+                    // Deleting a promoted row is a local dismissal: remember it so it is never
+                    // inserted again, without touching the backend.
+                    if (isPromotedEntry(selectedServer)) {
+                        PromotedServersService.getInstance().hideByAddress(selectedServer.serverIP);
+                    }
                     servers.remove(selectedServer);
                     saveServerList();
                     break;
@@ -375,7 +389,9 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                 ping < 0 ? FPSMaster.i18n.get("multiplayer.offline") : FPSMaster.i18n.get("multiplayer.online"),
                 FPSMaster.i18n.get("multiplayer.status"));
 
-        // Actions pinned to the bottom
+        // Actions pinned to the bottom. Promoted-only rows are not the player's servers:
+        // no edit and no pin, delete just dismisses the promotion locally.
+        boolean ownServer = servers.contains(selectedServer);
         float joinH = 21f;
         float rowH = 18f;
         float rowY = y + height - pad - rowH;
@@ -390,14 +406,29 @@ public class GuiMultiplayer extends ScaledGuiScreen {
             joinSelected();
         }
 
-        float halfW = (width - pad * 2f - 4f) / 2f;
-        if (UiChrome.buttonClicked(this, x + pad, rowY, halfW, rowH, "rename",
-                FPSMaster.i18n.get("multiplayer.edit"), UiChrome.Style.DEFAULT, mouseX, mouseY)) {
-            editSelected();
-        }
-        if (UiChrome.buttonClicked(this, x + pad + halfW + 4f, rowY, halfW, rowH, "delete",
-                FPSMaster.i18n.get("multiplayer.delete"), UiChrome.Style.DANGER, mouseX, mouseY)) {
-            removeSelected();
+        if (ownServer) {
+            boolean pinned = PromotedServersService.getInstance().isPinned(selectedServer.serverIP);
+            float pinY = joinY - 4f - rowH;
+            if (UiChrome.buttonClicked(this, x + pad, pinY, width - pad * 2f, rowH, null,
+                    FPSMaster.i18n.get(pinned ? "multiplayer.unpin" : "multiplayer.pin"),
+                    UiChrome.Style.DEFAULT, mouseX, mouseY)) {
+                PromotedServersService.getInstance().setPinned(selectedServer.serverIP, !pinned);
+                rebuildServerEntries();
+            }
+            float halfW = (width - pad * 2f - 4f) / 2f;
+            if (UiChrome.buttonClicked(this, x + pad, rowY, halfW, rowH, "rename",
+                    FPSMaster.i18n.get("multiplayer.edit"), UiChrome.Style.DEFAULT, mouseX, mouseY)) {
+                editSelected();
+            }
+            if (UiChrome.buttonClicked(this, x + pad + halfW + 4f, rowY, halfW, rowH, "delete",
+                    FPSMaster.i18n.get("multiplayer.delete"), UiChrome.Style.DANGER, mouseX, mouseY)) {
+                removeSelected();
+            }
+        } else {
+            if (UiChrome.buttonClicked(this, x + pad, rowY, width - pad * 2f, rowH, "delete",
+                    FPSMaster.i18n.get("multiplayer.delete"), UiChrome.Style.DANGER, mouseX, mouseY)) {
+                removeSelected();
+            }
         }
     }
 
@@ -415,6 +446,14 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     @Override
     public void updateScreen() {
         super.updateScreen();
+        long promotedRevision = PromotedServersService.getInstance().revision();
+        if (promotedRevision != promotedRevisionSeen) {
+            promotedRevisionSeen = promotedRevision;
+            rebuildServerEntries();
+            if (selectedServer == null && !serverListInternet.isEmpty()) {
+                selectedServer = serverListInternet.get(0).getServerData();
+            }
+        }
         // Forge's FMLClientHandler.setupServerList() only wires LAN/Realms discovery, which this
         // custom multiplayer screen does not use; the vanilla ping loop below is all we need.
         // Guard the ping loop: OldServerPinger's legacy-ping fallback can surface a netty NPE
@@ -452,6 +491,88 @@ public class GuiMultiplayer extends ScaledGuiScreen {
             logger.error("Couldn't load server list", exception);
         }
 
+    }
+
+    /**
+     * Rebuilds the entry list in display order: the player's pinned servers first, then visible
+     * promoted servers in backend order, then the remaining own servers in {@code servers.dat}
+     * order. A promoted server whose address matches an own server collapses into one row — styled
+     * as user-pinned when the player pinned it, as promoted otherwise.
+     */
+    private void rebuildServerEntries() {
+        PromotedServersService service = PromotedServersService.getInstance();
+        serverListInternet.clear();
+
+        Set<ServerData> placed = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (ServerData server : servers) {
+            if (service.isPinned(server.serverIP)) {
+                serverListInternet.add(new ServerListEntry(this, server, false, true, null));
+                placed.add(server);
+            }
+        }
+
+        Set<String> promotedAddressesSeen = new HashSet<>();
+        for (PromotedServerView view : service.promotedServers()) {
+            String address = PromotedServersService.normalizeAddress(view.getAddress());
+            if (!view.isActive() || service.isHidden(view) || !promotedAddressesSeen.add(address)) {
+                continue;
+            }
+            ServerData ownServer = findServerByAddress(address);
+            if (ownServer != null) {
+                // User-pinned styling wins for a pinned own server; the promoted row is dropped.
+                if (!placed.contains(ownServer)) {
+                    serverListInternet.add(new ServerListEntry(this, ownServer, true, false, view.getDescription()));
+                    placed.add(ownServer);
+                }
+            } else {
+                serverListInternet.add(new ServerListEntry(this, promotedServerData(view), true, false, view.getDescription()));
+            }
+        }
+
+        for (ServerData server : servers) {
+            if (!placed.contains(server)) {
+                serverListInternet.add(new ServerListEntry(this, server, false, false, null));
+            }
+        }
+
+        serverListDisplay.clear();
+        serverListDisplay.addAll(serverListInternet);
+        // Force applySearchFilter to re-filter the fresh entries on the next frame.
+        lastQuery = null;
+    }
+
+    private ServerData findServerByAddress(String normalizedAddress) {
+        for (ServerData server : servers) {
+            if (PromotedServersService.normalizeAddress(server.serverIP).equals(normalizedAddress)) {
+                return server;
+            }
+        }
+        return null;
+    }
+
+    private ServerData promotedServerData(PromotedServerView view) {
+        String key = PromotedServersService.normalizeAddress(view.getAddress());
+        ServerData data = promotedServerData.get(key);
+        if (data == null) {
+            String name = view.getName() == null || view.getName().trim().isEmpty()
+                    ? view.getAddress().trim()
+                    : view.getName().trim();
+            data = new ServerData(name, view.getAddress().trim(), false);
+            promotedServerData.put(key, data);
+        }
+        return data;
+    }
+
+    private boolean isPromotedEntry(ServerData server) {
+        if (server == null) {
+            return false;
+        }
+        for (ServerListEntry entry : serverListInternet) {
+            if (entry.getServerData() == server) {
+                return entry.isPromoted();
+            }
+        }
+        return false;
     }
 }
 

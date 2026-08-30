@@ -41,12 +41,25 @@ public class ServerListEntry {
     private DynamicTexture field_148305_h;
     private final GuiMultiplayer owner;
     private long lastClick = 0;
+    /** Backend-featured row: drawn with the accent "featured" badge, delete dismisses locally. */
+    private final boolean promoted;
+    /** Player-pinned own server: drawn with the neutral "pinned" chip, sorted to the very top. */
+    private final boolean pinned;
+    private final String promotedDescription;
 
-    protected ServerListEntry(GuiMultiplayer multiplayer, ServerData p_i45048_2_) {
+    protected ServerListEntry(GuiMultiplayer multiplayer, ServerData server) {
+        this(multiplayer, server, false, false, null);
+    }
+
+    protected ServerListEntry(GuiMultiplayer multiplayer, ServerData server, boolean promoted,
+                              boolean pinned, String promotedDescription) {
         this.owner = multiplayer;
-        this.server = p_i45048_2_;
+        this.server = server;
+        this.promoted = promoted;
+        this.pinned = pinned;
+        this.promotedDescription = promotedDescription;
         this.mc = Minecraft.getMinecraft();
-        this.serverIcon = new ResourceLocation("servers/" + p_i45048_2_.serverIP + "/icon");
+        this.serverIcon = new ResourceLocation("servers/" + server.serverIP + "/icon");
         this.field_148305_h = (DynamicTexture) this.mc.getTextureManager().getTexture(this.serverIcon);
     }
 
@@ -89,9 +102,30 @@ public class ServerListEntry {
         float textW = listWidth - (textX - x) - rightW - 5f;
         UFontRenderer nameFont = FPSMaster.fontManager.s14;
         UFontRenderer subFont = FPSMaster.fontManager.getFont(12);
-        nameFont.drawString(this.server.serverName, textX, y + 5f,
+        // Two distinct markers next to the name: featured rows get the accent badge pill,
+        // player-pinned rows get the neutral bordered chip. Both are existing theme widgets.
+        String markerText = promoted
+                ? FPSMaster.i18n.get("multiplayer.promoted.badge")
+                : pinned ? FPSMaster.i18n.get("multiplayer.pinned.badge") : null;
+        float nameW = textW;
+        if (markerText != null) {
+            nameW -= UiChrome.keyChipWidth(markerText) + 4f;
+        }
+        String name = nameFont.trimStringToWidth(this.server.serverName, nameW);
+        nameFont.drawString(name, textX, y + 5f,
                 (unreachable ? ClickGuiTheme.textSecondary() : ClickGuiTheme.textPrimary()).getRGB());
+        if (markerText != null) {
+            float markerX = textX + nameFont.getStringWidth(name) + 4f;
+            if (promoted) {
+                UiChrome.badge(markerX, y + 3.5f, markerText);
+            } else {
+                UiChrome.keyChip(markerX, y + 3.5f, UiChrome.keyChipWidth(markerText), 10f, markerText, false, false);
+            }
+        }
         String motd = this.server.serverMOTD == null ? "" : this.server.serverMOTD.replaceAll("§.", "");
+        if (motd.isEmpty() && promoted && promotedDescription != null) {
+            motd = promotedDescription;
+        }
         if (unreachable) {
             subFont.drawString(subFont.trimStringToWidth(motd, textW), textX, y + 15f,
                     ClickGuiTheme.danger().getRGB());
@@ -176,6 +210,10 @@ public class ServerListEntry {
 
     public ServerData getServerData() {
         return this.server;
+    }
+
+    public boolean isPromoted() {
+        return this.promoted;
     }
 
     public void triggerClick() {
