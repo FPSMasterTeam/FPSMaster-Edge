@@ -50,6 +50,16 @@ public class MainPanel extends ScaledGuiScreen {
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
+        // SharedClickGui uses this same layout. Intersect every content clip with the
+        // panel so expanded settings cannot paint past the window (scissor is in
+        // framebuffer pixels; a huge extra-height rect is otherwise easy to get wrong).
+        float gw = guiWidth;
+        float gh = guiHeight;
+        float width = Math.min(490f, Math.max(300f, gw - 20f));
+        float height = Math.min(310f, Math.max(220f, gh - 24f));
+        float x = (gw - width) / 2f;
+        float y = (gh - height) / 2f;
+        EdgeUi.clipPanel(x + 1f, y + 1f, width - 2f, height - 2f);
         if (gui.draw(EdgeUi.frame(), bridge)) {
             mc.displayGuiScreen(null);
             if (mc.currentScreen == null) mc.setIngameFocus();

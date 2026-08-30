@@ -40,4 +40,29 @@ class ScissorIntersectTest {
         float[] clipped = Scissor.intersect(0f, 0f, 20f, 20f, 4f, 4f, -8f, 10f);
         assertEquals(0f, clipped[2], 0.01f);
     }
+
+    @Test
+    void framebufferScissorUsesScaleAndFlipsY() {
+        // 1920x1080, GUI scale 2: logical (100, 50, 200, 100) → fb (200, 780, 400, 200)
+        int[] box = Scissor.toFramebuffer(100f, 50f, 200f, 100f, 2f, 1920, 1080);
+        assertArrayEquals(new int[] {200, 780, 400, 200}, box);
+    }
+
+    @Test
+    void framebufferScissorClampsExpandedSettingsToTheWindow() {
+        // Performance expanded: settings extra is taller than the display.
+        int[] box = Scissor.toFramebuffer(146f, 70f, 318f, 950f, 2f, 1920, 1080);
+        assertEquals(292, box[0]);
+        assertEquals(0, box[1]);
+        assertEquals(636, box[2]);
+        assertEquals(940, box[3]);
+    }
+
+    @Test
+    void framebufferScissorRejectsEmptyOrInvalidInput() {
+        assertArrayEquals(new int[] {0, 0, 0, 0},
+                Scissor.toFramebuffer(0f, 0f, 10f, 10f, 0f, 1920, 1080));
+        assertArrayEquals(new int[] {0, 0, 0, 0},
+                Scissor.toFramebuffer(0f, 0f, -4f, 10f, 2f, 1920, 1080));
+    }
 }

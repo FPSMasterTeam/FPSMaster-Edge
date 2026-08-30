@@ -12,6 +12,7 @@ import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.prism.screen.BackgroundsBridge;
 import top.fpsmaster.prism.screen.SharedBackgrounds;
+import top.fpsmaster.prism.widget.Chrome;
 import top.fpsmaster.prism.widget.UiFrame;
 import top.fpsmaster.ui.kit.EdgeUi;
 import top.fpsmaster.utils.io.FileUtils;
@@ -19,6 +20,7 @@ import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.Backgrounds;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.utils.system.FolderOpen;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
@@ -51,7 +53,51 @@ public class BackgroundSelector extends ScaledGuiScreen {
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         Backgrounds.draw((int) guiWidth, (int) guiHeight, mouseX, mouseY, partialTicks, (int) zLevel);
-        if (backgrounds.draw(EdgeUi.frame(), bridge)) mc.displayGuiScreen(parent);
+        UiFrame ui = EdgeUi.frame();
+        if (backgrounds.draw(ui, bridge)) {
+            mc.displayGuiScreen(parent);
+            return;
+        }
+        drawOpenFolderButton(ui);
+    }
+
+    /**
+     * SharedBackgrounds only exposes "choose image". The homepage flow also has an
+     * "open folder" control so users can drop {@code background.png} into the client dir.
+     */
+    private void drawOpenFolderButton(UiFrame ui) {
+        float gw = ui.host().width();
+        float gh = ui.host().height();
+        float pw = Math.min(250f, gw - 24f);
+        int rows = (BackgroundsBridge.OPTIONS.length + 1) / 2;
+        boolean classic = "classic".equals(FPSMaster.configManager.configure.background);
+        float editorH = classic ? 78f : 0f;
+        float content = 8f + rows * (48f + 5f) + 8f + editorH;
+        float ph = Math.min(30f + content + 10f, Math.min(gh * 0.78f, gh - 24f));
+        float px = (gw - pw) / 2f;
+        float py = (gh - ph) / 2f;
+        float headY = py + 8f;
+        String pick = FPSMaster.i18n.get("backgroundselector.pick");
+        String folder = FPSMaster.i18n.get("backgroundselector.openfolder");
+        float pickW = ui.font(13).measure(pick) + 16f;
+        float folderW = ui.font(13).measure(folder) + 16f;
+        float folderX = px + pw - 10f - pickW - 4f - folderW;
+        if (folderX < px + 28f) {
+            folderX = px + 28f;
+        }
+        if (Chrome.button(ui, folderX, headY, folderW, 15f, folder, Chrome.ButtonStyle.GHOST)) {
+            openBackgroundFolder();
+        }
+    }
+
+    private void openBackgroundFolder() {
+        File folder = FileUtils.dir;
+        if (folder == null && FileUtils.background != null) {
+            folder = FileUtils.background.getParentFile();
+        }
+        if (!FolderOpen.open(folder)) {
+            ClientLogger.warn("Failed to open background folder");
+        }
     }
 
     @Override
@@ -135,6 +181,8 @@ public class BackgroundSelector extends ScaledGuiScreen {
                 return;
             }
             if (id.startsWith("panorama_")) {
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+                GL11.glColor4f(1f, 1f, 1f, 1f);
                 Images.draw(new ResourceLocation("client/background/" + id + "/panorama_0.png"), x, y, w, h, -1);
                 return;
             }

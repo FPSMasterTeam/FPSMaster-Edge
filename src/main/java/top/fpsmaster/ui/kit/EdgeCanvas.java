@@ -19,9 +19,18 @@ import java.util.Deque;
 final class EdgeCanvas implements Canvas {
     private final Deque<float[]> clips = new ArrayDeque<float[]>();
     private final Deque<Float> alpha = new ArrayDeque<Float>();
+    private static float[] panelClip;
 
     EdgeCanvas() {
         alpha.push(Float.valueOf(1f));
+    }
+
+    static void setPanelClip(float x, float y, float w, float h) {
+        panelClip = new float[] {x, y, w, h};
+    }
+
+    static void clearPanelClip() {
+        panelClip = null;
     }
 
     public void fillRect(float x, float y, float w, float h, int argb) {
@@ -43,9 +52,7 @@ final class EdgeCanvas implements Canvas {
     }
 
     public void strokeRoundRect(float x, float y, float w, float h, float radius, float strokeWidth, int argb) {
-        float s = Math.max(0.5f, strokeWidth);
-        fillRoundRect(x - s, y - s, w + s * 2f, h + s * 2f, radius + s, argb);
-        fillRoundRect(x, y, w, h, radius, Argb.of(255, 14, 14, 14));
+        Rects.roundedOutline(x, y, w, h, radius, strokeWidth, tint(argb));
     }
 
     public void fillCircle(float cx, float cy, float radius, int argb) {
@@ -102,6 +109,10 @@ final class EdgeCanvas implements Canvas {
         float[] next = parent == null
                 ? new float[] {x, y, w, h}
                 : Scissor.intersect(parent[0], parent[1], parent[2], parent[3], x, y, w, h);
+        if (panelClip != null) {
+            next = Scissor.intersect(panelClip[0], panelClip[1], panelClip[2], panelClip[3],
+                    next[0], next[1], next[2], next[3]);
+        }
         clips.push(next);
         applyClip(next);
     }

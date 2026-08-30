@@ -5,9 +5,10 @@ import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.interfaces.LyricsDisplay;
+import top.fpsmaster.modules.config.ConfigProfileUtils;
+import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.music.MusicManager;
 import top.fpsmaster.modules.music.MusicTextures;
-import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.music.Lyric;
 import top.fpsmaster.music.LyricLine;
 import top.fpsmaster.music.MusicSource;
@@ -16,15 +17,16 @@ import top.fpsmaster.music.QrLoginState;
 import top.fpsmaster.music.Track;
 import top.fpsmaster.prism.screen.MusicBridge;
 import top.fpsmaster.prism.screen.SharedMusic;
+import top.fpsmaster.prism.widget.Chrome;
 import top.fpsmaster.prism.widget.UiFrame;
 import top.fpsmaster.ui.kit.EdgeUi;
+import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.render.draw.Images;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.utils.system.FolderOpen;
 
-import java.io.IOException;
 import java.io.File;
-import java.awt.FileDialog;
-import java.awt.Frame;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,11 +55,41 @@ public class MusicScreen extends ScaledGuiScreen {
         } catch (IllegalArgumentException ignored) {
             music.setPlaybackMode(MusicBridge.PlaybackMode.SEQUENTIAL);
         }
+        try {
+            refreshLocalTracks(FileUtils.musicDirectory());
+        } catch (RuntimeException exception) {
+            ClientLogger.warn("Failed to scan local music folder: " + exception.getMessage());
+        }
     }
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        if (gui.draw(EdgeUi.frame(), bridge)) mc.displayGuiScreen(parent);
+        UiFrame ui = EdgeUi.frame();
+        if (gui.draw(ui, bridge)) {
+            mc.displayGuiScreen(parent);
+            return;
+        }
+        drawOpenFolderButton(ui);
+    }
+
+    private void drawOpenFolderButton(UiFrame ui) {
+        float gw = ui.host().width();
+        float gh = ui.host().height();
+        float pw = Math.min(480f, Math.max(320f, gw - 24f));
+        float ph = Math.min(290f, Math.max(200f, gh - 32f));
+        float px = (gw - pw) / 2f;
+        float py = (gh - ph) / 2f;
+        float size = 16f;
+        float closeX = px + pw - 7f - size;
+        float settingsX = closeX - 21f;
+        float folderX = settingsX - 21f;
+        float folderY = py + 7f;
+        String label = FPSMaster.i18n.get("music.local.openfolder");
+        float labelW = ui.font(12).measure(label) + 16f;
+        float buttonX = folderX - labelW + size;
+        if (Chrome.button(ui, buttonX, folderY, labelW, size, label, Chrome.ButtonStyle.GHOST)) {
+            openLocalMusicFolder();
+        }
     }
 
     @Override
@@ -130,22 +162,7 @@ public class MusicScreen extends ScaledGuiScreen {
         }
 
         @Override public void importLocalMusic() {
-            Thread picker = new Thread(new Runnable() {
-                @Override public void run() {
-                    FileDialog dialog = new FileDialog((Frame) null, "选择本地音乐", FileDialog.LOAD);
-                    dialog.setMultipleMode(true);
-                    dialog.setFilenameFilter((dir, name) -> isLocalAudio(name));
-                    dialog.setVisible(true);
-                    final File[] files = dialog.getFiles();
-                    dialog.dispose();
-                    if (files.length == 0) return;
-                    mc.addScheduledTask(new Runnable() {
-                        @Override public void run() { localTracks = toLocalTracks(files); }
-                    });
-                }
-            }, "FPSMaster-Music-Picker");
-            picker.setDaemon(true);
-            picker.start();
+            openLocalMusicFolder();
         }
 
         @Override public void playLocal(int index) {
@@ -257,6 +274,29 @@ public class MusicScreen extends ScaledGuiScreen {
             for (LyricLine line : lyric.getLines()) rows.add(new LyricRow(line.getText(), line.getTranslation()));
             return rows;
         }
+    }
+
+    private void openLocalMusicFolder() {
+        File folder;
+        try {
+            folder = FileUtils.musicDirectory();
+        } catch (IllegalStateException exception) {
+            ClientLogger.warn("Music folder is unavailable: " + exception.getMessage());
+            return;
+        }
+        if (!FolderOpen.open(folder)) {
+            ClientLogger.warn("Failed to open local music folder: " + folder.getAbsolutePath());
+        }
+        refreshLocalTracks(folder);
+    }
+
+    private void refreshLocalTracks(File folder) {
+        File[] files = folder.listFiles();
+        if (files == null) {
+            localTracks = new ArrayList<Track>();
+            return;
+        }
+        localTracks = toLocalTracks(files);
     }
 
     private static String format(long millis) {

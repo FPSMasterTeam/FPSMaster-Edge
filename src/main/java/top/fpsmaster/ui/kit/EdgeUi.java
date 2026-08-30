@@ -34,7 +34,16 @@ public final class EdgeUi {
 
     public static void end() {
         fallback.endFrame();
+        EdgeCanvas.clearPanelClip();
         current = null;
+    }
+
+    /**
+     * Extra GL clip intersected with every {@code pushClip}. Used so ClickGUI module
+     * settings cannot paint past the panel when an expanded card is taller than the window.
+     */
+    public static void clipPanel(float x, float y, float w, float h) {
+        EdgeCanvas.setPanelClip(x, y, w, h);
     }
 
     public static UiFrame frame() {

@@ -16,9 +16,9 @@ import top.fpsmaster.modules.client.api.model.CosmeticItem;
 import top.fpsmaster.modules.client.api.model.CosmeticLoadoutView;
 import top.fpsmaster.modules.client.api.model.OwnedItemView;
 import top.fpsmaster.modules.logger.ClientLogger;
+import top.fpsmaster.utils.system.FolderOpen;
 
 import javax.imageio.ImageIO;
-import java.awt.Desktop;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -120,10 +120,9 @@ public final class CosmeticManager {
     public void openCustomDirectory() {
         reloadCustom();
         try {
-            if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+            if (!FolderOpen.open(customDirectory().toFile())) {
                 throw new UnsupportedOperationException("Desktop folder opening is unavailable");
             }
-            Desktop.getDesktop().open(customDirectory().toFile());
         } catch (Exception exception) {
             ClientLogger.warn("Failed to open custom cosmetics folder: " + exception.getMessage());
         }

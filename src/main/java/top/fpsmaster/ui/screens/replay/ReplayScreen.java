@@ -19,9 +19,9 @@ import top.fpsmaster.utils.render.draw.Icons;
 import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.Backgrounds;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
+import top.fpsmaster.utils.system.FolderOpen;
 
 import java.awt.Color;
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -529,10 +529,8 @@ public class ReplayScreen extends ScaledGuiScreen {
         if (!directory.isDirectory() && !directory.mkdirs()) {
             return;
         }
-        try {
-            Desktop.getDesktop().open(directory);
-        } catch (IOException | RuntimeException exception) {
-            ClientLogger.warn("Could not open replays folder: " + exception);
+        if (!FolderOpen.open(directory)) {
+            ClientLogger.warn("Could not open replays folder: " + directory.getAbsolutePath());
         }
     }
 
@@ -725,10 +723,8 @@ public class ReplayScreen extends ScaledGuiScreen {
         if (!directory.isDirectory() && !directory.mkdirs()) {
             return;
         }
-        try {
-            Desktop.getDesktop().open(directory);
-        } catch (IOException | RuntimeException exception) {
-            ClientLogger.warn("Could not open edits folder: " + exception);
+        if (!FolderOpen.open(directory)) {
+            ClientLogger.warn("Could not open edits folder: " + directory.getAbsolutePath());
         }
     }
 

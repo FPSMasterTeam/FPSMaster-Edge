@@ -23,6 +23,7 @@ public class FileUtils extends Utility {
     public static File background;
     public static boolean hasBackground = false;
     public static File fonts;
+    public static File music;
 
     private static boolean initialized;
 
@@ -35,9 +36,21 @@ public class FileUtils extends Utility {
         }
         dir = ensureDir(new File(dataDir, "FPSMaster " + FPSMaster.EDITION));
         fonts = ensureDir(new File(dir, "fonts"));
+        music = ensureDir(new File(dir, "music"));
         background = new File(dir, "background.png");
         hasBackground = background.exists();
         initialized = true;
+    }
+
+    public static File musicDirectory() {
+        if (music != null && music.isDirectory()) {
+            return music;
+        }
+        if (dir == null) {
+            throw new IllegalStateException("FileUtils init requires a valid mcDataDir");
+        }
+        music = ensureDir(new File(dir, "music"));
+        return music;
     }
 
     private static File ensureDir(File file) {
