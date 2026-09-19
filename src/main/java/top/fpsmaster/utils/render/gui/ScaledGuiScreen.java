@@ -129,6 +129,12 @@ public class ScaledGuiScreen extends GuiScreen {
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        // handleInput 里先跑鼠标后跑键盘：本屏在 handleMouseInput 里关掉后，同一批
+        // Keyboard.next() 的余下按键仍会派到这个死实例上。缓冲现在只由宿主屏幕帧清，
+        // 死屏喂进来的键会一直攒到下一个 ScaledGuiScreen 打开才冒出来，直接丢掉。
+        if (mc.currentScreen != this) {
+            return;
+        }
         EdgeUi.keyTyped(typedChar, keyCode);
     }
 

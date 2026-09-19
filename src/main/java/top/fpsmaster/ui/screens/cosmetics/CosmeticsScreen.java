@@ -8,7 +8,9 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.cosmetic.CosmeticManager;
@@ -28,6 +30,7 @@ import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -40,6 +43,10 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
     private final EdgeCosmeticsBridge bridge = new EdgeCosmeticsBridge();
     private final float[] preview = new float[5];
     private final List<ItemPreview> itemPreviews = new ArrayList<>();
+    /** 商品列表的 GL 裁剪框，缩略图 2D 之后才画，得在回调那一刻抄下来照着裁。 */
+    private final IntBuffer previewScissor = BufferUtils.createIntBuffer(16);
+    private boolean previewScissorCaptured;
+    private boolean previewScissorEnabled;
 
     public CosmeticsScreen(GuiScreen parent) {
         this.parent = parent;
@@ -60,6 +67,8 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         itemPreviews.clear();
+        previewScissorCaptured = false;
+        previewScissorEnabled = false;
         if (cosmetics.draw(EdgeUi.frame(), bridge)) {
             mc.displayGuiScreen(parent);
             return;
@@ -81,22 +90,50 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
     }
 
     private void renderItemPreviews() {
-        for (ItemPreview itemPreview : itemPreviews) {
-            ResourceLocation texture = bridge.cosmetics.textureFor(itemPreview.item.id());
-            if ("wings".equals(itemPreview.item.category())) {
-                if (!itemPreview.item.builtin() && texture == null) continue;
-                float size = Math.max(12f, itemPreview.h * 0.4f);
-                bridge.cosmetics.wingsRenderer().renderPreview(
-                        itemPreview.x + itemPreview.w * 0.5f,
-                        itemPreview.y + itemPreview.h - 1f,
-                        size,
-                        180f,
-                        texture,
-                        0.78f
-                );
-            } else if ("cape".equals(itemPreview.item.category()) && texture != null) {
-                renderCapeThumbnail(itemPreview, texture);
+        if (itemPreviews.isEmpty()) return;
+        // 缩略图是攒到 2D 通道结束之后才上屏的，那时 clip 栈已经弹空：不照着商品列表
+        // 当时那道裁剪框自己裁一刀，往下滚的时候缩略图会横穿列表边界糊到面板外面去。
+        boolean scissored = previewScissorEnabled;
+        if (scissored) {
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            GL11.glScissor(previewScissor.get(0), previewScissor.get(1),
+                    previewScissor.get(2), previewScissor.get(3));
+        }
+        try {
+            for (ItemPreview itemPreview : itemPreviews) {
+                ResourceLocation texture = bridge.cosmetics.textureFor(itemPreview.item.id());
+                if ("wings".equals(itemPreview.item.category())) {
+                    if (!itemPreview.item.builtin() && texture == null) continue;
+                    float size = Math.max(12f, itemPreview.h * 0.4f);
+                    bridge.cosmetics.wingsRenderer().renderPreview(
+                            itemPreview.x + itemPreview.w * 0.5f,
+                            itemPreview.y + itemPreview.h - 1f,
+                            size,
+                            180f,
+                            texture,
+                            0.78f
+                    );
+                } else if ("cape".equals(itemPreview.item.category()) && texture != null) {
+                    renderCapeThumbnail(itemPreview, texture);
+                }
             }
+        } finally {
+            if (scissored) {
+                GL11.glDisable(GL11.GL_SCISSOR_TEST);
+            }
+        }
+    }
+
+    /**
+     * 抄一份当前 GL 裁剪框。商品列表是同一道裁剪，一帧抄一次就够。
+     */
+    private void capturePreviewScissor() {
+        if (previewScissorCaptured) return;
+        previewScissorCaptured = true;
+        previewScissorEnabled = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+        if (previewScissorEnabled) {
+            previewScissor.clear();
+            GL11.glGetInteger(GL11.GL_SCISSOR_BOX, previewScissor);
         }
     }
 
@@ -323,6 +360,7 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
         public void paintItemPreview(UiFrame ui, CosmeticsBridge.Item item,
                                      float x, float y, float w, float h) {
             itemPreviews.add(new ItemPreview(item, x, y, w, h));
+            capturePreviewScissor();
         }
         @Override
         public void paintPlayerPreview(UiFrame ui, float x, float y, float w, float h, float yaw) {

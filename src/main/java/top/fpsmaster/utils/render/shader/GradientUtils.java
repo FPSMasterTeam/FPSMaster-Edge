@@ -82,7 +82,9 @@ public class GradientUtils extends Utility {
         GL11.glVertex2f(x + width, y + height);
         GL11.glEnd();
 
-        GL11.glShadeModel(7424);
+        // 回到 GL 默认的 SMOOTH（原版 GUI 从不设置 shade model，基线就是它）。
+        // 留 FLAT 会把之后所有逐顶点着色的渐变——比如 ClickGUI 调色板——拍成一块纯色。
+        GL11.glShadeModel(7425);
         GL11.glEnable(3553);
         GL11.glDisable(3042);
         GL11.glEnable(2929);

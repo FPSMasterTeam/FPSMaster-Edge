@@ -13,6 +13,12 @@ import top.fpsmaster.prism.widget.UiFrame;
 public final class EdgeUi {
     private static UiFrame current;
     private static final FrameInput fallback = new FrameInput();
+    /**
+     * 这一帧是不是宿主屏幕开的。键鼠缓冲只有喂过 {@link #keyTyped} 的那一帧有权清：
+     * HUD 覆盖层每帧都 begin/end 一次、又排在 drawScreen 前面，无脑清会把玩家这一帧
+     * 敲的键冲掉——绑定按钮和文本框双双点不动，纯鼠标的开关滑条却照常。
+     */
+    private static boolean screenFrame;
 
     private EdgeUi() {
     }
@@ -26,14 +32,19 @@ public final class EdgeUi {
         float w = screen == null ? 0f : screen.guiWidth;
         float h = screen == null ? 0f : screen.guiHeight;
         current = new UiFrame(new EdgeHost(screen, fallback, w, h), theme());
+        screenFrame = true;
     }
 
     public static void beginOverlay(float guiWidth, float guiHeight) {
         current = new UiFrame(new EdgeHost(null, fallback, guiWidth, guiHeight), theme());
+        screenFrame = false;
     }
 
     public static void end() {
-        fallback.endFrame();
+        if (screenFrame) {
+            fallback.endFrame();
+        }
+        screenFrame = false;
         EdgeCanvas.clearPanelClip();
         current = null;
     }

@@ -100,7 +100,10 @@ public class TargetDisplay extends InterfaceModule {
             GL11.glEnd();
         } finally {
             if (shade) {
-                GL11.glShadeModel(GL11.GL_FLAT);
+                // 还原成 SMOOTH，不是 FLAT：原版 GUI/世界渲染从不碰 shade model，
+                // 基线一直是 GL 默认的 GL_SMOOTH。这里留 FLAT，之后所有逐顶点着色的
+                // 渐变（ClickGUI 调色板的 SV 方块、色相条、透明度条）都会被拍成一块纯色。
+                GL11.glShadeModel(GL11.GL_SMOOTH);
             }
             GlStateManager.depthMask(true);
             GlStateManager.enableLighting();
