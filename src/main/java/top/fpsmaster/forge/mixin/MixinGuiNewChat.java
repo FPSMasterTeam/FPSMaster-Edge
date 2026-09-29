@@ -157,7 +157,7 @@ public abstract class MixinGuiNewChat {
                     GlStateManager.popMatrix();
                 }
             } else {
-                BetterChat module = (BetterChat) FPSMaster.moduleManager.getModule(BetterChat.class);
+                BetterChat module = FPSMaster.moduleManager.getModule(BetterChat.class);
                 int i = this.getLineCount();
                 int j = drawnChatLines.size();
                 float f = mc.gameSettings.chatOpacity * 0.9F + 0.1F;
@@ -205,7 +205,7 @@ public abstract class MixinGuiNewChat {
                                     }
                                     GlStateManager.enableBlend();
                                     if (module.betterFont.getValue()) {
-                                        FPSMaster.fontManager.s16.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Colors.alpha(new Color(16777215), alpha).getRGB());
+                                        FPSMaster.fontManager.s16.drawStringWithShadow(string, 0.0F, (float) (q - 10) + (6 - (alpha / 255f) * 6), Colors.alpha(new Color(16777215), alpha).getRGB());
                                     } else {
                                         mc.fontRendererObj.drawStringWithShadow(string, 0.0F, (float) (q - 8) + (6 - (alpha / 255f) * 6), Colors.alpha(new Color(16777215), alpha).getRGB());
                                     }
@@ -255,14 +255,9 @@ public abstract class MixinGuiNewChat {
             k = MathHelper.floor_float((float) k / f);
             if (j >= 0 && k >= 0) {
                 int lineCount = Math.min(this.getLineCount(), this.drawnChatLines.size());
-                int fontHeight = mc.fontRendererObj.FONT_HEIGHT;
-                BetterChat module = (BetterChat) FPSMaster.moduleManager.getModule(BetterChat.class);
-
-                if (BetterChat.using && module.betterFont.getValue()) {
-                    fontHeight = FPSMaster.fontManager.s16.getHeight();
-                }
-                if (j <= MathHelper.floor_float((float) this.getChatWidth() / this.getChatScale()) && k < fontHeight * lineCount + lineCount) {
-                    int m = k / fontHeight + this.scrollPos;
+                BetterChat module = FPSMaster.moduleManager.getModule(BetterChat.class);
+                if (j <= MathHelper.floor_float((float) this.getChatWidth() / this.getChatScale()) && k < 10 * lineCount) {
+                    int m = k / 9 + this.scrollPos;
                     if (m >= 0 && m < this.drawnChatLines.size()) {
                         ChatLine chatLine = this.drawnChatLines.get(m);
                         int n = 0;
