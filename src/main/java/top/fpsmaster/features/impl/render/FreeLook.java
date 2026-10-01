@@ -35,8 +35,8 @@ public class FreeLook extends Module {
         if (Minecraft.getMinecraft().currentScreen != null) return;
 
         if (!perspectiveToggled) {
-                if (BindKeys.isDown(bind.getValue())) {
-                    perspectiveToggled = true;
+            if (BindKeys.isDown(bind.getValue())) {
+                perspectiveToggled = true;
                 if (Minecraft.getMinecraft().thePlayer != null) {
                     cameraYaw = Minecraft.getMinecraft().thePlayer.rotationYaw;
                     cameraPitch = Minecraft.getMinecraft().thePlayer.rotationPitch;
