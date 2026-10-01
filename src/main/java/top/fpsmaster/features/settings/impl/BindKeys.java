@@ -4,37 +4,29 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 /**
- * 绑定值的按键码约定 + 显示名/解析，客户端所有绑定（模块键、BindSetting、AutoText、快捷键）
- * 都走这一份。
- *
- * <p>键盘沿用 LWJGL2 码（&gt;0，0 = 未绑定）；鼠标沿用原版 {@code GuiControls} 写进 options.txt 的
- * {@code -100 + 按钮序号}——原版 {@code Minecraft.runTick} 就是拿这个码去喂 {@code KeyBinding}，
- * 两边共用一份码，用户在原版控制里绑的侧键才能和客户端互相认。
- *
- * <p>左键(0)/右键(1) 不参与绑定：既是界面点击又是攻击/使用，绑了只会互相打架。可取的是
- * {@link #MIN_BINDABLE_BUTTON} 起的中键与侧键。
+ * 绑定值的按键码约定：键盘走 LWJGL2 码（&gt;0，0 = 未绑定）；鼠标走原版 {@code GuiControls}
+ * 写进 options.txt 的 {@code -100 + 按钮序号}，与原版控制里绑的侧键共用一份码。左/右键留给
+ * 界面点击与攻击，只有中键和侧键可绑。
  */
 public final class BindKeys {
     /** 原版鼠标码基准：{@code -100 + button}（button 是 LWJGL 的 0..n，0 = 左键）。 */
     public static final int MOUSE_BASE = -100;
 
-    /** 可绑定的最小鼠标按钮：中键（LWJGL 的 2）。 */
+    /** 可绑定的最小鼠标按钮：中键。 */
     public static final int MIN_BINDABLE_BUTTON = 2;
 
-    /** LWJGL 常见的鼠标按钮数，越界的码当无效。 */
+    /** 鼠标按钮数上限，越界当无效。 */
     public static final int MAX_MOUSE_BUTTONS = 8;
 
-    /**
-     * 鼠标码过 prism raw key 通道的中转基准。那条通道把负数当成「这一帧没按键」（缓冲用 -1 表示空），
-     * 鼠标码恰好在负数区，于是先借 1000+n 过桥，桥接层再 {@link #fromWire} 翻回来。
-     */
+    /** 鼠标码过 prism raw key 通道的中转基准：那条通道拿 -1 表示「这一帧没按键」。 */
     private static final int MOUSE_WIRE_BASE = 1000;
 
     private BindKeys() {
     }
 
+    /** 负数是鼠标码（{@code -100 + 按钮}），正数才是键盘码。 */
     public static boolean isMouse(int code) {
-        return code <= MOUSE_BASE;
+        return code < 0;
     }
 
     /** 鼠标码 → LWJGL 按钮号（0 = 左键）；不是鼠标码时结果无意义。 */

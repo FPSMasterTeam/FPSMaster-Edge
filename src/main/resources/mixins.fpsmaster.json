@@ -49,6 +49,7 @@
     "MixinGuiNewChat",
     "MixinGuiPlayerOverlay",
     "MixinGuiScreen",
+    "MixinGuiScreen_MouseBinds",
     "MixinInventoryPlayer",
     "MixinInventoryEffectRenderer",
     "MixinItemRenderer",

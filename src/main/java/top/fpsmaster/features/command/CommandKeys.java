@@ -6,8 +6,8 @@ import top.fpsmaster.features.settings.impl.BindKeys;
 import java.util.Locale;
 
 /**
- * Key-name parsing for {@code .bind} and {@code .shortcut set}: 键盘走 LWJGL2 的键盘表，
- * 鼠标认 {@code MOUSE4} 这类名字（码值与显示名见 {@link BindKeys}）。
+ * Key-name parsing for {@code .bind} and {@code .shortcut set}: 键盘走 LWJGL2 键盘表，鼠标认
+ * {@code MOUSE4} 这类名字（码值与显示名见 {@link BindKeys}）。
  *
  * <p>{@link Keyboard#getKeyIndex(String)} returns {@link Keyboard#KEY_NONE} for anything it does not
  * know, which is the same value a deliberate unbind uses. {@link #parse(String)} therefore returns

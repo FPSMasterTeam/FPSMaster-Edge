@@ -351,7 +351,7 @@ public class MainPanel extends ScaledGuiScreen {
     }
 
     private static int normalizeKey(int keyCode) {
-        // prism 的 raw key 通道只收非负值，鼠标码过桥时用的是 1000+n，先翻回来再判空绑定。
+        // 过桥的鼠标码（1000+n）先翻回来，再判空绑定。
         int code = BindKeys.fromWire(keyCode);
         return code == Keyboard.KEY_BACK || code == Keyboard.KEY_DELETE ? 0 : code;
     }
