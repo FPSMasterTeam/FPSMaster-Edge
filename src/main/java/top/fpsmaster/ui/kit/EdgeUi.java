@@ -1,6 +1,7 @@
 package top.fpsmaster.ui.kit;
 
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
+import top.fpsmaster.features.settings.impl.BindKeys;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.prism.input.FrameInput;
 import top.fpsmaster.prism.input.Keys;
@@ -95,6 +96,17 @@ public final class EdgeUi {
                 break;
             default:
                 break;
+        }
+    }
+
+    /**
+     * 鼠标中键/侧键当一次按键喂给绑定界面。prism 的 raw key 通道只收非负值，鼠标码（负数）
+     * 先借 {@link BindKeys#toWire} 过桥；左/右键不喂——「点一下开始捕获」本身就是左键，
+     * 喂进去会同一帧把自己绑掉。
+     */
+    public static void mousePressed(int button) {
+        if (BindKeys.isBindableButton(button)) {
+            fallback.pressRawKey(BindKeys.toWire(BindKeys.mouseCode(button)));
         }
     }
 }

@@ -1,7 +1,7 @@
 package top.fpsmaster.ui.click;
 
-import org.lwjgl.input.Keyboard;
 import top.fpsmaster.FPSMaster;
+import top.fpsmaster.features.settings.impl.BindKeys;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.ui.kit.EdgeUi;
 import top.fpsmaster.utils.render.draw.Hover;
@@ -187,14 +187,8 @@ public final class UiChrome {
     }
 
     public static String keyName(int key) {
-        if (key <= 0) {
-            return FPSMaster.i18n.get("clickgui.bind.none");
-        }
-        String name = Keyboard.getKeyName(key);
-        if (name == null || name.isEmpty() || "NONE".equalsIgnoreCase(name)) {
-            return FPSMaster.i18n.get("clickgui.bind.none");
-        }
-        return name;
+        String name = BindKeys.name(key);
+        return name == null ? FPSMaster.i18n.get("clickgui.bind.none") : name;
     }
 
     public static float keyChipWidth(String text) {
