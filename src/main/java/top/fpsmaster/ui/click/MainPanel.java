@@ -10,6 +10,7 @@ import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.features.settings.Setting;
 import top.fpsmaster.features.settings.impl.AutoTextEntry;
 import top.fpsmaster.features.settings.impl.AutoTextSetting;
+import top.fpsmaster.features.settings.impl.BindKeys;
 import top.fpsmaster.features.settings.impl.BindSetting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ColorSetting;
@@ -345,11 +346,13 @@ public class MainPanel extends ScaledGuiScreen {
     }
 
     private String keyName(int keyCode) {
-        String name = keyCode == 0 ? null : Keyboard.getKeyName(keyCode);
-        return name == null || name.isEmpty() ? FPSMaster.i18n.get("clickgui.bind.none") : name;
+        String name = BindKeys.name(keyCode);
+        return name == null ? FPSMaster.i18n.get("clickgui.bind.none") : name;
     }
 
     private static int normalizeKey(int keyCode) {
-        return keyCode == Keyboard.KEY_BACK || keyCode == Keyboard.KEY_DELETE ? 0 : keyCode;
+        // 过桥的鼠标码（1000+n）先翻回来，再判空绑定。
+        int code = BindKeys.fromWire(keyCode);
+        return code == Keyboard.KEY_BACK || code == Keyboard.KEY_DELETE ? 0 : code;
     }
 }

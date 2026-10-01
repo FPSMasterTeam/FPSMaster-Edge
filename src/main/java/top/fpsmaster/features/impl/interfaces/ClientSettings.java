@@ -10,6 +10,7 @@ import top.fpsmaster.event.events.EventValueChange;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.features.settings.impl.BindKeys;
 import top.fpsmaster.features.settings.impl.BindSetting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
@@ -81,7 +82,7 @@ public class ClientSettings extends Module {
             return false;
         }
 
-        if (Keyboard.isKeyDown(zoomKey)) {
+        if (BindKeys.isDown(zoomKey)) {
             return true;
         }
 

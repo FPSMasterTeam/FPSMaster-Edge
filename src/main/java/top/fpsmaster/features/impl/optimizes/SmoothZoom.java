@@ -7,6 +7,7 @@ import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventUpdate;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
+import top.fpsmaster.features.settings.impl.BindKeys;
 import top.fpsmaster.features.settings.impl.BindSetting;
 import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
@@ -66,7 +67,7 @@ public class SmoothZoom extends Module {
     }
 
     public boolean isZoomKeyDown() {
-        return Keyboard.isKeyDown(zoomBind.getValue());
+        return BindKeys.isDown(zoomBind.getValue());
     }
 
     public static boolean isZoomKeyActive() {

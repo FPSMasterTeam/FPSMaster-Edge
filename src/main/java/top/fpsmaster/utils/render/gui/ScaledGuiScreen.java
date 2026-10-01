@@ -150,6 +150,10 @@ public class ScaledGuiScreen extends GuiScreen {
         if (eventButton != -1) {
             if (Mouse.getEventButtonState()) {
                 inputState.pressButton(eventButton, logicalMouseX, logicalMouseY);
+                // 绑定捕获靠这口 raw key 喂中键/侧键；已在同一批事件里关掉的屏不喂，键会滞留到下一个屏幕。
+                if (mc.currentScreen == this) {
+                    EdgeUi.mousePressed(eventButton);
+                }
                 mousePressed(logicalMouseX, logicalMouseY, eventButton);
             } else {
                 inputState.releaseButton(eventButton);
