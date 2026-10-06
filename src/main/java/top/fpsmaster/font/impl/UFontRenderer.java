@@ -3,11 +3,12 @@ package top.fpsmaster.font.impl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.opengl.GL11;
+import top.fpsmaster.FPSMaster;
 import top.fpsmaster.benchmark.HudBreakdown;
 import top.fpsmaster.font.TextRenderer;
 import top.fpsmaster.modules.client.GlobalTextFilter;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.FPSMaster;
 import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.render.draw.Colors;
 import top.fpsmaster.utils.render.gui.UiScale;
@@ -17,13 +18,11 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 
-import org.lwjgl.opengl.GL11;
-
 import static top.fpsmaster.utils.render.state.Alpha.apply;
 
 public class UFontRenderer extends FontRenderer {
     private final int FONT_HEIGHT = 8;
-    private TextRenderer textRenderer;
+    private final TextRenderer textRenderer;
     private final int size;
 
     public UFontRenderer(String name, int size) {
@@ -152,6 +151,8 @@ public class UFontRenderer extends FontRenderer {
      */
     @Override
     public int drawString(String text, float x, float y, int color, boolean dropShadow) {
+        if (text == null) return 0;
+        text = GlobalTextFilter.filter(text);
         float densityScale = getDensityScale();
         if (densityScale > 1.0f) {
             return drawHighDensityString(text, x, y, color, dropShadow, densityScale);
@@ -225,6 +226,8 @@ public class UFontRenderer extends FontRenderer {
 
     @Override
     public int getStringWidth(String text) {
+        if (text == null) return 0;
+        text = GlobalTextFilter.filter(text);
         long mark = HudBreakdown.enabled() ? System.nanoTime() : 0L;
         int measured = edge$getStringWidth(text);
         if (mark != 0L) {

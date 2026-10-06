@@ -396,7 +396,7 @@ public final class TextRenderer {
             atlas.glyph(' ');
         }
 
-        boolean obfuscated = text.indexOf(OBFUSCATION_CODE) >= 0;
+        boolean obfuscated = text.contains(OBFUSCATION_CODE);
         Map<String, Recorded> cache = obfuscated ? edge$obfuscatedCacheForNow() : geometryCache;
         boolean cacheable = cache != null;
         Recorded geometry = cacheable ? cache.get(cacheKey(text, shadowPass)) : null;
