@@ -134,8 +134,9 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                     saveServerList();
                     break;
                 case "connect":
+                    action = "";
                     this.mc.displayGuiScreen(new GuiConnecting(this, this.mc, selectedServer));
-                    break;
+                    return;
             }
             action = "";
         }
