@@ -10,6 +10,7 @@
 | [开发教程](development_tutorial.md) | Module / HUD Trait / Mixin / 命令 / 配置 |
 | [代码规范](code_standards.md) | 风格、日志、PR 约定 |
 | [UI 图标](icons/README.md) | SVG → PNG 烘焙 |
+| [饰品](cosmetics.md) | 本地饰品来源、自定义文件格式、打包饰品 |
 
 仓库根目录的 `README.md`、`AGENTS.md`、`CLAUDE.md` 分别给人、通用 agent、Claude Code 用。
 

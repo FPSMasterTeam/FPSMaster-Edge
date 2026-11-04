@@ -14,11 +14,6 @@ import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
 import top.fpsmaster.cosmetic.CosmeticManager;
-import top.fpsmaster.cosmetic.RemoteCosmeticService;
-import top.fpsmaster.modules.client.api.AuthService;
-import top.fpsmaster.modules.client.api.FPSMasterApiClient;
-import top.fpsmaster.modules.client.api.model.ApiResponse;
-import top.fpsmaster.modules.client.api.model.UserInfo;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.prism.screen.CosmeticsBridge;
@@ -27,13 +22,10 @@ import top.fpsmaster.prism.widget.UiFrame;
 import top.fpsmaster.ui.kit.EdgeUi;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 
-import com.google.gson.JsonObject;
-
 import java.io.IOException;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public final class CosmeticsScreen extends ScaledGuiScreen {
     private static final ResourceLocation STEVE_SKIN = new ResourceLocation("textures/entity/steve.png");
@@ -51,17 +43,6 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
     public CosmeticsScreen(GuiScreen parent) {
         this.parent = parent;
         bridge.cosmetics.reloadCustom();
-    }
-
-    @Override
-    public void initGui() {
-        super.initGui();
-        // 余额要显示在表头和确认弹窗上，缓存可能是上次开客户端时拉的。
-        //
-        // 放在 initGui() 而不是构造里：从这里跳去登录界面时传的 parent 就是本实例，
-        // 登录完回来构造函数不会再跑一遍，余额会一直停在「未知」。改窗口大小也会重跑
-        // initGui()，所以走带节流的那条，拖窗口不会变成一串请求。
-        FPSMasterApiClient.getInstance().refreshProfileIfStale();
     }
 
     @Override
@@ -157,7 +138,7 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
         if (keyCode == Keyboard.KEY_ESCAPE) {
-            // 弹窗挡着的时候 ESC 先关弹窗：直接退出整个界面会让人以为自己已经买了。
+            // 弹窗挡着的时候 ESC 先关弹窗。
             if (cosmetics.blocking()) cosmetics.closeDialog();
             else mc.displayGuiScreen(parent);
         } else super.keyTyped(typedChar, keyCode);
@@ -167,7 +148,6 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
     public void onGuiClosed() {
         bridge.cosmetics.setPreviewing(false);
         bridge.cosmetics.clearPreview();
-        RemoteCosmeticService.getInstance().flush();
         try {
             FPSMaster.configManager.saveConfig(ConfigProfileUtils.getActiveProfileName());
         } catch (FileException e) {
@@ -246,7 +226,6 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
 
     private final class EdgeCosmeticsBridge implements CosmeticsBridge {
         private final CosmeticManager cosmetics = CosmeticManager.getInstance();
-        private volatile String status = "";
 
         @Override
         public String i18n(String key) { return FPSMaster.i18n.get(key); }
@@ -268,8 +247,9 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
                         builtin ? FPSMaster.i18n.get("cosmetics.wings.builtin") : option.getName(),
                         option.getDescription(),
                         option.getCategory(),
-                        option.getPrice(),
-                        cosmetics.isOwned(option.getId()),
+                        // 没有商城了：价格 0 会被共享界面显示成「免费」，所有饰品都直接可穿戴。
+                        "0",
+                        true,
                         cosmetics.isEquipped(option.getId()),
                         builtin,
                         option.getDefaultScale(),
@@ -285,67 +265,10 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
         @Override
         public void equipItem(String id) { cosmetics.equip(id); }
         @Override
-        public boolean signedIn() { return AuthService.getInstance().isLoggedIn(); }
-        // 加 @Override 不只是风格：CosmeticsBridge.balance() 是带默认实现的，
-        // 签名一旦漂了这里会静默退回默认的空串，表头上的余额就永远是空的。
-        @Override
-        public String balance() {
-            UserInfo user = FPSMasterApiClient.getInstance().cachedUser();
-            String value = user == null ? null : user.getWalletBalance();
-            return value == null ? "" : value;
-        }
-        // 余额不足弹窗每帧都会调这个，节流全靠 refreshProfileIfStale 自己那道 5 秒闸。
-        @Override
-        public void refreshBalance() {
-            FPSMasterApiClient.getInstance().refreshProfileIfStale(5000L);
-        }
-        @Override
-        public void openSignIn() {
-            // 从饰品界面进登录界面，登录完退回来的就是饰品界面本身，购买按钮当场就活了。
-            Minecraft.getMinecraft().displayGuiScreen(
-                    new top.fpsmaster.ui.screens.signin.SignInScreen(CosmeticsScreen.this));
-        }
-        @Override
-        public boolean purchasePending() { return FPSMasterApiClient.getInstance().purchaseInProgress(); }
-        @Override
-        public String statusMessage() { return status; }
-        @Override
         public void openCustomFolder() { cosmetics.openCustomDirectory(); }
+        /** 饰品设置只存在本地配置里，没有同步可言；报 ok 让共享界面不显示同步提示。 */
         @Override
-        public void purchaseItem(String id) {
-            // 解析不了的 id 以前是静默 return：玩家点了「确认购买」，弹窗关掉、余额没动、
-            // 一个字都不显示，看起来就是「客户端坏了」。目录里正常商品的 id 都是数字，
-            // 走到这儿说明后端发了个这个版本认不出来的东西，得说一声。
-            final long itemId;
-            try {
-                itemId = Long.parseLong(id);
-            } catch (NumberFormatException ignored) {
-                status = FPSMaster.i18n.get("cosmetics.purchase.failed");
-                return;
-            }
-            // null = 已经有一单在途（可能是上一个饰品界面下的），不重复下单。
-            CompletableFuture<ApiResponse<JsonObject>> request =
-                    FPSMasterApiClient.getInstance().purchaseItem(itemId);
-            if (request == null) {
-                return;
-            }
-            status = FPSMaster.i18n.get("cosmetics.purchasing");
-            request.whenComplete((response, error) -> {
-                if (error == null && response != null && response.isSuccess()) {
-                    cosmetics.grantPurchasedAndEquip(id);
-                    cosmetics.refreshOwned();
-                    // 下单响应是一张订单，不带新余额，只能自己再拉一次 profile，
-                    // 否则表头一直显示扣款前的数。
-                    FPSMasterApiClient.getInstance().refreshProfileNow();
-                    status = FPSMaster.i18n.get("cosmetics.purchase.success");
-                } else {
-                    status = error != null ? error.getMessage()
-                            : response == null ? FPSMaster.i18n.get("cosmetics.purchase.failed") : response.getMessage();
-                }
-            });
-        }
-        @Override
-        public String syncStatus() { return RemoteCosmeticService.getInstance().syncStatusKey(); }
+        public String syncStatus() { return "ok"; }
         @Override
         public boolean capeEnabled() { return cosmetics.capeAnimationEnabled(); }
         @Override
