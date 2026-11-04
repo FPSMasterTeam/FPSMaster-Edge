@@ -1,7 +1,6 @@
 package top.fpsmaster.features.command;
 
 
-import net.minecraft.client.Minecraft;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.event.Subscribe;
@@ -16,8 +15,6 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 import top.fpsmaster.features.settings.impl.ModeSetting;
 import top.fpsmaster.features.settings.impl.NumberSetting;
 import top.fpsmaster.features.settings.impl.TextSetting;
-import top.fpsmaster.modules.client.api.AuthService;
-import top.fpsmaster.modules.client.api.FPSMasterApiClient;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.shortcut.Shortcut;
 import top.fpsmaster.replay.ReplayRecorder;
@@ -93,11 +90,6 @@ public class CommandManager {
                 Utility.sendClientNotify("未知命令: " + args[0]);
             }
         });
-        commands.add(new Command("auth", "auth <status|login|logout> [user] [pass]", "account") {
-            public void execute(String[] args) throws CommandException {
-                handleAuth(args);
-            }
-        });
         commands.add(new Command("shortcut", "shortcut <list>", "sc") {
             public void execute(String[] args) throws CommandException {
                 if (args.length == 0 || "list".equalsIgnoreCase(args[0])) {
@@ -110,12 +102,6 @@ public class CommandManager {
                     return;
                 }
                 throw new CommandException("用法: shortcut list");
-            }
-        });
-        commands.add(new Command("telemetry", "telemetry <status>", "presence") {
-            public void execute(String[] args) {
-                Utility.sendClientNotify("匿名数据: "
-                        + (FPSMaster.configManager.configure.anonymousDataEnabled ? "开启" : "关闭"));
             }
         });
         commands.add(new Command("replay", "replay [start [name]|stop|status]") {
@@ -316,39 +302,6 @@ public class CommandManager {
             throw new CommandException("配置失败: " + failure.getMessage());
         }
         throw new CommandException("用法: config <save|load|list> [name]");
-    }
-
-    private void handleAuth(String[] args) throws CommandException {
-        require(args.length >= 1, "auth <status|login|logout> [user] [pass]");
-        String action = args[0].toLowerCase(Locale.ROOT);
-        AuthService auth = AuthService.getInstance();
-        if ("status".equals(action)) {
-            Utility.sendClientNotify(auth.isLoggedIn() ? "已登录" : "未登录");
-            return;
-        }
-        if ("logout".equals(action)) {
-            auth.clearTokens();
-            Utility.sendClientNotify("已退出登录");
-            return;
-        }
-        if ("login".equals(action)) {
-            require(args.length >= 3, "auth login <user> <pass>");
-            FPSMasterApiClient.getInstance().login(args[1], args[2], response -> {
-                // 回调跑在 ForkJoinPool.commonPool 上；printChatMessage 会写
-                // GuiNewChat 的 ArrayList，和渲染线程的 drawChat 抢同一个表。
-                // 仓库约定是回主线程再发（见 CosmeticManager / MusicManager）。
-                final boolean ok = response != null && response.isSuccess()
-                        && response.getData() != null && response.getData().getToken() != null;
-                Minecraft.getMinecraft().addScheduledTask(new Runnable() {
-                    public void run() {
-                        // login() 内部已经存过 token，这里只报结果。
-                        Utility.sendClientNotify(ok ? "登录成功" : "§c登录失败");
-                    }
-                });
-            });
-            return;
-        }
-        throw new CommandException("用法: auth <status|login|logout>");
     }
 
     private void handleReplay(String[] args) {

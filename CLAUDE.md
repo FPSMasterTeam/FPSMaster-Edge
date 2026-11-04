@@ -27,7 +27,7 @@ No Spotless/Checkstyle/PMD task — do not invent one. Style: `docs/code_standar
 
 ## Architecture
 
-Entry: `forge/Mod.java` (`@Mod` modid `fpsmaster`) → `FMLInitializationEvent` → `FPSMaster.INSTANCE.initialize()`. `FPSMaster` holds static singletons (`moduleManager`, `configManager`, `componentsManager`, `commandManager`, `fontManager`, `i18n`, `async`, telemetry) and wires init (auth → fonts → modules → components → config → commands → i18n, etc.).
+Entry: `forge/Mod.java` (`@Mod` modid `fpsmaster`) → `FMLInitializationEvent` → `FPSMaster.INSTANCE.initialize()`. `FPSMaster` holds static singletons (`moduleManager`, `configManager`, `componentsManager`, `commandManager`, `fontManager`, `i18n`, `async`) and wires init (fonts → modules → components → config → cosmetics → commands → i18n).
 
 Three layers:
 
@@ -46,10 +46,13 @@ Three layers:
 
 ### Other subsystems
 
-- `modules/`: config (`ConfigManager`, profiles via `ConfigProfileUtils`), i18n, auth/telemetry/async, music, `ClientLogger`.
+- `modules/`: config (`ConfigManager`, profiles via `ConfigProfileUtils`), i18n, Minecraft accounts (Microsoft / offline), async, music, `ClientLogger`.
+- `cosmetic/`: `CosmeticManager`, fully local: built-in dragon wings, items bundled under `assets/fpsmaster/cosmetics/bundled/index.json`, and player files in `config/fpsmaster/cosmetics/`. Everything is free; cosmetics are drawn on the local player only.
 - `font/`: TTF renderer; `FontManager` parses the face once, pins base sizes, LRU-caches derived sizes and disposes atlases on eviction/reload.
 - `ui/`: ClickGUI, screens, notifications, minimap.
 - `utils/`: render/math/io/… (`Utility` lives in `utils.core`).
+
+The client talks to no FPSMaster server: there is no FPSMaster account, shop, telemetry, remote loadout or promoted-server list. Do not add any. The remaining network use is Microsoft sign-in, Mojang skins, and the third-party music APIs.
 
 ## Conventions
 

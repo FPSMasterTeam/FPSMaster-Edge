@@ -20,12 +20,9 @@ import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.features.impl.render.ItemPhysics;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.font.impl.UFontRenderer;
-import top.fpsmaster.ui.common.TextField;
 import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.ui.click.UiChrome;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
-import top.fpsmaster.modules.client.api.FPSMasterApiClient;
-import top.fpsmaster.modules.client.api.model.LoginResponse;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.math.anim.AnimClock;
 import top.fpsmaster.utils.math.anim.AnimMath;
@@ -36,25 +33,25 @@ import top.fpsmaster.utils.render.draw.Rects;
 import top.fpsmaster.utils.render.gui.ScaledGuiScreen;
 import top.fpsmaster.utils.system.OSUtil;
 
-import java.awt.Desktop;
 import java.awt.Color;
 import java.io.IOException;
-import java.net.URI;
 
 /**
  * OOBE wizard, visual twin of {@code docs/prototypes/oobe.html}: a centered glass card with a
- * step rail on the left, the page content on the right and a Back/Continue footer. All eight
- * wizard pages (and their state machine) are kept; only the drawing changed.
+ * step rail on the left, the page content on the right and a Back/Continue footer. The account
+ * and data-sharing pages went away with the FPSMaster servers, leaving six pages.
  */
 public class OobeScreen extends ScaledGuiScreen {
-    private static final int PAGE_COUNT = 8;
+    private static final int PAGE_COUNT = 6;
+    /** "Enter the guide?" page; choosing No finishes setup right there. */
+    private static final int GUIDE_PAGE = 4;
     private static final float RAIL_W = 110f;
     private static final String[] SCALE_LABELS = new String[]{"0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "2.0x", "2.5x", "3.0x"};
     private static final String[] GREETINGS = new String[]{"Hello, welcome.", "你好，欢迎使用。", "こんにちは、ようこそ。"};
-    private static final String[] STEP_ICONS = new String[]{"languages", "monitor", "box", "sparkles", "user", "sliders", "chev-r", "grid"};
+    private static final String[] STEP_ICONS = new String[]{"languages", "monitor", "box", "sparkles", "chev-r", "grid"};
     private static final String[] STEP_KEYS = new String[]{
             "oobe.step.language", "oobe.step.display", "oobe.step.tutorial", "oobe.step.features",
-            "oobe.step.account", "oobe.step.options", "oobe.step.guide", "oobe.step.qa"};
+            "oobe.step.guide", "oobe.step.qa"};
     private static final ResourceLocation PREVIEW_IMAGE = new ResourceLocation("client/background/panorama_1/panorama_0.png");
     private static final ResourceLocation PANORAMA_THREE = new ResourceLocation("client/background/panorama_3/panorama_0.png");
     private static final long TUTORIAL_SLIDE_DURATION_MS = 3000L;
@@ -65,21 +62,11 @@ public class OobeScreen extends ScaledGuiScreen {
     private static int savedLanguageValue;
     private static int savedTutorialIndex;
     private static long savedTutorialStartedAt = System.currentTimeMillis();
-    private static boolean savedAntiCheatEnabled;
-    private static boolean savedAnonymousDataEnabled;
     private static boolean savedEnterGuide = true;
     private static int savedQaStep;
     private static final int[] savedQaAnswers = new int[]{-1, -1, -1};
     private static String savedBackgroundChoice;
-    private static boolean savedLoginSkipped = true;
-    private static boolean savedIsLoggingIn = false;
-    private static String savedLoginError = null;
-    private static boolean savedLoginWelcomeShown = false;
-    private static String savedWelcomeUsername = null;
-    private static int savedWelcomeUserLevel = 0;
     private static int savedFeatureCount = 5;
-    private static String savedAccountText = "";
-    private static String savedPasswordText = "";
 
     private final AnimClock animClock = new AnimClock();
     private final float[] featureExpand = new float[]{0f, 0f, 0f, 0f};
@@ -95,19 +82,10 @@ public class OobeScreen extends ScaledGuiScreen {
     private int hoveredFeature = -1;
     private int expandedFeatureCard = -1;
     private float featureDetailExpand = 0f;
-    private boolean antiCheatEnabled;
-    private boolean anonymousDataEnabled;
     private boolean enterGuide = true;
     private int qaStep;
     private final int[] qaAnswers = new int[]{-1, -1, -1};
     private String backgroundChoice;
-    private boolean loginSkipped = true;
-    private boolean isLoggingIn = false;
-    private String loginError = null;
-    private boolean loginWelcomeShown = false;
-    private String welcomeUsername = null;
-    private int welcomeUserLevel = 0;
-    private String loginSuccessMessage = null;
     private float pageMotion;
     private int pageMotionDirection = 1;
     private int featureCount = 5;
@@ -128,8 +106,6 @@ public class OobeScreen extends ScaledGuiScreen {
     private long benchmarkElapsedNs;
     private int benchmarkIterations;
     private long benchmarkStartTime;
-    private float forgotHoverAnim;
-    private float registerHoverAnim;
     private boolean tutorialPlaybackComplete;
     private float tutorialSlideTransition;
     private int tutorialPrevSlide;
@@ -141,8 +117,6 @@ public class OobeScreen extends ScaledGuiScreen {
     private int greetingIndex;
     private boolean canGoBackQa = false;
     private float followSwitchAnim;
-    private float antiCheatSwitchAnim;
-    private float anonymousSwitchAnim;
 
     // Card layout metrics, refreshed once per frame in render().
     private float cardX;
@@ -152,15 +126,10 @@ public class OobeScreen extends ScaledGuiScreen {
     private float contentX;
     private float contentW;
 
-    private TextField accountField;
-    private TextField passwordField;
-    private boolean loginFieldsHaveFont;
     private OobeButton backButton;
     private OobeButton nextButton;
     private OobeButton tutorialPrevButton;
     private OobeButton tutorialNextButton;
-    private OobeButton loginButton;
-    private OobeButton skipLoginButton;
     private OobeButton shaderContinueButton;
     private OobeButton shaderCancelButton;
     private OobeButton shaderUnsupportedOkButton;
@@ -188,12 +157,6 @@ public class OobeScreen extends ScaledGuiScreen {
         nextButton = new OobeButton("Next", true, this::onNext);
         tutorialPrevButton = new OobeButton("Prev", false, () -> tutorialIndex = (tutorialIndex + 2) % 3);
         tutorialNextButton = new OobeButton("Next", true, () -> tutorialIndex = (tutorialIndex + 1) % 3);
-        loginButton = new OobeButton("Sign in", false, this::performLogin);
-        skipLoginButton = new OobeButton("Skip", true, () -> {
-            loginSkipped = true;
-            loginError = null;
-            onNext();
-        });
         shaderContinueButton = new OobeButton("Continue", true, this::confirmShaderBackgroundSelection);
         shaderCancelButton = new OobeButton("Cancel", false, this::cancelShaderBackgroundSelection);
         shaderUnsupportedOkButton = new OobeButton("OK", true, () -> shaderUnsupportedDialogVisible = false);
@@ -210,28 +173,6 @@ public class OobeScreen extends ScaledGuiScreen {
         greetingPreviousText = greetingCurrentText;
         greetingTransition = 1f;
         scaleDropdown.setItems(SCALE_LABELS).setSelectedIndex(fixedScaleIndex).setEnabled(true);
-
-        accountField = new TextField(FPSMaster.fontManager.s18, key("oobe.login.account.placeholder"),
-                new Color(255, 255, 255, 0).getRGB(), ClickGuiTheme.textFieldText().getRGB(), 32);
-        passwordField = new TextField(FPSMaster.fontManager.s18, true, key("oobe.login.password.placeholder"),
-                new Color(255, 255, 255, 0).getRGB(), ClickGuiTheme.textFieldText().getRGB(), 32);
-        accountField.setText(savedAccountText);
-        passwordField.setText(savedPasswordText);
-        loginFieldsHaveFont = FPSMaster.fontManager.s18 != null;
-    }
-
-    /** Rebuild login fields once fonts are available (ctor may run before font load in edge cases). */
-    private void ensureLoginFields() {
-        if (loginFieldsHaveFont || FPSMaster.fontManager == null || FPSMaster.fontManager.s18 == null) {
-            return;
-        }
-        accountField = new TextField(FPSMaster.fontManager.s18, key("oobe.login.account.placeholder"),
-                new Color(255, 255, 255, 0).getRGB(), ClickGuiTheme.textFieldText().getRGB(), 32);
-        passwordField = new TextField(FPSMaster.fontManager.s18, true, key("oobe.login.password.placeholder"),
-                new Color(255, 255, 255, 0).getRGB(), ClickGuiTheme.textFieldText().getRGB(), 32);
-        accountField.setText(savedAccountText);
-        passwordField.setText(savedPasswordText);
-        loginFieldsHaveFont = true;
     }
 
     @Override
@@ -272,15 +213,9 @@ public class OobeScreen extends ScaledGuiScreen {
                 renderFeaturesPage(mouseX, mouseY);
                 break;
             case 4:
-                renderLoginPage(mouseX, mouseY);
-                break;
-            case 5:
-                renderOptionsPage(mouseX, mouseY);
-                break;
-            case 6:
                 renderGuideEntryPage(mouseX, mouseY);
                 break;
-            case 7:
+            case 5:
                 renderQaPage(mouseX, mouseY);
                 break;
             default:
@@ -306,11 +241,7 @@ public class OobeScreen extends ScaledGuiScreen {
         for (int i = 0; i < qaOptionHover.length; i++) {
             qaOptionPress[i] = (float) AnimMath.base(qaOptionPress[i], 0.0, 0.25);
         }
-        forgotHoverAnim = (float) AnimMath.base(forgotHoverAnim, 0.0, 0.25);
-        registerHoverAnim = (float) AnimMath.base(registerHoverAnim, 0.0, 0.25);
         followSwitchAnim = (float) AnimMath.base(followSwitchAnim, followGameScaleEnabled ? 1.0 : 0.0, 0.3);
-        antiCheatSwitchAnim = (float) AnimMath.base(antiCheatSwitchAnim, antiCheatEnabled ? 1.0 : 0.0, 0.3);
-        anonymousSwitchAnim = (float) AnimMath.base(anonymousSwitchAnim, anonymousDataEnabled ? 1.0 : 0.0, 0.3);
         pageMotion += (0f - pageMotion) * Math.min(1f, dt * 8.5f);
         tutorialSlideTransition += (1f - tutorialSlideTransition) * Math.min(1f, dt * 8f);
         float introTarget = Math.min(1f, Math.max(0f, (System.currentTimeMillis() - introStartedAt) / (float) OOBE_INTRO_DURATION_MS));
@@ -328,12 +259,6 @@ public class OobeScreen extends ScaledGuiScreen {
                 greetingTransition = 1f;
                 greetingPreviousText = greetingCurrentText;
             }
-        }
-        if (accountField != null) {
-            accountField.updateCursorCounter();
-        }
-        if (passwordField != null) {
-            passwordField.updateCursorCounter();
         }
     }
 
@@ -596,163 +521,6 @@ public class OobeScreen extends ScaledGuiScreen {
         }
     }
 
-    private void renderLoginPage(int mouseX, int mouseY) {
-        // Show welcome screen if login was successful
-        if (loginWelcomeShown && welcomeUsername != null) {
-            renderLoginWelcome();
-            return;
-        }
-
-        float bodyY = renderPageHeader(key("oobe.login.title"), key("oobe.login.desc"));
-
-        ensureLoginFields();
-        if (accountField == null || passwordField == null) {
-            return;
-        }
-
-        // Disable input while logging in
-        boolean inputEnabled = !isLoggingIn;
-        accountField.setEnabled(inputEnabled);
-        passwordField.setEnabled(inputEnabled);
-
-        float formW = 150f;
-        float fieldH = 19f;
-        float y = bodyY + 4f;
-        drawTextField(accountField, contentX, y, formW, fieldH);
-        drawTextField(passwordField, contentX, y + fieldH + 5f, formW, fieldH);
-
-        float btnY = y + (fieldH + 5f) * 2f + 2f;
-        String loginLabel = isLoggingIn ? (isChinese() ? "登录中..." : "Logging in...") : key("oobe.login.submit");
-        if (isLoggingIn) {
-            Rects.rounded(contentX, btnY, formW, fieldH, UiChrome.CTL_RADIUS, ClickGuiTheme.layerActive().getRGB(), false);
-            FPSMaster.fontManager.s14.drawCenteredString(loginLabel, contentX + formW / 2f, btnY + fieldH / 2f - 3.5f,
-                    ClickGuiTheme.textDisabled().getRGB());
-        } else if (UiChrome.buttonClicked(this, contentX, btnY, formW, fieldH, null, loginLabel,
-                UiChrome.Style.PRIMARY, mouseX, mouseY) && !hasActiveModal()) {
-            performLogin();
-        }
-
-        float belowY = btnY + fieldH + 6f;
-        if (loginError != null) {
-            int errorLines = drawWrapped(FPSMaster.fontManager.getFont(11), loginError, contentX, belowY, contentW, 6f, 2,
-                    ClickGuiTheme.danger().getRGB());
-            belowY += errorLines * 6f + 4f;
-        }
-
-        UFontRenderer linkFont = FPSMaster.fontManager.getFont(11);
-        String forgot = key("oobe.login.forgot");
-        String register = key("oobe.login.register");
-        float forgotW = linkFont.getStringWidth(forgot);
-        float registerX = contentX + forgotW + 12f;
-        float registerW = linkFont.getStringWidth(register);
-        boolean forgotHovered = Hover.is(contentX, belowY - 1f, forgotW, 8f, mouseX, mouseY);
-        boolean registerHovered = Hover.is(registerX, belowY - 1f, registerW, 8f, mouseX, mouseY);
-        forgotHoverAnim = (float) AnimMath.base(forgotHoverAnim, forgotHovered ? 1.0 : 0.0, 0.24);
-        registerHoverAnim = (float) AnimMath.base(registerHoverAnim, registerHovered ? 1.0 : 0.0, 0.24);
-        linkFont.drawString(forgot, contentX, belowY,
-                blendColor(ClickGuiTheme.textDisabled(), ClickGuiTheme.accentText(), forgotHoverAnim).getRGB());
-        linkFont.drawString(register, registerX, belowY,
-                blendColor(ClickGuiTheme.textDisabled(), ClickGuiTheme.accentText(), registerHoverAnim).getRGB());
-        if (!hasActiveModal() && !isLoggingIn && consumePressInBounds(contentX, belowY - 1f, forgotW, 9f, 0) != null) {
-            openLink("https://fpsmaster.top/forgot");
-        }
-        if (!hasActiveModal() && !isLoggingIn && consumePressInBounds(registerX, belowY - 1f, registerW, 9f, 0) != null) {
-            openLink("https://fpsmaster.top/login");
-        }
-    }
-
-    private void renderLoginWelcome() {
-        float centerX = contentX + contentW / 2f;
-        float top = cardY + 40f;
-
-        float badge = 26f;
-        Rects.rounded(centerX - badge / 2f, top, badge, badge, 13, ClickGuiTheme.accentSoft().getRGB(), false);
-        Icons.draw("check", centerX - 6.5f, top + 6.5f, 13f, ClickGuiTheme.accentText().getRGB());
-
-        UiChrome.boldCentered(FPSMaster.fontManager.getFont(18), isChinese() ? "登录成功" : "Login Successful",
-                centerX, top + badge + 10f, ClickGuiTheme.textPrimary().getRGB());
-        String welcomeUserText = isChinese()
-                ? "欢迎回来, " + welcomeUsername + "!"
-                : "Welcome back, " + welcomeUsername + "!";
-        FPSMaster.fontManager.getFont(12).drawCenteredString(welcomeUserText, centerX, top + badge + 24f,
-                ClickGuiTheme.textSecondary().getRGB());
-
-        float infoY = top + badge + 36f;
-        if (welcomeUserLevel > 0) {
-            FPSMaster.fontManager.getFont(11).drawCenteredString((isChinese() ? "等级: " : "Level: ") + welcomeUserLevel,
-                    centerX, infoY, ClickGuiTheme.textDisabled().getRGB());
-            infoY += 10f;
-        }
-        UiChrome.hairlineH(contentX + 20f, infoY + 4f, contentW - 40f);
-        String infoText = isChinese()
-                ? "您现在可以继续完成客户端配置"
-                : "You can continue with the client setup";
-        FPSMaster.fontManager.getFont(11).drawCenteredString(infoText, centerX, infoY + 10f,
-                ClickGuiTheme.textDisabled().getRGB());
-    }
-
-    private void performLogin() {
-        if (isLoggingIn) {
-            return;
-        }
-
-        String username = accountField.getText().trim();
-        String password = passwordField.getText().trim();
-
-        if (username.isEmpty() || password.isEmpty()) {
-            loginError = isChinese() ? "请输入账号和密码" : "Please enter username and password";
-            return;
-        }
-
-        isLoggingIn = true;
-        loginError = null;
-
-        FPSMasterApiClient.getInstance().login(username, password, response -> {
-            isLoggingIn = false;
-
-            if (response.isSuccess() && response.getData() != null) {
-                LoginResponse loginResponse = response.getData();
-                loginSkipped = false;
-                loginWelcomeShown = true;
-                welcomeUsername = loginResponse.getCurrentUserView() != null
-                        ? loginResponse.getCurrentUserView().getUsername()
-                        : username;
-                welcomeUserLevel = loginResponse.getCurrentUserView() != null
-                        ? loginResponse.getCurrentUserView().getLevel()
-                        : 0;
-                ClientLogger.info("Login successful: " + loginResponse);
-            } else {
-                loginError = response.getMessage() != null && !response.getMessage().isEmpty()
-                        ? response.getMessage()
-                        : (isChinese() ? "登录失败，请重试" : "Login failed, please try again");
-                ClientLogger.warn("Login failed: " + loginError);
-            }
-        });
-    }
-
-    private void renderOptionsPage(int mouseX, int mouseY) {
-        float bodyY = renderPageHeader(key("oobe.options.title"), key("oobe.options.desc"));
-        float rowH = 19f;
-        boolean modal = hasActiveModal();
-
-        float y = bodyY + 2f;
-        renderSettingRow(contentX, y, key("oobe.options.anticheat"), key("oobe.options.anticheat.sub"));
-        UiChrome.drawSwitch(contentX + contentW - UiChrome.SWITCH_W, y + (rowH - UiChrome.SWITCH_H) / 2f,
-                antiCheatEnabled, antiCheatSwitchAnim);
-        if (!modal && consumePressInBounds(contentX, y, contentW, rowH, 0) != null) {
-            antiCheatEnabled = !antiCheatEnabled;
-        }
-        UiChrome.hairlineH(contentX, y + rowH + 1f, contentW);
-
-        float y2 = y + rowH + 4f;
-        renderSettingRow(contentX, y2, key("oobe.options.anonymous"), key("oobe.options.anonymous.sub"));
-        UiChrome.drawSwitch(contentX + contentW - UiChrome.SWITCH_W, y2 + (rowH - UiChrome.SWITCH_H) / 2f,
-                anonymousDataEnabled, anonymousSwitchAnim);
-        if (!modal && consumePressInBounds(contentX, y2, contentW, rowH, 0) != null) {
-            anonymousDataEnabled = !anonymousDataEnabled;
-        }
-    }
-
     private void renderGuideEntryPage(int mouseX, int mouseY) {
         float bodyY = renderPageHeader(key("oobe.guide.title"), key("oobe.guide.desc"));
         float gap = 6f;
@@ -915,7 +683,7 @@ public class OobeScreen extends ScaledGuiScreen {
     }
 
     private void onNext() {
-        if (page == 6 && !enterGuide) {
+        if (page == GUIDE_PAGE && !enterGuide) {
             finishOobe();
             return;
         }
@@ -939,8 +707,6 @@ public class OobeScreen extends ScaledGuiScreen {
         ClientSettings.fixedScale.setValue(fixedScaleIndex);
 
         FPSMaster.configManager.configure.background = backgroundChoice;
-        FPSMaster.configManager.configure.antiCheatEnabled = antiCheatEnabled;
-        FPSMaster.configManager.configure.anonymousDataEnabled = anonymousDataEnabled;
         FPSMaster.configManager.configure.oobeCompleted = true;
         System.out.println("[OOBE] Set oobeCompleted = true");
 
@@ -1080,11 +846,10 @@ public class OobeScreen extends ScaledGuiScreen {
         }
         languageValue = newLanguage;
         setPreviewLanguage(languageValue);
-        updateTextFieldPlaceholders();
     }
 
     private String getNextLabel() {
-        if (page == PAGE_COUNT - 1 || (page == 6 && !enterGuide)) {
+        if (page == PAGE_COUNT - 1 || (page == GUIDE_PAGE && !enterGuide)) {
             return key("oobe.finish");
         }
         return key("oobe.next");
@@ -1744,19 +1509,6 @@ public class OobeScreen extends ScaledGuiScreen {
     // Text + widget helpers
     // ------------------------------------------------------------------
 
-    private void drawTextField(TextField field, float x, float y, float width, float height) {
-        UiChrome.inputBox(x, y, width, height, field.isFocused());
-        field.drawTextBox(x, y, width, height);
-        PointerEvent outsideClick = peekAnyPress();
-        if (outsideClick != null && !Hover.is(x, y, width, height, outsideClick.x, outsideClick.y)) {
-            field.setFocused(false);
-        }
-        PointerEvent click = consumePressInBounds(x, y, width, height, 0);
-        if (click != null) {
-            field.mouseClicked(click.x, click.y, click.button);
-        }
-    }
-
     /**
      * Word/segment wrapped text. Splits after CJK punctuation and before spaces like the old
      * body-text helper did. Returns the number of lines drawn (at most {@code maxLines}).
@@ -1827,11 +1579,6 @@ public class OobeScreen extends ScaledGuiScreen {
         return isChinese() ? "第 " + (page + 1) + " 步" : "Step " + (page + 1);
     }
 
-    private void updateTextFieldPlaceholders() {
-        accountField.placeHolder = key("oobe.login.account.placeholder");
-        passwordField.placeHolder = key("oobe.login.password.placeholder");
-    }
-
     private void applyLiveScaleSettings() {
         ClientSettings.followGameScale.setValue(followGameScaleEnabled);
         ClientSettings.fixedScale.setValue(fixedScaleIndex);
@@ -1844,23 +1591,13 @@ public class OobeScreen extends ScaledGuiScreen {
         savedPage = 0;
         savedLanguageValue = ClientSettings.language.getValue();
         savedTutorialIndex = 0;
-        savedAntiCheatEnabled = FPSMaster.configManager.configure.antiCheatEnabled;
-        savedAnonymousDataEnabled = FPSMaster.configManager.configure.anonymousDataEnabled;
         savedEnterGuide = true;
         savedQaStep = 0;
         savedQaAnswers[0] = -1;
         savedQaAnswers[1] = -1;
         savedQaAnswers[2] = -1;
         savedBackgroundChoice = FPSMaster.configManager.configure.background == null ? "panorama_1" : FPSMaster.configManager.configure.background;
-        savedLoginSkipped = true;
-        savedIsLoggingIn = false;
-        savedLoginError = null;
-        savedLoginWelcomeShown = false;
-        savedWelcomeUsername = null;
-        savedWelcomeUserLevel = 0;
         savedFeatureCount = 5;
-        savedAccountText = "";
-        savedPasswordText = "";
         sessionStateInitialized = true;
     }
 
@@ -1870,20 +1607,12 @@ public class OobeScreen extends ScaledGuiScreen {
         followGameScaleEnabled = ClientSettings.followGameScale.getValue();
         fixedScaleIndex = ClientSettings.fixedScale.getValue();
         tutorialIndex = savedTutorialIndex;
-        antiCheatEnabled = savedAntiCheatEnabled;
-        anonymousDataEnabled = savedAnonymousDataEnabled;
         enterGuide = savedEnterGuide;
         qaStep = savedQaStep;
         qaAnswers[0] = savedQaAnswers[0];
         qaAnswers[1] = savedQaAnswers[1];
         qaAnswers[2] = savedQaAnswers[2];
         backgroundChoice = savedBackgroundChoice;
-        loginSkipped = savedLoginSkipped;
-        isLoggingIn = savedIsLoggingIn;
-        loginError = savedLoginError;
-        loginWelcomeShown = savedLoginWelcomeShown;
-        welcomeUsername = savedWelcomeUsername;
-        welcomeUserLevel = savedWelcomeUserLevel;
         featureCount = savedFeatureCount;
         // Reset temporary UI states
         expandedFeatureCard = -1;
@@ -1894,51 +1623,19 @@ public class OobeScreen extends ScaledGuiScreen {
         savedPage = page;
         savedLanguageValue = languageValue;
         savedTutorialIndex = tutorialIndex;
-        savedAntiCheatEnabled = antiCheatEnabled;
-        savedAnonymousDataEnabled = anonymousDataEnabled;
         savedEnterGuide = enterGuide;
         savedQaStep = qaStep;
         savedQaAnswers[0] = qaAnswers[0];
         savedQaAnswers[1] = qaAnswers[1];
         savedQaAnswers[2] = qaAnswers[2];
         savedBackgroundChoice = backgroundChoice;
-        savedLoginSkipped = loginSkipped;
-        savedIsLoggingIn = isLoggingIn;
-        savedLoginError = loginError;
-        savedLoginWelcomeShown = loginWelcomeShown;
-        savedWelcomeUsername = welcomeUsername;
-        savedWelcomeUserLevel = welcomeUserLevel;
         savedFeatureCount = featureCount;
-        if (accountField != null) {
-            savedAccountText = accountField.getText();
-        }
-        if (passwordField != null) {
-            savedPasswordText = passwordField.getText();
-        }
-    }
-
-    private Color blendColor(Color from, Color to, float progress) {
-        float clamped = Math.max(0f, Math.min(1f, progress));
-        int r = (int) (from.getRed() + (to.getRed() - from.getRed()) * clamped);
-        int g = (int) (from.getGreen() + (to.getGreen() - from.getGreen()) * clamped);
-        int b = (int) (from.getBlue() + (to.getBlue() - from.getBlue()) * clamped);
-        int a = (int) (from.getAlpha() + (to.getAlpha() - from.getAlpha()) * clamped);
-        return new Color(r, g, b, a);
     }
 
     private float easeOutCubic(float progress) {
         float clamped = Math.max(0f, Math.min(1f, progress));
         float inverse = 1f - clamped;
         return 1f - inverse * inverse * inverse;
-    }
-
-    private void openLink(String url) {
-        try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(new URI(url));
-            }
-        } catch (Exception ignored) {
-        }
     }
 
     private void setPreviewLanguage(int value) {
@@ -1965,8 +1662,6 @@ public class OobeScreen extends ScaledGuiScreen {
         if (keyCode == Keyboard.KEY_ESCAPE) {
             return;
         }
-        accountField.textboxKeyTyped(typedChar, keyCode);
-        passwordField.textboxKeyTyped(typedChar, keyCode);
         super.keyTyped(typedChar, keyCode);
     }
 

@@ -26,7 +26,6 @@ import top.fpsmaster.features.impl.interfaces.BetterChat;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.impl.interfaces.TargetDisplay;
 import top.fpsmaster.features.impl.optimizes.Performance;
-import top.fpsmaster.cosmetic.RemoteCosmeticService;
 import top.fpsmaster.features.impl.render.DamageIndicator;
 import top.fpsmaster.minimap.Minimap;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
@@ -124,7 +123,6 @@ public class GlobalListener {
         ChunkUpdateBudget.onClientTick();
         CollisionProbe.onClientTick();
         UiShot.onClientTick();
-        RemoteCosmeticService.getInstance().onClientTick();
         top.fpsmaster.benchmark.DirectorSmoke.onClientTick();
         FPSMaster.INSTANCE.migrateGuiScaleForHiDpi();
         PendingScreen.tick();
@@ -135,7 +133,6 @@ public class GlobalListener {
             return;
         }
         lastFlushAt = now;
-        FPSMaster.telemetryReporter.tick(now);
         if (mc != null && mc.theWorld != null) {
             Utility.flush();
         }

@@ -16,7 +16,6 @@ import top.fpsmaster.features.settings.impl.*;
 import top.fpsmaster.features.settings.impl.utils.CustomColor;
 import top.fpsmaster.modules.config.migration.ConfigMigration;
 import top.fpsmaster.modules.logger.ClientLogger;
-import top.fpsmaster.modules.statistics.TelemetryIdentityStatistics;
 import top.fpsmaster.modules.shortcut.Shortcut;
 import top.fpsmaster.ui.custom.Component;
 import top.fpsmaster.ui.custom.Position;
@@ -56,8 +55,6 @@ public class ConfigManager {
         JsonObject client = new JsonObject();
         client.addProperty("background", configure.background);
         client.addProperty("oobeCompleted", configure.oobeCompleted);
-        client.addProperty("antiCheatEnabled", configure.antiCheatEnabled);
-        client.addProperty("anonymousDataEnabled", configure.anonymousDataEnabled);
         client.addProperty("classicBackgroundColor", configure.classicBackgroundColor);
         client.addProperty("classicBackgroundHue", configure.classicBackgroundHue);
         client.addProperty("classicBackgroundSaturation", configure.classicBackgroundSaturation);
@@ -231,12 +228,6 @@ public class ConfigManager {
                 configure.oobeCompleted = client.has("oobeCompleted")
                         ? client.get("oobeCompleted").getAsBoolean()
                         : FPSMaster.defaultConfigExistedBeforeLoad;
-                configure.antiCheatEnabled = !client.has("antiCheatEnabled") || client.get("antiCheatEnabled").getAsBoolean();
-                // Telemetry defaults to false (opt-in for privacy compliance)
-                configure.anonymousDataEnabled = client.has("anonymousDataEnabled") && client.get("anonymousDataEnabled").getAsBoolean();
-                if (client.has("telemetryInstanceId")) {
-                    TelemetryIdentityStatistics.migrateLegacyInstanceId(client.get("telemetryInstanceId").getAsString());
-                }
                 if (client.has("classicBackgroundColor")) {
                     configure.classicBackgroundColor = client.get("classicBackgroundColor").getAsInt();
                 }

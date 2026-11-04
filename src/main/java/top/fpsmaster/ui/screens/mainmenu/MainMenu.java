@@ -17,16 +17,12 @@ import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.AccountException;
 import top.fpsmaster.modules.account.AccountManager;
 import top.fpsmaster.modules.account.MicrosoftAuth;
-import top.fpsmaster.modules.client.api.AuthService;
-import top.fpsmaster.modules.client.api.FPSMasterApiClient;
-import top.fpsmaster.modules.client.api.model.UserInfo;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.ClickGuiTheme;
 import top.fpsmaster.ui.kit.EdgeUi;
 import top.fpsmaster.ui.mc.GuiMultiplayer;
 import top.fpsmaster.ui.screens.music.MusicScreen;
 import top.fpsmaster.ui.screens.replay.ReplayScreen;
-import top.fpsmaster.ui.screens.signin.SignInScreen;
 import top.fpsmaster.prism.screen.MenuBridge;
 import top.fpsmaster.prism.screen.SharedAccountOverlay;
 import top.fpsmaster.prism.screen.SharedMainMenu;
@@ -99,9 +95,6 @@ public class MainMenu extends ScaledGuiScreen {
         super.initGui();
         Backgrounds.initGui();
         animClock.reset();
-        // token 还有效但缓存为空时，账号浮层会显示「未知账号」。这里异步补一次，
-        // 浮层每帧只读缓存（绝不能在 paint 里发请求，那是每帧一次 15 秒超时）。
-        FPSMasterApiClient.getInstance().refreshUserInfoAsync();
         if (firstBoot == 0) {
             firstBoot = checkJavaVersion();
         }
@@ -655,31 +648,6 @@ public class MainMenu extends ScaledGuiScreen {
         public String microsoftError() { return msError == null ? "" : msError; }
         public boolean microsoftBusy() { return msLoginBusy; }
         public boolean microsoftHasUrl() { return msVerifyUrl != null && !msVerifyUrl.isEmpty(); }
-
-        /**
-         * FPSMaster 产品账号那一行。Minecraft 账号在上面的列表里，这是两套账号体系。
-         */
-        public boolean showFpsAccount() { return true; }
-
-        public boolean fpsSignedIn() { return AuthService.getInstance().isLoggedIn(); }
-
-        public String fpsAccountName() {
-            UserInfo user = FPSMasterApiClient.getInstance().cachedUser();
-            if (user == null) {
-                return "";
-            }
-            if (user.getUsername() != null && !user.getUsername().isEmpty()) {
-                return user.getUsername();
-            }
-            if (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) {
-                return user.getDisplayName();
-            }
-            return user.getEmail() == null ? "" : user.getEmail();
-        }
-
-        public void openFpsSignIn() {
-            Minecraft.getMinecraft().displayGuiScreen(new SignInScreen(MainMenu.this));
-        }
 
         public void drawAvatar(UiFrame ui, float x, float y, float size) {
             MainMenu.this.drawAvatar(x, y, size);

@@ -8,10 +8,8 @@ import top.fpsmaster.features.command.CommandManager;
 import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.manager.ModuleManager;
 import top.fpsmaster.font.FontManager;
-import top.fpsmaster.modules.client.api.AuthService;
 import top.fpsmaster.cosmetic.CosmeticManager;
 import top.fpsmaster.modules.client.thread.ClientThreadPool;
-import top.fpsmaster.modules.client.telemetry.EdgeTelemetryReporter;
 import top.fpsmaster.modules.config.ConfigManager;
 import top.fpsmaster.modules.config.ConfigProfileUtils;
 import top.fpsmaster.modules.i18n.Language;
@@ -45,7 +43,6 @@ public class FPSMaster {
     public static ComponentsManager componentsManager = new ComponentsManager();
     public static Language i18n = new Language();
     public static ClientThreadPool async = new ClientThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2));
-    public static EdgeTelemetryReporter telemetryReporter = new EdgeTelemetryReporter();
     /**
      * Probed once: the main menu asks every frame, and in a release build each probe threw and caught
      * a ClassNotFoundException (hundreds of stack-trace allocations a second).
@@ -68,11 +65,6 @@ public class FPSMaster {
 
     public static String getClientTitle() {
         return CLIENT_NAME + " " + EDITION + " (" + GitInfo.getBranch() + " - " + GitInfo.getCommitIdAbbrev() + ")" + (development ? " - dev" : "");
-    }
-
-    private void initializeAuth() {
-        ClientLogger.info("Initializing Auth Service...");
-        AuthService.getInstance().initialize();
     }
 
     private void initializeFonts() {
@@ -171,7 +163,6 @@ public class FPSMaster {
         initialized = true;
         try {
             FileUtils.init(mc.mcDataDir);
-            initializeAuth();  // Initialize auth service early to check for launcher tokens
             initializeFonts();
             initializeModules();
             initializeComponents();
@@ -205,8 +196,8 @@ public class FPSMaster {
     public void shutdown() {
         // Before anything else: an unfinished stream is an unreadable file.
         top.fpsmaster.replay.ReplayRecorder.instance().stop();
-        // Then the config: everything below may block on the network, and a player who gives up
-        // waiting and kills the process must not lose this session's settings.
+        // Then the config: a player who gives up waiting on the teardown below and kills the
+        // process must not lose this session's settings.
         try {
             ClientLogger.info("Saving configs");
             configManager.saveConfig(ConfigProfileUtils.getActiveProfileName());
@@ -214,9 +205,6 @@ public class FPSMaster {
             ExceptionHandler.handleFileException(e, "Failed to save default config during shutdown");
         }
         PlayTimeStatistics.flush();
-        // A debounced scale change is still pending if the game is closed straight after dragging
-        // the slider; give it a bounded moment rather than losing it.
-        top.fpsmaster.cosmetic.RemoteCosmeticService.getInstance().flushBlocking(1500L);
         // Music was never opened: nothing to stop, and get() would create the SMTC session and
         // load credentials just to tear them down again.
         if (top.fpsmaster.modules.music.MusicManager.isInitialized()) {
@@ -232,7 +220,6 @@ public class FPSMaster {
             }
         }
         releaseGraphics();
-        telemetryReporter.shutdown();
         async.close();
     }
 

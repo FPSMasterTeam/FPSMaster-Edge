@@ -11,7 +11,6 @@ import net.minecraft.util.Session;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.AccountException;
 import top.fpsmaster.forge.api.IMinecraft;
-import top.fpsmaster.modules.client.api.AuthService;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.io.AtomicFiles;
 import top.fpsmaster.utils.io.FileUtils;
@@ -354,12 +353,11 @@ public final class AccountManager {
     }
 
     /**
-     * Microsoft refresh tokens live here, so the file sits in the per-user FPSMaster directory next to
-     * auth.json, not in the game's "FPSMaster Edge" folder that players zip up and share with their
+     * Microsoft refresh tokens live here, so the file sits in the per-user FPSMaster directory, not in the game's "FPSMaster Edge" folder that players zip up and share with their
      * configs. Named for Edge so it never collides with another FPSMaster client's file.
      */
     private File file() {
-        return new File(AuthService.getInstance().getAuthFile().getParentFile(), "edge_accounts.json");
+        return top.fpsmaster.utils.io.UserDataDir.file("edge_accounts.json");
     }
 
     private File legacyFile() {

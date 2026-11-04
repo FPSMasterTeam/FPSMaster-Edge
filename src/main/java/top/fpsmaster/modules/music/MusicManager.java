@@ -92,12 +92,7 @@ public class MusicManager {
     private final AudioEngine engine = new AudioEngine();
 
     private static java.nio.file.Path resolveAuthFile() {
-        // 与 AuthService 同目录：%APPDATA%/FPSMaster/ 或 ~/.fpsmaster/
-        String appData = System.getenv("APPDATA");
-        java.nio.file.Path dir = (appData != null && !appData.isEmpty())
-                ? java.nio.file.Paths.get(appData, "FPSMaster")
-                : java.nio.file.Paths.get(System.getProperty("user.home"), ".fpsmaster");
-        return dir.resolve("music_auth.json");
+        return top.fpsmaster.utils.io.UserDataDir.file("music_auth.json").toPath();
     }
 
     private MusicSource source = MusicSource.NETEASE;

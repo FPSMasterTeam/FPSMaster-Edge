@@ -5,7 +5,7 @@
     "description": "FPSMaster PVP Client.",
     "version": "${version}",
     "mcversion": "${mcversion}",
-	"url": "https://fpsmaster.top",
+	"url": "https://github.com/FPSMasterTeam/FPSMaster-Edge",
 	"updateUrl": "",
 	"authorList": [
 	  "SuperSkidder"
