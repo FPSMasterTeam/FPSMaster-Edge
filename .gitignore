@@ -37,3 +37,5 @@ run-shots/
 benchmark/shot-seed/servers.dat
 .DS_Store
 hs_err_pid*.log
+
+.codegraph/
