@@ -3,7 +3,7 @@
     <img width="200" src="/pictures/logo.png">
 </p>
 
-[官方网站](https://fpsmaster.top) |
+[GitHub Releases](https://github.com/FPSMasterTeam/FPSMaster-Edge/releases) |
 [BiliBili](https://space.bilibili.com/628246693)
 </div>
 
@@ -11,7 +11,7 @@
 
 FPSMaster Edge 是免费的 Minecraft **PvP 客户端**，本仓库实现为 **Forge 1.8.9** 模组。
 
-较新的 Minecraft 版本请看 [FPSMaster-Nova](https://github.com/FPSMasterTeam/FPSMaster-Nova)；启动器与账号体系见生态内其它仓库。
+较新的 Minecraft 版本请看 [FPSMaster-Nova](https://github.com/FPSMasterTeam/FPSMaster-Nova)；启动器见生态内其它仓库。客户端无需 FPSMaster 账号，饰品保存在本地。
 
 <div align="center">
 
@@ -22,7 +22,6 @@ FPSMaster Edge 是免费的 Minecraft **PvP 客户端**，本仓库实现为 **F
 [![支持版本](https://img.shields.io/badge/支持版本-1.8.9-1bd96a?style=for-the-badge)](https://modrinth.com/mod/fpsmaster/versions)
 [![Stars](https://img.shields.io/github/stars/FPSMasterTeam/FPSMaster-Edge?style=for-the-badge&logo=github&label=Stars&color=FFD400)](https://github.com/FPSMasterTeam/FPSMaster-Edge)
 [![许可证](https://img.shields.io/github/license/FPSMasterTeam/FPSMaster-Edge?style=for-the-badge&label=许可证&color=blue)](LICENSE)
-[![官方网站](https://img.shields.io/website?url=https%3A%2F%2Ffpsmaster.top&style=for-the-badge&label=官方网站&color=5865F2)](https://fpsmaster.top)
 
 </div>
 

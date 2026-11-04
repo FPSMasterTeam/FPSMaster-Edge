@@ -12,10 +12,6 @@ on:
 permissions:
   contents: write
 
-env:
-  PRODUCT_CODE: edge
-  ARTIFACT_SOURCE_TYPE: external_url
-
 jobs:
   # Windows SMTC bridge DLL. The binaries are not committed to the repository —
   # they are built here and injected into src/main/resources before packaging,
@@ -58,11 +54,7 @@ jobs:
       release_tag: ${{ steps.meta.outputs.release_tag }}
       version_name: ${{ steps.meta.outputs.version_name }}
       asset_name: ${{ steps.meta.outputs.asset_name }}
-      checksum: ${{ steps.meta.outputs.checksum }}
-      file_size: ${{ steps.meta.outputs.file_size }}
       aot_asset_name: ${{ steps.meta.outputs.aot_asset_name }}
-      aot_checksum: ${{ steps.meta.outputs.aot_checksum }}
-      aot_file_size: ${{ steps.meta.outputs.aot_file_size }}
       changelog: ${{ steps.meta.outputs.changelog }}
       commit_hash: ${{ steps.meta.outputs.commit_hash }}
     steps:
@@ -147,23 +139,7 @@ jobs:
         if: steps.decision.outputs.should_build == 'true'
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Check out Prism UI
-        if: steps.decision.outputs.should_build == 'true'
-        uses: actions/checkout@v4
-        with:
-          repository: FPSMasterTeam/fpsmaster-prism
-          # Prism 0.2.2（fix/prism-review 已合入 main 的提交）。
-          ref: e3b6e244f912828bd11d777683c47efd94c79121
-          path: fpsmaster-prism
-
-      - name: Install Prism UI
-        if: steps.decision.outputs.should_build == 'true'
-        working-directory: fpsmaster-prism
-        run: |
-          chmod +x ./gradlew
-          ./gradlew publishToMavenLocal
-
-      # Cadence (top.fpsmaster:music-api) 0.1.2 没有发布到 JitPack，和 Prism 一样从源码装进 mavenLocal。
+      # Cadence (top.fpsmaster:music-api) 0.1.2 没有发布到 JitPack，暂从源码装进 mavenLocal。
       - name: Check out Cadence
         if: steps.decision.outputs.should_build == 'true'
         uses: actions/checkout@v4
@@ -254,10 +230,6 @@ jobs:
           commit_hash="${GITHUB_SHA}"
           version_name="${{ steps.version.outputs.version_name }}"
           release_tag="${{ steps.version.outputs.release_tag }}"
-          checksum="$(sha256sum "$artifact_path" | awk '{print $1}')"
-          file_size="$(stat -c%s "$artifact_path")"
-          aot_checksum="$(sha256sum "$aot_path" | awk '{print $1}')"
-          aot_file_size="$(stat -c%s "$aot_path")"
 
           {
             echo "artifact_path=$artifact_path"
@@ -265,11 +237,7 @@ jobs:
             echo "commit_hash=$commit_hash"
             echo "version_name=$version_name"
             echo "release_tag=$release_tag"
-            echo "checksum=$checksum"
-            echo "file_size=$file_size"
             echo "aot_asset_name=$aot_asset_name"
-            echo "aot_checksum=$aot_checksum"
-            echo "aot_file_size=$aot_file_size"
           } >> "$GITHUB_OUTPUT"
 
           {
@@ -311,91 +279,6 @@ jobs:
             dist/FPSMaster-*.jar
             dist/fpsmaster-edge-aot-*.zip
           fail_on_unmatched_files: false
-
-      - name: Upload to Qiniu OSS and notify release API
-        shell: bash
-        env:
-          FPSMASTER_CI_API_BASE_URL: ${{ secrets.FPSMASTER_CI_API_BASE_URL }}
-          FPSMASTER_CI_UPLOAD_TOKEN: ${{ secrets.FPSMASTER_CI_UPLOAD_TOKEN }}
-          QINIU_ACCESS_KEY: ${{ secrets.QINIU_ACCESS_KEY }}
-          QINIU_SECRET_KEY: ${{ secrets.QINIU_SECRET_KEY }}
-          QINIU_BUCKET: ${{ secrets.QINIU_BUCKET }}
-          QINIU_S3_ENDPOINT: ${{ secrets.QINIU_S3_ENDPOINT }}
-          QINIU_S3_REGION: ${{ secrets.QINIU_S3_REGION }}
-          QINIU_CDN_BASE_URL: ${{ secrets.QINIU_CDN_BASE_URL }}
-          CHANNEL: ${{ needs.build.outputs.channel }}
-          VERSION_NAME: ${{ needs.build.outputs.version_name }}
-          COMMIT_HASH: ${{ needs.build.outputs.commit_hash }}
-          FILE_SIZE: ${{ needs.build.outputs.file_size }}
-          CHECKSUM: ${{ needs.build.outputs.checksum }}
-          AOT_CHECKSUM: ${{ needs.build.outputs.aot_checksum }}
-          AOT_FILE_SIZE: ${{ needs.build.outputs.aot_file_size }}
-          CHANGELOG: ${{ needs.build.outputs.changelog }}
-        run: |
-          if [ -z "$FPSMASTER_CI_API_BASE_URL" ] || [ -z "$FPSMASTER_CI_UPLOAD_TOKEN" ]; then
-            echo "Release API secrets are not configured" >&2
-            exit 1
-          fi
-          if [ -z "$QINIU_ACCESS_KEY" ] || [ -z "$QINIU_SECRET_KEY" ] || [ -z "$QINIU_BUCKET" ] || [ -z "$QINIU_S3_ENDPOINT" ] || [ -z "$QINIU_CDN_BASE_URL" ]; then
-            echo "Qiniu OSS secrets are not configured" >&2
-            exit 1
-          fi
-
-          python3 -m pip install --quiet --user boto3
-
-          artifact_path="$(find dist -maxdepth 1 -type f -name 'FPSMaster-*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' | sort | head -n 1)"
-          if [ -z "$artifact_path" ]; then
-            echo "No jar artifact found in dist" >&2
-            ls -la dist >&2 || true
-            exit 1
-          fi
-
-          aot_path="$(find dist -maxdepth 1 -type f -name 'fpsmaster-edge-aot-*.zip' | sort | head -n 1)"
-          if [ -z "$aot_path" ]; then
-            echo "No AOT zip found in dist" >&2
-            exit 1
-          fi
-
-          upload_oss() {
-            local path="$1"
-            local key="$2"
-            ARTIFACT_PATH="$path" OBJECT_KEY="$key" python3 -c "import os,boto3; e=os.environ['QINIU_S3_ENDPOINT'].rstrip('/'); c=os.environ['QINIU_CDN_BASE_URL'].rstrip('/'); b=os.environ['QINIU_BUCKET']; k=os.environ['OBJECT_KEY']; p=os.environ['ARTIFACT_PATH']; client=boto3.client('s3', endpoint_url=e, aws_access_key_id=os.environ['QINIU_ACCESS_KEY'], aws_secret_access_key=os.environ['QINIU_SECRET_KEY'], region_name=os.environ.get('QINIU_S3_REGION') or 'ap-southeast-1'); client.upload_file(p,b,k); print(f'{c}/{k}')"
-          }
-
-          jar_name="$(basename "$artifact_path")"
-          aot_name="$(basename "$aot_path")"
-          download_url="$(upload_oss "$artifact_path" "edge/${CHANNEL}/${VERSION_NAME}/${COMMIT_HASH}/${jar_name}")"
-          aot_download_url="$(upload_oss "$aot_path" "edge/${CHANNEL}/${VERSION_NAME}/${COMMIT_HASH}/aot/${aot_name}")"
-          echo "Uploaded jar -> ${download_url}"
-          echo "Uploaded aot -> ${aot_download_url}"
-
-          changelog_json="$(printf '%s' "$CHANGELOG" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
-
-          cat <<EOF > payload.json
-          {
-            "productCode": "${PRODUCT_CODE}",
-            "channelCode": "${CHANNEL}",
-            "versionName": "${VERSION_NAME}",
-            "commitHash": "${COMMIT_HASH}",
-            "artifactSourceType": "external_url",
-            "downloadUrl": "${download_url}",
-            "fileSize": ${FILE_SIZE},
-            "checksum": "${CHECKSUM}",
-            "aotDownloadUrl": "${aot_download_url}",
-            "aotChecksum": "${AOT_CHECKSUM}",
-            "aotFileSize": ${AOT_FILE_SIZE},
-            "recommended": true,
-            "mandatory": false,
-            "changelog": ${changelog_json}
-          }
-          EOF
-
-          curl --fail --show-error --silent \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "X-CI-Token: ${FPSMASTER_CI_UPLOAD_TOKEN}" \
-            --data @payload.json \
-            "${FPSMASTER_CI_API_BASE_URL%/}/api/v1/launcher/releases/ci"
 
       - name: Publish to Modrinth
         shell: bash
