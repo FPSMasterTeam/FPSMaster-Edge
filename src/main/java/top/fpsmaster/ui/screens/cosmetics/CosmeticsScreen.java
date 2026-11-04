@@ -54,10 +54,6 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
             mc.displayGuiScreen(parent);
             return;
         }
-        // 弹窗开着就不画预览了。饰品缩略图和玩家模型都在 2D 通道之后画（弹窗是 2D 通道
-        // 里最后一笔），顺序改不了，所以它们必然盖在确认框上——默认窗口尺寸下缩略图正好
-        // 糊住价格和余额那两行。模态本来就该压住底下的东西，这里跟着一起收。
-        if (cosmetics.blocking()) return;
         renderItemPreviews();
         if (preview[2] <= 0f) return;
         int centerX = Math.round(preview[0] + preview[2] * 0.5f);
@@ -138,9 +134,7 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
         if (keyCode == Keyboard.KEY_ESCAPE) {
-            // 弹窗挡着的时候 ESC 先关弹窗。
-            if (cosmetics.blocking()) cosmetics.closeDialog();
-            else mc.displayGuiScreen(parent);
+            mc.displayGuiScreen(parent);
         } else super.keyTyped(typedChar, keyCode);
     }
 
@@ -247,9 +241,6 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
                         builtin ? FPSMaster.i18n.get("cosmetics.wings.builtin") : option.getName(),
                         option.getDescription(),
                         option.getCategory(),
-                        // 没有商城了：价格 0 会被共享界面显示成「免费」，所有饰品都直接可穿戴。
-                        "0",
-                        true,
                         cosmetics.isEquipped(option.getId()),
                         builtin,
                         option.getDefaultScale(),
@@ -266,9 +257,6 @@ public final class CosmeticsScreen extends ScaledGuiScreen {
         public void equipItem(String id) { cosmetics.equip(id); }
         @Override
         public void openCustomFolder() { cosmetics.openCustomDirectory(); }
-        /** 饰品设置只存在本地配置里，没有同步可言；报 ok 让共享界面不显示同步提示。 */
-        @Override
-        public String syncStatus() { return "ok"; }
         @Override
         public boolean capeEnabled() { return cosmetics.capeAnimationEnabled(); }
         @Override

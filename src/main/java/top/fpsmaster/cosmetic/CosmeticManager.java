@@ -31,21 +31,19 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Every cosmetic is local: the built-in dragon wings, the items bundled in the jar
- * ({@value #BUNDLED_INDEX}) and the player's own files in {@code config/fpsmaster/cosmetics}.
+ * Every cosmetic is local: the built-in dragon wings and the player's own files in
+ * {@code config/fpsmaster/cosmetics}.
  * There is no shop and no account, so everything listed is owned. Cosmetics are only drawn on the
  * local player: showing other players' items needed the FPSMaster servers, which are gone.
  */
 public final class CosmeticManager {
     public static final String BUILTIN_WINGS_ID = "builtin:dragon-wings";
-    private static final String BUNDLED_ROOT = "/assets/fpsmaster/cosmetics/bundled/";
-    private static final String BUNDLED_INDEX = BUNDLED_ROOT + "index.json";
     private static final int MAX_BYTES = 16 * 1024 * 1024;
     /** Contract bounds. An individual item narrows or locks its own range inside these. */
     public static final float SCALE_FLOOR = 0.10f;
     public static final float SCALE_CEILING = 3.00f;
     private static final CosmeticOption BUILTIN_WINGS =
-            new CosmeticOption(BUILTIN_WINGS_ID, "", "", "wings", null, 1f, true, 0.5f, 1.5f, Source.BUILTIN);
+            new CosmeticOption(BUILTIN_WINGS_ID, "", "", "wings", null, 1f, true, 0.5f, 1.5f);
     private static final CosmeticManager INSTANCE = new CosmeticManager();
 
     /** Back cosmetics this client can actually draw. Anything else is neither offered nor equipped. */
@@ -68,7 +66,6 @@ public final class CosmeticManager {
      */
     private final Map<String, Long> failedAt = new HashMap<>();
     private static final long TEXTURE_RETRY_MS = 5L * 60_000L;
-    private volatile List<CosmeticOption> bundledOptions = Collections.emptyList();
     private volatile List<CosmeticOption> customOptions = Collections.emptyList();
     private volatile String previewCapeId;
     private volatile String previewWingsId;
@@ -83,32 +80,7 @@ public final class CosmeticManager {
     }
 
     public void initialize() {
-        bundledOptions = loadBundled();
         reloadCustom();
-    }
-
-    /** Items shipped inside the jar. A missing index just means this build bundles none. */
-    private static List<CosmeticOption> loadBundled() {
-        List<CosmeticOption> options = new ArrayList<>();
-        try (InputStream input = CosmeticManager.class.getResourceAsStream(BUNDLED_INDEX)) {
-            if (input == null) return Collections.emptyList();
-            JsonElement element = new JsonParser().parse(new java.io.InputStreamReader(input, StandardCharsets.UTF_8));
-            JsonElement items = element != null && element.isJsonObject() ? element.getAsJsonObject().get("items") : null;
-            if (items == null || !items.isJsonArray()) throw new IllegalArgumentException("index has no items array");
-            for (JsonElement item : items.getAsJsonArray()) {
-                try {
-                    if (!item.isJsonObject()) throw new IllegalArgumentException("item must be an object");
-                    options.add(parseBundled(item.getAsJsonObject()));
-                } catch (Exception exception) {
-                    ClientLogger.warn("Skipping bundled cosmetic: " + exception.getMessage());
-                }
-            }
-        } catch (Exception exception) {
-            ClientLogger.warn("Failed to load bundled cosmetics: " + exception.getMessage());
-            return Collections.emptyList();
-        }
-        options.sort(Comparator.comparing(CosmeticOption::getCategory).thenComparing(CosmeticOption::getName));
-        return Collections.unmodifiableList(options);
     }
 
     public void reloadCustom() {
@@ -157,7 +129,6 @@ public final class CosmeticManager {
     public List<CosmeticOption> allOptions() {
         Map<String, CosmeticOption> options = new LinkedHashMap<>();
         options.put(BUILTIN_WINGS.id, BUILTIN_WINGS);
-        for (CosmeticOption option : bundledOptions) options.put(option.id, option);
         for (CosmeticOption option : customOptions) options.put(option.id, option);
         return new ArrayList<>(options.values());
     }
@@ -408,11 +379,7 @@ public final class CosmeticManager {
     }
 
     private static BufferedImage readImage(CosmeticOption option) throws Exception {
-        if (option.source != Source.BUNDLED) return ImageIO.read(Paths.get(option.assetKey).toFile());
-        try (InputStream input = CosmeticManager.class.getResourceAsStream(option.assetKey)) {
-            if (input == null) throw new IllegalStateException("Missing bundled texture " + option.assetKey);
-            return ImageIO.read(input);
-        }
+        return ImageIO.read(Paths.get(option.assetKey).toFile());
     }
 
     private void validateDimensions(BufferedImage image, String category) {
@@ -488,23 +455,10 @@ public final class CosmeticManager {
         if (Files.size(texture) <= 0L || Files.size(texture) > MAX_BYTES) {
             throw new IllegalArgumentException("cosmetic asset size is invalid");
         }
-        return parseItem(root, "custom:", texture.toString(), Source.CUSTOM);
+        return parseItem(root, texture.toString());
     }
 
-    /**
-     * A bundled item uses the same fields as a custom file; its {@code texture} is relative to
-     * {@value #BUNDLED_ROOT}. Ids are kept as-is (no prefix) so a loadout saved by an older build,
-     * which stored shop item ids, still finds its item once that item is bundled under the same id.
-     */
-    private static CosmeticOption parseBundled(JsonObject root) {
-        String texture = string(root, "texture");
-        if (!texture.matches("[A-Za-z0-9._/-]{1,128}") || texture.contains("..") || texture.startsWith("/")) {
-            throw new IllegalArgumentException("texture path is not a plain relative path");
-        }
-        return parseItem(root, "", BUNDLED_ROOT + texture, Source.BUNDLED);
-    }
-
-    private static CosmeticOption parseItem(JsonObject root, String idPrefix, String assetKey, Source source) {
+    private static CosmeticOption parseItem(JsonObject root, String assetKey) {
         String rawId = string(root, "id");
         if (!rawId.matches("[A-Za-z0-9._-]{1,64}")) throw new IllegalArgumentException("id contains unsupported characters");
         String name = string(root, "name");
@@ -518,11 +472,10 @@ public final class CosmeticManager {
         float scale = clamp(decimal(wing, "scale", 1f));
         boolean resizable = bool(wing, "allowResize", true);
         return new CosmeticOption(
-                idPrefix + rawId, name, optionalString(root, "description"), category,
+                "custom:" + rawId, name, optionalString(root, "description"), category,
                 assetKey, scale, resizable,
                 resizable ? clamp(decimal(wing, "minScale", 0.5f)) : scale,
-                resizable ? clamp(decimal(wing, "maxScale", 1.5f)) : scale,
-                source
+                resizable ? clamp(decimal(wing, "maxScale", 1.5f)) : scale
         );
     }
 
@@ -577,24 +530,21 @@ public final class CosmeticManager {
         return Math.max(SCALE_FLOOR, Math.min(SCALE_CEILING, value));
     }
 
-    private enum Source { BUILTIN, BUNDLED, CUSTOM }
-
     public static final class CosmeticOption {
         private final String id;
         private final String name;
         private final String description;
         private final String category;
-        /** File path for custom items, classpath resource for bundled ones, null for built-in. */
+        /** File path for custom items, null for built-in. */
         private final String assetKey;
         private final float defaultScale;
         private final boolean scaleAdjustable;
         private final float minScale;
         private final float maxScale;
-        private final Source source;
 
         private CosmeticOption(String id, String name, String description, String category,
                                String assetKey, float defaultScale,
-                               boolean scaleAdjustable, float minScale, float maxScale, Source source) {
+                               boolean scaleAdjustable, float minScale, float maxScale) {
             this.id = id;
             this.name = name;
             this.description = description;
@@ -606,7 +556,6 @@ public final class CosmeticManager {
             // policy and no caller has to remember to check the flag first.
             this.minScale = scaleAdjustable ? Math.min(minScale, maxScale) : defaultScale;
             this.maxScale = scaleAdjustable ? Math.max(minScale, maxScale) : defaultScale;
-            this.source = source;
         }
 
         public float clampScale(float scale) {

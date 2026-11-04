@@ -1,0 +1,80 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "top.fpsmaster",
+    "module": "prism",
+    "version": "0.3.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.5.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 8,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "prism-0.3.0.jar",
+          "url": "prism-0.3.0.jar",
+          "size": 386861,
+          "sha512": "ac2f635584febdfcf66ca8b49abdfe255896cf9661d92480b4a5d3a193fdf7d95a43c68e45071e14034561e47e037e41cefb5c510144381d48d734ec71885107",
+          "sha256": "dbd6c0ac5570deaee8a5ffca6006de1ce7b46d296ec2b85c2cc62778134b32fc",
+          "sha1": "99d0532fa5b7d99f52a750085a59d8d67b8138e3",
+          "md5": "b8cd2815c8db64585ac1f24f25ac8745"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 8,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "prism-0.3.0.jar",
+          "url": "prism-0.3.0.jar",
+          "size": 386861,
+          "sha512": "ac2f635584febdfcf66ca8b49abdfe255896cf9661d92480b4a5d3a193fdf7d95a43c68e45071e14034561e47e037e41cefb5c510144381d48d734ec71885107",
+          "sha256": "dbd6c0ac5570deaee8a5ffca6006de1ce7b46d296ec2b85c2cc62778134b32fc",
+          "sha1": "99d0532fa5b7d99f52a750085a59d8d67b8138e3",
+          "md5": "b8cd2815c8db64585ac1f24f25ac8745"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "prism-0.3.0-sources.jar",
+          "url": "prism-0.3.0-sources.jar",
+          "size": 310199,
+          "sha512": "6950e8415e29da9a2e3ae324f76c65e8957a43156041f8af09ed267c1c06b9c0286537d1e9fd72537c44a690dd287c167cf94d82fa792e8ebb5108d1fdcca76d",
+          "sha256": "55eb8b99d73fe9ba6599ece2d7f161f31ecc73cfdefe1a3acda0aadc44ce7188",
+          "sha1": "29b86c758d47809d3dff85b0c527744b6cfb3476",
+          "md5": "b4938b7a91c42e06ccbfc8fd9dda9787"
+        }
+      ]
+    }
+  ]
+}

@@ -47,7 +47,7 @@ Three layers:
 ### Other subsystems
 
 - `modules/`: config (`ConfigManager`, profiles via `ConfigProfileUtils`), i18n, Minecraft accounts (Microsoft / offline), async, music, `ClientLogger`.
-- `cosmetic/`: `CosmeticManager`, fully local: built-in dragon wings, items bundled under `assets/fpsmaster/cosmetics/bundled/index.json`, and player files in `config/fpsmaster/cosmetics/`. Everything is free; cosmetics are drawn on the local player only.
+- `cosmetic/`: `CosmeticManager`, fully local: built-in dragon wings and player files in `config/fpsmaster/cosmetics/`. Everything is free; cosmetics are drawn on the local player only.
 - `font/`: TTF renderer; `FontManager` parses the face once, pins base sizes, LRU-caches derived sizes and disposes atlases on eviction/reload.
 - `ui/`: ClickGUI, screens, notifications, minimap.
 - `utils/`: render/math/io/… (`Utility` lives in `utils.core`).

@@ -68,6 +68,7 @@ sourceSets.main {
 // Dependencies:
 
 repositories {
+    maven { url = uri("vendor/maven"); content { includeModule("top.fpsmaster", "prism") } }
     mavenLocal()
     mavenCentral()
     maven("https://jitpack.io")
@@ -110,7 +111,7 @@ dependencies {
         isTransitive = false
     }
 
-    shadowImpl("top.fpsmaster:prism:0.2.2")
+    shadowImpl("top.fpsmaster:prism:0.3.0")
 
     // 音乐能力：Cadence 数据客户端（网易云/QQ 搜索/直链/歌词/歌单/登录）。
     // 0.1.2 还没有发到 JitPack（没有 tag），先从 mavenLocal 取（Cadence 仓库 publishToMavenLocal）。
