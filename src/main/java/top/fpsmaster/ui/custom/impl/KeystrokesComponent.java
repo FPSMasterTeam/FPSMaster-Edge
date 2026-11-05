@@ -33,6 +33,8 @@ public class KeystrokesComponent extends Component {
         keys.add(new Key("LMB", -1, 0, 40, 28f, 18f));
         keys.add(new Key("RMB", -2, 30, 40, 28f, 18f));
         keys.add(new Key("SPACE", Keyboard.KEY_SPACE, 0, 60, 58f, 12f));
+        x = 0.05f;
+        y = 0.32f;
         allowScale = true;
     }
 
@@ -41,33 +43,21 @@ public class KeystrokesComponent extends Component {
         // Key offsets are laid out here rather than in draw() so backgroundShape — which the blur mask
         // consults before drawing — sees this frame's positions.
         int spacing = mod.spacing.getValue().intValue();
+        // Offsets grow away from the component origin; a negative offset would draw outside the
+        // measured box and get clipped at the screen edge.
         for (Key key : keys) {
-            switch (key.keyCode) {
-                case Keyboard.KEY_W:
-                    key.yOffset = key.defaultYOffset - spacing;
-                    break;
-                case Keyboard.KEY_A:
-                    key.xOffset = key.defaultXOffset - spacing;
-                    break;
-                case Keyboard.KEY_D:
-                    key.xOffset = key.defaultXOffset + spacing;
-                    break;
-                case -1:
-                    key.xOffset = key.defaultXOffset - spacing;
-                    key.yOffset = key.defaultYOffset + spacing;
-                    break;
-                case -2:
-                    key.xOffset = key.defaultXOffset + spacing;
-                    key.yOffset = key.defaultYOffset + spacing;
-                    break;
-                case Keyboard.KEY_SPACE:
-                    key.xOffset = key.defaultXOffset - spacing;
-                    key.yOffset = key.defaultYOffset + spacing * 2;
-                    break;
+            int column = key.defaultXOffset / 20;
+            int row = key.defaultYOffset / 20;
+            if (key.keyCode == -2) {
+                column = 2;
+            } else if (key.keyCode == Keyboard.KEY_SPACE) {
+                column = 0;
             }
+            key.xOffset = key.defaultXOffset + spacing * column;
+            key.yOffset = key.defaultYOffset + spacing * row;
         }
-        width = 60f + spacing * 2f;
-        height = (Keystrokes.showSpace.getValue() ? 72f : 60f) + spacing * 2f;
+        width = 58f + spacing * 2f;
+        height = Keystrokes.showSpace.getValue() ? 72f + spacing * 3f : 58f + spacing * 2f;
     }
 
     /**

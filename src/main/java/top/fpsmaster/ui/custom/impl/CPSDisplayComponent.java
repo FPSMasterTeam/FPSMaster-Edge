@@ -9,7 +9,7 @@ public class CPSDisplayComponent extends TextComponent {
     public CPSDisplayComponent() {
         super(CPSDisplay.class);
         x = 0.05f;
-        y = 0.05f;
+        y = 0.18f;
         allowScale = true;
     }
 

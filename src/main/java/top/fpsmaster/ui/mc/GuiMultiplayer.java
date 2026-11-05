@@ -434,7 +434,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     @Override
     public void onGuiClosed() {
         super.onGuiClosed();
-        logger.info("PINGDBG onGuiClosed");
         this.oldServerPinger.clearPendingNetworks();
     }
 
