@@ -3,9 +3,8 @@ package top.fpsmaster.forge.mixin;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.RenderPlayer;
-import net.minecraft.client.renderer.entity.layers.LayerRenderer;
+import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -21,11 +20,9 @@ import top.fpsmaster.features.impl.render.CosmeticBackLayer;
 @Mixin(RenderPlayer.class)
 public abstract class MixinRenderPlayer {
 
-    @Shadow
-    protected abstract boolean addLayer(LayerRenderer<AbstractClientPlayer> layer);
-
     @Inject(method = "<init>(Lnet/minecraft/client/renderer/entity/RenderManager;Z)V", at = @At("RETURN"))
     private void addCosmeticBackLayer(RenderManager renderManager, boolean useSmallArms, CallbackInfo ci) {
-        addLayer(new CosmeticBackLayer(CosmeticManager.getInstance().wingsRenderer()));
+        // addLayer is declared on RendererLivingEntity, so a @Shadow on RenderPlayer cannot resolve it.
+        ((RendererLivingEntity<AbstractClientPlayer>) (Object) this).addLayer(new CosmeticBackLayer(CosmeticManager.getInstance().wingsRenderer()));
     }
 }

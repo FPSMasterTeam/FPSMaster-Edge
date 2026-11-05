@@ -244,19 +244,6 @@ public class RenderGlobalMixin_SkyState {
     }
 
     @Redirect(method = "renderSky(FI)V", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/GlStateManager;scale(FFF)V"))
-    private void sky_scale(float x, float y, float z) {
-        if (!SkyBreakdown.enabled()) {
-            GlStateManager.scale(x, y, z);
-            return;
-        }
-        long start = System.nanoTime();
-        GlStateManager.scale(x, y, z);
-        SkyBreakdown.record(SkyBreakdown.MATRIX, System.nanoTime() - start);
-        
-    }
-
-    @Redirect(method = "renderSky(FI)V", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/GlStateManager;color(FFF)V"))
     private void sky_color3(float r, float g, float b) {
         if (!SkyBreakdown.enabled()) {
@@ -292,19 +279,6 @@ public class RenderGlobalMixin_SkyState {
         long start = System.nanoTime();
         GlStateManager.tryBlendFuncSeparate(a, b, c, d);
         SkyBreakdown.record(SkyBreakdown.STATE, System.nanoTime() - start);
-        
-    }
-
-    @Redirect(method = "renderSky(FI)V", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/GlStateManager;callList(I)V"))
-    private void sky_callList(int list) {
-        if (!SkyBreakdown.enabled()) {
-            GlStateManager.callList(list);
-            return;
-        }
-        long start = System.nanoTime();
-        GlStateManager.callList(list);
-        SkyBreakdown.record(SkyBreakdown.LIST, System.nanoTime() - start);
         
     }
 
