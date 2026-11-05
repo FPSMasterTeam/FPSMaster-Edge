@@ -7,13 +7,13 @@ import top.fpsmaster.features.settings.impl.BooleanSetting;
 public class BetterScreen extends InterfaceModule {
 
     public static boolean using = false;
-    public static BooleanSetting useBG = new BooleanSetting("Background", true);
+    public static BooleanSetting screenBackground = new BooleanSetting("Background", true);
     public static BooleanSetting blur = new BooleanSetting("Blur", true);
     public static BooleanSetting backgroundAnimation = new BooleanSetting("BackgroundAnimation", true);
 
     public BetterScreen() {
-        super("BetterScreen", Category.Interface);
-        addSettings(useBG, blur, backgroundAnimation);
+        super("BetterScreen", Category.Interface, Trait.TEXT);
+        addSettings(screenBackground, blur, backgroundAnimation);
     }
 
     @Override

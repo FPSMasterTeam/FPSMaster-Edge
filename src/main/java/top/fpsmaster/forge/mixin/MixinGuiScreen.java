@@ -70,7 +70,7 @@ int v1_8_9$iteration = 0;
 public void drawWorldBackground(int tint) {
     if (mc.theWorld != null) {
         if (BetterScreen.using) {
-            if (BetterScreen.useBG.getValue()) {
+            if (BetterScreen.screenBackground.getValue()) {
                 if (BetterScreen.backgroundAnimation.getValue()) {
                     arch$alpha = (float) AnimMath.base(arch$alpha, 170, 0.2f);
                 } else {
