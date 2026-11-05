@@ -2,7 +2,6 @@ package top.fpsmaster.forge.mixin;
 
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderGlobal;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
@@ -279,19 +278,6 @@ public class RenderGlobalMixin_SkyState {
         long start = System.nanoTime();
         GlStateManager.tryBlendFuncSeparate(a, b, c, d);
         SkyBreakdown.record(SkyBreakdown.STATE, System.nanoTime() - start);
-        
-    }
-
-    @Redirect(method = "renderSky(FI)V", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/Tessellator;draw()V"))
-    private void sky_draw(Tessellator tessellator) {
-        if (!SkyBreakdown.enabled()) {
-            tessellator.draw();
-            return;
-        }
-        long start = System.nanoTime();
-        tessellator.draw();
-        SkyBreakdown.record(SkyBreakdown.DRAW, System.nanoTime() - start);
         
     }
 

@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import top.fpsmaster.benchmark.Experiments;
+import top.fpsmaster.benchmark.SkyBreakdown;
 
 /**
  * Splits the sky pass so its cost can be attributed before anything is built to reduce it.
@@ -46,6 +47,12 @@ public class RenderGlobalMixin_SkyParts {
             tessellator.getWorldRenderer().reset();
             return;
         }
+        if (!SkyBreakdown.enabled()) {
+            tessellator.draw();
+            return;
+        }
+        long start = System.nanoTime();
         tessellator.draw();
+        SkyBreakdown.record(SkyBreakdown.DRAW, System.nanoTime() - start);
     }
 }
