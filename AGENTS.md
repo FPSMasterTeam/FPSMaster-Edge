@@ -30,7 +30,7 @@ It consolidates local build/test commands and code conventions.
 - Use **JDK 17 or 21** for Gradle and IDE import (JDK 25 is not supported by the current wrapper/Loom stack).
 - Use **JDK 8** for running the Minecraft client. On Apple Silicon, use an **x86_64** JDK 8 via Rosetta.
 - IntelliJ run configs are generated with Gradle and may require manual copy/refresh (`docs/development_environment.md`).
-- Version strings: `FPSMaster.CLIENT_VERSION` (`1.0.0`) and `EDITION` (`Edge`); keep `mcmod.info` in sync.
+- Version strings: `FPSMaster.CLIENT_VERSION` (`2.0.0`, keep equal to `version` in `gradle.properties`) and `EDITION` (`Edge`); keep `mcmod.info` in sync.
 
 ## Build, Test, and Dev Commands
 Run from repository root.

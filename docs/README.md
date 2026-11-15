@@ -2,7 +2,7 @@
 
 本仓库是 **Forge 1.8.9** 客户端。较新版本见 [FPSMaster-Nova](https://github.com/FPSMasterTeam/FPSMaster-Nova)。
 
-> 本项目于 2026-12-31 停止维护，最终版本 2.0.0-final。
+> 本项目于 2026-12-31 停止维护，最终版本 2.0.0。
 
 ## 归档文档
 

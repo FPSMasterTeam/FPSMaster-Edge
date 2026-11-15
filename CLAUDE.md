@@ -12,7 +12,7 @@ Do not add multi-version / modern-MC framework work here — that belongs in FPS
 
 - **JDK 17 or 21** runs Gradle / IDE import; **JDK 8** runs the Minecraft client (Apple Silicon: x86_64 JDK 8 via Rosetta). Do not use JDK 25 with the current wrapper.
 - Build uses `gg.essential.loom` (Forge) + Shadow. Pipeline: `shadowJar` (`all-dev`) → `remapJar` (final jar) → `assemble` depends on `remapJar`.
-- Version: `FPSMaster.CLIENT_VERSION` (`1.0.0`), `EDITION` (`Edge`); keep `mcmod.info` aligned.
+- Version: `FPSMaster.CLIENT_VERSION` (`2.0.0`, keep equal to `version` in `gradle.properties`), `EDITION` (`Edge`); keep `mcmod.info` aligned.
 
 ```bash
 ./gradlew build              # full build → remapped output

@@ -48,4 +48,4 @@ gradlew.bat genIntelliJRuns
 ./gradlew test        # JUnit 5（测试树较稀疏）
 ```
 
-版本号以代码为准：`FPSMaster.CLIENT_VERSION`（当前 `1.0.0`），`EDITION` 为 `Edge`。
+版本号以代码为准：`FPSMaster.CLIENT_VERSION`（当前 `2.0.0`，与 `gradle.properties` 的 `version` 一致），`EDITION` 为 `Edge`。

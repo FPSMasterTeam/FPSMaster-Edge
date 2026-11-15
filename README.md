@@ -9,7 +9,7 @@
 
 # FPSMaster Edge
 
-> **本项目于 2026-12-31 停止维护。** 最终版本为 **2.0.0-final**，下载见 [GitHub Releases](https://github.com/FPSMasterTeam/FPSMaster-Edge/releases)。本仓库保留源代码，供自行构建与 fork，不再提供修复或更新。
+> **本项目于 2026-12-31 停止维护。** 最终版本为 **2.0.0**，下载见 [GitHub Releases](https://github.com/FPSMasterTeam/FPSMaster-Edge/releases)。本仓库保留源代码，供自行构建与 fork，不再提供修复或更新。
 >
 > 文档：[架构](docs/ARCHITECTURE.md) · [Fork 指南](docs/FORKING.md) · [已知问题](KNOWN_ISSUES.md) · [变更记录](CHANGELOG.md)
 
