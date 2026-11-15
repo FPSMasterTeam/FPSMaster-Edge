@@ -9,6 +9,10 @@
 
 # FPSMaster Edge
 
+> **本项目于 2026-12-31 停止维护。** 最终版本为 **2.0.0-final**，下载见 [GitHub Releases](https://github.com/FPSMasterTeam/FPSMaster-Edge/releases)。本仓库保留源代码，供自行构建与 fork，不再提供修复或更新。
+>
+> 文档：[架构](docs/ARCHITECTURE.md) · [Fork 指南](docs/FORKING.md) · [已知问题](KNOWN_ISSUES.md) · [变更记录](CHANGELOG.md)
+
 FPSMaster Edge 是免费的 Minecraft **PvP 客户端**，本仓库实现为 **Forge 1.8.9** 模组。
 
 较新的 Minecraft 版本请看 [FPSMaster-Nova](https://github.com/FPSMasterTeam/FPSMaster-Nova)；启动器见生态内其它仓库。客户端无需 FPSMaster 账号，饰品保存在本地。
@@ -32,7 +36,6 @@ FPSMaster Edge 是免费的 Minecraft **PvP 客户端**，本仓库实现为 **F
  - 查看我们的[环境配置](docs/development_environment.md)了解如何配置开发环境。
  - 查看我们的[开发指南](docs/development_tutorial.md)了解如何使用我们的模块系统、配置系统等，并完成你的需求。
 
- 如果您希望参与到开发中，欢迎您加入开发者群聊：1097885201（只要您有参与的意愿，无论是否有代码贡献，都可以加入）
 
 ## 开源许可证
 本项目采用 GPL-3.0 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
