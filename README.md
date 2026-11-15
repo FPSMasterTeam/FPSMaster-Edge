@@ -19,7 +19,6 @@ FPSMaster Edge 是免费的 Minecraft **PvP 客户端**，本仓库实现为 **F
 
 <div align="center">
 
-[![Build](https://img.shields.io/github/actions/workflow/status/FPSMasterTeam/FPSMaster-Edge/ci-release.yml?style=for-the-badge&logo=github&label=Build)](https://github.com/FPSMasterTeam/FPSMaster-Edge/actions)
 [![Modrinth 下载](https://img.shields.io/modrinth/dt/fpsmaster?style=for-the-badge&logo=modrinth&logoColor=white&label=Modrinth%20下载&color=00AF5C)](https://modrinth.com/mod/fpsmaster)
 [![CurseForge 下载](https://img.shields.io/curseforge/dt/1081006?style=for-the-badge&logo=curseforge&logoColor=white&label=CurseForge%20下载&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/fpsmaster)
 

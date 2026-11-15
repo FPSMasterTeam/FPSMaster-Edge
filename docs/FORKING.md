@@ -34,7 +34,11 @@ Fork 应注册自己的 Microsoft Entra 应用：支持个人 Microsoft 账号�
 
 ## 发布
 
-`.github/workflows/ci-release.yml` 只在推送 `v*` 语义化 tag 时创建 GitHub Release；例如 `v1.0.0` 进入 release 通道，带预发布后缀的 tag 进入 beta 通道。其他推送只做构建校验。Fork 需要在自己的仓库中配置发布权限，不能沿用原仓库的凭据。
+仓库不含 CI，发布为手动操作：
+
+1. 在 Windows 上用 CMake + MSVC 编译 `native/smtc`（x64 与 Win32 各一次），把两个 `fpsmaster-smtc.dll` 放到 `src/main/resources/native/windows/x64/` 与 `x86/`。缺少 DLL 时客户端仍可运行，只是 Windows 系统媒体控制不可用。
+2. `./gradlew build packageAotDistribution`，产物为 `build/libs/FPSMaster-<版本>.jar` 与 `fpsmaster-edge-aot-<版本>.zip`。
+3. 用 `gh release create v<版本>` 上传这两个文件。版本号不要带预发布后缀。
 
 如果要让 FPSMaster 启动器安装你的版本，还需要用新的 jar 地址和 SHA-256 重新生成启动器的 catalog，见启动器仓库的 `docs/FORKING.md`。
 
